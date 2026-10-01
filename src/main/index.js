@@ -15,6 +15,7 @@ import { createDownloads } from './downloads.js'
 import { createAniList } from './anilist.js'
 import { createHealthCheck } from './healthCheck.js'
 import { createHandlers, registerIpc } from './ipc.js'
+import { hardenWindow } from './windowSecurity.js'
 import { EVENTS } from '../shared/channels.js'
 
 const SIX_HOURS = 6 * 60 * 60 * 1000
@@ -37,9 +38,10 @@ function createWindow() {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true, // the bundled preload only needs contextBridge and ipcRenderer
     },
   })
+  hardenWindow(win.webContents, { devUrl: process.env.ELECTRON_RENDERER_URL ?? null })
   if (process.env.ELECTRON_RENDERER_URL) win.loadURL(process.env.ELECTRON_RENDERER_URL)
   else win.loadFile(path.join(__dirname, '../renderer/index.html'))
 }
