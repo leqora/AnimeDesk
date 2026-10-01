@@ -79,6 +79,18 @@ describe('downloads', () => {
     expect(dl.queueItems().map((i) => [i.status, i.error])).toEqual([['error', 'tools-missing'], ['downloading', null]])
     expect(aniCli.startSession).toHaveBeenCalledTimes(2)
   })
+  it('keeps the queue across an app restart, paused, without finished items', async () => {
+    dl.enqueue({ title: 'A', aniCliTitle: 'A', episodes: ['1', '2', '3'], dir: base })
+    sessions[0].opts.onLine('[download]  40.0% of 10MiB')
+    sessions[0].finish()
+    await flush()
+    sessions[1].opts.onLine('[download]  25.0% of 10MiB')
+    // app closes here (episode 2 downloading, 3 queued) and starts again
+    const after = createDownloads({ file: path.join(base, 'downloads.json'), aniCli: fakeAniCli() })
+    expect(after.queueItems().map((i) => [i.episode, i.status])).toEqual([['2', 'paused'], ['3', 'paused']])
+    after.resume(after.queueItems()[0].id)
+    expect(after.queueItems()[0].status).toBe('downloading')
+  })
   it('pauses (killing the session) and resumes', async () => {
     const [item] = dl.enqueue({ title: 'A', aniCliTitle: 'A', episodes: ['1'], dir: base })
     dl.pause(item.id)

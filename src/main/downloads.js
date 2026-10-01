@@ -28,10 +28,15 @@ function findEpisodeFile(dir, episode) {
 export function createDownloads({ file, aniCli, onChange = () => {}, now = () => new Date().toISOString(), uuid = () => crypto.randomUUID() }) {
   const db = readJson(file, { version: 1, items: [] }).data
   const save = () => writeJsonAtomic(file, db)
-  let queue = []
+  // Unfinished items survive an app restart; whatever was running or waiting comes back paused.
+  let queue = (db.queue ?? []).map((i) => ({ ...i, status: ['queued', 'downloading'].includes(i.status) ? 'paused' : i.status }))
   let active = null // { item, session }
 
-  const emit = () => onChange()
+  const emit = () => {
+    db.queue = queue.filter((i) => !['done', 'cancelled'].includes(i.status))
+    save()
+    onChange()
+  }
 
   function start(item) {
     const targetDir = path.join(item.dir, safeDirName(item.title))
@@ -49,7 +54,7 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
         onMenu: async ({ prompt, lines }) => autoAnswer(prompt, lines, { anime: item.aniCliTitle, episode: item.episode }),
         onLine: (line) => {
           const p = parseProgress(line)
-          if (p != null) { item.percent = p; emit() }
+          if (p != null) { item.percent = p; onChange() } // progress is not worth a disk write per line
         },
       })
     } catch (err) {
