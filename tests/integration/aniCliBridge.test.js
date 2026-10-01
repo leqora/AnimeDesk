@@ -5,6 +5,7 @@ import path from 'node:path'
 import { createBridgeServer } from '../../src/main/bridgeServer.js'
 import { createAniCliBridge } from '../../src/main/aniCliBridge.js'
 import { DEFAULT_SETTINGS } from '../../src/main/settings.js'
+import { createDownloads } from '../../src/main/downloads.js'
 import { BASH, describeBash } from '../helpers/bash.js'
 
 const SRC_BRIDGES = path.resolve('resources/bridges')
@@ -57,10 +58,28 @@ describeBash('AniCliBridge with fake ani-cli', () => {
   it('downloads into a folder with spaces and non-ASCII characters', async () => {
     const lines = []
     const dir = path.join(tmp, 'Moji anime', 'Fake Anime')
+    fs.mkdirSync(dir, { recursive: true }) // the caller (downloads.js) owns creating the folder
     const r = await bridge.startSession({ query: 'fake', player: 'download', index: 1, episodes: 1, downloadDir: dir, onLine: (l) => lines.push(l) }).done
     expect(r.ok).toBe(true)
     expect(fs.readFileSync(path.join(dir, 'Fake Anime Episode 1.mp4'), 'utf8')).toBe('video')
     expect(lines).toContain('[download]  50.0% of 10.00MiB')
+  })
+  it('downloads a title with characters Windows forbids (: / ?) end to end', async () => {
+    const title = 'Re:Zero / Fate?'
+    const tricky = createAniCliBridge({
+      toolManager: { toolPaths: () => ({ bash: BASH, aniCli: FAKE, gitRoot: path.resolve(path.dirname(BASH), '..'), ytDlp: null, ffmpeg: null, mpv: null }) },
+      server, bridges: BRIDGES, getSettings: () => DEFAULT_SETTINGS, historyDir: path.join(tmp, 'hist'),
+      baseEnv: { ...process.env, FAKE_ANIME_TITLE: title },
+    })
+    const dir = path.join(tmp, 'Moji anime')
+    const downloads = createDownloads({ file: path.join(tmp, 'downloads.json'), aniCli: tricky })
+    downloads.enqueue({ title, aniCliTitle: title, episodes: ['1'], dir })
+    const end = Date.now() + 15000
+    while (!['done', 'error'].includes(downloads.queueItems()[0].status) && Date.now() < end) await new Promise((r) => setTimeout(r, 100))
+    expect(downloads.queueItems()[0]).toMatchObject({ status: 'done', error: null })
+    const [entry] = downloads.listDownloaded()
+    expect(entry.missing).toBe(false)
+    expect(entry.path.startsWith(path.join(dir, 'Re Zero Fate'))).toBe(true)
   })
   it('selfTest passes when a link is printed', async () => {
     expect(await bridge.selfTest()).toBe(true)

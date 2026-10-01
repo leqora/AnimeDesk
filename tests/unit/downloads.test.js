@@ -10,12 +10,15 @@ function fakeAniCli() {
   return {
     startSession: vi.fn((opts) => {
       let finish
-      const s = { opts, done: new Promise((r) => { finish = r }), kill: vi.fn(() => finish({ ok: false, error: 'cancelled' })) }
+      // Real ani-cli never creates the folder, so it must already exist when the session starts.
+      const s = { opts, dirExisted: fs.existsSync(opts.downloadDir), done: new Promise((r) => { finish = r }), kill: vi.fn(() => finish({ ok: false, error: 'cancelled' })) }
       s.finish = (ok = true, writeFile = true) => {
         if (ok && writeFile) {
-          fs.mkdirSync(opts.downloadDir, { recursive: true })
-          // ani-cli names the file after its own title; NTFS forbids ":" so the fake swaps it
-          fs.writeFileSync(path.join(opts.downloadDir, `${opts.query.replace(/:/g, ' ')} Episode ${opts.episodes}.mp4`), 'video')
+          // ani-cli names the file after its own raw title; like yt-dlp, parent folders of the output
+          // are created (a "/" in the title makes a subfolder). NTFS forbids ":" so the fake swaps it.
+          const out = path.join(opts.downloadDir, `${opts.query.replace(/:/g, ' ')} Episode ${opts.episodes}.mp4`)
+          fs.mkdirSync(path.dirname(out), { recursive: true })
+          fs.writeFileSync(out, 'video')
         }
         finish(ok ? { ok: true, error: null } : { ok: false, error: 'unknown' })
       }
@@ -59,6 +62,14 @@ describe('downloads', () => {
     const [entry] = dl.listDownloaded()
     expect(entry).toMatchObject({ title: 'Re:Zero', episode: '1', path: path.join(base, 'Re Zero', 'Re Zero Episode 1.mp4'), size: 5, missing: false })
     expect(changes).toBeGreaterThan(0)
+  })
+  it('creates the series folder before starting and finds files in nested folders', async () => {
+    dl.enqueue({ title: 'Fate/stay night', aniCliTitle: 'Fate/stay night', episodes: ['1'], dir: base })
+    expect(sessions[0].dirExisted).toBe(true)
+    sessions[0].finish()
+    await flush()
+    expect(dl.queueItems()[0]).toMatchObject({ status: 'done', error: null })
+    expect(dl.listDownloaded()[0].path).toBe(path.join(base, 'Fate stay night', 'Fate', 'stay night Episode 1.mp4'))
   })
   it('pauses (killing the session) and resumes', async () => {
     const [item] = dl.enqueue({ title: 'A', aniCliTitle: 'A', episodes: ['1'], dir: base })

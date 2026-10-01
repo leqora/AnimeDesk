@@ -13,7 +13,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 if [ "$query" = "nothing" ]; then printf '\033[1;31mNo results found!\033[0m\n' >&2; exit 1; fi
-list=$(printf '1\tid1\tFake Anime\n2\tid2\tOther Show')
+list=$(printf '1\tid1\t%s\n2\tid2\tOther Show' "${FAKE_ANIME_TITLE:-Fake Anime}")
 if [ -n "$index" ]; then
   result=$(printf '%s\n' "$list" | sed -n "${index}p")
 else
@@ -27,9 +27,13 @@ title=$(printf '%s' "$result" | cut -f 3)
 case "$ANI_CLI_PLAYER" in
   debug) printf 'All links:\nx\nSelected link:\nhttps://example.invalid/%s.m3u8\nSubtitles:\n\n' "$ep_no" ;;
   download)
-    mkdir -p "$ANI_CLI_DOWNLOAD_DIR"
+    # Real ani-cli never creates the folder, and its subtitle download (curl -o) needs it to exist.
+    [ -d "$ANI_CLI_DOWNLOAD_DIR" ] || { printf 'download dir missing: %s\n' "$ANI_CLI_DOWNLOAD_DIR" >&2; exit 1; }
+    out="$ANI_CLI_DOWNLOAD_DIR/$title Episode $ep_no.mp4"
     printf '[download]  50.0%% of 10.00MiB\n'
-    printf 'video' > "$ANI_CLI_DOWNLOAD_DIR/$title Episode $ep_no.mp4"
+    # Like yt-dlp: parent folders of the output are created ("/" in a title makes a subfolder).
+    mkdir -p "$(dirname "$out")"
+    printf 'video' > "$out"
     printf '[download] 100%% of 10.00MiB\n' ;;
   *)
     # shellcheck disable=SC2086 — real ani-cli does not quote the player either

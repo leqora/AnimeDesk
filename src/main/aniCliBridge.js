@@ -70,7 +70,9 @@ export function buildEnv({ baseEnv, tools, bridges, server, sessionId, player, d
     ANIMEDESK_TOKEN: server.token,
     ANIMEDESK_SESSION: sessionId,
   })
-  if (downloadDir) env.ANI_CLI_DOWNLOAD_DIR = toMsysPath(downloadDir)
+  // Windows form with forward slashes: MSYS hands it to yt-dlp.exe unchanged, whereas an /d/... path
+  // is left unconverted (and so wrong) as soon as ani-cli appends a title containing : ? or *.
+  if (downloadDir) env.ANI_CLI_DOWNLOAD_DIR = downloadDir.replace(/\\/g, '/')
   return env
 }
 

@@ -10,11 +10,19 @@ export function parseProgress(line) {
   return m ? Number(m[1]) : null
 }
 
+// ani-cli names the file after its raw title, so a "/" in the title puts it in a subfolder.
 function findEpisodeFile(dir, episode) {
-  let names
-  try { names = fs.readdirSync(dir) } catch { return null }
-  const name = names.find((n) => n.endsWith(` Episode ${episode}.mp4`))
-  return name ? path.join(dir, name) : null
+  let entries
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch { return null }
+  for (const e of entries) {
+    const full = path.join(dir, e.name)
+    if (e.isFile() && e.name.endsWith(` Episode ${episode}.mp4`)) return full
+    if (e.isDirectory()) {
+      const found = findEpisodeFile(full, episode)
+      if (found) return found
+    }
+  }
+  return null
 }
 
 export function createDownloads({ file, aniCli, onChange = () => {}, now = () => new Date().toISOString(), uuid = () => crypto.randomUUID() }) {
@@ -27,6 +35,7 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
 
   function start(item) {
     const targetDir = path.join(item.dir, safeDirName(item.title))
+    fs.mkdirSync(targetDir, { recursive: true }) // ani-cli never creates it
     item.status = 'downloading'
     item.percent = 0
     item.error = null

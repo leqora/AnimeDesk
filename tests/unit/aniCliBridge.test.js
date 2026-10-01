@@ -46,7 +46,9 @@ describe('aniCliBridge helpers', () => {
       ANI_CLI_NO_DETACH: '1', ANI_CLI_EXIT_AFTER_PLAY: '1', ANI_CLI_LOG: '0',
       ANI_CLI_QUALITY: '720', ANI_CLI_MODE: 'dub',
       ANI_CLI_HIST_DIR: '/c/Data/hist',
-      ANI_CLI_DOWNLOAD_DIR: '/d/Moji anime/Šou',
+      // Windows path with forward slashes: MSYS passes it to yt-dlp.exe unchanged even when the
+      // file name ani-cli appends contains ":" "?" or "*" (an /d/... path would not be converted then).
+      ANI_CLI_DOWNLOAD_DIR: 'D:/Moji anime/Šou',
       ANIMEDESK_PORT: '5555', ANIMEDESK_TOKEN: 'tok', ANIMEDESK_SESSION: 'sid',
     })
     const dl = buildEnv({ baseEnv: {}, tools: { gitRoot: 'C:\\Git' }, bridges: { menu: 'm', player: 'p' }, server: { port: 1, token: 't' }, sessionId: 's', player: 'download', settings: DEFAULT_SETTINGS, historyDir: 'h' })
