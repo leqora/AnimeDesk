@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { ReadyNotice } from '../components/ReadyNotice.jsx'
@@ -22,18 +22,28 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const [remember, setRemember] = useState(false)
   const [notice, setNotice] = useState(null)
 
+  // The session id and phase are mirrored in a ref so the unmount cleanup sees the latest values.
+  const live = useRef({ sessionId: null, phase: 'idle' })
+  useEffect(() => { live.current.phase = phase }, [phase])
+
   useEffect(() => {
     const offs = [
-      api.watch.onMenu((m) => { setMenu(m); setSelected([]); setPhase(m.kind === 'episode' ? 'episode' : 'anime') }),
+      api.watch.onMenu((m) => { live.current.sessionId = m.sessionId; setMenu(m); setSelected([]); setPhase(m.kind === 'episode' ? 'episode' : 'anime') }),
       api.watch.onPlaying((p) => { setPlaying(p); setPhase('playing') }),
       api.watch.onSessionEnd(({ result }) => {
+        live.current.sessionId = null
         setMenu(null)
         setPlaying(null)
         setPhase('idle')
         if (!result.ok && result.error !== 'cancelled') setError(result)
       }),
     ]
-    return () => offs.forEach((off) => off())
+    return () => {
+      offs.forEach((off) => off())
+      // Leaving the page while ani-cli waits on a menu would leave it hanging forever; playback keeps going.
+      const { sessionId, phase: last } = live.current
+      if (sessionId && last !== 'idle' && last !== 'playing') api.watch.cancel(sessionId)
+    }
   }, [api])
 
   useEffect(() => {
@@ -50,7 +60,9 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     setShowDetails(false)
     setNotice(null)
     setPhase('busy')
-    api.watch.start(params).catch(() => { setPhase('idle'); setError({ error: 'unknown' }) })
+    api.watch.start(params)
+      .then((r) => { if (r?.sessionId) live.current.sessionId = r.sessionId })
+      .catch(() => { setPhase('idle'); setError({ error: 'unknown' }) })
   }
 
   useEffect(() => {

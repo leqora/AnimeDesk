@@ -83,6 +83,28 @@ describe('SearchPage', () => {
     expect(p.onPendingHandled).toHaveBeenCalled()
   })
 
+  it('cancels a session waiting on a menu when the user leaves the page', async () => {
+    const { api, handlers } = withEvents()
+    const { unmount } = renderUi(<SearchPage {...props()} />, { api })
+    fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: 'x' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalled())
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show'] }))
+    unmount()
+    expect(api.watch.cancel).toHaveBeenCalledWith('s1')
+  })
+
+  it('does not cancel while an episode is playing', async () => {
+    const { api, handlers } = withEvents()
+    const { unmount } = renderUi(<SearchPage {...props()} />, { api })
+    fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: 'x' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalled())
+    act(() => handlers.playing({ title: 'Show', episode: '1' }))
+    unmount()
+    expect(api.watch.cancel).not.toHaveBeenCalled()
+  })
+
   it('marks already watched episodes', async () => {
     const { api, handlers } = withEvents()
     api.library.list.mockResolvedValue([{ id: 'a', title: 'Show', aniCliTitle: 'Show', watchedEpisodes: [1] }])
