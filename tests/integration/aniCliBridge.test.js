@@ -47,6 +47,24 @@ describeBash('AniCliBridge with fake ani-cli', () => {
     expect(menus[1]).toEqual({ prompt: 'Select episode: ', lines: ['1', '2', '3'] })
     expect(playArgs).toContain('--force-media-title=Fake Anime Episode 2')
   })
+  it('keeps an awkward title intact through menu and player (quotes, apostrophe, unicode, colon)', async () => {
+    const title = `Frieren: Journey's End "Šou" — 葬送のフリーレン (TV)`
+    const wild = createAniCliBridge({
+      toolManager: { toolPaths: () => ({ bash: BASH, aniCli: FAKE, gitRoot: path.resolve(path.dirname(BASH), '..'), ytDlp: null, ffmpeg: null, mpv: null }) },
+      server, bridges: BRIDGES, getSettings: () => DEFAULT_SETTINGS, historyDir: path.join(tmp, 'hist'),
+      baseEnv: { ...process.env, FAKE_ANIME_TITLE: title },
+    })
+    let menu
+    let playArgs
+    const r = await wild.startSession({
+      query: 'frieren',
+      onMenu: async ({ prompt, lines }) => { if (/anime/i.test(prompt)) menu = lines; return /anime/i.test(prompt) ? lines[0] : '3' },
+      onPlay: async ({ args }) => { playArgs = args; return 0 },
+    }).done
+    expect(r.ok).toBe(true)
+    expect(menu[0]).toBe(`1 ${title}`)
+    expect(playArgs).toContain(`--force-media-title=${title} Episode 3`)
+  })
   it('reports cancelled when the user closes the menu', async () => {
     const r = await bridge.startSession({ query: 'fake', onMenu: async () => null }).done
     expect(r).toMatchObject({ ok: false, error: 'cancelled' })
