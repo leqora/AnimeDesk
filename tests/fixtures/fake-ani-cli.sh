@@ -1,7 +1,8 @@
 #!/bin/sh
 # Mimics exactly the parts of ani-cli AnimeDesk relies on:
 # menus go through "$ANI_CLI_MENU" "<prompt>" with entries on stdin,
-# playback goes through "$ANI_CLI_PLAYER" (mpv-style args), download and debug modes.
+# playback goes through $ANI_CLI_PLAYER (mpv-style args, UNQUOTED exactly like real ani-cli 5.1),
+# download and debug modes.
 index=""; ep_no=""; query=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -31,6 +32,7 @@ case "$ANI_CLI_PLAYER" in
     printf 'video' > "$ANI_CLI_DOWNLOAD_DIR/$title Episode $ep_no.mp4"
     printf '[download] 100%% of 10.00MiB\n' ;;
   *)
-    "$ANI_CLI_PLAYER" --referrer=https://ref.invalid --force-media-title="$title Episode $ep_no" "https://example.invalid/$ep_no.m3u8"
+    # shellcheck disable=SC2086 — real ani-cli does not quote the player either
+    $ANI_CLI_PLAYER --referrer=https://ref.invalid --force-media-title="$title Episode $ep_no" "https://example.invalid/$ep_no.m3u8"
     exit $? ;;
 esac

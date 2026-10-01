@@ -48,6 +48,7 @@ export function buildEnv({ baseEnv, tools, bridges, server, sessionId, player, d
   const oldPath = pathKey ? env[pathKey] : ''
   if (pathKey) delete env[pathKey]
   const dirs = [
+    path.dirname(bridges.player),
     tools.gitRoot && path.join(tools.gitRoot, 'usr', 'bin'),
     tools.gitRoot && path.join(tools.gitRoot, 'mingw64', 'bin'),
     tools.ytDlp && path.dirname(tools.ytDlp),
@@ -57,7 +58,8 @@ export function buildEnv({ baseEnv, tools, bridges, server, sessionId, player, d
   Object.assign(env, {
     PATH: dirs.join(';'),
     ANI_CLI_MENU: toMsysPath(bridges.menu),
-    ANI_CLI_PLAYER: player === 'play' ? toMsysPath(bridges.player) : player,
+    // ani-cli runs the player UNQUOTED, so a path with a space would split; use the bare name from PATH
+    ANI_CLI_PLAYER: player === 'play' ? path.basename(bridges.player) : player,
     ANI_CLI_NO_DETACH: '1',
     ANI_CLI_EXIT_AFTER_PLAY: '1',
     ANI_CLI_LOG: '0',

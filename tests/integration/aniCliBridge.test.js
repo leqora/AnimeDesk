@@ -7,7 +7,10 @@ import { createAniCliBridge } from '../../src/main/aniCliBridge.js'
 import { DEFAULT_SETTINGS } from '../../src/main/settings.js'
 import { BASH, describeBash } from '../helpers/bash.js'
 
-const BRIDGES = { menu: path.resolve('resources/bridges/menu-bridge.sh'), player: path.resolve('resources/bridges/animedesk-mpv-bridge.sh') }
+const SRC_BRIDGES = path.resolve('resources/bridges')
+// Bridges are copied into a folder whose path has a space, like C:\Program Files\AnimeDesk
+// or a profile such as C:\Users\Nikola Lelekovic.
+let BRIDGES
 const FAKE = path.resolve('tests/fixtures/fake-ani-cli.sh')
 
 it('fake ani-cli has LF line endings', () => {
@@ -20,6 +23,9 @@ describeBash('AniCliBridge with fake ani-cli', () => {
   afterAll(() => server.stop())
   beforeEach(() => {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk š '))
+    const bridgesDir = path.join(tmp, 'Program Files', 'AnimeDesk', 'bridges')
+    fs.cpSync(SRC_BRIDGES, bridgesDir, { recursive: true })
+    BRIDGES = { menu: path.join(bridgesDir, 'menu-bridge.sh'), player: path.join(bridgesDir, 'animedesk-mpv-bridge.sh') }
     bridge = createAniCliBridge({
       toolManager: { toolPaths: () => ({ bash: BASH, aniCli: FAKE, gitRoot: path.resolve(path.dirname(BASH), '..'), ytDlp: null, ffmpeg: null, mpv: null }) },
       server, bridges: BRIDGES, getSettings: () => DEFAULT_SETTINGS, historyDir: path.join(tmp, 'hist'),

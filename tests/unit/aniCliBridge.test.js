@@ -42,7 +42,7 @@ describe('aniCliBridge helpers', () => {
     expect(env).toMatchObject({
       OTHER: '1',
       ANI_CLI_MENU: '/c/App/bridges/menu-bridge.sh',
-      ANI_CLI_PLAYER: '/c/App/bridges/animedesk-mpv-bridge.sh',
+      ANI_CLI_PLAYER: 'animedesk-mpv-bridge.sh',
       ANI_CLI_NO_DETACH: '1', ANI_CLI_EXIT_AFTER_PLAY: '1', ANI_CLI_LOG: '0',
       ANI_CLI_QUALITY: '720', ANI_CLI_MODE: 'dub',
       ANI_CLI_HIST_DIR: '/c/Data/hist',
