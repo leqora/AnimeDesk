@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createBridgeServer } from '../../src/main/bridgeServer.js'
 
 let server, url
@@ -39,5 +39,25 @@ describe('bridgeServer', () => {
     expect((await post('/menu', { session: 'nope', prompt: 'x' })).status).toBe(404)
     server.unregisterSession('s1')
     expect((await post('/menu', { prompt: 'x' })).status).toBe(404)
+  })
+  it('rejects a token of a different length without throwing', async () => {
+    server.registerSession('s1', { onMenu: async () => 'x', onPlay: async () => 0 })
+    expect((await post('/menu', { token: 'short', prompt: 'x' })).status).toBe(403)
+    expect((await post('/menu', { token: '', prompt: 'x' })).status).toBe(403)
+  })
+  it('rejects bodies over 1 MB', async () => {
+    const onMenu = vi.fn(async () => 'x')
+    server.registerSession('s1', { onMenu, onPlay: async () => 0 })
+    const res = await post('/menu', { prompt: 'x', body: 'a'.repeat(1024 * 1024 + 1) })
+    expect(res.status).toBe(413)
+    expect(onMenu).not.toHaveBeenCalled()
+  })
+  it('stops even while a menu request is still waiting for the user', async () => {
+    server.registerSession('s1', { onMenu: () => new Promise(() => {}), onPlay: async () => 0 })
+    const pending = post('/menu', { prompt: 'x', body: 'a' }).catch(() => 'closed')
+    await new Promise((r) => setTimeout(r, 100))
+    const stopped = await Promise.race([server.stop().then(() => 'stopped'), new Promise((r) => setTimeout(() => r('hung'), 2000))])
+    expect(stopped).toBe('stopped')
+    expect(await pending).toBe('closed')
   })
 })

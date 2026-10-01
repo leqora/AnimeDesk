@@ -1,15 +1,34 @@
 import http from 'node:http'
 import crypto from 'node:crypto'
 
+const MAX_BODY = 1024 * 1024 // menus and player args are a few KB at most
+
 const decodeHex = (hex) => Buffer.from(hex ?? '', 'hex').toString('utf8')
+
+class BodyTooLarge extends Error {}
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = []
-    req.on('data', (c) => chunks.push(c))
+    let size = 0
+    req.on('data', (c) => {
+      size += c.length
+      if (size > MAX_BODY) {
+        reject(new BodyTooLarge())
+        req.pause()
+        return
+      }
+      chunks.push(c)
+    })
     req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
     req.on('error', reject)
   })
+}
+
+function tokenMatches(given, token) {
+  const a = Buffer.from(String(given ?? ''))
+  const b = Buffer.from(token)
+  return a.length === b.length && crypto.timingSafeEqual(a, b)
 }
 
 export function createBridgeServer() {
@@ -19,10 +38,16 @@ export function createBridgeServer() {
   let port = null
 
   async function handle(req, res) {
-    if (req.method !== 'POST' || req.headers['x-animedesk-token'] !== token) return res.writeHead(403).end()
+    if (req.method !== 'POST' || !tokenMatches(req.headers['x-animedesk-token'], token)) return res.writeHead(403).end()
     const session = sessions.get(req.headers['x-animedesk-session'])
     if (!session) return res.writeHead(404).end()
-    const lines = (await readBody(req)).split(/\r?\n/).filter(Boolean)
+    let body
+    try {
+      body = await readBody(req)
+    } catch (err) {
+      return res.writeHead(err instanceof BodyTooLarge ? 413 : 400, { connection: 'close' }).end()
+    }
+    const lines = body.split(/\r?\n/).filter(Boolean)
     try {
       if (req.url === '/menu') {
         const answer = await session.onMenu({ prompt: decodeHex(req.headers['x-animedesk-prompt']), lines })
@@ -53,7 +78,11 @@ export function createBridgeServer() {
       })
     },
     stop() {
-      return new Promise((resolve) => (server ? server.close(() => resolve()) : resolve()))
+      if (!server) return Promise.resolve()
+      return new Promise((resolve) => {
+        server.close(() => resolve())
+        server.closeAllConnections() // a menu may still be waiting for the user; don't hang on quit
+      })
     },
     registerSession: (id, handlers) => sessions.set(id, handlers),
     unregisterSession: (id) => sessions.delete(id),
