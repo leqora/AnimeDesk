@@ -71,6 +71,14 @@ describe('downloads', () => {
     expect(dl.queueItems()[0]).toMatchObject({ status: 'done', error: null })
     expect(dl.listDownloaded()[0].path).toBe(path.join(base, 'Fate stay night', 'Fate', 'stay night Episode 1.mp4'))
   })
+  it('marks an item as error and moves on when the session cannot start (tool missing)', () => {
+    const real = aniCli.startSession.getMockImplementation()
+    aniCli.startSession.mockImplementationOnce(() => { throw new Error('tools-missing') })
+    aniCli.startSession.mockImplementation(real)
+    dl.enqueue({ title: 'A', aniCliTitle: 'A', episodes: ['1', '2'], dir: base })
+    expect(dl.queueItems().map((i) => [i.status, i.error])).toEqual([['error', 'tools-missing'], ['downloading', null]])
+    expect(aniCli.startSession).toHaveBeenCalledTimes(2)
+  })
   it('pauses (killing the session) and resumes', async () => {
     const [item] = dl.enqueue({ title: 'A', aniCliTitle: 'A', episodes: ['1'], dir: base })
     dl.pause(item.id)

@@ -35,21 +35,31 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
 
   function start(item) {
     const targetDir = path.join(item.dir, safeDirName(item.title))
-    fs.mkdirSync(targetDir, { recursive: true }) // ani-cli never creates it
     item.status = 'downloading'
     item.percent = 0
     item.error = null
-    const session = aniCli.startSession({
-      query: item.aniCliTitle,
-      player: 'download',
-      episodes: item.episode,
-      downloadDir: targetDir,
-      onMenu: async ({ prompt, lines }) => autoAnswer(prompt, lines, { anime: item.aniCliTitle, episode: item.episode }),
-      onLine: (line) => {
-        const p = parseProgress(line)
-        if (p != null) { item.percent = p; emit() }
-      },
-    })
+    let session
+    try {
+      fs.mkdirSync(targetDir, { recursive: true }) // ani-cli never creates it
+      session = aniCli.startSession({
+        query: item.aniCliTitle,
+        player: 'download',
+        episodes: item.episode,
+        downloadDir: targetDir,
+        onMenu: async ({ prompt, lines }) => autoAnswer(prompt, lines, { anime: item.aniCliTitle, episode: item.episode }),
+        onLine: (line) => {
+          const p = parseProgress(line)
+          if (p != null) { item.percent = p; emit() }
+        },
+      })
+    } catch (err) {
+      // e.g. "tools-missing" or a folder that cannot be created: fail this item, keep the queue moving
+      item.status = 'error'
+      item.error = err.message
+      emit()
+      pump()
+      return
+    }
     active = { item, session }
     emit()
     session.done.then((r) => {
