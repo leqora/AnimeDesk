@@ -37,6 +37,7 @@ export function DownloadsPage() {
               <span className="queue-item__title">{q.title} — {t('downloads.episode', { episode: q.episode })}</span>
               <div className="progress"><div style={{ width: `${Math.round(q.percent)}%` }} /></div>
               <span>{t(`dstatus.${q.status}`, { percent: Math.floor(q.percent) })}</span>
+              {q.status === 'error' && q.error && <span className="muted">{t(`error.${q.error}`)}</span>}
               {['downloading', 'queued'].includes(q.status) && <button type="button" onClick={() => api.downloads.pause(q.id)}>{t('downloads.pause')}</button>}
               {['paused', 'error'].includes(q.status) && <button type="button" onClick={() => api.downloads.resume(q.id)}>{t('downloads.resume')}</button>}
               {q.status !== 'done' && <button type="button" onClick={() => api.downloads.cancel(q.id)}>{t('downloads.cancel')}</button>}

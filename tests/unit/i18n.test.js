@@ -10,7 +10,7 @@ const DYNAMIC = [
   ...STATUSES.map((s) => `status.${s}`),
   ...['title', 'rating', 'lastWatched'].map((s) => `sort.${s}`),
   ...['queued', 'downloading', 'paused', 'done', 'error'].map((s) => `dstatus.${s}`),
-  ...['no-results', 'episode-not-released', 'blocked', 'cancelled', 'unknown', 'file-not-found'].map((e) => `error.${e}`),
+  ...['no-results', 'episode-not-released', 'blocked', 'cancelled', 'unknown', 'file-not-found', 'not-found', 'tools-missing'].map((e) => `error.${e}`),
   'settings.mode.sub', 'settings.mode.dub', 'lang.sr', 'lang.en',
 ]
 

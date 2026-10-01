@@ -91,6 +91,13 @@ describe('downloads', () => {
     after.resume(after.queueItems()[0].id)
     expect(after.queueItems()[0].status).toBe('downloading')
   })
+  it('reports not-found when the stored title is no longer in the search results', async () => {
+    dl.enqueue({ title: 'Gone', aniCliTitle: 'Gone', episodes: ['1'], dir: base })
+    expect(await sessions[0].opts.onMenu({ prompt: 'Select anime: ', lines: ['1 Other'] })).toBeNull()
+    sessions[0].finish(false)
+    await flush()
+    expect(dl.queueItems()[0]).toMatchObject({ status: 'error', error: 'not-found' })
+  })
   it('pauses (killing the session) and resumes', async () => {
     const [item] = dl.enqueue({ title: 'A', aniCliTitle: 'A', episodes: ['1'], dir: base })
     dl.pause(item.id)

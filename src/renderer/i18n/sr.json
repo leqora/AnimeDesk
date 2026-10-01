@@ -46,6 +46,8 @@
   "error.cancelled": "Otkazano.",
   "error.unknown": "Došlo je do greške.",
   "error.file-not-found": "Preuzimanje je završeno, ali fajl nije pronađen.",
+  "error.not-found": "Anime više nije pronađen u pretrazi.",
+  "error.tools-missing": "Nedostaju komponente — otvori instalaciju.",
   "error.showDetails": "Prikaži detalje",
   "watchlist.empty": "Watchlist je prazna.",
   "watchlist.all": "Sve",

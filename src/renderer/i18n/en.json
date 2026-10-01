@@ -46,6 +46,8 @@
   "error.cancelled": "Cancelled.",
   "error.unknown": "Something went wrong.",
   "error.file-not-found": "Download finished, but the file was not found.",
+  "error.not-found": "The anime is no longer found in search.",
+  "error.tools-missing": "Components are missing — open setup.",
   "error.showDetails": "Show details",
   "watchlist.empty": "Your watchlist is empty.",
   "watchlist.all": "All",

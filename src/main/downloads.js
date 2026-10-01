@@ -3,7 +3,7 @@ import path from 'node:path'
 import crypto from 'node:crypto'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 import { safeDirName } from './paths.js'
-import { autoAnswer } from './aniCliBridge.js'
+import { autoAnswer, menuKind } from './aniCliBridge.js'
 
 export function parseProgress(line) {
   const m = /\[download\]\s+([\d.]+)%/.exec(line)
@@ -44,6 +44,7 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
     item.percent = 0
     item.error = null
     let session
+    let notFound = false
     try {
       fs.mkdirSync(targetDir, { recursive: true }) // ani-cli never creates it
       session = aniCli.startSession({
@@ -51,7 +52,11 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
         player: 'download',
         episodes: item.episode,
         downloadDir: targetDir,
-        onMenu: async ({ prompt, lines }) => autoAnswer(prompt, lines, { anime: item.aniCliTitle, episode: item.episode }),
+        onMenu: async ({ prompt, lines }) => {
+          const answer = autoAnswer(prompt, lines, { anime: item.aniCliTitle, episode: item.episode })
+          if (answer == null && menuKind(prompt) === 'anime') notFound = true
+          return answer
+        },
         onLine: (line) => {
           const p = parseProgress(line)
           if (p != null) { item.percent = p; onChange() } // progress is not worth a disk write per line
@@ -83,7 +88,7 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
           }
         } else {
           item.status = 'error'
-          item.error = r.error ?? 'unknown'
+          item.error = notFound ? 'not-found' : (r.error ?? 'unknown')
         }
       }
       emit()

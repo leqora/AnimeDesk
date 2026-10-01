@@ -58,6 +58,11 @@ describe('DownloadsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ukloni sa liste' }))
     await waitFor(() => expect(api.downloads.remove).toHaveBeenCalledWith('d3', false))
   })
+  it('explains why a queued download failed', async () => {
+    const api = makeFakeApi({ downloads: { queue: vi.fn(async () => [{ id: 'q1', title: 'Gone', episode: '1', status: 'error', percent: 0, error: 'not-found' }]) } })
+    renderUi(<DownloadsPage />, { api })
+    await waitFor(() => expect(screen.getByText('Anime više nije pronađen u pretrazi.')).toBeInTheDocument())
+  })
   it('shows an empty message', async () => {
     renderUi(<DownloadsPage />)
     await waitFor(() => expect(screen.getByText('Nema preuzetih epizoda.')).toBeInTheDocument())
