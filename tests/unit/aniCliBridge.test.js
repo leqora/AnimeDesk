@@ -38,7 +38,7 @@ describe('aniCliBridge helpers', () => {
       historyDir: 'C:\\Data\\hist',
     })
     expect(Object.keys(env).filter((k) => k.toUpperCase() === 'PATH')).toEqual(['PATH'])
-    expect(env.PATH.split(';')).toEqual(['C:\\Git\\usr\\bin', 'C:\\Git\\mingw64\\bin', 'C:\\T\\yt-dlp', 'C:\\T\\ff\\bin', 'C:\\Windows'])
+    expect(env.PATH.split(';')).toEqual(['C:\\App\\bridges', 'C:\\Git\\usr\\bin', 'C:\\Git\\mingw64\\bin', 'C:\\T\\yt-dlp', 'C:\\T\\ff\\bin', 'C:\\Windows'])
     expect(env).toMatchObject({
       OTHER: '1',
       ANI_CLI_MENU: '/c/App/bridges/menu-bridge.sh',
