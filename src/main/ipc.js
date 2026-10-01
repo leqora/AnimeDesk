@@ -50,6 +50,7 @@ export function createHandlers(s) {
       if (d) s.electron.showItemInFolder(d.path)
     },
     [INVOKE.dialogPickFolder]: () => s.electron.pickFolder(),
+    [INVOKE.statsGet]: () => s.progress.snapshot(),
   }
 }
 

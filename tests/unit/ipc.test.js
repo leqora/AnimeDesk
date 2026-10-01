@@ -12,6 +12,7 @@ function services() {
     watch: { watch: vi.fn(), cancel: vi.fn(), answerMenu: vi.fn(), playLocal: vi.fn(async () => 'watched') },
     downloads: { enqueue: vi.fn(), pause: vi.fn(), resume: vi.fn(), cancel: vi.fn(), queueItems: vi.fn(), listDownloaded: vi.fn(), removeDownloaded: vi.fn(), getDownloaded: vi.fn((id) => (id === 'd1' ? { path: 'D:\\A\\A Episode 1.mp4', title: 'A', episode: '1' } : null)) },
     electron: { pickFolder: vi.fn(async () => 'D:\\X'), showItemInFolder: vi.fn() },
+    progress: { snapshot: vi.fn(() => ({ level: 1 })), check: vi.fn() },
     send: vi.fn(),
   }
 }

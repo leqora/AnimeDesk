@@ -28,6 +28,7 @@ export const INVOKE = {
   downloadsPlay: 'downloads:play',
   downloadsOpenFolder: 'downloads:open-folder',
   dialogPickFolder: 'dialog:pick-folder',
+  statsGet: 'stats:get',
 }
 
 export const EVENTS = {
@@ -39,4 +40,6 @@ export const EVENTS = {
   sessionEnd: 'event:session-end',
   libraryChanged: 'event:library-changed',
   downloads: 'event:downloads',
+  levelUp: 'event:level-up',
+  seriesCompleted: 'event:series-completed',
 }
