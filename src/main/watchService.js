@@ -44,13 +44,17 @@ export function createWatchService({ aniCli, player, library, settings, notify }
       onPlay: async ({ args }) => {
         const info = parsePlayerArgs(args)
         notify(EVENTS.playing, { title: info.title, episode: info.episode })
+        entry.playing = true
         const r = await player.play(info.mpvArgs)
-        afterPlayback({ title: info.title, episode: info.episode, maxPercent: r.maxPercent })
+        entry.playing = false
+        // A cancelled session must not mark the episode as watched.
+        if (!entry.cancelled) afterPlayback({ title: info.title, episode: info.episode, maxPercent: r.maxPercent })
         return r.exitCode
       },
     })
+    const entry = { session, playing: false, cancelled: false }
     sessionId = session.sessionId
-    sessions.set(sessionId, session)
+    sessions.set(sessionId, entry)
     session.done.then((result) => {
       sessions.delete(sessionId)
       notify(EVENTS.sessionEnd, { sessionId, result: { ok: result.ok, error: result.error, stderr: result.stderr } })
@@ -60,7 +64,11 @@ export function createWatchService({ aniCli, player, library, settings, notify }
 
   function cancel(sessionId) {
     for (const [requestId, p] of pending) if (p.sessionId === sessionId) answerMenu(requestId, null)
-    sessions.get(sessionId)?.kill()
+    const entry = sessions.get(sessionId)
+    if (!entry) return
+    entry.cancelled = true
+    if (entry.playing) player.stop() // mpv is the app's child, killing ani-cli does not close it
+    entry.session.kill()
   }
 
   async function playLocal({ file, title, episode }) {

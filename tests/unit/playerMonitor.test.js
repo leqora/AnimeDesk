@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { EventEmitter } from 'node:events'
 import { decideWatched, createPercentTracker, createPlayer } from '../../src/main/playerMonitor.js'
 
@@ -46,6 +46,16 @@ describe('createPlayer', () => {
     expect(spawned.args.slice(1)).toEqual(['--force-media-title=A Episode 1', 'https://v'])
     expect(socket.written[0]).toBe('{"command":["observe_property",1,"percent-pos"]}\n')
     expect(r).toEqual({ exitCode: 0, maxPercent: 88 })
+  })
+  it('stop() closes a running mpv', async () => {
+    const child = new EventEmitter()
+    child.kill = vi.fn(() => child.emit('exit', 1))
+    const socket = () => { const s = new EventEmitter(); s.write = () => {}; s.destroy = () => {}; return s }
+    const player = createPlayer({ getMpvPath: () => 'mpv.exe', spawnImpl: () => child, connect: socket, retryMs: 1, maxRetries: 1 })
+    const playing = player.play(['https://v'])
+    player.stop()
+    expect(child.kill).toHaveBeenCalled()
+    expect((await playing).exitCode).toBe(1)
   })
   it('rejects when mpv is missing', async () => {
     await expect(createPlayer({ getMpvPath: () => null }).play([])).rejects.toThrow('mpv-missing')

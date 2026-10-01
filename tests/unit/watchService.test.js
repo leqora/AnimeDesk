@@ -17,7 +17,7 @@ function setup({ settings = {}, maxPercent = 90, menus = [] } = {}) {
       return { sessionId: 'sid', done, kill: vi.fn() }
     }),
   }
-  const player = { play: vi.fn(async () => ({ exitCode: 0, maxPercent })) }
+  const player = { play: vi.fn(async () => ({ exitCode: 0, maxPercent })), stop: vi.fn() }
   const library = { recordWatched: vi.fn() }
   const svc = createWatchService({
     aniCli, player, library,
@@ -85,5 +85,17 @@ describe('watchService', () => {
     await flush()
     expect(menus[0].answer).toBeNull()
     expect(aniCli.startSession.mock.results[0].value.kill).toHaveBeenCalled()
+  })
+  it('cancel during playback closes mpv and does not record the episode', async () => {
+    const s = setup({ maxPercent: 99 })
+    let release
+    s.player.play.mockImplementation(() => new Promise((r) => { release = r }))
+    s.player.stop.mockImplementation(() => release({ exitCode: 0, maxPercent: 99 }))
+    const { sessionId } = s.svc.watch({ query: 'x' })
+    await flush()
+    s.svc.cancel(sessionId)
+    await flush()
+    expect(s.player.stop).toHaveBeenCalled()
+    expect(s.library.recordWatched).not.toHaveBeenCalled()
   })
 })

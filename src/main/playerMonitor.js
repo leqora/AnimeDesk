@@ -30,13 +30,18 @@ export function createPercentTracker() {
 }
 
 export function createPlayer({ getMpvPath, spawnImpl = spawn, connect = net.connect, retryMs = 250, maxRetries = 40 }) {
+  const running = new Set()
   return {
+    stop() {
+      for (const child of running) child.kill()
+    },
     play(args) {
       return new Promise((resolve, reject) => {
         const mpv = getMpvPath()
         if (!mpv) return reject(new Error('mpv-missing'))
         const pipe = `\\\\.\\pipe\\animedesk-mpv-${crypto.randomUUID()}`
         const child = spawnImpl(mpv, [`--input-ipc-server=${pipe}`, ...args], { stdio: 'ignore' })
+        running.add(child)
         const tracker = createPercentTracker()
         let socket = null
         let tries = 0
@@ -57,6 +62,7 @@ export function createPlayer({ getMpvPath, spawnImpl = spawn, connect = net.conn
         child.on('error', reject)
         child.on('exit', (code) => {
           exited = true
+          running.delete(child)
           socket?.destroy()
           resolve({ exitCode: code ?? 0, maxPercent: tracker.max })
         })
