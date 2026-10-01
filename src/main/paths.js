@@ -19,11 +19,17 @@ export function toMsysPath(p) {
   return `/${m[1].toLowerCase()}/${m[2].replace(/\\/g, '/')}`
 }
 
+const RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i
+const MAX_NAME = 100
+
 export function safeDirName(name) {
   const cleaned = String(name)
     .replace(/[<>:"/\\|?*\x00-\x1f]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+    .slice(0, MAX_NAME)
     .replace(/[. ]+$/, '')
-  return cleaned || 'Anime'
+  if (!cleaned) return 'Anime'
+  // Windows refuses device names (CON, NUL, COM1…) as folder names, even with an extension.
+  return cleaned.replace(RESERVED, (_, base, dot) => `${base}_${dot}`)
 }

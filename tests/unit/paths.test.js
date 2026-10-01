@@ -20,4 +20,16 @@ describe('paths', () => {
     expect(safeDirName('What?! <Title>.')).toBe('What ! Title')
     expect(safeDirName('???')).toBe('Anime')
   })
+  it('avoids reserved Windows device names', () => {
+    expect(safeDirName('CON')).toBe('CON_')
+    expect(safeDirName('nul')).toBe('nul_')
+    expect(safeDirName('Com1')).toBe('Com1_')
+    expect(safeDirName('LPT9.txt')).toBe('LPT9_.txt')
+    expect(safeDirName('Console')).toBe('Console')
+  })
+  it('caps very long titles at 100 characters without a trailing dot or space', () => {
+    const name = safeDirName(`${'a'.repeat(98)} .bbbbbb`)
+    expect(name).toBe('a'.repeat(98))
+    expect(safeDirName('x'.repeat(300))).toHaveLength(100)
+  })
 })
