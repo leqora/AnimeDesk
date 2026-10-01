@@ -9,6 +9,11 @@ export const DEFAULT_SETTINGS = Object.freeze({
   quality: 'best',
   mode: 'sub',
   autoUpdateTools: true,
+  profileName: null,
+  soundKey: true,
+  soundUi: false,
+  soundVolume: 60,
+  animations: true,
 })
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
@@ -25,17 +30,23 @@ export function sanitizeSettings(input = {}) {
   if (QUALITIES.includes(input.quality)) s.quality = input.quality
   if (input.mode === 'sub' || input.mode === 'dub') s.mode = input.mode
   if (typeof input.autoUpdateTools === 'boolean') s.autoUpdateTools = input.autoUpdateTools
+  if (typeof input.profileName === 'string' && input.profileName.trim()) s.profileName = input.profileName.trim().slice(0, 32)
+  if (typeof input.soundKey === 'boolean') s.soundKey = input.soundKey
+  if (typeof input.soundUi === 'boolean') s.soundUi = input.soundUi
+  if (Number.isFinite(input.soundVolume)) s.soundVolume = Math.min(100, Math.max(0, Math.round(input.soundVolume)))
+  if (typeof input.animations === 'boolean') s.animations = input.animations
   return s
 }
 
-export function createSettings(file) {
+export function createSettings(file, { systemName = 'Player' } = {}) {
   let current = sanitizeSettings(readJson(file, {}).data)
+  const view = () => ({ ...current, systemName })
   return {
-    get: () => ({ ...current }),
+    get: view,
     update(patch) {
       current = sanitizeSettings({ ...current, ...patch })
       writeJsonAtomic(file, current)
-      return { ...current }
+      return view()
     },
   }
 }

@@ -12,6 +12,7 @@ describe('settings', () => {
     expect(DEFAULT_SETTINGS).toEqual({
       language: 'sr', autoTrack: true, watchedThreshold: 85, askOnClose: false,
       downloadDir: null, quality: 'best', mode: 'sub', autoUpdateTools: true,
+      profileName: null, soundKey: true, soundUi: false, soundVolume: 60, animations: true,
     })
   })
   it('clamps the threshold and ignores invalid values', () => {
@@ -35,5 +36,22 @@ describe('settings', () => {
     const s = createSettings(file)
     s.get().language = 'en'
     expect(s.get().language).toBe('sr')
+  })
+  it('validates the profile and sound settings', () => {
+    expect(sanitizeSettings({ profileName: '  Nikola  ' }).profileName).toBe('Nikola')
+    expect(sanitizeSettings({ profileName: '' }).profileName).toBeNull()
+    expect(sanitizeSettings({ profileName: 'x'.repeat(40) }).profileName).toHaveLength(32)
+    expect(sanitizeSettings({ soundVolume: 140 }).soundVolume).toBe(100)
+    expect(sanitizeSettings({ soundVolume: -3 }).soundVolume).toBe(0)
+    expect(sanitizeSettings({ soundVolume: 33.6 }).soundVolume).toBe(34)
+    expect(sanitizeSettings({ soundKey: false, soundUi: true, animations: false })).toMatchObject({ soundKey: false, soundUi: true, animations: false })
+    expect(sanitizeSettings({ soundUi: 'yes' }).soundUi).toBe(false)
+  })
+  it('exposes the system user name without persisting it', () => {
+    const s = createSettings(file, { systemName: 'nikola' })
+    expect(s.get().systemName).toBe('nikola')
+    s.update({ language: 'en' })
+    expect(JSON.parse(fs.readFileSync(file, 'utf8'))).not.toHaveProperty('systemName')
+    expect(s.update({ language: 'sr' }).systemName).toBe('nikola')
   })
 })
