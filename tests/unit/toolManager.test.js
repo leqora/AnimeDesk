@@ -90,6 +90,33 @@ describe('toolManager', () => {
     expect(await tm.updateAll()).toEqual(['ani-cli'])
     expect(tm.status()['ani-cli'].version).toBe('v5.2')
   })
+  it('keeps the old version working when the new one cannot be moved in (antivirus / file in use)', async () => {
+    await tm.installMissing()
+    const oldPath = tm.toolPaths().aniCli
+    releases['pystardust/ani-cli'].tag_name = 'v5.2'
+    const locked = (from, to) => {
+      if (from.endsWith('.new')) throw Object.assign(new Error('EPERM: operation not permitted'), { code: 'EPERM' })
+      fs.renameSync(from, to)
+    }
+    const t = make({ rename: locked, sleep: async () => {} })
+    await expect(t.updateAll()).rejects.toThrow(/EPERM/)
+    expect(t.missing()).toEqual([])
+    expect(t.toolPaths().aniCli).toBe(oldPath)
+    expect(t.status()['ani-cli'].version).toBe('v5.1')
+    expect(fs.existsSync(`${path.dirname(oldPath)}.new`)).toBe(false)
+  })
+  it('retries a rename that fails once with EBUSY', async () => {
+    await tm.installMissing()
+    releases['pystardust/ani-cli'].tag_name = 'v5.2'
+    let failed = false
+    const flaky = (from, to) => {
+      if (!failed && from.endsWith('.new')) { failed = true; throw Object.assign(new Error('EBUSY: resource busy'), { code: 'EBUSY' }) }
+      fs.renameSync(from, to)
+    }
+    const t = make({ rename: flaky, sleep: async () => {} })
+    expect(await t.updateAll()).toEqual(['ani-cli'])
+    expect(t.status()['ani-cli'].version).toBe('v5.2')
+  })
   it('remembers the last update check', () => {
     expect(tm.lastUpdateCheck()).toBeNull()
     tm.markUpdateCheck('2026-10-01T00:00:00Z')

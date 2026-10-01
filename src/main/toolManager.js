@@ -21,9 +21,40 @@ export function findFile(dir, name) {
   return null
 }
 
-export function createToolManager({ paths, http, extractZip, runExe, env = process.env, exists = fs.existsSync }) {
+export function createToolManager({
+  paths, http, extractZip, runExe, env = process.env, exists = fs.existsSync,
+  rename = fs.renameSync, sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+}) {
   const load = () => readJson(paths.manifest, { tools: {}, lastUpdateCheck: null }).data
   const save = (m) => writeJsonAtomic(paths.manifest, m)
+
+  // Antivirus scanners and running tools briefly lock fresh files on Windows (EPERM/EBUSY).
+  async function renameWithRetry(from, to, attempts = 5) {
+    for (let i = 1; ; i++) {
+      try {
+        return rename(from, to)
+      } catch (err) {
+        if (i >= attempts || !['EPERM', 'EBUSY', 'EACCES'].includes(err.code)) throw err
+        await sleep(300)
+      }
+    }
+  }
+
+  // Move the new version in; if that fails, put the old version back so the tool keeps working.
+  async function swapIn(staging, dir) {
+    const old = `${dir}.old`
+    fs.rmSync(old, { recursive: true, force: true })
+    const hadOld = fs.existsSync(dir)
+    if (hadOld) await renameWithRetry(dir, old)
+    try {
+      await renameWithRetry(staging, dir)
+    } catch (err) {
+      if (hadOld) await renameWithRetry(old, dir)
+      fs.rmSync(staging, { recursive: true, force: true })
+      throw err
+    }
+    try { fs.rmSync(old, { recursive: true, force: true }) } catch { /* leftover is harmless */ }
+  }
 
   function exePath(id) {
     const m = load().tools[id]
@@ -62,8 +93,7 @@ export function createToolManager({ paths, http, extractZip, runExe, env = proce
       }
       fs.rmSync(file, { force: true })
     }
-    fs.rmSync(dir, { recursive: true, force: true })
-    fs.renameSync(staging, dir)
+    await swapIn(staging, dir)
     const exe = src.kind === 'zip' ? findFile(dir, src.exe)
       : src.kind === 'sfx' ? path.join(dir, src.exe)
       : path.join(dir, name)
