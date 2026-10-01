@@ -1,0 +1,34 @@
+// @vitest-environment jsdom
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import App from '../../../src/renderer/App.jsx'
+import { makeFakeApi } from './helpers.jsx'
+
+describe('App', () => {
+  it('opens the wizard automatically when tools are missing', async () => {
+    const api = makeFakeApi({ health: { get: vi.fn(async () => ({ light: 'red', reason: 'missing-tools', missing: ['mpv'] })) } })
+    render(<App api={api} />)
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Podešavanje' })).toBeInTheDocument())
+  })
+  it('switches language when settings change and navigates', async () => {
+    const api = makeFakeApi()
+    render(<App api={api} />)
+    await waitFor(() => screen.getByRole('button', { name: 'Podešavanja' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
+    fireEvent.change(screen.getByLabelText('Jezik'), { target: { value: 'en' } })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument())
+  })
+  it('asks whether to mark an episode as watched', async () => {
+    let ask
+    const api = makeFakeApi({ watch: { onAsk: vi.fn((cb) => { ask = cb; return () => {} }) } })
+    render(<App api={api} />)
+    await waitFor(() => expect(ask).toBeDefined())
+    act(() => ask({ aniCliTitle: 'Show', episode: '5' }))
+    expect(screen.getByText('Označi epizodu 5 (Show) kao odgledanu?')).toBeInTheDocument()
+  })
+  it('warns when the watchlist file was corrupt', async () => {
+    const api = makeFakeApi({ library: { wasCorrupt: vi.fn(async () => true) } })
+    render(<App api={api} />)
+    await waitFor(() => expect(screen.getByText(/bio oštećen/)).toBeInTheDocument())
+  })
+})

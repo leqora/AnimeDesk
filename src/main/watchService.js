@@ -1,0 +1,80 @@
+import crypto from 'node:crypto'
+import { EVENTS } from '../shared/channels.js'
+import { autoAnswer, menuKind, parsePlayerArgs } from './aniCliBridge.js'
+import { decideWatched } from './playerMonitor.js'
+
+export function createWatchService({ aniCli, player, library, settings, notify }) {
+  const pending = new Map() // requestId -> { sessionId, resolve }
+  const sessions = new Map() // sessionId -> session
+
+  function afterPlayback({ title, episode, maxPercent }) {
+    const s = settings.get()
+    const decision = decideWatched({ maxPercent, threshold: s.watchedThreshold, autoTrack: s.autoTrack, askOnClose: s.askOnClose })
+    if (episode == null) return 'none'
+    if (decision === 'watched') {
+      library.recordWatched({ aniCliTitle: title, episode })
+      notify(EVENTS.libraryChanged)
+    }
+    if (decision === 'ask') notify(EVENTS.ask, { aniCliTitle: title, episode })
+    return decision
+  }
+
+  function answerMenu(requestId, line) {
+    const p = pending.get(requestId)
+    if (!p) return
+    pending.delete(requestId)
+    p.resolve(line ?? null)
+  }
+
+  function watch({ query, anime = null, episode = null }) {
+    let sessionId = null
+    const session = aniCli.startSession({
+      query,
+      player: 'play',
+      episodes: episode,
+      onMenu: ({ prompt, lines }) => {
+        const auto = autoAnswer(prompt, lines, { anime, episode })
+        if (auto) return Promise.resolve(auto)
+        return new Promise((resolve) => {
+          const requestId = crypto.randomUUID()
+          pending.set(requestId, { sessionId, resolve })
+          notify(EVENTS.menu, { requestId, sessionId, kind: menuKind(prompt), prompt, lines })
+        })
+      },
+      onPlay: async ({ args }) => {
+        const info = parsePlayerArgs(args)
+        notify(EVENTS.playing, { title: info.title, episode: info.episode })
+        entry.playing = true
+        const r = await player.play(info.mpvArgs)
+        entry.playing = false
+        // A cancelled session must not mark the episode as watched.
+        if (!entry.cancelled) afterPlayback({ title: info.title, episode: info.episode, maxPercent: r.maxPercent })
+        return r.exitCode
+      },
+    })
+    const entry = { session, playing: false, cancelled: false }
+    sessionId = session.sessionId
+    sessions.set(sessionId, entry)
+    session.done.then((result) => {
+      sessions.delete(sessionId)
+      notify(EVENTS.sessionEnd, { sessionId, result: { ok: result.ok, error: result.error, stderr: result.stderr } })
+    })
+    return { sessionId }
+  }
+
+  function cancel(sessionId) {
+    for (const [requestId, p] of pending) if (p.sessionId === sessionId) answerMenu(requestId, null)
+    const entry = sessions.get(sessionId)
+    if (!entry) return
+    entry.cancelled = true
+    if (entry.playing) player.stop() // mpv is the app's child, killing ani-cli does not close it
+    entry.session.kill()
+  }
+
+  async function playLocal({ file, title, episode }) {
+    const r = await player.play([`--force-media-title=${title} Episode ${episode}`, file])
+    return afterPlayback({ title, episode: String(episode), maxPercent: r.maxPercent })
+  }
+
+  return { watch, answerMenu, cancel, playLocal, afterPlayback }
+}
