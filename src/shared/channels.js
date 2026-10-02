@@ -42,4 +42,5 @@ export const EVENTS = {
   downloads: 'event:downloads',
   levelUp: 'event:level-up',
   seriesCompleted: 'event:series-completed',
+  updateState: 'event:update-state',
 }
