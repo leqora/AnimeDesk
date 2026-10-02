@@ -21,6 +21,10 @@ import { computeStats } from '../shared/stats.js'
 import { createHealthCheck } from './healthCheck.js'
 import { createHandlers, registerIpc } from './ipc.js'
 import { hardenWindow } from './windowSecurity.js'
+import { autoUpdater } from 'electron-updater'
+import { createUpdater } from './updater.js'
+import { createWhatsNew, readReleaseNotes } from './whatsNew.js'
+import { markdownToText } from '../shared/releaseNotes.js'
 import { EVENTS } from '../shared/channels.js'
 
 const SIX_HOURS = 6 * 60 * 60 * 1000
@@ -55,6 +59,10 @@ async function main() {
   await app.whenReady()
   const paths = createPaths(app.getPath('userData'))
   const settings = createSettings(paths.settings, { systemName: os.userInfo().username })
+  const releasesDir = app.isPackaged ? path.join(process.resourcesPath, 'releases') : path.join(app.getAppPath(), 'docs', 'releases')
+  const whatsNew = createWhatsNew({ settings, currentVersion: app.getVersion(), readNotes: (v) => markdownToText(readReleaseNotes(releasesDir, v)) })
+  whatsNew.init()
+  const updater = createUpdater({ autoUpdater, isPackaged: app.isPackaged, currentVersion: app.getVersion(), getSettings: () => settings.get(), notify: send })
   const library = createLibrary(paths.library)
   const anilist = createAniList({ cacheDir: paths.cache })
   const watchLog = createWatchLog(paths.watchLog)
@@ -93,7 +101,7 @@ async function main() {
   const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
 
   registerIpc(ipcMain, createHandlers({
-    settings, library, tracker, progress, anilist, toolManager, health, watch, downloads, send,
+    settings, library, tracker, progress, anilist, toolManager, health, watch, downloads, updater, whatsNew, send,
     electron: {
       pickFolder: async () => {
         const r = await dialog.showOpenDialog(win, { properties: ['openDirectory', 'createDirectory'] })
@@ -104,6 +112,7 @@ async function main() {
   }))
 
   createWindow()
+  updater.start()
   health.run().then(() => health.dailyUpdate({ enabled: settings.get().autoUpdateTools, now: new Date().toISOString() }))
   setInterval(() => { if (health.get().reason === 'source-down') health.run() }, SIX_HOURS)
 

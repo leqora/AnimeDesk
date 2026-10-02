@@ -14,6 +14,8 @@ function services() {
     electron: { pickFolder: vi.fn(async () => 'D:\\X'), showItemInFolder: vi.fn() },
     tracker: { update: vi.fn(), remove: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })) },
     progress: { snapshot: vi.fn(() => ({ level: 1 })), check: vi.fn() },
+    updater: { getState: vi.fn(() => ({ status: 'idle' })), check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(() => true), install: vi.fn(() => true), applySettings: vi.fn() },
+    whatsNew: { get: vi.fn(() => null), seen: vi.fn() },
     send: vi.fn(),
   }
 }
@@ -77,5 +79,25 @@ describe('ipc', () => {
     expect(channel).toBe('x:y')
     expect(await wrapped({ sender: {} }, 1, 2)).toBe(42)
     expect(fn).toHaveBeenCalledWith(1, 2)
+  })
+  it('routes update calls and re-applies updater settings', async () => {
+    const s = services()
+    const h = createHandlers(s)
+    h[INVOKE.updateGetState]()
+    await h[INVOKE.updateCheck]()
+    h[INVOKE.updateDownload]()
+    h[INVOKE.updateInstall]()
+    h[INVOKE.whatsNewGet]()
+    h[INVOKE.whatsNewSeen]()
+    expect(s.updater.getState).toHaveBeenCalled()
+    expect(s.updater.check).toHaveBeenCalled()
+    expect(s.updater.download).toHaveBeenCalled()
+    expect(s.updater.install).toHaveBeenCalled()
+    expect(s.whatsNew.get).toHaveBeenCalled()
+    expect(s.whatsNew.seen).toHaveBeenCalled()
+    h[INVOKE.settingsUpdate]({ language: 'en' })
+    expect(s.updater.applySettings).not.toHaveBeenCalled()
+    h[INVOKE.settingsUpdate]({ autoDownloadUpdates: false })
+    expect(s.updater.applySettings).toHaveBeenCalledTimes(1)
   })
 })

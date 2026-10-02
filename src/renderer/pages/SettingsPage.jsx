@@ -6,7 +6,7 @@ import { TOOL_IDS } from '../../shared/domain.js'
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 
-export function SettingsPage({ settings, onSettings, onTestSound = () => {} }) {
+export function SettingsPage({ settings, onSettings, onTestSound = () => {}, updateState = { status: 'disabled', currentVersion: '' } }) {
   const api = useApi()
   const t = useT()
   const [tools, setTools] = useState({})
@@ -111,6 +111,27 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {} }) {
         <input type="checkbox" checked={settings.animations} onChange={(e) => onSettings({ animations: e.target.checked })} />
         {t('settings.animations')}
       </label>
+      <h3>{t('settings.updateSection')}</h3>
+      <p className="hud">{t('settings.updateVersion', { version: updateState.currentVersion })}</p>
+      <label className="check">
+        <input type="checkbox" checked={settings.autoDownloadUpdates} onChange={(e) => onSettings({ autoDownloadUpdates: e.target.checked })} />
+        {t('settings.autoDownloadUpdates')}
+      </label>
+      {updateState.status === 'disabled' ? (
+        <p className="muted">{t('settings.updateDisabled')}</p>
+      ) : (
+        <div className="row">
+          <button type="button" disabled={['checking', 'downloading'].includes(updateState.status)} onClick={() => api.update.check()}>
+            {updateState.status === 'checking' ? t('settings.updateChecking') : t('settings.updateCheck')}
+          </button>
+          {updateState.status === 'none' && <span className="muted">{t('settings.updateNone')}</span>}
+          {['available', 'downloading', 'ready'].includes(updateState.status) && <span className="muted">{t('update.available', { version: updateState.version })}</span>}
+          {updateState.status === 'error' && <span className="muted">{t('settings.updateFailed')}</span>}
+          {updateState.lastCheckedAt && (
+            <span className="muted">{t('settings.updateLastChecked', { time: new Date(updateState.lastCheckedAt).toLocaleString(settings.language === 'en' ? 'en-US' : 'sr-RS') })}</span>
+          )}
+        </div>
+      )}
       <h3>{t('settings.tools')}</h3>
       <ul className="tool-list">
         {TOOL_IDS.map((id) => (

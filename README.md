@@ -16,6 +16,9 @@ Desktop aplikacija (Windows) za gledanje i preuzimanje animea preko [ani-cli](ht
 1. Skini `AnimeDesk-Setup-<verzija>.exe` sa [Releases](https://github.com/leqora/AnimeDesk/releases) i instaliraj.
 2. Pri prvom pokretanju klikni **Instaliraj sve** — aplikacija sama preuzima potrebne alate u `%APPDATA%\AnimeDesk\tools`.
 
+### Ažuriranja
+Od verzije 0.3.0 aplikacija sama proverava da li postoji nova verzija (pri pokretanju i na svakih 6 sati) i preuzima je u pozadini. Kad je spremna, klikni **Restartuj i ažuriraj** — ništa se ne instalira bez tvog klika. Automatsko preuzimanje možeš isključiti u Podešavanjima. Verzije 0.1 i 0.2 nemaju ovu opciju, pa 0.3.0 treba jednom instalirati ručno.
+
 ### Šta aplikacija preuzima i odakle
 | Alat | Izvor |
 |---|---|
@@ -41,6 +44,9 @@ ani-cli koristi neoficijalne izvore sadržaja. To je pravno siva zona; korisnik 
 1. Download `AnimeDesk-Setup-<version>.exe` from [Releases](https://github.com/leqora/AnimeDesk/releases) and install it.
 2. On first launch click **Install all** — the app downloads the tools it needs into `%APPDATA%\AnimeDesk\tools`.
 
+### Updates
+Since 0.3.0 the app checks for a new version (on start and every 6 hours) and downloads it in the background. When it is ready, click **Restart and update** — nothing is installed without your click. You can turn automatic downloads off in Settings. Versions 0.1 and 0.2 cannot update themselves, so install 0.3.0 manually once.
+
 ### Disclaimer
 ani-cli relies on unofficial content sources. This is a legal grey area and you are responsible for how you use it. Use official services for legal streaming.
 
@@ -53,3 +59,4 @@ npm run test:live  # real ani-cli self-test (needs internet)
 npm run test:e2e   # Electron smoke test
 npm run dist       # build the Windows installer
 ```
+Release: bump `version` in package.json, write `docs/releases/v<version>.md`, merge to `main`, push, then `npm run release`.

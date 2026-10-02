@@ -14,6 +14,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   soundUi: false,
   soundVolume: 60,
   animations: true,
+  autoDownloadUpdates: true,
+  lastSeenVersion: null,
 })
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
@@ -35,6 +37,8 @@ export function sanitizeSettings(input = {}) {
   if (typeof input.soundUi === 'boolean') s.soundUi = input.soundUi
   if (Number.isFinite(input.soundVolume)) s.soundVolume = Math.min(100, Math.max(0, Math.round(input.soundVolume)))
   if (typeof input.animations === 'boolean') s.animations = input.animations
+  if (typeof input.autoDownloadUpdates === 'boolean') s.autoDownloadUpdates = input.autoDownloadUpdates
+  if (typeof input.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(input.lastSeenVersion)) s.lastSeenVersion = input.lastSeenVersion
   return s
 }
 
