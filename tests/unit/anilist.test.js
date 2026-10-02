@@ -53,6 +53,16 @@ describe('anilist fallback searches', () => {
     expect(info.id).toBe(1074)
     expect(searches(f)).toEqual(['Naruto Narutimate Hero 3: Tsuini Gekitotsu! Jounin vs. Genin!!', 'Tsuini Gekitotsu! Jounin vs. Genin!!', 'Naruto Narutimate Hero 3'])
   })
+  it('finally tries the title without "Movie N" / "OVA N" and punctuation', async () => {
+    const f = mkSearchFetch({ 'Naruto Shippuden Bonds': media(4437, 'NARUTO: Shippuuden - Kizuna', 'Naruto Shippuden the Movie: Bonds') })
+    expect((await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto: Shippuden the Movie 2 -Bonds-')).id).toBe(4437)
+    expect(searches(f)).toEqual(['Naruto: Shippuden the Movie 2 -Bonds-', 'Shippuden the Movie 2 -Bonds-', 'Naruto Shippuden Bonds'])
+  })
+  it('skips the cleaned title when it is a single word or unchanged', async () => {
+    const f = mkSearchFetch({})
+    await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto Movie 3')
+    expect(searches(f)).toEqual(['Naruto Movie 3'])
+  })
   it('also treats " - " as a subtitle separator', async () => {
     const f = mkSearchFetch({ 'The Lost Tower': media(8246, 'NARUTO: Shippuuden - The Lost Tower', 'Naruto Shippuden the Movie: The Lost Tower') })
     expect((await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto: Shippuuden Movie 4 - The Lost Tower')).id).toBe(8246)
@@ -61,7 +71,8 @@ describe('anilist fallback searches', () => {
   it('never searches a single word, so a long title cannot get the wrong poster', async () => {
     const f = mkSearchFetch({ Naruto: media(20, 'NARUTO', 'Naruto') })
     expect(await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto: Shippuuden Movie 6: Ninja')).toBeNull()
-    expect(searches(f)).toEqual(['Naruto: Shippuuden Movie 6: Ninja', 'Naruto: Shippuuden Movie 6'])
+    expect(searches(f)).toEqual(['Naruto: Shippuuden Movie 6: Ninja', 'Naruto: Shippuuden Movie 6', 'Naruto Shippuuden Ninja'])
+    expect(searches(f)).not.toContain('Naruto')
   })
   it('does not fall back when the full title matches', async () => {
     const f = mkSearchFetch({ 'Frieren: Beyond Journey’s End': media(2, 'Frieren', 'Frieren: Beyond Journey’s End') })
