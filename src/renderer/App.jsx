@@ -6,7 +6,7 @@ import { ProfilePage } from './pages/ProfilePage.jsx'
 import { EMPTY_STATS } from '../shared/stats.js'
 import { AskDialog } from './components/AskDialog.jsx'
 import { SetupWizard } from './pages/SetupWizard.jsx'
-import { SearchPage } from './pages/SearchPage.jsx'
+import { HomePage } from './pages/HomePage.jsx'
 import { WatchlistPage } from './pages/WatchlistPage.jsx'
 import { DownloadsPage } from './pages/DownloadsPage.jsx'
 import { SettingsPage } from './pages/SettingsPage.jsx'
@@ -25,6 +25,7 @@ export default function App({ api }) {
   const [ask, setAsk] = useState(null)
   const [pendingWatch, setPendingWatch] = useState(null)
   const [corrupt, setCorrupt] = useState(false)
+  const [openAnimeId, setOpenAnimeId] = useState(null)
 
   useEffect(() => {
     api.settings.get().then(setSettings)
@@ -45,6 +46,8 @@ export default function App({ api }) {
   if (!settings) return null
   const ready = health.light === 'green'
   const updateSettings = async (patch) => setSettings(await api.settings.update(patch))
+  const navigate = (p) => { setOpenAnimeId(null); setPage(p) }
+  const openAnime = (id) => { setOpenAnimeId(id); setPage('watchlist') }
   const continueWatching = (params) => { setPendingWatch(params); setPage('home') }
 
   return (
@@ -53,7 +56,7 @@ export default function App({ api }) {
         <div className="app-shell">
           <Sidebar
             page={page}
-            onNavigate={setPage}
+            onNavigate={navigate}
             health={health}
             onSemaphoreClick={() => setWizardOpen(true)}
             profileName={settings.profileName || settings.systemName}
@@ -63,9 +66,9 @@ export default function App({ api }) {
             <div key={page} className="page-enter">
               {corrupt && <CorruptBanner />}
               {page === 'home' && (
-                <SearchPage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} />
+                <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} />
               )}
-              {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} />}
+              {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} initialOpenId={openAnimeId} />}
               {page === 'downloads' && <DownloadsPage />}
               {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} />}
               {page === 'settings' && <SettingsPage settings={settings} onSettings={updateSettings} />}

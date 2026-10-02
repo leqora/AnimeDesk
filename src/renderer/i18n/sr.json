@@ -143,5 +143,13 @@
   "profile.noGenres": "Žanrovi se pojavljuju kad aplikacija preuzme podatke o serijama.",
   "profile.streak": "Niz dana: {days}",
   "profile.activity": "Aktivnost · poslednje 4 nedelje",
-  "profile.activityCell": "{date}: {count} ep."
+  "profile.activityCell": "{date}: {count} ep.",
+  "home.continue": "Nastavi gledanje",
+  "home.continueEp": "Nastavi EP {episode}",
+  "home.details": "Detalji",
+  "home.welcome": "Šta gledamo danas?",
+  "home.welcomeSub": "Pretraži anime i kreni sa gledanjem.",
+  "home.searchCta": "Pretraži",
+  "home.watchingNow": "Gledam sada",
+  "home.episodeOf": "EP {watched} / {total}"
 }

@@ -34,10 +34,11 @@ export function makeFakeApi(overrides = {}) {
 }
 
 export function renderUi(ui, { api = makeFakeApi(), lang = 'sr' } = {}) {
-  const result = render(
+  const wrapper = ({ children }) => (
     <ApiContext.Provider value={api}>
-      <I18nProvider lang={lang}>{ui}</I18nProvider>
-    </ApiContext.Provider>,
+      <I18nProvider lang={lang}>{children}</I18nProvider>
+    </ApiContext.Provider>
   )
+  const result = render(ui, { wrapper })
   return { api, ...result }
 }
