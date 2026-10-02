@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { ApiContext } from './api.js'
 import { I18nProvider, useT } from './i18n/I18nContext.jsx'
-import { Header } from './components/Header.jsx'
+import { Sidebar } from './components/Sidebar.jsx'
+import { ProfilePage } from './pages/ProfilePage.jsx'
+import { EMPTY_STATS } from '../shared/stats.js'
 import { AskDialog } from './components/AskDialog.jsx'
 import { SetupWizard } from './pages/SetupWizard.jsx'
 import { SearchPage } from './pages/SearchPage.jsx'
@@ -17,7 +19,8 @@ function CorruptBanner() {
 export default function App({ api }) {
   const [settings, setSettings] = useState(null)
   const [health, setHealth] = useState({ light: 'yellow', reason: 'checking' })
-  const [page, setPage] = useState('search')
+  const [page, setPage] = useState('home')
+  const [stats, setStats] = useState(EMPTY_STATS)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [ask, setAsk] = useState(null)
   const [pendingWatch, setPendingWatch] = useState(null)
@@ -31,26 +34,44 @@ export default function App({ api }) {
     return () => offs.forEach((off) => off())
   }, [api])
 
+  useEffect(() => {
+    const refresh = () => api.stats.get().then(setStats)
+    refresh()
+    return api.onLibraryChanged(refresh)
+  }, [api, page])
+
   useEffect(() => { if (health.reason === 'missing-tools') setWizardOpen(true) }, [health.reason])
 
   if (!settings) return null
   const ready = health.light === 'green'
   const updateSettings = async (patch) => setSettings(await api.settings.update(patch))
-  const continueWatching = (params) => { setPendingWatch(params); setPage('search') }
+  const continueWatching = (params) => { setPendingWatch(params); setPage('home') }
 
   return (
     <ApiContext.Provider value={api}>
       <I18nProvider lang={settings.language}>
-        <Header page={page} onNavigate={setPage} health={health} onSemaphoreClick={() => setWizardOpen(true)} />
-        <main>
-          {corrupt && <CorruptBanner />}
-          {page === 'search' && (
-            <SearchPage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} />
-          )}
-          {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} />}
-          {page === 'downloads' && <DownloadsPage />}
-          {page === 'settings' && <SettingsPage settings={settings} onSettings={updateSettings} />}
-        </main>
+        <div className="app-shell">
+          <Sidebar
+            page={page}
+            onNavigate={setPage}
+            health={health}
+            onSemaphoreClick={() => setWizardOpen(true)}
+            profileName={settings.profileName || settings.systemName}
+            stats={stats}
+          />
+          <main className="content">
+            <div key={page} className="page-enter">
+              {corrupt && <CorruptBanner />}
+              {page === 'home' && (
+                <SearchPage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} />
+              )}
+              {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} />}
+              {page === 'downloads' && <DownloadsPage />}
+              {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} />}
+              {page === 'settings' && <SettingsPage settings={settings} onSettings={updateSettings} />}
+            </div>
+          </main>
+        </div>
         {wizardOpen && <SetupWizard health={health} onClose={() => setWizardOpen(false)} />}
         {ask && <AskDialog ask={ask} onDone={() => setAsk(null)} />}
       </I18nProvider>

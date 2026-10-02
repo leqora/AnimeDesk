@@ -3,6 +3,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import App from '../../../src/renderer/App.jsx'
 import { makeFakeApi } from './helpers.jsx'
+import { EMPTY_STATS } from '../../../src/shared/stats.js'
+import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
 
 describe('App', () => {
   it('opens the wizard automatically when tools are missing', async () => {
@@ -30,5 +32,15 @@ describe('App', () => {
     const api = makeFakeApi({ library: { wasCorrupt: vi.fn(async () => true) } })
     render(<App api={api} />)
     await waitFor(() => expect(screen.getByText(/bio oštećen/)).toBeInTheDocument())
+  })
+  it('shows the profile card from stats and opens the profile page', async () => {
+    const api = makeFakeApi({ stats: { get: vi.fn(async () => ({ ...EMPTY_STATS, level: 11, title: 'veteran', xp: 3000 })) } })
+    api.settings.get.mockResolvedValue({ ...DEFAULT_SETTINGS, profileName: null, systemName: 'nikola' })
+    render(<App api={api} />)
+    const card = await screen.findByRole('button', { name: /LV 11/ })
+    expect(card).toHaveTextContent('N')
+    fireEvent.click(card)
+    expect(await screen.findByRole('heading', { name: 'nikola' })).toBeInTheDocument()
+    expect(api.stats.get.mock.calls.length).toBeGreaterThanOrEqual(2)
   })
 })
