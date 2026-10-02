@@ -3,6 +3,7 @@ import { render } from '@testing-library/react'
 import { ApiContext } from '../../../src/renderer/api.js'
 import { I18nProvider } from '../../../src/renderer/i18n/I18nContext.jsx'
 import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
+import { EMPTY_STATS } from '../../../src/shared/stats.js'
 
 const sub = () => vi.fn(() => () => {})
 
@@ -24,6 +25,7 @@ export function makeFakeApi(overrides = {}) {
       enqueue: vi.fn(async () => []), pause: vi.fn(), resume: vi.fn(), cancel: vi.fn(), queue: vi.fn(async () => []), list: vi.fn(async () => []),
       remove: vi.fn(async () => true), play: vi.fn(async () => 'none'), openFolder: vi.fn(), onChange: sub(),
     },
+    stats: { get: vi.fn(async () => ({ ...EMPTY_STATS })), onLevelUp: sub(), onSeriesCompleted: sub() },
     dialog: { pickFolder: vi.fn(async () => null) },
     onLibraryChanged: sub(),
   }
@@ -32,10 +34,11 @@ export function makeFakeApi(overrides = {}) {
 }
 
 export function renderUi(ui, { api = makeFakeApi(), lang = 'sr' } = {}) {
-  const result = render(
+  const wrapper = ({ children }) => (
     <ApiContext.Provider value={api}>
-      <I18nProvider lang={lang}>{ui}</I18nProvider>
-    </ApiContext.Provider>,
+      <I18nProvider lang={lang}>{children}</I18nProvider>
+    </ApiContext.Provider>
   )
+  const result = render(ui, { wrapper })
   return { api, ...result }
 }

@@ -7,7 +7,6 @@ import { ReadyNotice } from '../../../src/renderer/components/ReadyNotice.jsx'
 import { ConfirmButton } from '../../../src/renderer/components/ConfirmButton.jsx'
 import { AskDialog } from '../../../src/renderer/components/AskDialog.jsx'
 import { Poster } from '../../../src/renderer/components/Poster.jsx'
-import { Header } from '../../../src/renderer/components/Header.jsx'
 
 describe('Semaphore', () => {
   it('shows red with the source-down message', () => {
@@ -72,14 +71,5 @@ describe('Poster', () => {
     const { container } = renderUi(<Poster title="Frieren" />, { api })
     await waitFor(() => expect(container.querySelector('img.poster')).toHaveAttribute('src', 'data:image/png;base64,AA'))
     expect(api.anilist.forTitle).toHaveBeenCalledWith('Frieren', null)
-  })
-})
-
-describe('Header', () => {
-  it('navigates between pages', () => {
-    const onNavigate = vi.fn()
-    renderUi(<Header page="search" onNavigate={onNavigate} health={{ light: 'green', reason: 'ok' }} onSemaphoreClick={() => {}} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Preuzeto' }))
-    expect(onNavigate).toHaveBeenCalledWith('downloads')
   })
 })

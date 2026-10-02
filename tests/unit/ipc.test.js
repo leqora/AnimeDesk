@@ -12,11 +12,24 @@ function services() {
     watch: { watch: vi.fn(), cancel: vi.fn(), answerMenu: vi.fn(), playLocal: vi.fn(async () => 'watched') },
     downloads: { enqueue: vi.fn(), pause: vi.fn(), resume: vi.fn(), cancel: vi.fn(), queueItems: vi.fn(), listDownloaded: vi.fn(), removeDownloaded: vi.fn(), getDownloaded: vi.fn((id) => (id === 'd1' ? { path: 'D:\\A\\A Episode 1.mp4', title: 'A', episode: '1' } : null)) },
     electron: { pickFolder: vi.fn(async () => 'D:\\X'), showItemInFolder: vi.fn() },
+    tracker: { update: vi.fn(), remove: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })) },
+    progress: { snapshot: vi.fn(() => ({ level: 1 })), check: vi.fn() },
     send: vi.fn(),
   }
 }
 
 describe('ipc', () => {
+  it('notifies the renderer after library update and remove', () => {
+    const s = services()
+    s.tracker.update.mockReturnValue({ id: 'id1' })
+    s.tracker.remove.mockReturnValue(true)
+    const h = createHandlers(s)
+    expect(h[INVOKE.libraryUpdate]('id1', { rating: 8 })).toEqual({ id: 'id1' })
+    expect(s.send).toHaveBeenCalledWith(EVENTS.libraryChanged)
+    s.send.mockClear()
+    expect(h[INVOKE.libraryRemove]('id1')).toBe(true)
+    expect(s.send).toHaveBeenCalledWith(EVENTS.libraryChanged)
+  })
   it('has a handler for every INVOKE channel and nothing else', () => {
     expect(Object.keys(createHandlers(services())).sort()).toEqual(Object.values(INVOKE).sort())
   })
@@ -24,7 +37,11 @@ describe('ipc', () => {
     const s = services()
     const h = createHandlers(s)
     h[INVOKE.libraryUpdate]('id1', { rating: 8 })
-    expect(s.library.update).toHaveBeenCalledWith('id1', { rating: 8 })
+    expect(s.tracker.update).toHaveBeenCalledWith('id1', { rating: 8 })
+    h[INVOKE.libraryRemove]('id1')
+    expect(s.tracker.remove).toHaveBeenCalledWith('id1')
+    h[INVOKE.statsGet]()
+    expect(s.progress.snapshot).toHaveBeenCalled()
     h[INVOKE.anilistForTitle]('Frieren', 5)
     expect(s.anilist.getForTitle).toHaveBeenCalledWith('Frieren', { aniListId: 5 })
     h[INVOKE.downloadsRemove]('d1', true)
@@ -34,6 +51,7 @@ describe('ipc', () => {
   it('recordWatched notifies library-changed', () => {
     const s = services()
     createHandlers(s)[INVOKE.libraryRecord]({ aniCliTitle: 'A', episode: '1' })
+    expect(s.tracker.recordWatched).toHaveBeenCalledWith({ aniCliTitle: 'A', episode: '1' }, 'auto')
     expect(s.send).toHaveBeenCalledWith(EVENTS.libraryChanged)
   })
   it('installMissing streams progress and re-runs the health check', async () => {

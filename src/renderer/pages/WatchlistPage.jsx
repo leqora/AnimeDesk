@@ -13,13 +13,13 @@ export function sortItems(items, sort) {
   return copy
 }
 
-export function WatchlistPage({ ready, onContinue }) {
+export function WatchlistPage({ ready, onContinue, initialOpenId = null }) {
   const api = useApi()
   const t = useT()
   const [items, setItems] = useState(null)
   const [filter, setFilter] = useState('all')
   const [sort, setSort] = useState('title')
-  const [openId, setOpenId] = useState(null)
+  const [openId, setOpenId] = useState(initialOpenId)
   const [newTitle, setNewTitle] = useState('')
 
   const load = () => api.library.list().then(setItems)

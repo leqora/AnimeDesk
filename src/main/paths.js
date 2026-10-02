@@ -10,6 +10,8 @@ export function createPaths(baseDir) {
     library: path.join(baseDir, 'library.json'),
     settings: path.join(baseDir, 'settings.json'),
     downloads: path.join(baseDir, 'downloads.json'),
+    watchLog: path.join(baseDir, 'watchlog.json'),
+    profile: path.join(baseDir, 'profile.json'),
   }
 }
 

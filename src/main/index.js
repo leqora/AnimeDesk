@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
 import path from 'node:path'
+import os from 'node:os'
 import extractZip from 'extract-zip'
 import { createPaths } from './paths.js'
 import { createSettings } from './settings.js'
@@ -13,6 +14,10 @@ import { createPlayer } from './playerMonitor.js'
 import { createWatchService } from './watchService.js'
 import { createDownloads } from './downloads.js'
 import { createAniList } from './anilist.js'
+import { createWatchLog } from './watchLog.js'
+import { createProgress } from './progress.js'
+import { createTracker } from './tracker.js'
+import { computeStats } from '../shared/stats.js'
 import { createHealthCheck } from './healthCheck.js'
 import { createHandlers, registerIpc } from './ipc.js'
 import { hardenWindow } from './windowSecurity.js'
@@ -49,8 +54,23 @@ function createWindow() {
 async function main() {
   await app.whenReady()
   const paths = createPaths(app.getPath('userData'))
-  const settings = createSettings(paths.settings)
+  const settings = createSettings(paths.settings, { systemName: os.userInfo().username })
   const library = createLibrary(paths.library)
+  const anilist = createAniList({ cacheDir: paths.cache })
+  const watchLog = createWatchLog(paths.watchLog)
+  const computeSnapshot = () => {
+    const entries = library.list()
+    const infoById = {}
+    for (const e of entries) {
+      const info = anilist.getCached(e.title, { aniListId: e.aniListId })
+      if (info) infoById[e.id] = info
+    }
+    const now = new Date()
+    return computeStats({ entries, log: watchLog.list(), infoById, now: now.toISOString(), tzOffsetAt: (iso) => new Date(iso).getTimezoneOffset() })
+  }
+  const progress = createProgress({ file: paths.profile, computeSnapshot, notify: send })
+  progress.init()
+  const tracker = createTracker({ library, watchLog, progress })
   const toolManager = createToolManager({
     paths,
     http: { getJson, download },
@@ -68,13 +88,12 @@ async function main() {
     historyDir: paths.aniCliHistory,
   })
   const player = createPlayer({ getMpvPath: () => toolManager.toolPaths().mpv })
-  const watch = createWatchService({ aniCli, player, library, settings, notify: send })
+  const watch = createWatchService({ aniCli, player, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send })
   const downloads = createDownloads({ file: paths.downloads, aniCli, onChange: () => send(EVENTS.downloads, downloads.queueItems()) })
-  const anilist = createAniList({ cacheDir: paths.cache })
   const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
 
   registerIpc(ipcMain, createHandlers({
-    settings, library, anilist, toolManager, health, watch, downloads, send,
+    settings, library, tracker, progress, anilist, toolManager, health, watch, downloads, send,
     electron: {
       pickFolder: async () => {
         const r = await dialog.showOpenDialog(win, { properties: ['openDirectory', 'createDirectory'] })

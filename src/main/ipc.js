@@ -7,11 +7,19 @@ export function createHandlers(s) {
     [INVOKE.settingsUpdate]: (patch) => s.settings.update(patch),
     [INVOKE.libraryList]: () => s.library.list(),
     [INVOKE.libraryAdd]: (entry) => s.library.add(entry),
-    [INVOKE.libraryUpdate]: (id, patch) => s.library.update(id, patch),
-    [INVOKE.libraryRemove]: (id) => s.library.remove(id),
+    [INVOKE.libraryUpdate]: (id, patch) => {
+      const result = s.tracker.update(id, patch)
+      s.send(EVENTS.libraryChanged)
+      return result
+    },
+    [INVOKE.libraryRemove]: (id) => {
+      const result = s.tracker.remove(id)
+      s.send(EVENTS.libraryChanged)
+      return result
+    },
     [INVOKE.libraryNote]: (id, episode, text) => s.library.setEpisodeNote(id, episode, text),
     [INVOKE.libraryRecord]: (payload) => {
-      const entry = s.library.recordWatched(payload)
+      const entry = s.tracker.recordWatched(payload, 'auto')
       s.send(EVENTS.libraryChanged)
       return entry
     },
@@ -50,6 +58,7 @@ export function createHandlers(s) {
       if (d) s.electron.showItemInFolder(d.path)
     },
     [INVOKE.dialogPickFolder]: () => s.electron.pickFolder(),
+    [INVOKE.statsGet]: () => s.progress.snapshot(),
   }
 }
 

@@ -3,12 +3,14 @@ import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Poster } from '../components/Poster.jsx'
 import { ConfirmButton } from '../components/ConfirmButton.jsx'
-import { STATUSES } from '../../shared/domain.js'
+import { usePosterTint } from '../theme/usePosterTint.js'
+import { STATUSES, nextEpisode } from '../../shared/domain.js'
 
 export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
   const api = useApi()
   const t = useT()
   const [info, setInfo] = useState(null)
+  const tint = usePosterTint(info?.poster ?? null)
   const [showDesc, setShowDesc] = useState(false)
   const [comment, setComment] = useState(entry.comment)
   const [noteEp, setNoteEp] = useState(null)
@@ -31,7 +33,7 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
   const watched = entry.watchedEpisodes
   const maxEp = Math.max(entry.totalEpisodes ?? 0, ...watched.map(Math.ceil), 1)
   const episodes = Array.from({ length: maxEp }, (_, i) => i + 1)
-  const nextEp = episodes.find((ep) => !watched.includes(ep)) ?? 1
+  const nextEp = nextEpisode(entry)
 
   const openNote = (ep) => { setNoteEp(ep); setNoteText(entry.episodeNotes[String(ep)] ?? '') }
   const saveNote = async () => { await api.library.setEpisodeNote(entry.id, noteEp, noteText); onChanged() }
@@ -42,10 +44,15 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
   return (
     <section className="page">
       <div className="row"><button type="button" onClick={onBack}>{t('detail.back')}</button></div>
-      <div className="detail">
-        <Poster title={entry.title} aniListId={entry.aniListId} />
-        <div className="page">
+      <div className="banner" style={tint ? { '--poster-tint': tint } : undefined}>
+        {info?.poster && <div className="hero__bg" style={{ backgroundImage: `url(${info.poster})` }} />}
+        <div className="banner__body">
+          <Poster title={entry.title} aniListId={entry.aniListId} />
           <h2>{entry.title}</h2>
+        </div>
+      </div>
+      <div className="detail">
+        <div className="page">
           {info && (
             <p className="muted">
               {t('detail.genres')}: {info.genres.map((g) => <span key={g}>{g} </span>)}

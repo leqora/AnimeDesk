@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { screen, fireEvent, waitFor } from '@testing-library/react'
+import { screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { renderUi, makeFakeApi } from './helpers.jsx'
 import { WatchlistPage, sortItems } from '../../../src/renderer/pages/WatchlistPage.jsx'
 import { AnimeDetail } from '../../../src/renderer/pages/AnimeDetail.jsx'
@@ -96,5 +96,12 @@ describe('AnimeDetail', () => {
   it('disables continue when components are not ready', () => {
     renderUi(<AnimeDetail entry={entry()} ready={false} onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />)
     expect(screen.getByRole('button', { name: 'Nastavi gledanje' })).toBeDisabled()
+  })
+  it('shows a banner with the blurred poster', async () => {
+    const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => ({ ...info, poster: 'data:image/png;base64,AA' })) } })
+    const { container } = renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />, { api })
+    await waitFor(() => expect(container.querySelector('.banner .hero__bg')).not.toBeNull())
+    expect(container.querySelector('.banner .hero__bg').style.backgroundImage).toContain('data:image/png;base64,AA')
+    expect(within(container.querySelector('.banner')).getByRole('heading', { name: 'Frieren' })).toBeInTheDocument()
   })
 })

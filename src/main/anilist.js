@@ -3,7 +3,7 @@ import crypto from 'node:crypto'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 
 const ENDPOINT = 'https://graphql.anilist.co'
-const FIELDS = 'id title { romaji english native } coverImage { large } genres seasonYear episodes description(asHtml: false)'
+const FIELDS = 'id title { romaji english native } coverImage { large } genres seasonYear episodes duration description(asHtml: false)'
 const SEARCH = `query ($search: String) { Page(perPage: 10) { media(search: $search, type: ANIME) { ${FIELDS} } } }`
 const BY_ID = `query ($id: Int) { Media(id: $id, type: ANIME) { ${FIELDS} } }`
 
@@ -30,6 +30,7 @@ function toInfo(m) {
     genres: m.genres ?? [],
     year: m.seasonYear ?? null,
     episodes: m.episodes ?? null,
+    duration: m.duration ?? null,
     description: cleanDescription(m.description),
     coverUrl: m.coverImage?.large ?? null,
     poster: null,
@@ -57,14 +58,24 @@ export function createAniList({ cacheDir, fetchImpl = fetch }) {
 
   const cacheFile = (key) => path.join(cacheDir, `${crypto.createHash('sha1').update(key).digest('hex')}.json`)
 
+  const cacheKey = (title, aniListId) => (aniListId ? `id:${aniListId}` : `t:${norm(title)}`)
+
+  // Synchronous, offline: used by the profile statistics so opening it never hits the network.
+  function getCached(title, { aniListId = null } = {}) {
+    try {
+      return readJson(cacheFile(cacheKey(title, aniListId)), null).data
+    } catch {
+      return null
+    }
+  }
+
   async function search(title) {
     const data = await gql(SEARCH, { search: title })
     return data.Page.media.map(toInfo)
   }
 
   async function getForTitle(title, { aniListId = null } = {}) {
-    const key = aniListId ? `id:${aniListId}` : `t:${norm(title)}`
-    const file = cacheFile(key)
+    const file = cacheFile(cacheKey(title, aniListId))
     const cached = readJson(file, null).data
     if (cached) return cached
     try {
@@ -81,5 +92,5 @@ export function createAniList({ cacheDir, fetchImpl = fetch }) {
     }
   }
 
-  return { search, getForTitle }
+  return { search, getForTitle, getCached }
 }

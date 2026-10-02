@@ -116,7 +116,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     <section className="page">
       <ReadyNotice ready={ready} onOpenWizard={onOpenWizard} />
       <form className="search-bar" onSubmit={submit}>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('search.placeholder')} aria-label={t('search.placeholder')} />
+        <input id="search-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('search.placeholder')} aria-label={t('search.placeholder')} />
         <button type="submit" className="primary" disabled={!ready || phase !== 'idle'}>{t('search.button')}</button>
       </form>
 

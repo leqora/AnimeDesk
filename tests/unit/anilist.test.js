@@ -56,4 +56,25 @@ describe('anilist', () => {
     expect(r.map((i) => i.id)).toEqual([1, 2])
     expect(r[0].poster).toBeNull()
   })
+  it('includes the episode duration', async () => {
+    const withDuration = createAniList({ cacheDir, fetchImpl: mkFetch([media(7, 'Show', 'Show', { duration: 23 })]) })
+    expect((await withDuration.getForTitle('Show')).duration).toBe(23)
+    expect((await api.getForTitle('Frieren')).duration).toBeNull()
+  })
+  it('getCached reads only the cache and never fetches', async () => {
+    const calls = fetchImpl.mock.calls.length
+    expect(api.getCached('Attack on Titan')).toBeNull()
+    expect(fetchImpl.mock.calls.length).toBe(calls)
+    const info = await api.getForTitle('Attack on Titan')
+    const before = fetchImpl.mock.calls.length
+    expect(api.getCached('attack on titan')).toEqual(info)
+    expect(api.getCached('whatever', { aniListId: 99 })).toBeNull()
+    expect(fetchImpl.mock.calls.length).toBe(before)
+  })
+  it('getCached returns null when the cache file cannot be read', () => {
+    const spy = vi.spyOn(fs, 'readFileSync').mockImplementation(() => { throw Object.assign(new Error('busy'), { code: 'EBUSY' }) })
+    try {
+      expect(api.getCached('Attack on Titan')).toBeNull()
+    } finally { spy.mockRestore() }
+  })
 })
