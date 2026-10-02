@@ -1,5 +1,11 @@
 export const INVOKE = {
   settingsGet: 'settings:get',
+  updateGetState: 'update:get-state',
+  updateCheck: 'update:check',
+  updateDownload: 'update:download',
+  updateInstall: 'update:install',
+  whatsNewGet: 'whats-new:get',
+  whatsNewSeen: 'whats-new:seen',
   settingsUpdate: 'settings:update',
   libraryList: 'library:list',
   libraryAdd: 'library:add',

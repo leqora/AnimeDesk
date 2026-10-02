@@ -4,7 +4,17 @@ export function createHandlers(s) {
   const progress = (p) => s.send(EVENTS.toolProgress, p)
   return {
     [INVOKE.settingsGet]: () => s.settings.get(),
-    [INVOKE.settingsUpdate]: (patch) => s.settings.update(patch),
+    [INVOKE.settingsUpdate]: (patch) => {
+      const updated = s.settings.update(patch)
+      if (patch && 'autoDownloadUpdates' in patch) s.updater.applySettings()
+      return updated
+    },
+    [INVOKE.updateGetState]: () => s.updater.getState(),
+    [INVOKE.updateCheck]: () => s.updater.check(),
+    [INVOKE.updateDownload]: () => s.updater.download(),
+    [INVOKE.updateInstall]: () => s.updater.install(),
+    [INVOKE.whatsNewGet]: () => s.whatsNew.get(),
+    [INVOKE.whatsNewSeen]: () => s.whatsNew.seen(),
     [INVOKE.libraryList]: () => s.library.list(),
     [INVOKE.libraryAdd]: (entry) => s.library.add(entry),
     [INVOKE.libraryUpdate]: (id, patch) => {

@@ -8,6 +8,8 @@ files:
 extraResources:
   - from: resources/bridges
     to: bridges
+  - from: docs/releases
+    to: releases
 win:
   target: nsis
 nsis:

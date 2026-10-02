@@ -146,4 +146,18 @@ describe('updater', () => {
     await updater.check()
     expect(autoUpdater.checkForUpdates).not.toHaveBeenCalled()
   })
+  it('does not leak an unhandled rejection from a failed auto-download', async () => {
+    const { updater, autoUpdater } = setup()
+    updater.start()
+    const unhandled = vi.fn()
+    process.on('unhandledRejection', unhandled)
+    try {
+      autoUpdater.checkForUpdates.mockResolvedValueOnce({ downloadPromise: Promise.reject(new Error('x')) })
+      await updater.check()
+      await new Promise((r) => setTimeout(r, 20))
+      expect(unhandled).not.toHaveBeenCalled()
+    } finally {
+      process.off('unhandledRejection', unhandled)
+    }
+  })
 })

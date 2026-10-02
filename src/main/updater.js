@@ -39,7 +39,9 @@ export function createUpdater({
   async function check() {
     if (state.status === 'disabled' || BUSY.includes(state.status)) return { ...state }
     try {
-      await autoUpdater.checkForUpdates()
+      const result = await autoUpdater.checkForUpdates()
+      // a failed auto-download is already reported by the 'error' event; don't leave the promise unhandled
+      result?.downloadPromise?.catch(() => {})
     } catch (err) {
       fail(err)
     }
