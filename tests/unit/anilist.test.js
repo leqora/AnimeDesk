@@ -24,6 +24,51 @@ beforeEach(() => {
   api = createAniList({ cacheDir, fetchImpl })
 })
 
+// AniList answers only the queries in `hits`; everything else returns no results.
+function mkSearchFetch(hits, { failOn = [] } = {}) {
+  return vi.fn(async (url, init) => {
+    if (url.startsWith('https://img/')) return new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/jpeg' } })
+    const { search } = JSON.parse(init.body).variables
+    if (failOn.includes(search)) return new Response('busy', { status: 500 })
+    return Response.json({ data: { Page: { media: hits[search] ? [hits[search]] : [] } } })
+  })
+}
+const searches = (f) => f.mock.calls.filter(([url]) => !url.startsWith('https://img/')).map(([, init]) => JSON.parse(init.body).variables.search)
+
+describe('anilist fallback searches', () => {
+  it('falls back to the subtitle after the last colon', async () => {
+    const f = mkSearchFetch({ 'Road to Ninja': media(13667, 'ROAD TO NINJA: NARUTO THE MOVIE', 'Road to Ninja: Naruto the Movie') })
+    const info = await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto: Shippuuden Movie 6: Road to Ninja')
+    expect(info.id).toBe(13667)
+    expect(info.poster).toMatch(/^data:image\/jpeg;base64,/)
+    expect(searches(f)).toEqual(['Naruto: Shippuuden Movie 6: Road to Ninja', 'Road to Ninja'])
+  })
+  it('finds a movie by its subtitle', async () => {
+    const f = mkSearchFetch({ 'Guardians of the Crescent Moon': media(2144, 'NARUTO: Dai Koufun!', 'Naruto the Movie: Guardians of the Crescent Moon Kingdom') })
+    expect((await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto the Movie 3: Guardians of the Crescent Moon')).id).toBe(2144)
+  })
+  it('falls back to the part before the last colon', async () => {
+    const f = mkSearchFetch({ 'Naruto Narutimate Hero 3': media(1074, 'NARUTO: Narutimate Hero 3', null) })
+    const info = await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto Narutimate Hero 3: Tsuini Gekitotsu! Jounin vs. Genin!!')
+    expect(info.id).toBe(1074)
+    expect(searches(f)).toEqual(['Naruto Narutimate Hero 3: Tsuini Gekitotsu! Jounin vs. Genin!!', 'Tsuini Gekitotsu! Jounin vs. Genin!!', 'Naruto Narutimate Hero 3'])
+  })
+  it('never searches a single word, so a long title cannot get the wrong poster', async () => {
+    const f = mkSearchFetch({ Naruto: media(20, 'NARUTO', 'Naruto') })
+    expect(await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto: Shippuuden Movie 6: Ninja')).toBeNull()
+    expect(searches(f)).toEqual(['Naruto: Shippuuden Movie 6: Ninja', 'Naruto: Shippuuden Movie 6'])
+  })
+  it('does not fall back when the full title matches', async () => {
+    const f = mkSearchFetch({ 'Frieren: Beyond Journey’s End': media(2, 'Frieren', 'Frieren: Beyond Journey’s End') })
+    await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Frieren: Beyond Journey’s End')
+    expect(searches(f)).toEqual(['Frieren: Beyond Journey’s End'])
+  })
+  it('keeps trying after one failing query', async () => {
+    const f = mkSearchFetch({ 'Road to Ninja': media(13667, 'ROAD TO NINJA', null) }, { failOn: ['Naruto: Shippuuden Movie 6: Road to Ninja'] })
+    expect((await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto: Shippuuden Movie 6: Road to Ninja')).id).toBe(13667)
+  })
+})
+
 describe('anilist', () => {
   it('cleans HTML out of descriptions', () => {
     expect(cleanDescription('Line one<br><br>Line <i>two</i>')).toBe('Line one\n\nLine two')

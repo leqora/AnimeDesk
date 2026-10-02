@@ -119,6 +119,7 @@ export default function App({ api, sound: injectedSound }) {
             onSemaphoreClick={() => setWizardOpen(true)}
             profileName={settings.profileName || settings.systemName}
             stats={stats}
+            version={updateState.currentVersion}
           />
           <main className="content">
             <UpdateBanner state={updateState} onWhatsNew={openWhatsNew} />
