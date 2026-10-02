@@ -53,6 +53,11 @@ describe('anilist fallback searches', () => {
     expect(info.id).toBe(1074)
     expect(searches(f)).toEqual(['Naruto Narutimate Hero 3: Tsuini Gekitotsu! Jounin vs. Genin!!', 'Tsuini Gekitotsu! Jounin vs. Genin!!', 'Naruto Narutimate Hero 3'])
   })
+  it('also treats " - " as a subtitle separator', async () => {
+    const f = mkSearchFetch({ 'The Lost Tower': media(8246, 'NARUTO: Shippuuden - The Lost Tower', 'Naruto Shippuden the Movie: The Lost Tower') })
+    expect((await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto: Shippuuden Movie 4 - The Lost Tower')).id).toBe(8246)
+    expect(searches(f)).toEqual(['Naruto: Shippuuden Movie 4 - The Lost Tower', 'The Lost Tower'])
+  })
   it('never searches a single word, so a long title cannot get the wrong poster', async () => {
     const f = mkSearchFetch({ Naruto: media(20, 'NARUTO', 'Naruto') })
     expect(await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto: Shippuuden Movie 6: Ninja')).toBeNull()
@@ -121,5 +126,65 @@ describe('anilist', () => {
     try {
       expect(api.getCached('Attack on Titan')).toBeNull()
     } finally { spy.mockRestore() }
+  })
+})
+
+describe('anilist rate limiting', () => {
+  const hit = media(5, 'Show Five', 'Show Five')
+  const json = (body, headers = {}) => Response.json(body, { headers })
+  const page = (list) => ({ data: { Page: { media: list } } })
+  const isImg = (url) => url.startsWith('https://img/')
+  const img = () => new Response(new Uint8Array([1]), { headers: { 'content-type': 'image/jpeg' } })
+
+  it('sends AniList requests one at a time', async () => {
+    let inFlight = 0, maxInFlight = 0
+    const f = vi.fn(async (url) => {
+      if (isImg(url)) return img()
+      inFlight++; maxInFlight = Math.max(maxInFlight, inFlight)
+      await new Promise((r) => setTimeout(r, 5))
+      inFlight--
+      return json(page([hit]))
+    })
+    const al = createAniList({ cacheDir, fetchImpl: f, sleep: async () => {} })
+    const res = await Promise.all(['A b', 'C d', 'E f'].map((t) => al.getForTitle(t)))
+    expect(res.every((r) => r?.id === 5)).toBe(true)
+    expect(maxInFlight).toBe(1)
+  })
+  it('waits Retry-After on 429 and retries the same request', async () => {
+    let n = 0
+    const f = vi.fn(async (url) => (isImg(url) ? img() : ++n === 1 ? new Response('', { status: 429, headers: { 'Retry-After': '7' } }) : json(page([hit]))))
+    const sleep = vi.fn(async () => {})
+    const info = await createAniList({ cacheDir, fetchImpl: f, sleep }).getForTitle('Show Five')
+    expect(info.id).toBe(5)
+    expect(sleep).toHaveBeenCalledWith(7000)
+  })
+  it('pauses the queue until the reset when no requests remain', async () => {
+    const now = () => 1_000_000
+    const f = vi.fn(async (url) => (isImg(url) ? img() : json(page([hit]), { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': String(1_000_000 / 1000 + 5) })))
+    const sleep = vi.fn(async () => {})
+    await createAniList({ cacheDir, fetchImpl: f, sleep, now }).getForTitle('Show Five')
+    expect(sleep).toHaveBeenCalledWith(5000)
+  })
+  it('gives up after repeated 429s without remembering the miss', async () => {
+    const f = vi.fn(async () => new Response('', { status: 429, headers: { 'Retry-After': '1' } }))
+    const al = createAniList({ cacheDir, fetchImpl: f, sleep: async () => {} })
+    expect(await al.getForTitle('Show Five')).toBeNull()
+    const calls = f.mock.calls.length
+    expect(calls).toBe(3)
+    await al.getForTitle('Show Five')
+    expect(f.mock.calls.length).toBeGreaterThan(calls)
+  })
+  it('remembers "not found" for 7 days so the same search costs no requests', async () => {
+    let t = 0
+    const f = vi.fn(async () => json(page([])))
+    const al = createAniList({ cacheDir, fetchImpl: f, sleep: async () => {}, now: () => t })
+    expect(await al.getForTitle('Nothing: Here At All')).toBeNull()
+    const calls = f.mock.calls.length
+    expect(await al.getForTitle('Nothing: Here At All')).toBeNull()
+    expect(f.mock.calls.length).toBe(calls)
+    expect(al.getCached('Nothing: Here At All')).toBeNull()
+    t = 8 * 24 * 3600 * 1000
+    await al.getForTitle('Nothing: Here At All')
+    expect(f.mock.calls.length).toBeGreaterThan(calls)
   })
 })

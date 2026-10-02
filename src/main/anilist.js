@@ -23,15 +23,16 @@ export function bestMatch(title, results) {
 }
 
 // ani-cli titles often differ from AniList's ("Naruto: Shippuuden Movie 6: Road to Ninja"), and AniList
-// returns nothing for the full string. Retry with the subtitle, then with the part before it — never with
+// returns nothing for the full string. Retry with the subtitle (after the last ":" or " - "), then with the part before it — never with
 // a single word, which would match the wrong show (a wrong poster is worse than none).
 export function searchCandidates(title) {
   const full = String(title ?? '').trim()
-  const cut = full.lastIndexOf(':')
+  const seps = [...full.matchAll(/:|\s-\s/g)]
+  const last = seps.at(-1)
   const words = (s) => s.split(/\s+/).filter(Boolean).length
   const out = [full]
-  if (cut > 0) {
-    for (const part of [full.slice(cut + 1).trim(), full.slice(0, cut).trim()]) {
+  if (last && last.index > 0) {
+    for (const part of [full.slice(last.index + last[0].length).trim(), full.slice(0, last.index).trim()]) {
       if (words(part) >= 2 && !out.includes(part)) out.push(part)
     }
   }
@@ -53,15 +54,50 @@ function toInfo(m) {
   }
 }
 
-export function createAniList({ cacheDir, fetchImpl = fetch }) {
-  async function gql(query, variables) {
-    const res = await fetchImpl(ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ query, variables }),
+const MAX_ATTEMPTS = 3
+const MAX_WAIT_MS = 65_000
+const NOT_FOUND_TTL_MS = 7 * 24 * 3600 * 1000
+
+const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, now = Date.now }) {
+  // AniList allows ~30 requests a minute; a search result grid asks for 25+ posters at once.
+  // Requests go through one queue, and a 429 or an exhausted budget pauses the whole queue.
+  let queue = Promise.resolve()
+  const enqueue = (task) => {
+    const run = queue.then(task)
+    queue = run.catch(() => {})
+    return run
+  }
+
+  const clampWait = (ms) => Math.min(MAX_WAIT_MS, Math.max(1000, ms))
+  const resetWait = (res) => {
+    const reset = Number(res.headers.get('X-RateLimit-Reset'))
+    return Number.isFinite(reset) && reset > 0 ? clampWait(reset * 1000 - now()) : MAX_WAIT_MS
+  }
+  const retryWait = (res) => {
+    const after = Number(res.headers.get('Retry-After'))
+    return Number.isFinite(after) && after > 0 ? clampWait(after * 1000) : resetWait(res)
+  }
+
+  function gql(query, variables) {
+    return enqueue(async () => {
+      for (let attempt = 1; ; attempt++) {
+        const res = await fetchImpl(ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ query, variables }),
+        })
+        if (res.status === 429 && attempt < MAX_ATTEMPTS) {
+          await sleep(retryWait(res))
+          continue
+        }
+        if (!res.ok) throw new Error(`AniList HTTP ${res.status}`)
+        const data = (await res.json()).data
+        if (res.headers.get('X-RateLimit-Remaining') === '0') await sleep(resetWait(res))
+        return data
+      }
     })
-    if (!res.ok) throw new Error(`AniList HTTP ${res.status}`)
-    return (await res.json()).data
   }
 
   async function posterDataUrl(url) {
@@ -79,7 +115,8 @@ export function createAniList({ cacheDir, fetchImpl = fetch }) {
   // Synchronous, offline: used by the profile statistics so opening it never hits the network.
   function getCached(title, { aniListId = null } = {}) {
     try {
-      return readJson(cacheFile(cacheKey(title, aniListId)), null).data
+      const data = readJson(cacheFile(cacheKey(title, aniListId)), null).data
+      return data?.notFound ? null : data
     } catch {
       return null
     }
@@ -90,24 +127,34 @@ export function createAniList({ cacheDir, fetchImpl = fetch }) {
     return data.Page.media.map(toInfo)
   }
 
+  // `complete` is true only when every query got an answer, so a miss caused by errors is never remembered.
   async function findByTitle(title) {
+    let complete = true
     for (const query of searchCandidates(title)) {
       try {
         const m = bestMatch(title, (await gql(SEARCH, { search: query })).Page.media)
-        if (m) return m
+        if (m) return { m, complete }
       } catch {
-        // one failing query (rate limit, network) should not stop the next one
+        complete = false // one failing query (rate limit, network) should not stop the next one
       }
     }
-    return null
+    return { m: null, complete }
   }
 
   async function getForTitle(title, { aniListId = null } = {}) {
     const file = cacheFile(cacheKey(title, aniListId))
     const cached = readJson(file, null).data
-    if (cached) return cached
+    if (cached?.notFound) {
+      if (now() - cached.at < NOT_FOUND_TTL_MS) return null
+    } else if (cached) return cached
     try {
-      const m = aniListId ? (await gql(BY_ID, { id: aniListId })).Media : await findByTitle(title)
+      let m
+      if (aniListId) m = (await gql(BY_ID, { id: aniListId })).Media
+      else {
+        const found = await findByTitle(title)
+        m = found.m
+        if (!m && found.complete) writeJsonAtomic(file, { notFound: true, at: now() })
+      }
       if (!m) return null
       const info = toInfo(m)
       info.poster = await posterDataUrl(info.coverUrl).catch(() => null)
