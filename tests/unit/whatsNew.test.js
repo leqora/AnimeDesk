@@ -30,6 +30,13 @@ describe('whatsNew', () => {
     again.init()
     expect(again.get()).toBeNull()
   })
+  it('records the version silently on a downgrade', () => {
+    const settings = fakeSettings('0.3.1')
+    const w = createWhatsNew({ settings, currentVersion: '0.3.0', readNotes })
+    w.init()
+    expect(w.get()).toBeNull()
+    expect(settings.update).toHaveBeenCalledWith({ lastSeenVersion: '0.3.0' })
+  })
   it('reads release notes files and returns null when missing or empty', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-notes-'))
     fs.writeFileSync(path.join(dir, 'v0.3.1.md'), '## Novo\n- Ažuriranje\n')

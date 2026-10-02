@@ -138,6 +138,17 @@ describe('updater', () => {
     expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1)
     expect(autoUpdater.quitAndInstall).toHaveBeenCalledWith(false, true)
   })
+  it('install can be retried after quitAndInstall fails', () => {
+    const { updater, autoUpdater } = setup()
+    updater.start()
+    autoUpdater.emit('update-available', { version: '0.3.1' })
+    autoUpdater.emit('update-downloaded', { version: '0.3.1' })
+    expect(updater.install()).toBe(true)
+    autoUpdater.emit('error', new Error('install failed'))
+    expect(updater.getState().status).toBe('ready')
+    expect(updater.install()).toBe(true)
+    expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(2)
+  })
   it('does not re-check while checking, downloading or ready', async () => {
     const { updater, autoUpdater } = setup()
     updater.start()

@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { compareVersions } from '../shared/releaseNotes.js'
 
 export function readReleaseNotes(dir, version) {
   try {
@@ -16,8 +17,8 @@ export function createWhatsNew({ settings, currentVersion, readNotes }) {
   return {
     init() {
       const last = settings.get().lastSeenVersion
-      if (last == null) settings.update({ lastSeenVersion: currentVersion })
-      else pending = last !== currentVersion
+      if (last == null || compareVersions(currentVersion, last) < 0) settings.update({ lastSeenVersion: currentVersion })
+      else pending = compareVersions(currentVersion, last) > 0
     },
     get() {
       return pending ? { version: currentVersion, notes: readNotes(currentVersion) } : null

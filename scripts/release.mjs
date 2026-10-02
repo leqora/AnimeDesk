@@ -69,5 +69,5 @@ try {
 if (mismatches.length) fail([`Objavljeni fajlovi se ne poklapaju sa lokalnim: ${mismatches.join(', ')} — release je ostao kao DRAFT. Proveri ručno ili obriši sa: gh release delete ${tag}`])
 
 step(`Objavljivanje ${tag}`)
-execSync(`gh release edit ${tag} --draft=false`, { stdio: 'inherit' })
+execSync(`gh release edit ${tag} --draft=false --latest`, { stdio: 'inherit' })
 console.log(`\n✔ ${tag} objavljen: https://github.com/leqora/AnimeDesk/releases/tag/${tag}`)

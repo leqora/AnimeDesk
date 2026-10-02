@@ -19,7 +19,11 @@ export function createUpdater({
     notify(EVENTS.updateState, { ...state })
   }
   const message = (err) => String(err?.message ?? err)
-  const fail = (err) => (state.status === 'ready' ? set({ error: message(err) }) : set({ status: 'error', error: message(err), lastCheckedAt: now() }))
+  const fail = (err) => {
+    installing = false // a failed quitAndInstall must stay retryable
+    return fail0(err)
+  }
+  const fail0 = (err) => (state.status === 'ready' ? set({ error: message(err) }) : set({ status: 'error', error: message(err), lastCheckedAt: now() }))
 
   if (isPackaged) {
     autoUpdater.on('checking-for-update', () => set({ status: 'checking', error: null }))
