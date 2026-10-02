@@ -4,6 +4,7 @@ import { readJson, writeJsonAtomic } from './jsonStore.js'
 export function createWatchLog(file, { now = () => new Date().toISOString(), uuid = () => crypto.randomUUID() } = {}) {
   const loaded = readJson(file, { version: 1, entries: [] })
   const db = loaded.data
+  if (!Array.isArray(db.entries)) db.entries = []
   const save = () => writeJsonAtomic(file, db)
 
   return {

@@ -71,4 +71,18 @@ describe('computeStats', () => {
     expect(computeStats({ entries: [], log: [at('2026-10-01'), at('2026-09-30')], now: NOW }).streakDays).toBe(2)
     expect(computeStats({ entries: [], log: [at('2026-09-30')], now: NOW }).streakDays).toBe(0)
   })
+  it('skips log entries with an unparsable timestamp', () => {
+    const log = [{ animeId: 'a', episode: 1, at: 'garbage' }, { animeId: 'a', episode: 2, at: '2026-10-02T12:00:00Z' }]
+    const s = computeStats({ entries: [], log, now: NOW })
+    expect(s.activity.at(-1).count).toBe(1)
+  })
+  it('uses the offset in effect at each entry (DST)', () => {
+    // CEST (-120) until 2026-10-25T01:00Z, CET (-60) afterwards
+    const tzOffsetAt = (iso) => (Date.parse(iso) < Date.parse('2026-10-25T01:00:00Z') ? -120 : -60)
+    // 22:30 UTC on 10-04 is 00:30 on 10-05 in CEST, even though "now" is already on CET
+    const log = [{ animeId: 'a', episode: 1, at: '2026-10-04T22:30:00Z' }]
+    const s = computeStats({ entries: [], log, now: '2026-10-30T12:00:00Z', tzOffsetAt })
+    expect(s.activity.find((d) => d.date === '2026-10-05').count).toBe(1)
+    expect(s.activity.find((d) => d.date === '2026-10-04').count).toBe(0)
+  })
 })

@@ -71,4 +71,10 @@ describe('anilist', () => {
     expect(api.getCached('whatever', { aniListId: 99 })).toBeNull()
     expect(fetchImpl.mock.calls.length).toBe(before)
   })
+  it('getCached returns null when the cache file cannot be read', () => {
+    const spy = vi.spyOn(fs, 'readFileSync').mockImplementation(() => { throw Object.assign(new Error('busy'), { code: 'EBUSY' }) })
+    try {
+      expect(api.getCached('Attack on Titan')).toBeNull()
+    } finally { spy.mockRestore() }
+  })
 })

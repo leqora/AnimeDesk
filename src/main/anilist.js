@@ -62,7 +62,11 @@ export function createAniList({ cacheDir, fetchImpl = fetch }) {
 
   // Synchronous, offline: used by the profile statistics so opening it never hits the network.
   function getCached(title, { aniListId = null } = {}) {
-    return readJson(cacheFile(cacheKey(title, aniListId)), null).data
+    try {
+      return readJson(cacheFile(cacheKey(title, aniListId)), null).data
+    } catch {
+      return null
+    }
   }
 
   async function search(title) {

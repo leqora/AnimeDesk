@@ -66,7 +66,7 @@ async function main() {
       if (info) infoById[e.id] = info
     }
     const now = new Date()
-    return computeStats({ entries, log: watchLog.list(), infoById, now: now.toISOString(), tzOffsetMinutes: now.getTimezoneOffset() })
+    return computeStats({ entries, log: watchLog.list(), infoById, now: now.toISOString(), tzOffsetAt: (iso) => new Date(iso).getTimezoneOffset() })
   }
   const progress = createProgress({ file: paths.profile, computeSnapshot, notify: send })
   progress.init()

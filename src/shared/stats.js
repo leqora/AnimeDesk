@@ -19,14 +19,17 @@ export function xpFor(entries) {
 }
 
 // tzOffsetMinutes follows Date#getTimezoneOffset(): local = UTC - offset
-const localDay = (iso, tz) => new Date(Date.parse(iso) - tz * 60000).toISOString().slice(0, 10)
+const localDay = (iso, tz) => {
+  const ms = Date.parse(iso)
+  return Number.isFinite(ms) ? new Date(ms - tz * 60000).toISOString().slice(0, 10) : null
+}
 const shiftDay = (day, delta) => {
   const d = new Date(`${day}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() + delta)
   return d.toISOString().slice(0, 10)
 }
 
-export function computeStats({ entries, log, infoById = {}, now, tzOffsetMinutes = 0 }) {
+export function computeStats({ entries, log, infoById = {}, now, tzOffsetMinutes, tzOffsetAt = () => tzOffsetMinutes ?? 0 }) {
   const xp = xpFor(entries)
   const episodes = entries.reduce((s, e) => s + e.watchedEpisodes.length, 0)
   const minutes = entries.reduce((s, e) => s + e.watchedEpisodes.length * (infoById[e.id]?.duration || DEFAULT_EPISODE_MINUTES), 0)
@@ -44,10 +47,11 @@ export function computeStats({ entries, log, infoById = {}, now, tzOffsetMinutes
 
   const perDay = new Map()
   for (const item of log) {
-    const day = localDay(item.at, tzOffsetMinutes)
+    const day = localDay(item.at, tzOffsetAt(item.at))
+    if (day === null) continue
     perDay.set(day, (perDay.get(day) ?? 0) + 1)
   }
-  const today = localDay(now, tzOffsetMinutes)
+  const today = localDay(now, tzOffsetAt(now))
   const activity = Array.from({ length: 28 }, (_, i) => {
     const date = shiftDay(today, i - 27)
     return { date, count: perDay.get(date) ?? 0 }

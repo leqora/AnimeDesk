@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { createProgress } from '../../src/main/progress.js'
+import { EMPTY_STATS } from '../../src/shared/stats.js'
 import { EVENTS } from '../../src/shared/channels.js'
 
 let file, level, events, progress
@@ -34,14 +35,42 @@ describe('progress', () => {
     progress.check()
     expect(events).toEqual([[EVENTS.levelUp, { level: 10, title: 'veteran' }]])
   })
-  it('records a lower level silently and levels up again later', () => {
+  it('never repeats a level-up for an already reached level', () => {
     progress.init()
     level = 6
     progress.check()
-    expect(events).toEqual([])
     level = 7
     progress.check()
-    expect(events).toEqual([[EVENTS.levelUp, { level: 7, title: 'rookie' }]])
+    expect(events).toEqual([])
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).lastLevel).toBe(7)
+    level = 9
+    progress.check()
+    level = 8
+    progress.check()
+    level = 9
+    progress.check()
+    expect(events).toEqual([[EVENTS.levelUp, { level: 9, title: 'rookie' }]])
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).lastLevel).toBe(9)
+  })
+  it('treats a non-numeric lastLevel like a missing file', () => {
+    fs.writeFileSync(file, JSON.stringify({ version: 1, lastLevel: 'x' }))
+    progress.check()
+    expect(events).toEqual([])
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).lastLevel).toBe(7)
+    fs.writeFileSync(file, JSON.stringify({ version: 1 }))
+    progress.check()
+    expect(events).toEqual([])
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).lastLevel).toBe(7)
+  })
+  it('survives a failing snapshot', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const bad = createProgress({ file, computeSnapshot: () => { throw new Error('boom') }, notify: (ch, p) => events.push([ch, p]) })
+    expect(() => bad.init()).not.toThrow()
+    expect(bad.check({ completedTitle: 'Show' })).toEqual(EMPTY_STATS)
+    expect(bad.snapshot()).toEqual(EMPTY_STATS)
+    expect(events).toEqual([])
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
   })
   it('announces a completed series before a level-up', () => {
     progress.init()

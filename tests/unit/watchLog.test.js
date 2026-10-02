@@ -42,4 +42,10 @@ describe('watchLog', () => {
     log.list()[0].episode = 99
     expect(log.list()[0].episode).toBe(1)
   })
+  it('tolerates valid JSON without entries', () => {
+    fs.writeFileSync(file, JSON.stringify({ version: 1 }))
+    const l = createWatchLog(file)
+    expect(l.list()).toEqual([])
+    expect(() => l.append({ animeId: 'a', episode: 1, source: 'auto' })).not.toThrow()
+  })
 })
