@@ -48,21 +48,26 @@ const artifactErrors = checkArtifacts({
 if (artifactErrors.length) fail(artifactErrors)
 const assetNames = [names.exe, names.blockmap, names.latest]
 
-step(`Objavljivanje GitHub release-a ${tag}`)
-execSync(`gh release create ${tag} ${assetNames.map((n) => `"${join('dist', n)}"`).join(' ')} --target main --title "AnimeDesk ${version}" --notes-file "${notesFile}"`, { stdio: 'inherit' })
+step(`Objavljivanje GitHub release-a ${tag} (kao draft)`)
+execSync(`gh release create ${tag} ${assetNames.map((n) => `"${join('dist', n)}"`).join(' ')} --draft --target main --title "AnimeDesk ${version}" --notes-file "${notesFile}"`, { stdio: 'inherit' })
 
 step('Provera objavljenih fajlova (SHA-256)')
 const dir = mkdtempSync(join(tmpdir(), 'animedesk-release-'))
+let mismatches
 try {
   run(`gh release download ${tag} --dir "${dir}"`)
-  const mismatches = assetNames.filter((name) => {
+  mismatches = assetNames.filter((name) => {
     const remote = join(dir, name)
     const same = existsSync(remote) && sha256(remote) === sha256(join('dist', name))
     console.log(`  ${same ? '✔' : '✖'} ${name}`)
     return !same
   })
-  if (mismatches.length) fail([`Objavljeni fajlovi se ne poklapaju sa lokalnim: ${mismatches.join(', ')} — proveri release ručno`])
 } finally {
   rmSync(dir, { recursive: true, force: true })
 }
+
+if (mismatches.length) fail([`Objavljeni fajlovi se ne poklapaju sa lokalnim: ${mismatches.join(', ')} — release je ostao kao DRAFT. Proveri ručno ili obriši sa: gh release delete ${tag}`])
+
+step(`Objavljivanje ${tag}`)
+execSync(`gh release edit ${tag} --draft=false`, { stdio: 'inherit' })
 console.log(`\n✔ ${tag} objavljen: https://github.com/leqora/AnimeDesk/releases/tag/${tag}`)
