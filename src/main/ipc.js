@@ -7,8 +7,16 @@ export function createHandlers(s) {
     [INVOKE.settingsUpdate]: (patch) => s.settings.update(patch),
     [INVOKE.libraryList]: () => s.library.list(),
     [INVOKE.libraryAdd]: (entry) => s.library.add(entry),
-    [INVOKE.libraryUpdate]: (id, patch) => s.tracker.update(id, patch),
-    [INVOKE.libraryRemove]: (id) => s.tracker.remove(id),
+    [INVOKE.libraryUpdate]: (id, patch) => {
+      const result = s.tracker.update(id, patch)
+      s.send(EVENTS.libraryChanged)
+      return result
+    },
+    [INVOKE.libraryRemove]: (id) => {
+      const result = s.tracker.remove(id)
+      s.send(EVENTS.libraryChanged)
+      return result
+    },
     [INVOKE.libraryNote]: (id, episode, text) => s.library.setEpisodeNote(id, episode, text),
     [INVOKE.libraryRecord]: (payload) => {
       const entry = s.tracker.recordWatched(payload, 'auto')

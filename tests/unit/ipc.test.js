@@ -19,6 +19,17 @@ function services() {
 }
 
 describe('ipc', () => {
+  it('notifies the renderer after library update and remove', () => {
+    const s = services()
+    s.tracker.update.mockReturnValue({ id: 'id1' })
+    s.tracker.remove.mockReturnValue(true)
+    const h = createHandlers(s)
+    expect(h[INVOKE.libraryUpdate]('id1', { rating: 8 })).toEqual({ id: 'id1' })
+    expect(s.send).toHaveBeenCalledWith(EVENTS.libraryChanged)
+    s.send.mockClear()
+    expect(h[INVOKE.libraryRemove]('id1')).toBe(true)
+    expect(s.send).toHaveBeenCalledWith(EVENTS.libraryChanged)
+  })
   it('has a handler for every INVOKE channel and nothing else', () => {
     expect(Object.keys(createHandlers(services())).sort()).toEqual(Object.values(INVOKE).sort())
   })
