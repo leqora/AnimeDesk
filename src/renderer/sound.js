@@ -55,6 +55,7 @@ export function createSound({ getSettings, audioContextFactory = () => new Audio
     const s = getSettings()
     if (KEY_SOUNDS.has(name) ? !s.soundKey : !s.soundUi) return false
     ctx ??= audioContextFactory()
+    if (ctx.state === 'suspended') ctx.resume?.()?.catch?.(() => {})
     const now = ctx.currentTime
     if (current && current.until > now) {
       if (PRIORITY[current.name] > PRIORITY[name]) return false

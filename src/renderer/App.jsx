@@ -21,11 +21,11 @@ function CorruptBanner() {
 
 const SILENT = { soundKey: false, soundUi: false, soundVolume: 0 }
 
-function Celebrations({ levelUp, toast, motionOff, onLevelUpDone, onToastDone }) {
+function Celebrations({ levelUp, toast, stats, motionOff, onLevelUpDone, onToastDone }) {
   const t = useT()
   return (
     <>
-      {levelUp && !motionOff && <LevelUpOverlay level={levelUp.level} title={levelUp.title} onDone={onLevelUpDone} />}
+      {levelUp && !motionOff && <LevelUpOverlay level={levelUp.level} title={levelUp.title} xpIntoLevel={stats.xpIntoLevel} xpForNext={stats.xpForNext} onDone={onLevelUpDone} />}
       {levelUp && motionOff && (
         <Toast onDone={onLevelUpDone} icon="flame">{t('toast.levelUp', { level: levelUp.level, title: t(`title.${levelUp.title}`) })}</Toast>
       )}
@@ -80,11 +80,16 @@ export default function App({ api, sound: injectedSound }) {
     return () => { offs.forEach((off) => off()); document.removeEventListener('click', onClick, true) }
   }, [api, sound])
 
+  const motionOff = settings != null && (!settings.animations || window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true)
+  useEffect(() => {
+    document.documentElement.classList.toggle('reduce-motion', motionOff)
+    return () => document.documentElement.classList.remove('reduce-motion')
+  }, [motionOff])
+
   useEffect(() => { if (health.reason === 'missing-tools') setWizardOpen(true) }, [health.reason])
 
   if (!settings) return null
   settingsRef.current = settings
-  const motionOff = !settings.animations || window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true
   const ready = health.light === 'green'
   const updateSettings = async (patch) => setSettings(await api.settings.update(patch))
   const navigate = (p) => { if (p !== page) sound.play('navigate'); setOpenAnimeId(null); setPage(p) }
@@ -94,7 +99,7 @@ export default function App({ api, sound: injectedSound }) {
   return (
     <ApiContext.Provider value={api}>
       <I18nProvider lang={settings.language}>
-        <div className={motionOff ? 'app-shell reduce-motion' : 'app-shell'}>
+        <div className="app-shell">
           <Sidebar
             page={page}
             onNavigate={navigate}
@@ -118,7 +123,7 @@ export default function App({ api, sound: injectedSound }) {
         </div>
         {wizardOpen && <SetupWizard health={health} onClose={() => setWizardOpen(false)} />}
         {ask && <AskDialog ask={ask} onDone={() => setAsk(null)} />}
-        <Celebrations levelUp={levelUp} toast={toast} motionOff={motionOff} onLevelUpDone={() => setLevelUp(null)} onToastDone={() => setToast(null)} />
+        <Celebrations levelUp={levelUp} toast={toast} stats={stats} motionOff={motionOff} onLevelUpDone={() => setLevelUp(null)} onToastDone={() => setToast(null)} />
       </I18nProvider>
     </ApiContext.Provider>
   )

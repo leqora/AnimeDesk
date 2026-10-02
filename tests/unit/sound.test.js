@@ -6,6 +6,8 @@ function fakeContext() {
   const param = () => ({ value: 1, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn() })
   const node = () => ({ connect: vi.fn(), disconnect: vi.fn() })
   const ctx = {
+    state: 'running',
+    resume: vi.fn(() => Promise.reject(new Error('nope'))),
     currentTime: 0,
     destination: {},
     gains: [],
@@ -52,6 +54,18 @@ describe('sound', () => {
     const uiGain = ctx.gains[0]
     expect(sound.play('levelUp')).toBe(true)
     expect(uiGain.disconnect).toHaveBeenCalled()
+  })
+  it('resumes a suspended context', async () => {
+    const { ctx, sound } = setup()
+    ctx.state = 'suspended'
+    expect(sound.play('downloadDone')).toBe(true)
+    expect(ctx.resume).toHaveBeenCalledTimes(1)
+    await Promise.resolve()
+  })
+  it('does not resume a running context', () => {
+    const { ctx, sound } = setup()
+    sound.play('downloadDone')
+    expect(ctx.resume).not.toHaveBeenCalled()
   })
   it('ignores unknown names', () => {
     expect(setup().sound.play('boom')).toBe(false)

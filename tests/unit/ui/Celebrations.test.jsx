@@ -18,7 +18,7 @@ function setup(settings = {}) {
   render(<App api={api} sound={sound} />)
   return { api, sound, handlers }
 }
-afterEach(() => vi.useRealTimers())
+afterEach(() => { vi.useRealTimers(); document.documentElement.classList.remove('reduce-motion') })
 
 describe('LevelUpOverlay', () => {
   it('closes after the timeout and on Escape', () => {
@@ -27,6 +27,7 @@ describe('LevelUpOverlay', () => {
     renderUi(<LevelUpOverlay level={11} title="veteran" onDone={onDone} />)
     expect(screen.getByRole('dialog')).toHaveTextContent('LEVEL UP')
     expect(screen.getByRole('dialog')).toHaveTextContent('LV 11 · Veteran')
+    expect(screen.getByRole('progressbar')).toBeInTheDocument()
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(onDone).toHaveBeenCalledTimes(1)
     act(() => vi.advanceTimersByTime(2000))
@@ -51,7 +52,15 @@ describe('App celebrations', () => {
     act(() => handlers.levelUp({ level: 11, title: 'veteran' }))
     expect(screen.queryByRole('dialog', { name: 'LEVEL UP' })).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('LEVEL UP · LV 11 · Veteran')
-    expect(document.querySelector('.app-shell')).toHaveClass('reduce-motion')
+    expect(document.documentElement).toHaveClass('reduce-motion')
+  })
+  it('removes the reduce-motion class on unmount', async () => {
+    const api = makeFakeApi()
+    api.settings.get.mockResolvedValue({ ...DEFAULT_SETTINGS, animations: false })
+    const { unmount } = render(<App api={api} sound={{ play: vi.fn() }} />)
+    await waitFor(() => expect(document.documentElement).toHaveClass('reduce-motion'))
+    unmount()
+    expect(document.documentElement).not.toHaveClass('reduce-motion')
   })
   it('announces a completed series', async () => {
     const { sound, handlers } = setup()
