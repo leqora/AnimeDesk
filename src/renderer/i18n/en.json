@@ -124,7 +124,7 @@
   "settings.soundTest": "Test",
   "settings.animations": "Animations",
   "settings.tools": "Tool versions",
-  "settings.checkUpdates": "Check for updates",
+  "settings.checkUpdates": "Check tool updates",
   "settings.checking": "Checking…",
   "library.corrupt": "The watchlist file was damaged; a backup was saved and a new list was started.",
   "lang.sr": "Srpski",

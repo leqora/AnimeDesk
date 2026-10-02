@@ -12,6 +12,8 @@ import { DownloadsPage } from './pages/DownloadsPage.jsx'
 import { SettingsPage } from './pages/SettingsPage.jsx'
 import { LevelUpOverlay } from './components/LevelUpOverlay.jsx'
 import { Toast } from './components/Toast.jsx'
+import { UpdateBanner } from './components/UpdateBanner.jsx'
+import { WhatsNewDialog } from './components/WhatsNewDialog.jsx'
 import { createSound } from './sound.js'
 
 function CorruptBanner() {
@@ -49,6 +51,8 @@ export default function App({ api, sound: injectedSound }) {
   const [pendingWatch, setPendingWatch] = useState(null)
   const [corrupt, setCorrupt] = useState(false)
   const [openAnimeId, setOpenAnimeId] = useState(null)
+  const [updateState, setUpdateState] = useState({ status: 'idle', currentVersion: '' })
+  const [whatsNew, setWhatsNew] = useState(null)
 
   useEffect(() => {
     api.settings.get().then(setSettings)
@@ -56,6 +60,12 @@ export default function App({ api, sound: injectedSound }) {
     api.library.wasCorrupt().then(setCorrupt)
     const offs = [api.health.onChange(setHealth), api.watch.onAsk(setAsk)]
     return () => offs.forEach((off) => off())
+  }, [api])
+
+  useEffect(() => {
+    api.update.getState().then(setUpdateState)
+    api.whatsNew.get().then((w) => { if (w) setWhatsNew({ mode: 'after', ...w }) })
+    return api.update.onState(setUpdateState)
   }, [api])
 
   useEffect(() => {
@@ -95,6 +105,8 @@ export default function App({ api, sound: injectedSound }) {
   const navigate = (p) => { if (p !== page) sound.play('navigate'); setOpenAnimeId(null); setPage(p) }
   const openAnime = (id) => { setOpenAnimeId(id); setPage('watchlist') }
   const continueWatching = (params) => { setPendingWatch(params); setPage('home') }
+  const openWhatsNew = () => setWhatsNew({ mode: 'before', version: updateState.version, notes: updateState.notes })
+  const closeWhatsNew = () => { if (whatsNew?.mode === 'after') api.whatsNew.seen(); setWhatsNew(null) }
 
   return (
     <ApiContext.Provider value={api}>
@@ -109,6 +121,7 @@ export default function App({ api, sound: injectedSound }) {
             stats={stats}
           />
           <main className="content">
+            <UpdateBanner state={updateState} onWhatsNew={openWhatsNew} />
             <div key={page} className="page-enter">
               {corrupt && <CorruptBanner />}
               {page === 'home' && (
@@ -117,13 +130,14 @@ export default function App({ api, sound: injectedSound }) {
               {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} initialOpenId={openAnimeId} />}
               {page === 'downloads' && <DownloadsPage />}
               {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} />}
-              {page === 'settings' && <SettingsPage settings={settings} onSettings={updateSettings} onTestSound={() => sound.play('levelUp')} />}
+              {page === 'settings' && <SettingsPage settings={settings} onSettings={updateSettings} onTestSound={() => sound.play('levelUp')} updateState={updateState} />}
             </div>
           </main>
         </div>
         {wizardOpen && <SetupWizard health={health} onClose={() => setWizardOpen(false)} />}
         {ask && <AskDialog ask={ask} onDone={() => setAsk(null)} />}
         <Celebrations levelUp={levelUp} toast={toast} stats={stats} motionOff={motionOff} onLevelUpDone={() => setLevelUp(null)} onToastDone={() => setToast(null)} />
+        {whatsNew && <WhatsNewDialog mode={whatsNew.mode} version={whatsNew.version} notes={whatsNew.notes} status={updateState.status} onClose={closeWhatsNew} />}
       </I18nProvider>
     </ApiContext.Provider>
   )
