@@ -64,6 +64,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .nav-item--active { background: var(--glass-strong); border-color: var(--glass-border); }
 .nav-item--active::before { content: ""; position: absolute; left: -14px; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: var(--accent); box-shadow: var(--glow); }
 .sidebar__footer { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+.sidebar__version { font-size: 11px; letter-spacing: .04em; padding: 0 10px; }
 
 /* semaphore */
 .semaphore { display: flex; align-items: center; gap: 8px; width: 100%; font-family: var(--font-hud); font-size: 12px; text-align: left; }

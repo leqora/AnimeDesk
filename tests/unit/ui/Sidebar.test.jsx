@@ -24,4 +24,10 @@ describe('Sidebar', () => {
     fireEvent.click(screen.getByRole('button', { name: /LV 1/ }))
     expect(p.onNavigate).toHaveBeenLastCalledWith('profile')
   })
+  it('shows the app version at the bottom, and nothing until it is known', () => {
+    const { rerender } = renderUi(<Sidebar {...props({ version: '0.3.1' })} />)
+    expect(screen.getByText('v0.3.1')).toBeInTheDocument()
+    rerender(<Sidebar {...props({ version: '' })} />)
+    expect(screen.queryByText(/^v\d/)).not.toBeInTheDocument()
+  })
 })

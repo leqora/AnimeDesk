@@ -22,6 +22,22 @@ export function bestMatch(title, results) {
   return results.find((r) => [r.title.romaji, r.title.english, r.title.native].some((t) => t && norm(t) === n)) ?? results[0] ?? null
 }
 
+// ani-cli titles often differ from AniList's ("Naruto: Shippuuden Movie 6: Road to Ninja"), and AniList
+// returns nothing for the full string. Retry with the subtitle, then with the part before it — never with
+// a single word, which would match the wrong show (a wrong poster is worse than none).
+export function searchCandidates(title) {
+  const full = String(title ?? '').trim()
+  const cut = full.lastIndexOf(':')
+  const words = (s) => s.split(/\s+/).filter(Boolean).length
+  const out = [full]
+  if (cut > 0) {
+    for (const part of [full.slice(cut + 1).trim(), full.slice(0, cut).trim()]) {
+      if (words(part) >= 2 && !out.includes(part)) out.push(part)
+    }
+  }
+  return out
+}
+
 function toInfo(m) {
   return {
     id: m.id,
@@ -74,14 +90,24 @@ export function createAniList({ cacheDir, fetchImpl = fetch }) {
     return data.Page.media.map(toInfo)
   }
 
+  async function findByTitle(title) {
+    for (const query of searchCandidates(title)) {
+      try {
+        const m = bestMatch(title, (await gql(SEARCH, { search: query })).Page.media)
+        if (m) return m
+      } catch {
+        // one failing query (rate limit, network) should not stop the next one
+      }
+    }
+    return null
+  }
+
   async function getForTitle(title, { aniListId = null } = {}) {
     const file = cacheFile(cacheKey(title, aniListId))
     const cached = readJson(file, null).data
     if (cached) return cached
     try {
-      let m
-      if (aniListId) m = (await gql(BY_ID, { id: aniListId })).Media
-      else m = bestMatch(title, (await gql(SEARCH, { search: title })).Page.media)
+      const m = aniListId ? (await gql(BY_ID, { id: aniListId })).Media : await findByTitle(title)
       if (!m) return null
       const info = toInfo(m)
       info.poster = await posterDataUrl(info.coverUrl).catch(() => null)
