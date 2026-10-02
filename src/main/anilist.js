@@ -24,7 +24,8 @@ export function bestMatch(title, results) {
 
 // ani-cli titles often differ from AniList's ("Naruto: Shippuuden Movie 6: Road to Ninja"), and AniList
 // returns nothing for the full string. Retry with the subtitle (after the last ":" or " - "), then with the part before it — never with
-// a single word, which would match the wrong show (a wrong poster is worse than none).
+// a single word, which would match the wrong show (a wrong poster is worse than none). Last resort: the
+// title without "Movie N" / "OVA N" and punctuation ("Naruto: Shippuden the Movie 2 -Bonds-" → "Naruto Shippuden Bonds").
 export function searchCandidates(title) {
   const full = String(title ?? '').trim()
   const seps = [...full.matchAll(/:|\s-\s/g)]
@@ -36,6 +37,12 @@ export function searchCandidates(title) {
       if (words(part) >= 2 && !out.includes(part)) out.push(part)
     }
   }
+  const cleaned = full
+    .replace(/\b(?:the\s+)?movie\s*\d*\b|\bova\s*\d*\b/gi, ' ')
+    .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (words(cleaned) >= 2 && cleaned !== full && !out.includes(cleaned)) out.push(cleaned)
   return out
 }
 
