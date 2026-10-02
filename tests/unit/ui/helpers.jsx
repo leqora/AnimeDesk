@@ -26,6 +26,11 @@ export function makeFakeApi(overrides = {}) {
       remove: vi.fn(async () => true), play: vi.fn(async () => 'none'), openFolder: vi.fn(), onChange: sub(),
     },
     stats: { get: vi.fn(async () => ({ ...EMPTY_STATS })), onLevelUp: sub(), onSeriesCompleted: sub() },
+    update: {
+      getState: vi.fn(async () => ({ status: 'disabled', currentVersion: '0.3.0', version: null, percent: null, notes: null, lastCheckedAt: null, error: null })),
+      check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(async () => true), install: vi.fn(async () => true), onState: sub(),
+    },
+    whatsNew: { get: vi.fn(async () => null), seen: vi.fn(async () => {}) },
     dialog: { pickFolder: vi.fn(async () => null) },
     onLibraryChanged: sub(),
   }
