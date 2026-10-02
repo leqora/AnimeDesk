@@ -62,6 +62,18 @@ describe('progress', () => {
     expect(events).toEqual([])
     expect(JSON.parse(fs.readFileSync(file, 'utf8')).lastLevel).toBe(7)
   })
+  it('survives an unreadable profile file', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-prog-dir-'))
+    const bad = createProgress({ file: dir, computeSnapshot: snap, notify: (ch, p) => events.push([ch, p]) })
+    expect(() => bad.init()).not.toThrow()
+    expect(bad.check({ completedTitle: 'Show' })).toEqual(EMPTY_STATS)
+    expect(events).toEqual([])
+    expect(fs.statSync(dir).isDirectory()).toBe(true)
+    expect(fs.readdirSync(dir)).toEqual([])
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
+  })
   it('survives a failing snapshot', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const bad = createProgress({ file, computeSnapshot: () => { throw new Error('boom') }, notify: (ch, p) => events.push([ch, p]) })

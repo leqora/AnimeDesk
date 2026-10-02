@@ -20,15 +20,23 @@ export function createProgress({ file, computeSnapshot, notify }) {
 
   // First v0.2 start: remember the current level so existing history does not trigger level-ups.
   function init() {
-    if (savedLevel() !== null) return
-    const stats = safeSnapshot()
-    if (stats) remember(stats.level)
+    try {
+      if (savedLevel() !== null) return
+      remember(computeSnapshot().level)
+    } catch (err) {
+      console.error('progress: init failed', err)
+    }
   }
 
   function check({ completedTitle = null } = {}) {
-    const stats = safeSnapshot()
-    if (!stats) return EMPTY_STATS
-    const last = savedLevel()
+    let stats, last
+    try {
+      stats = computeSnapshot()
+      last = savedLevel()
+    } catch (err) {
+      console.error('progress: check failed', err)
+      return EMPTY_STATS
+    }
     if (completedTitle) notify(EVENTS.seriesCompleted, { title: completedTitle, xp: 50 })
     if (last === null) remember(stats.level)
     else if (stats.level > last) {
