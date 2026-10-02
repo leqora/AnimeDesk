@@ -3,6 +3,7 @@ import { render } from '@testing-library/react'
 import { ApiContext } from '../../../src/renderer/api.js'
 import { I18nProvider } from '../../../src/renderer/i18n/I18nContext.jsx'
 import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
+import { EMPTY_STATS } from '../../../src/shared/stats.js'
 
 const sub = () => vi.fn(() => () => {})
 
@@ -24,6 +25,7 @@ export function makeFakeApi(overrides = {}) {
       enqueue: vi.fn(async () => []), pause: vi.fn(), resume: vi.fn(), cancel: vi.fn(), queue: vi.fn(async () => []), list: vi.fn(async () => []),
       remove: vi.fn(async () => true), play: vi.fn(async () => 'none'), openFolder: vi.fn(), onChange: sub(),
     },
+    stats: { get: vi.fn(async () => ({ ...EMPTY_STATS })), onLevelUp: sub(), onSeriesCompleted: sub() },
     dialog: { pickFolder: vi.fn(async () => null) },
     onLibraryChanged: sub(),
   }

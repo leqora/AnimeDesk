@@ -3,7 +3,8 @@ import { DICTS, createT } from '../../src/renderer/i18n/index.js'
 import { STATUSES, TOOL_IDS } from '../../src/shared/domain.js'
 
 const DYNAMIC = [
-  ...['search', 'watchlist', 'downloads', 'settings'].map((p) => `nav.${p}`),
+  ...['search', 'home', 'watchlist', 'downloads', 'profile', 'settings'].map((p) => `nav.${p}`),
+  ...['rookie', 'watcher', 'veteran', 'elite', 'sensei', 'legend'].map((x) => `title.${x}`),
   ...['green', 'checking', 'updating', 'missing-tools', 'source-down', 'offline'].map((r) => `health.${r}`),
   ...TOOL_IDS.map((id) => `tool.${id}`),
   ...['installed', 'missing', 'installing', 'error'].map((s) => `tool.${s}`),
