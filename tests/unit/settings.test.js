@@ -13,6 +13,7 @@ describe('settings', () => {
       language: 'sr', autoTrack: true, watchedThreshold: 85, askOnClose: false,
       downloadDir: null, quality: 'best', mode: 'sub', autoUpdateTools: true,
       profileName: null, soundKey: true, soundUi: false, soundVolume: 60, animations: true,
+      autoDownloadUpdates: true, lastSeenVersion: null,
     })
   })
   it('clamps the threshold and ignores invalid values', () => {
@@ -53,5 +54,12 @@ describe('settings', () => {
     s.update({ language: 'en' })
     expect(JSON.parse(fs.readFileSync(file, 'utf8'))).not.toHaveProperty('systemName')
     expect(s.update({ language: 'sr' }).systemName).toBe('nikola')
+  })
+  it('validates the update settings', () => {
+    expect(sanitizeSettings({ autoDownloadUpdates: false }).autoDownloadUpdates).toBe(false)
+    expect(sanitizeSettings({ autoDownloadUpdates: 'no' }).autoDownloadUpdates).toBe(true)
+    expect(sanitizeSettings({ lastSeenVersion: '0.3.1' }).lastSeenVersion).toBe('0.3.1')
+    expect(sanitizeSettings({ lastSeenVersion: 'v0.3.1' }).lastSeenVersion).toBeNull()
+    expect(sanitizeSettings({ lastSeenVersion: 3 }).lastSeenVersion).toBeNull()
   })
 })
