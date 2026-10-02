@@ -151,5 +151,8 @@
   "home.welcomeSub": "Pretraži anime i kreni sa gledanjem.",
   "home.searchCta": "Pretraži",
   "home.watchingNow": "Gledam sada",
-  "home.episodeOf": "EP {watched} / {total}"
+  "home.episodeOf": "EP {watched} / {total}",
+  "levelup.title": "LEVEL UP",
+  "toast.levelUp": "LEVEL UP · LV {level} · {title}",
+  "toast.completed": "ZAVRŠENO · {title} · +{xp} XP"
 }

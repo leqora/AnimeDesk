@@ -151,5 +151,8 @@
   "home.welcomeSub": "Search for an anime and start watching.",
   "home.searchCta": "Search",
   "home.watchingNow": "Watching now",
-  "home.episodeOf": "EP {watched} / {total}"
+  "home.episodeOf": "EP {watched} / {total}",
+  "levelup.title": "LEVEL UP",
+  "toast.levelUp": "LEVEL UP · LV {level} · {title}",
+  "toast.completed": "COMPLETED · {title} · +{xp} XP"
 }

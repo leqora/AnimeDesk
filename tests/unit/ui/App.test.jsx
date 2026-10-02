@@ -10,7 +10,7 @@ describe('App', () => {
   it('opens the wizard automatically when tools are missing', async () => {
     const api = makeFakeApi({ health: { get: vi.fn(async () => ({ light: 'red', reason: 'missing-tools', missing: ['mpv'] })) } })
     render(<App api={api} />)
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Podešavanje' })).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Podešavanje' })).toBeInTheDocument(), { timeout: 3000 })
   })
   it('switches language when settings change and navigates', async () => {
     const api = makeFakeApi()

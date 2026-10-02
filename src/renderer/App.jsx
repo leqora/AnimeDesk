@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ApiContext } from './api.js'
 import { I18nProvider, useT } from './i18n/I18nContext.jsx'
 import { Sidebar } from './components/Sidebar.jsx'
@@ -10,13 +10,36 @@ import { HomePage } from './pages/HomePage.jsx'
 import { WatchlistPage } from './pages/WatchlistPage.jsx'
 import { DownloadsPage } from './pages/DownloadsPage.jsx'
 import { SettingsPage } from './pages/SettingsPage.jsx'
+import { LevelUpOverlay } from './components/LevelUpOverlay.jsx'
+import { Toast } from './components/Toast.jsx'
+import { createSound } from './sound.js'
 
 function CorruptBanner() {
   const t = useT()
   return <div className="notice notice--warn" role="status">{t('library.corrupt')}</div>
 }
 
-export default function App({ api }) {
+const SILENT = { soundKey: false, soundUi: false, soundVolume: 0 }
+
+function Celebrations({ levelUp, toast, motionOff, onLevelUpDone, onToastDone }) {
+  const t = useT()
+  return (
+    <>
+      {levelUp && !motionOff && <LevelUpOverlay level={levelUp.level} title={levelUp.title} onDone={onLevelUpDone} />}
+      {levelUp && motionOff && (
+        <Toast onDone={onLevelUpDone} icon="flame">{t('toast.levelUp', { level: levelUp.level, title: t(`title.${levelUp.title}`) })}</Toast>
+      )}
+      {!levelUp && toast && <Toast onDone={onToastDone}>{t('toast.completed', { title: toast.title, xp: toast.xp })}</Toast>}
+    </>
+  )
+}
+
+export default function App({ api, sound: injectedSound }) {
+  const settingsRef = useRef(null)
+  const sound = useMemo(() => injectedSound ?? createSound({ getSettings: () => settingsRef.current ?? SILENT }), [injectedSound])
+  const doneIds = useRef(new Set())
+  const [levelUp, setLevelUp] = useState(null)
+  const [toast, setToast] = useState(null)
   const [settings, setSettings] = useState(null)
   const [health, setHealth] = useState({ light: 'yellow', reason: 'checking' })
   const [page, setPage] = useState('home')
@@ -41,19 +64,37 @@ export default function App({ api }) {
     return api.onLibraryChanged(refresh)
   }, [api, page])
 
+  useEffect(() => {
+    const refresh = () => api.stats.get().then(setStats)
+    const offs = [
+      api.stats.onLevelUp((p) => { sound.play('levelUp'); setLevelUp(p); refresh() }),
+      api.stats.onSeriesCompleted((p) => { sound.play('seriesCompleted'); setToast(p); refresh() }),
+      api.downloads.onChange((queue) => {
+        const done = queue.filter((i) => i.status === 'done').map((i) => i.id)
+        if (done.some((id) => !doneIds.current.has(id))) sound.play('downloadDone')
+        doneIds.current = new Set(done)
+      }),
+    ]
+    const onClick = (e) => { if (e.target.closest?.('button')) sound.play('click') }
+    document.addEventListener('click', onClick, true)
+    return () => { offs.forEach((off) => off()); document.removeEventListener('click', onClick, true) }
+  }, [api, sound])
+
   useEffect(() => { if (health.reason === 'missing-tools') setWizardOpen(true) }, [health.reason])
 
   if (!settings) return null
+  settingsRef.current = settings
+  const motionOff = !settings.animations || window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true
   const ready = health.light === 'green'
   const updateSettings = async (patch) => setSettings(await api.settings.update(patch))
-  const navigate = (p) => { setOpenAnimeId(null); setPage(p) }
+  const navigate = (p) => { if (p !== page) sound.play('navigate'); setOpenAnimeId(null); setPage(p) }
   const openAnime = (id) => { setOpenAnimeId(id); setPage('watchlist') }
   const continueWatching = (params) => { setPendingWatch(params); setPage('home') }
 
   return (
     <ApiContext.Provider value={api}>
       <I18nProvider lang={settings.language}>
-        <div className="app-shell">
+        <div className={motionOff ? 'app-shell reduce-motion' : 'app-shell'}>
           <Sidebar
             page={page}
             onNavigate={navigate}
@@ -77,6 +118,7 @@ export default function App({ api }) {
         </div>
         {wizardOpen && <SetupWizard health={health} onClose={() => setWizardOpen(false)} />}
         {ask && <AskDialog ask={ask} onDone={() => setAsk(null)} />}
+        <Celebrations levelUp={levelUp} toast={toast} motionOff={motionOff} onLevelUpDone={() => setLevelUp(null)} onToastDone={() => setToast(null)} />
       </I18nProvider>
     </ApiContext.Provider>
   )
