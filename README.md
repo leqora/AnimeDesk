@@ -11,6 +11,10 @@ Desktop aplikacija (Windows) za gledanje i preuzimanje animea preko [ani-cli](ht
 - Preuzimanje epizoda u izabrani folder, red preuzimanja sa pauzom.
 - Semafor pokazuje da li sve radi; ako izvor prestane da radi, aplikacija sama preuzme novu verziju ani-cli.
 - Bez spojlera: opisi su sakriveni dok ne klikneš „Prikaži opis”.
+- Slike i podaci o animeu sa [AniList](https://anilist.co) (sa kešom; slike se pojavljuju postepeno jer AniList ograničava broj zahteva).
+- Moderan izgled: bočni meni, „Nastavi gledanje” baner, animacije (mogu da se isključe).
+- Profil sa nivoima i XP-om za odgledane epizode, statistika, zvuci (podesivo).
+- Automatsko ažuriranje aplikacije na klik; trenutna verzija piše u donjem levom uglu.
 
 ### Instalacija
 1. Skini `AnimeDesk-Setup-<verzija>.exe` sa [Releases](https://github.com/leqora/AnimeDesk/releases) i instaliraj.
@@ -39,6 +43,10 @@ ani-cli koristi neoficijalne izvore sadržaja. To je pravno siva zona; korisnik 
 - Download episodes to a folder of your choice, with a pausable queue.
 - A status light shows whether everything works; if the source breaks, the app fetches the newest ani-cli by itself.
 - Spoiler-free: descriptions stay hidden until you click "Show description".
+- Posters and anime details from [AniList](https://anilist.co) (cached; posters appear gradually because AniList rate-limits requests).
+- Modern look: sidebar, "Continue watching" banner, animations (can be turned off).
+- Profile with levels and XP for watched episodes, statistics, sounds (configurable).
+- One-click app updates; the current version is shown in the bottom-left corner.
 
 ### Install
 1. Download `AnimeDesk-Setup-<version>.exe` from [Releases](https://github.com/leqora/AnimeDesk/releases) and install it.
@@ -59,4 +67,6 @@ npm run test:live  # real ani-cli self-test (needs internet)
 npm run test:e2e   # Electron smoke test
 npm run dist       # build the Windows installer
 ```
-Release: bump `version` in package.json, write `docs/releases/v<version>.md`, merge to `main`, push, then `npm run release`.
+Release: bump `version` in package.json, write `docs/releases/v<version>.md`, merge to `main`, push, then `npm run release` (publishes a draft, verifies SHA-256 of the installer, blockmap and `latest.yml`, then marks it Latest).
+
+Project status, verified behaviour and known issues: [`docs/STATUS.md`](docs/STATUS.md). Design specs and plans: `docs/superpowers/`. Tracked risks: [`docs/RIZICI.md`](docs/RIZICI.md).

@@ -19,3 +19,15 @@ Rizici koji se posebno prate tokom razvoja. Svaki ima test koji ga „zakucava�
 | Promena naziva fajlova u GitHub izdanjima alata | fajlovi se traže po šablonu; greška se jasno prikazuje u wizard-u |
 | WSL bash (`C:\Windows\System32\bash.exe`) umesto Git Bash-a | traži se samo u Git for Windows lokacijama (test u Task 5) |
 | DMCA zahtev prema GitHub repozitorijumu | napomena u README; aplikacija ne sadrži kod za pristup sajtu |
+
+## Automatsko ažuriranje i AniList (v0.3)
+
+| Rizik | Šta bi se desilo | Kako je rešeno |
+|---|---|---|
+| Release bez `latest.yml` / `.blockmap` | ažuriranje se pokvari svima | objavljuje se samo preko `npm run release` (provera fajlova, draft → SHA-256 → Latest) |
+| Tiha instalacija pri zatvaranju | ažuriranje usred gledanja/preuzimanja | `autoInstallOnAppQuit = false`; instalacija samo na dugme „Restartuj i ažuriraj” |
+| HTML u beleškama izdanja | izvršavanje koda u prozoru | beleške se prikazuju samo kao čist tekst (`releaseNotes.js`) |
+| Nepotpisana aplikacija | SmartScreen upozorenje | do sada se nije pojavio (lokalna proba i 0.3.0 → 0.3.1); prati se |
+| AniList ograničenje (~30 zahteva/min, 429) | slike ostanu prazne u velikim pretragama | red zahteva jedan po jedan, čekanje po `Retry-After` / `X-RateLimit-Reset` (0.3.2) |
+| Pogrešna slika iz preširoke pretrage | korisnik vidi tuđi anime | nikad se ne traži po jednoj reči (`searchCandidates`) |
+| Keš „nije nađeno” nadživi bolju pretragu | posle ažuriranja slika i dalje fali do 7 dana | **otvoreno** — vidi `docs/STATUS.md`, poznati problem #1 |
