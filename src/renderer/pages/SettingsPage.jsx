@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
+import { Icon } from '../components/Icon.jsx'
 import { TOOL_IDS } from '../../shared/domain.js'
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 
-export function SettingsPage({ settings, onSettings }) {
+export function SettingsPage({ settings, onSettings, onTestSound = () => {} }) {
   const api = useApi()
   const t = useT()
   const [tools, setTools] = useState({})
   const [checking, setChecking] = useState(false)
   const [threshold, setThreshold] = useState(settings.watchedThreshold)
+  const [name, setName] = useState(settings.profileName ?? '')
 
   useEffect(() => { api.tools.status().then(setTools) }, [api])
   useEffect(() => { setThreshold(settings.watchedThreshold) }, [settings.watchedThreshold])
@@ -77,6 +79,37 @@ export function SettingsPage({ settings, onSettings }) {
       <label className="check">
         <input type="checkbox" checked={settings.autoUpdateTools} onChange={(e) => onSettings({ autoUpdateTools: e.target.checked })} />
         {t('settings.autoUpdate')}
+      </label>
+      <h3>{t('settings.profileSection')}</h3>
+      <label className="field">
+        <span>{t('settings.profileName')}</span>
+        <input
+          aria-label={t('settings.profileName')}
+          placeholder={settings.systemName ?? ''}
+          value={name}
+          maxLength={32}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => { const v = name.trim(); if (v !== (settings.profileName ?? '')) onSettings({ profileName: v || null }) }}
+        />
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={settings.soundKey} onChange={(e) => onSettings({ soundKey: e.target.checked })} />
+        {t('settings.soundKey')}
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={settings.soundUi} onChange={(e) => onSettings({ soundUi: e.target.checked })} />
+        {t('settings.soundUi')}
+      </label>
+      <div className="row">
+        <label className="field">
+          <span>{t('settings.soundVolume')}</span>
+          <input type="range" min="0" max="100" aria-label={t('settings.soundVolume')} value={settings.soundVolume} onChange={(e) => onSettings({ soundVolume: Number(e.target.value) })} />
+        </label>
+        <button type="button" onClick={onTestSound}><Icon name="volume" /> {t('settings.soundTest')}</button>
+      </div>
+      <label className="check">
+        <input type="checkbox" checked={settings.animations} onChange={(e) => onSettings({ animations: e.target.checked })} />
+        {t('settings.animations')}
       </label>
       <h3>{t('settings.tools')}</h3>
       <ul className="tool-list">

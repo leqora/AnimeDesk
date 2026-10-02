@@ -112,7 +112,7 @@ export default function App({ api, sound: injectedSound }) {
               {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} initialOpenId={openAnimeId} />}
               {page === 'downloads' && <DownloadsPage />}
               {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} />}
-              {page === 'settings' && <SettingsPage settings={settings} onSettings={updateSettings} />}
+              {page === 'settings' && <SettingsPage settings={settings} onSettings={updateSettings} onTestSound={() => sound.play('levelUp')} />}
             </div>
           </main>
         </div>
