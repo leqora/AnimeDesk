@@ -14,6 +14,7 @@ describe('settings', () => {
       downloadDir: null, quality: 'best', mode: 'sub', autoUpdateTools: true,
       profileName: null, soundKey: true, soundUi: false, soundVolume: 60, animations: true,
       autoDownloadUpdates: true, lastSeenVersion: null, fullscreen: false,
+      playerMode: 'internal', autoSkip: false, autoNext: true, subtitleSize: 'M', mpvModernUi: true,
     })
   })
   it('clamps the threshold and ignores invalid values', () => {
@@ -66,5 +67,10 @@ describe('settings', () => {
     expect(DEFAULT_SETTINGS.fullscreen).toBe(false)
     expect(sanitizeSettings({ fullscreen: true }).fullscreen).toBe(true)
     expect(sanitizeSettings({ fullscreen: 'yes' }).fullscreen).toBe(false)
+  })
+  it('validates the player settings', () => {
+    expect(DEFAULT_SETTINGS).toMatchObject({ playerMode: 'internal', autoSkip: false, autoNext: true, subtitleSize: 'M', mpvModernUi: true })
+    expect(sanitizeSettings({ playerMode: 'external', autoSkip: true, autoNext: false, subtitleSize: 'L', mpvModernUi: false })).toMatchObject({ playerMode: 'external', autoSkip: true, autoNext: false, subtitleSize: 'L', mpvModernUi: false })
+    expect(sanitizeSettings({ playerMode: 'vlc', autoSkip: 'yes', autoNext: 1, subtitleSize: 'XL', mpvModernUi: null })).toMatchObject({ playerMode: 'internal', autoSkip: false, autoNext: true, subtitleSize: 'M', mpvModernUi: true })
   })
 })
