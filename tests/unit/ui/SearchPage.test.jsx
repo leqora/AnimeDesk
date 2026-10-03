@@ -32,7 +32,7 @@ describe('SearchPage', () => {
 
     act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Frieren', '2 Frieren Specials'] }))
     fireEvent.click(screen.getByRole('button', { name: /Frieren Specials/ }))
-    expect(api.watch.answerMenu).toHaveBeenCalledWith('r1', '2 Frieren Specials')
+    await waitFor(() => expect(api.watch.answerMenu).toHaveBeenCalledWith('r1', '2 Frieren Specials'))
 
     act(() => handlers.menu({ requestId: 'r2', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
     expect(screen.getByRole('heading', { name: /Frieren Specials/ })).toBeInTheDocument()
@@ -56,6 +56,7 @@ describe('SearchPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
     act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show'] }))
     fireEvent.click(screen.getByRole('button', { name: /Show/ }))
+    await waitFor(() => expect(api.watch.answerMenu).toHaveBeenCalledWith('r1', '1 Show'))
     act(() => handlers.menu({ requestId: 'r2', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
     fireEvent.click(screen.getByRole('button', { name: '3' }))
     fireEvent.click(screen.getByRole('button', { name: '1' }))
@@ -113,14 +114,16 @@ describe('SearchPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
     act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show'] }))
     fireEvent.click(screen.getByRole('button', { name: /Show/ }))
+    await waitFor(() => expect(api.watch.answerMenu).toHaveBeenCalledWith('r1', '1 Show'))
     act(() => handlers.menu({ requestId: 'r2', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2'] }))
     await waitFor(() => expect(screen.getByRole('button', { name: '1' })).toHaveClass('ep--watched'))
     expect(screen.getByRole('button', { name: '2' })).not.toHaveClass('ep--watched')
   })
 
-  const toEpisodes = (handlers, lines = ['1', '2', '3']) => {
+  const toEpisodes = async (api, handlers, lines = ['1', '2', '3']) => {
     act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show'] }))
     fireEvent.click(screen.getByRole('button', { name: /Show/ }))
+    await waitFor(() => expect(api.watch.answerMenu).toHaveBeenCalledWith('r1', '1 Show'))
     act(() => handlers.menu({ requestId: 'r2', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines }))
   }
   const search = (q = 'show') => {
@@ -141,24 +144,25 @@ describe('SearchPage', () => {
     expect(onFocusChange).toHaveBeenLastCalledWith(false)
   })
 
-  it('stays focused while busy after an anime was picked', () => {
+  it('stays focused while busy after an anime was picked', async () => {
     const { api, handlers } = withEvents()
     const onFocusChange = vi.fn()
     renderUi(<SearchPage {...props({ onFocusChange })} />, { api })
     search()
     act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show'] }))
     fireEvent.click(screen.getByRole('button', { name: /Show/ }))
+    await waitFor(() => expect(api.watch.answerMenu).toHaveBeenCalledWith('r1', '1 Show'))
     expect(onFocusChange).toHaveBeenLastCalledWith(true)
     expect(screen.queryByLabelText('Naziv animea…')).not.toBeInTheDocument()
     act(() => handlers.end({ sessionId: 's1', result: { ok: false, error: 'cancelled' } }))
     expect(onFocusChange).toHaveBeenLastCalledWith(false)
   })
 
-  it('pages long episode lists', () => {
+  it('pages long episode lists', async () => {
     const { api, handlers } = withEvents()
     renderUi(<SearchPage {...props()} />, { api })
     search()
-    toEpisodes(handlers, Array.from({ length: 250 }, (_, i) => String(i + 1)))
+    await toEpisodes(api, handlers, Array.from({ length: 250 }, (_, i) => String(i + 1)))
     expect(screen.getByRole('group', { name: 'Grupe epizoda' })).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /^\d+$/ })).toHaveLength(100)
   })
@@ -170,7 +174,7 @@ describe('SearchPage', () => {
     renderUi(<SearchPage {...props()} />, { api })
     search()
     await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(1))
-    toEpisodes(handlers)
+    await toEpisodes(api, handlers)
     await waitFor(() => expect(api.seriesPrefs.get).toHaveBeenCalledWith('Show'))
     fireEvent.change(screen.getByLabelText('Kvalitet'), { target: { value: '720' } })
     await waitFor(() => expect(api.seriesPrefs.set).toHaveBeenCalledWith('Show', { quality: '720' }))
@@ -184,11 +188,50 @@ describe('SearchPage', () => {
     expect(screen.getByRole('button', { name: '2' })).toBeInTheDocument()
   })
 
+  it('restarts with the picked title when it has saved prefs, ignoring the old session', async () => {
+    const { api, handlers } = withEvents()
+    api.seriesPrefs.get.mockImplementation(async (title) => (title === 'Show' ? { quality: null, mode: 'dub' } : { quality: null, mode: null }))
+    api.watch.start.mockResolvedValueOnce({ sessionId: 's1', mode: 'sub' }).mockResolvedValueOnce({ sessionId: 's2', mode: 'dub' })
+    renderUi(<SearchPage {...props()} />, { api })
+    search('show')
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(1))
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show'] }))
+    fireEvent.click(screen.getByRole('button', { name: /Show/ }))
+    await waitFor(() => expect(api.watch.cancel).toHaveBeenCalledWith('s1'))
+    expect(api.watch.start).toHaveBeenLastCalledWith({ query: 'Show', anime: 'Show' })
+    expect(api.watch.answerMenu).not.toHaveBeenCalled()
+    // Late events of the cancelled session are dropped.
+    act(() => handlers.menu({ requestId: 'rx', sessionId: 's1', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show'] }))
+    expect(screen.queryByRole('heading', { name: 'Izaberi anime' })).not.toBeInTheDocument()
+    expect(screen.getByText('Pretraga…')).toBeInTheDocument()
+    act(() => handlers.end({ sessionId: 's1', result: { ok: false, error: 'cancelled' } }))
+    expect(screen.getByText('Pretraga…')).toBeInTheDocument()
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(2))
+    act(() => handlers.menu({ requestId: 'r2', sessionId: 's2', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2'] }))
+    expect(screen.getByRole('button', { name: '2' })).toBeInTheDocument()
+  })
+
+  it('does not restart when the new mode equals the one the session was started with', async () => {
+    const { api, handlers } = withEvents()
+    // The running session already plays dub (resolved by the main process) although the page shows "default".
+    api.watch.start.mockResolvedValueOnce({ sessionId: 's1', mode: 'dub' })
+    renderUi(<SearchPage {...props()} />, { api })
+    search()
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(1))
+    await toEpisodes(api, handlers)
+    await waitFor(() => expect(api.seriesPrefs.get).toHaveBeenCalledWith('Show'))
+    fireEvent.change(screen.getByLabelText('Režim'), { target: { value: 'dub' } })
+    await waitFor(() => expect(api.seriesPrefs.set).toHaveBeenCalledWith('Show', { mode: 'dub' }))
+    await act(async () => {})
+    expect(api.watch.cancel).not.toHaveBeenCalled()
+    expect(api.watch.start).toHaveBeenCalledTimes(1)
+  })
+
   it('offers to play subtitled when the episode has no dub', async () => {
     const { api, handlers } = withEvents()
     renderUi(<SearchPage {...props()} />, { api })
     search()
-    toEpisodes(handlers)
+    await toEpisodes(api, handlers)
     fireEvent.click(screen.getByRole('button', { name: '2' }))
     fireEvent.click(screen.getByRole('button', { name: 'Gledaj' }))
     act(() => handlers.end({ sessionId: 's1', result: { ok: false, error: 'no-dub', stderr: 'No sources found for dub!' } }))

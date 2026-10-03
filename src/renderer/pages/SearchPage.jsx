@@ -26,8 +26,9 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
   // The session id and phase are mirrored in a ref so the unmount cleanup sees the latest values.
   const [prefs, setPrefs] = useState({ quality: null, mode: null })
-  // ignore: sessions we cancelled on purpose (mode switch) — their late events must not touch the new session
-  const live = useRef({ sessionId: null, phase: 'idle', ignore: new Set(), lastEpisode: null })
+  // ignore: sessions we cancelled on purpose (mode switch, series prefs) — their late events must not touch the new session
+  // startedMode: the sub/dub the running session was started with (ani-cli reads it only at start)
+  const live = useRef({ sessionId: null, phase: 'idle', ignore: new Set(), lastEpisode: null, startedMode: null, startSeq: 0 })
   useEffect(() => { live.current.phase = phase }, [phase])
   // Stay focused between the anime and episode menus (and during a sub/dub restart) so the home sections do not flash back.
   const focused = phase === 'anime' || phase === 'episode' || (phase === 'busy' && anime != null)
@@ -69,13 +70,27 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
   const start = (params) => {
     live.current.lastEpisode = params.episode ?? null
+    live.current.startedMode = null
+    const seq = ++live.current.startSeq
     setError(null)
     setShowDetails(false)
     setNotice(null)
     setPhase('busy')
     api.watch.start(params)
-      .then((r) => { if (r?.sessionId) live.current.sessionId = r.sessionId })
+      .then((r) => {
+        if (seq !== live.current.startSeq) return
+        if (r?.sessionId) live.current.sessionId = r.sessionId
+        live.current.startedMode = r?.mode ?? null
+      })
       .catch(() => { setPhase('idle'); setError({ error: 'unknown' }) })
+  }
+  // Cancel the running session on purpose and start a fresh one for this series (prefs are read only at start).
+  const restartFor = (title) => {
+    const old = live.current.sessionId
+    if (old) { live.current.ignore.add(old); api.watch.cancel(old) }
+    live.current.sessionId = null
+    setMenu(null)
+    start({ query: title, anime: title })
   }
 
   useEffect(() => {
@@ -97,22 +112,25 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     setMenu(null)
     setPhase(line == null ? 'idle' : 'busy')
   }
-  const pickAnime = (line) => { setAnime(animeLineTitle(line)); answer(line) }
+  const pickAnime = async (line) => {
+    const title = animeLineTitle(line)
+    const requestId = menu.requestId
+    setAnime(title)
+    setMenu(null)
+    setPhase('busy')
+    // The session was started with prefs resolved for the search text; saved prefs of the picked series need a fresh start.
+    const p = await api.seriesPrefs.get(title).catch(() => null)
+    if (p?.quality || p?.mode) restartFor(title)
+    else api.watch.answerMenu(requestId, line)
+  }
   const toggle = (ep) => setSelected((s) => (s.includes(ep) ? s.filter((x) => x !== ep) : [...s, ep]))
   const watchSelected = () => { const ep = [...selected].sort(byNumber)[0]; if (ep) { live.current.lastEpisode = ep; answer(ep) } }
 
-  const restart = () => {
-    const old = live.current.sessionId
-    if (old) { live.current.ignore.add(old); api.watch.cancel(old) }
-    live.current.sessionId = null
-    setMenu(null)
-    start({ query: anime, anime })
-  }
   const changePrefs = async (patch) => {
-    const before = prefs.mode ?? settings.mode
+    const started = live.current.startedMode ?? prefs.mode ?? settings.mode
     const next = await api.seriesPrefs.set(anime, patch)
     setPrefs(next)
-    if ('mode' in patch && (next.mode ?? settings.mode) !== before && live.current.phase === 'episode') restart()
+    if ('mode' in patch && (next.mode ?? settings.mode) !== started && live.current.phase === 'episode') restartFor(anime)
   }
   const playSubtitled = () => start({ query: anime, anime, episode: live.current.lastEpisode, mode: 'sub' })
 

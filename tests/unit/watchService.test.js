@@ -33,10 +33,10 @@ describe('watchService', () => {
   it('starts ani-cli with the series quality and mode, and a one-off mode wins', async () => {
     const seriesPrefs = { resolve: vi.fn(() => ({ quality: '720', mode: 'dub' })) }
     const { svc, aniCli } = setup({ seriesPrefs })
-    svc.watch({ query: 'show', anime: 'Show (12 episodes)' })
+    expect(svc.watch({ query: 'show', anime: 'Show (12 episodes)' })).toEqual({ sessionId: 'sid', quality: '720', mode: 'dub' })
     expect(seriesPrefs.resolve).toHaveBeenCalledWith('Show (12 episodes)', expect.objectContaining({ quality: 'best' }))
     expect(aniCli.startSession).toHaveBeenLastCalledWith(expect.objectContaining({ quality: '720', mode: 'dub' }))
-    svc.watch({ query: 'show', anime: 'Show (12 episodes)', mode: 'sub' })
+    expect(svc.watch({ query: 'show', anime: 'Show (12 episodes)', mode: 'sub' })).toEqual({ sessionId: 'sid', quality: '720', mode: 'sub' })
     expect(aniCli.startSession).toHaveBeenLastCalledWith(expect.objectContaining({ quality: '720', mode: 'sub' }))
     svc.watch({ query: 'show', mode: 'weird' })
     expect(seriesPrefs.resolve).toHaveBeenLastCalledWith('show', expect.anything())
