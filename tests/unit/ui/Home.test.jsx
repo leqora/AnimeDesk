@@ -85,7 +85,7 @@ describe('pinned + cards', () => {
     renderUi(<SeriesCard entry={entry({ totalEpisodes: null })} ready={false} onOpen={() => {}} onContinue={() => {}} />)
     expect(screen.getByText('EP 2 / ?')).toBeInTheDocument()
     expect(screen.queryByText(/%$/)).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /^Nastavi EP/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Nastavi EP 3' })).toBeDisabled()
   })
 })
 
