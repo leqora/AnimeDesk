@@ -56,4 +56,6 @@ export const EVENTS = {
   seriesCompleted: 'event:series-completed',
   updateState: 'event:update-state',
   fullscreen: 'event:fullscreen',
+  playerOpen: 'event:player-open',
+  playerClose: 'event:player-close',
 }
