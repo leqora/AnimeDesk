@@ -3,7 +3,7 @@ import { EVENTS } from '../shared/channels.js'
 import { autoAnswer, menuKind, parsePlayerArgs } from './aniCliBridge.js'
 import { decideWatched } from './playerMonitor.js'
 
-export function createWatchService({ aniCli, player, library, settings, notify }) {
+export function createWatchService({ aniCli, player, library, settings, notify, seriesPrefs = null }) {
   const pending = new Map() // requestId -> { sessionId, resolve }
   const sessions = new Map() // sessionId -> session
 
@@ -26,12 +26,18 @@ export function createWatchService({ aniCli, player, library, settings, notify }
     p.resolve(line ?? null)
   }
 
-  function watch({ query, anime = null, episode = null }) {
+  function watch({ query, anime = null, episode = null, mode = null }) {
     let sessionId = null
+    const s = settings.get()
+    const prefs = seriesPrefs ? seriesPrefs.resolve(anime ?? query, s) : { quality: s.quality, mode: s.mode }
+    const forced = mode === 'sub' || mode === 'dub' ? mode : null
+    const effectiveMode = forced ?? prefs.mode
     const session = aniCli.startSession({
       query,
       player: 'play',
       episodes: episode,
+      quality: prefs.quality,
+      mode: effectiveMode,
       onMenu: ({ prompt, lines }) => {
         const auto = autoAnswer(prompt, lines, { anime, episode })
         if (auto) return Promise.resolve(auto)
@@ -59,7 +65,8 @@ export function createWatchService({ aniCli, player, library, settings, notify }
       sessions.delete(sessionId)
       notify(EVENTS.sessionEnd, { sessionId, result: { ok: result.ok, error: result.error, stderr: result.stderr } })
     })
-    return { sessionId }
+    // ani-cli reads quality/mode only at start; the UI needs them to know when a sub/dub switch requires a restart.
+    return { sessionId, quality: prefs.quality, mode: effectiveMode }
   }
 
   function cancel(sessionId) {

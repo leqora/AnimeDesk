@@ -5,22 +5,44 @@ import { createHandlers, registerIpc } from '../../src/main/ipc.js'
 function services() {
   return {
     settings: { get: vi.fn(() => ({ language: 'sr' })), update: vi.fn((p) => p) },
-    library: { list: vi.fn(() => []), add: vi.fn(), update: vi.fn(), remove: vi.fn(), setEpisodeNote: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })), wasCorrupt: true },
+    library: { list: vi.fn(() => []), add: vi.fn(), update: vi.fn(), remove: vi.fn(), setEpisodeNote: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })), setPinned: vi.fn(), wasCorrupt: true },
+    seriesPrefs: { get: vi.fn(() => ({ quality: null, mode: null })), set: vi.fn((t, p) => p) },
     anilist: { getForTitle: vi.fn(), search: vi.fn() },
     toolManager: { status: vi.fn(), installMissing: vi.fn(async (cb) => { cb({ id: 'mpv', phase: 'done' }); return {} }), updateAll: vi.fn(async () => []) },
     health: { get: vi.fn(), run: vi.fn() },
     watch: { watch: vi.fn(), cancel: vi.fn(), answerMenu: vi.fn(), playLocal: vi.fn(async () => 'watched') },
     downloads: { enqueue: vi.fn(), pause: vi.fn(), resume: vi.fn(), cancel: vi.fn(), queueItems: vi.fn(), listDownloaded: vi.fn(), removeDownloaded: vi.fn(), getDownloaded: vi.fn((id) => (id === 'd1' ? { path: 'D:\\A\\A Episode 1.mp4', title: 'A', episode: '1' } : null)) },
-    electron: { pickFolder: vi.fn(async () => 'D:\\X'), showItemInFolder: vi.fn() },
+    electron: { pickFolder: vi.fn(async () => 'D:\\X'), showItemInFolder: vi.fn(), openRepo: vi.fn() },
     tracker: { update: vi.fn(), remove: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })) },
     progress: { snapshot: vi.fn(() => ({ level: 1 })), check: vi.fn() },
     updater: { getState: vi.fn(() => ({ status: 'idle' })), check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(() => true), install: vi.fn(() => true), applySettings: vi.fn() },
     whatsNew: { get: vi.fn(() => null), seen: vi.fn() },
+    window: { get: vi.fn(() => true), set: vi.fn() },
     send: vi.fn(),
   }
 }
 
 describe('ipc', () => {
+  it('pins through the library and reports the limit without throwing', () => {
+    const s = services()
+    const h = createHandlers(s)
+    s.library.setPinned.mockReturnValueOnce({ id: 'a', pinnedAt: 'x' })
+    expect(h[INVOKE.librarySetPinned]('a', true)).toEqual({ ok: true, entry: { id: 'a', pinnedAt: 'x' } })
+    expect(s.send).toHaveBeenCalledWith(EVENTS.libraryChanged)
+    s.send.mockClear()
+    s.library.setPinned.mockImplementationOnce(() => { throw new Error('pin-limit') })
+    expect(h[INVOKE.librarySetPinned]('b', true)).toEqual({ ok: false, error: 'pin-limit' })
+    expect(s.send).not.toHaveBeenCalled()
+    s.library.setPinned.mockImplementationOnce(() => { throw new Error('unknown anime id: z') })
+    expect(() => h[INVOKE.librarySetPinned]('z', true)).toThrow('unknown anime id')
+  })
+  it('reads and writes series prefs', () => {
+    const s = services()
+    const h = createHandlers(s)
+    h[INVOKE.seriesPrefsGet]('Show')
+    expect(s.seriesPrefs.get).toHaveBeenCalledWith('Show')
+    expect(h[INVOKE.seriesPrefsSet]('Show', { mode: 'dub' })).toEqual({ mode: 'dub' })
+  })
   it('notifies the renderer after library update and remove', () => {
     const s = services()
     s.tracker.update.mockReturnValue({ id: 'id1' })
@@ -31,6 +53,11 @@ describe('ipc', () => {
     s.send.mockClear()
     expect(h[INVOKE.libraryRemove]('id1')).toBe(true)
     expect(s.send).toHaveBeenCalledWith(EVENTS.libraryChanged)
+  })
+  it('opens the fixed repo URL through the main process', () => {
+    const s = services()
+    createHandlers(s)[INVOKE.appOpenRepo]('https://evil.example')
+    expect(s.electron.openRepo).toHaveBeenCalledWith()
   })
   it('has a handler for every INVOKE channel and nothing else', () => {
     expect(Object.keys(createHandlers(services())).sort()).toEqual(Object.values(INVOKE).sort())
@@ -99,5 +126,12 @@ describe('ipc', () => {
     expect(s.updater.applySettings).not.toHaveBeenCalled()
     h[INVOKE.settingsUpdate]({ autoDownloadUpdates: false })
     expect(s.updater.applySettings).toHaveBeenCalledTimes(1)
+  })
+  it('reads and sets window fullscreen', () => {
+    const s = services()
+    const h = createHandlers(s)
+    expect(h[INVOKE.windowGetFullscreen]()).toBe(true)
+    h[INVOKE.windowSetFullscreen](false)
+    expect(s.window.set).toHaveBeenCalledWith(false)
   })
 })

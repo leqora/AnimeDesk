@@ -6,7 +6,7 @@ export function LevelUpOverlay({ level, title, xpIntoLevel = 0, xpForNext = 0, o
   const t = useT()
   useEffect(() => {
     const timer = setTimeout(onDone, ms)
-    const onKey = (e) => { if (e.key === 'Escape') onDone() }
+    const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); onDone() } }
     window.addEventListener('keydown', onKey)
     return () => { clearTimeout(timer); window.removeEventListener('keydown', onKey) }
   }, [])

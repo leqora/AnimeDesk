@@ -14,5 +14,7 @@ export function animeLineTitle(line) {
 export function nextEpisode(entry) {
   const max = Math.max(entry.totalEpisodes ?? 0, ...entry.watchedEpisodes.map(Math.ceil), 1)
   for (let ep = 1; ep <= max; ep++) if (!entry.watchedEpisodes.includes(ep)) return ep
+  // Unknown total: the series may go on, so continue after the last watched episode; a finished known series restarts at 1.
+  if (entry.totalEpisodes == null) return max + 1
   return 1
 }

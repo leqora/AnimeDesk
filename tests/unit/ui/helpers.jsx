@@ -13,7 +13,9 @@ export function makeFakeApi(overrides = {}) {
     library: {
       list: vi.fn(async () => []), add: vi.fn(async (e) => ({ id: 'new', ...e })), update: vi.fn(async (id, p) => ({ id, ...p })),
       remove: vi.fn(async () => true), setEpisodeNote: vi.fn(async () => ({})), recordWatched: vi.fn(async () => ({})), wasCorrupt: vi.fn(async () => false),
+      setPinned: vi.fn(async (id, pinned) => ({ ok: true, entry: { id, pinnedAt: pinned ? 'now' : null } })),
     },
+    seriesPrefs: { get: vi.fn(async () => ({ quality: null, mode: null })), set: vi.fn(async (title, patch) => ({ quality: null, mode: null, ...patch })) },
     anilist: { forTitle: vi.fn(async () => null), search: vi.fn(async () => []) },
     tools: { status: vi.fn(async () => ({})), installMissing: vi.fn(async () => ({})), checkUpdates: vi.fn(async () => []), onProgress: sub() },
     health: { get: vi.fn(async () => ({ light: 'green', reason: 'ok' })), recheck: vi.fn(async () => ({})), onChange: sub() },
@@ -31,7 +33,9 @@ export function makeFakeApi(overrides = {}) {
       check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(async () => true), install: vi.fn(async () => true), onState: sub(),
     },
     whatsNew: { get: vi.fn(async () => null), seen: vi.fn(async () => {}) },
+    window: { getFullscreen: vi.fn(async () => false), setFullscreen: vi.fn(async () => {}), onFullscreen: sub() },
     dialog: { pickFolder: vi.fn(async () => null) },
+    app: { openRepo: vi.fn(async () => {}) },
     onLibraryChanged: sub(),
   }
   for (const [group, fns] of Object.entries(overrides)) Object.assign(api[group], fns)

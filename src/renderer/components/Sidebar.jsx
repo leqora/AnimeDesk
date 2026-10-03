@@ -5,7 +5,7 @@ import { Icon } from './Icon.jsx'
 
 const PAGES = ['home', 'watchlist', 'downloads', 'profile', 'settings']
 
-export function Sidebar({ page, onNavigate, health, onSemaphoreClick, profileName, stats, version = '' }) {
+export function Sidebar({ page, onNavigate, health, onSemaphoreClick, profileName, stats, version = '', fullscreen = false, onToggleFullscreen = () => {} }) {
   const t = useT()
   return (
     <aside className="sidebar">
@@ -28,7 +28,13 @@ export function Sidebar({ page, onNavigate, health, onSemaphoreClick, profileNam
       <div className="sidebar__footer">
         <Semaphore health={health} onClick={onSemaphoreClick} />
         <ProfileCard name={profileName} stats={stats} onClick={() => onNavigate('profile')} />
-        {version && <span className="sidebar__version muted">v{version}</span>}
+        <button type="button" className="nav-item" aria-label={fullscreen ? t('window.exitFullscreen') : t('window.fullscreen')} onClick={onToggleFullscreen}>
+          <Icon name={fullscreen ? 'minimize' : 'maximize'} size={20} />
+          <span className="nav-item__label">{fullscreen ? t('window.exitFullscreen') : t('window.fullscreen')}</span>
+        </button>
+        <span className="sidebar__version muted">
+          {version && <span>v{version}</span>}{version ? ' · ' : ''}by Leqora
+        </span>
       </div>
     </aside>
   )

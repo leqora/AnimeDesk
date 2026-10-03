@@ -1,8 +1,9 @@
-import { House, ListVideo, Download, UserRound, Settings, Play, Info, Check, Flame, Search, Film, Volume2 } from 'lucide-react'
+import { House, ListVideo, Download, UserRound, Settings, Play, Info, Check, Flame, Search, Film, Volume2, ArrowLeft, Star, ChevronLeft, ChevronRight, Maximize, Minimize } from 'lucide-react'
 
 const ICONS = {
   home: House, watchlist: ListVideo, downloads: Download, profile: UserRound, settings: Settings,
   play: Play, info: Info, check: Check, flame: Flame, search: Search, film: Film, volume: Volume2,
+  back: ArrowLeft, star: Star, chevronLeft: ChevronLeft, chevronRight: ChevronRight, maximize: Maximize, minimize: Minimize,
 }
 
 export function Icon({ name, size = 18 }) {

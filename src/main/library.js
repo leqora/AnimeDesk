@@ -2,6 +2,8 @@ import crypto from 'node:crypto'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 import { STATUSES, normalizeTitle } from '../shared/domain.js'
 
+export const MAX_PINNED = 5
+
 const EDITABLE = ['title', 'aniCliTitle', 'aniListId', 'status', 'rating', 'comment', 'totalEpisodes', 'watchedEpisodes']
 
 function uniqSorted(eps) {
@@ -49,7 +51,7 @@ export function createLibrary(file, { now = () => new Date().toISOString(), uuid
     const ts = now()
     const entry = {
       id: uuid(), title: '', aniCliTitle, aniListId, status, rating: null, comment: '',
-      totalEpisodes, watchedEpisodes: [], episodeNotes: {}, addedAt: ts, updatedAt: ts, lastWatchedAt: null,
+      totalEpisodes, watchedEpisodes: [], episodeNotes: {}, addedAt: ts, updatedAt: ts, lastWatchedAt: null, pinnedAt: null,
     }
     Object.assign(entry, validatePatch({ title, status, totalEpisodes }))
     db.anime[entry.id] = entry
@@ -98,11 +100,23 @@ export function createLibrary(file, { now = () => new Date().toISOString(), uuid
     return copy(e)
   }
 
+  function setPinned(id, pinned) {
+    const e = mustGet(id)
+    if (!pinned) e.pinnedAt = null
+    else if (!e.pinnedAt) {
+      const others = Object.values(db.anime).filter((x) => x.pinnedAt && x.id !== id).length
+      if (others >= MAX_PINNED) throw new Error('pin-limit')
+      e.pinnedAt = now()
+    }
+    save()
+    return copy(e)
+  }
+
   return {
     wasCorrupt: loaded.corrupt,
     list: () => Object.values(db.anime).map(copy),
     get: (id) => copy(db.anime[id]),
     findByAniCliTitle: (title) => copy(findRaw(title)),
-    add, update, remove, setEpisodeNote, recordWatched,
+    add, update, remove, setEpisodeNote, recordWatched, setPinned,
   }
 }

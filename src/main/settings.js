@@ -16,9 +16,11 @@ export const DEFAULT_SETTINGS = Object.freeze({
   animations: true,
   autoDownloadUpdates: true,
   lastSeenVersion: null,
+  fullscreen: false,
 })
 
-const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
+export const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
+export const MODES = ['sub', 'dub']
 
 export function sanitizeSettings(input = {}) {
   const s = { ...DEFAULT_SETTINGS }
@@ -30,7 +32,7 @@ export function sanitizeSettings(input = {}) {
   if (typeof input.askOnClose === 'boolean') s.askOnClose = input.askOnClose
   if (typeof input.downloadDir === 'string' && input.downloadDir) s.downloadDir = input.downloadDir
   if (QUALITIES.includes(input.quality)) s.quality = input.quality
-  if (input.mode === 'sub' || input.mode === 'dub') s.mode = input.mode
+  if (MODES.includes(input.mode)) s.mode = input.mode
   if (typeof input.autoUpdateTools === 'boolean') s.autoUpdateTools = input.autoUpdateTools
   if (typeof input.profileName === 'string' && input.profileName.trim()) s.profileName = input.profileName.trim().slice(0, 32)
   if (typeof input.soundKey === 'boolean') s.soundKey = input.soundKey
@@ -39,6 +41,7 @@ export function sanitizeSettings(input = {}) {
   if (typeof input.animations === 'boolean') s.animations = input.animations
   if (typeof input.autoDownloadUpdates === 'boolean') s.autoDownloadUpdates = input.autoDownloadUpdates
   if (typeof input.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(input.lastSeenVersion)) s.lastSeenVersion = input.lastSeenVersion
+  if (typeof input.fullscreen === 'boolean') s.fullscreen = input.fullscreen
   return s
 }
 

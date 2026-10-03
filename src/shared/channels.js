@@ -14,6 +14,9 @@ export const INVOKE = {
   libraryNote: 'library:note',
   libraryRecord: 'library:record',
   libraryWasCorrupt: 'library:was-corrupt',
+  librarySetPinned: 'library:set-pinned',
+  seriesPrefsGet: 'series-prefs:get',
+  seriesPrefsSet: 'series-prefs:set',
   anilistForTitle: 'anilist:for-title',
   anilistSearch: 'anilist:search',
   toolsStatus: 'tools:status',
@@ -34,7 +37,10 @@ export const INVOKE = {
   downloadsPlay: 'downloads:play',
   downloadsOpenFolder: 'downloads:open-folder',
   dialogPickFolder: 'dialog:pick-folder',
+  appOpenRepo: 'app:open-repo',
   statsGet: 'stats:get',
+  windowGetFullscreen: 'window:get-fullscreen',
+  windowSetFullscreen: 'window:set-fullscreen',
 }
 
 export const EVENTS = {
@@ -49,4 +55,5 @@ export const EVENTS = {
   levelUp: 'event:level-up',
   seriesCompleted: 'event:series-completed',
   updateState: 'event:update-state',
+  fullscreen: 'event:fullscreen',
 }

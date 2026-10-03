@@ -18,7 +18,9 @@ contextBridge.exposeInMainWorld('animedesk', {
     setEpisodeNote: invoke(INVOKE.libraryNote),
     recordWatched: invoke(INVOKE.libraryRecord),
     wasCorrupt: invoke(INVOKE.libraryWasCorrupt),
+    setPinned: invoke(INVOKE.librarySetPinned),
   },
+  seriesPrefs: { get: invoke(INVOKE.seriesPrefsGet), set: invoke(INVOKE.seriesPrefsSet) },
   anilist: { forTitle: invoke(INVOKE.anilistForTitle), search: invoke(INVOKE.anilistSearch) },
   tools: {
     status: invoke(INVOKE.toolsStatus),
@@ -57,6 +59,8 @@ contextBridge.exposeInMainWorld('animedesk', {
     onState: on(EVENTS.updateState),
   },
   whatsNew: { get: invoke(INVOKE.whatsNewGet), seen: invoke(INVOKE.whatsNewSeen) },
+  window: { getFullscreen: invoke(INVOKE.windowGetFullscreen), setFullscreen: invoke(INVOKE.windowSetFullscreen), onFullscreen: on(EVENTS.fullscreen) },
   dialog: { pickFolder: invoke(INVOKE.dialogPickFolder) },
+  app: { openRepo: invoke(INVOKE.appOpenRepo) },
   onLibraryChanged: on(EVENTS.libraryChanged),
 })

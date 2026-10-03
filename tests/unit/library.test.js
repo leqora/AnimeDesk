@@ -13,6 +13,26 @@ beforeEach(() => {
 })
 
 describe('library', () => {
+  it('pins up to 5 series and keeps the first pin time when re-pinned', () => {
+    let t = 0
+    const lib = createLibrary(file, { now: () => `2026-10-03T00:00:0${t++}Z` })
+    const ids = Array.from({ length: 6 }, (_, i) => lib.add({ title: `S${i}` }).id)
+    expect(lib.get(ids[0]).pinnedAt).toBeNull()
+    const first = lib.setPinned(ids[0], true).pinnedAt
+    expect(first).toMatch(/^2026/)
+    expect(lib.setPinned(ids[0], true).pinnedAt).toBe(first)
+    for (const id of ids.slice(1, 5)) lib.setPinned(id, true)
+    expect(() => lib.setPinned(ids[5], true)).toThrow('pin-limit')
+    expect(lib.get(ids[5]).pinnedAt).toBeNull()
+    lib.setPinned(ids[0], false)
+    expect(lib.get(ids[0]).pinnedAt).toBeNull()
+    expect(lib.setPinned(ids[5], true).pinnedAt).toMatch(/^2026/)
+  })
+  it('treats entries saved before pins existed as unpinned', () => {
+    fs.writeFileSync(file, JSON.stringify({ version: 1, anime: { a: { id: 'a', title: 'Old', aniCliTitle: null, aniListId: null, status: 'planned', rating: null, comment: '', totalEpisodes: null, watchedEpisodes: [], episodeNotes: {}, addedAt: 'x', updatedAt: 'x', lastWatchedAt: null } } }))
+    const lib = createLibrary(file)
+    expect(lib.setPinned('a', true).pinnedAt).toBeTruthy()
+  })
   it('adds an entry with defaults and persists it', () => {
     const e = lib.add({ title: 'Frieren' })
     expect(e).toMatchObject({ id: 'id-1', title: 'Frieren', status: 'planned', rating: null, comment: '', watchedEpisodes: [], episodeNotes: {}, lastWatchedAt: null })

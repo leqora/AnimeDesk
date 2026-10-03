@@ -1,5 +1,6 @@
 appId: com.leqora.animedesk
 productName: AnimeDesk
+copyright: "© 2026 Leqora"
 directories:
   output: dist
 files:
@@ -12,6 +13,7 @@ extraResources:
     to: releases
 win:
   target: nsis
+  icon: build/icon.ico
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

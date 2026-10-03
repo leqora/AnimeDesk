@@ -3,11 +3,13 @@ import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { ReadyNotice } from '../components/ReadyNotice.jsx'
 import { Poster } from '../components/Poster.jsx'
+import { EpisodePicker } from '../components/EpisodePicker.jsx'
+import { Icon } from '../components/Icon.jsx'
 import { animeLineTitle, normalizeTitle } from '../../shared/domain.js'
 
 const byNumber = (a, b) => Number(a) - Number(b)
 
-export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled }) {
+export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, onFocusChange = () => {} }) {
   const api = useApi()
   const t = useT()
   const [query, setQuery] = useState('')
@@ -23,14 +25,26 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const [notice, setNotice] = useState(null)
 
   // The session id and phase are mirrored in a ref so the unmount cleanup sees the latest values.
-  const live = useRef({ sessionId: null, phase: 'idle' })
+  const [prefs, setPrefs] = useState({ quality: null, mode: null })
+  // ignore: sessions we cancelled on purpose (mode switch, series prefs) — their late events must not touch the new session
+  // startedMode: the sub/dub the running session was started with (ani-cli reads it only at start)
+  const live = useRef({ sessionId: null, phase: 'idle', ignore: new Set(), lastEpisode: null, startedMode: null, startSeq: 0 })
   useEffect(() => { live.current.phase = phase }, [phase])
+  // Stay focused between the anime and episode menus (and during a sub/dub restart) so the home sections do not flash back.
+  // A "no dub" error for the chosen series also stays on top, so "Play subtitled" is not pushed below the home sections.
+  const errorFocus = phase === 'idle' && error?.error === 'no-dub' && anime != null
+  const focused = phase === 'anime' || phase === 'episode' || (phase === 'busy' && anime != null) || errorFocus
+  useEffect(() => { onFocusChange(focused) }, [focused])
 
   useEffect(() => {
     const offs = [
-      api.watch.onMenu((m) => { live.current.sessionId = m.sessionId; setMenu(m); setSelected([]); setPhase(m.kind === 'episode' ? 'episode' : 'anime') }),
+      api.watch.onMenu((m) => {
+        if (live.current.ignore.has(m.sessionId)) return
+        live.current.sessionId = m.sessionId; setMenu(m); setSelected([]); setPhase(m.kind === 'episode' ? 'episode' : 'anime')
+      }),
       api.watch.onPlaying((p) => { setPlaying(p); setPhase('playing') }),
-      api.watch.onSessionEnd(({ result }) => {
+      api.watch.onSessionEnd(({ sessionId, result }) => {
+        if (live.current.ignore.delete(sessionId)) return
         live.current.sessionId = null
         setMenu(null)
         setPlaying(null)
@@ -48,6 +62,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
   useEffect(() => {
     if (!anime) return
+    api.seriesPrefs.get(anime).then(setPrefs)
     api.library.list().then((list) => {
       const key = anime.toLowerCase()
       const e = list.find((x) => normalizeTitle(x.aniCliTitle ?? x.title).toLowerCase() === key)
@@ -56,13 +71,28 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   }, [api, anime])
 
   const start = (params) => {
+    live.current.lastEpisode = params.episode ?? null
+    live.current.startedMode = null
+    const seq = ++live.current.startSeq
     setError(null)
     setShowDetails(false)
     setNotice(null)
     setPhase('busy')
     api.watch.start(params)
-      .then((r) => { if (r?.sessionId) live.current.sessionId = r.sessionId })
+      .then((r) => {
+        if (seq !== live.current.startSeq) return
+        if (r?.sessionId) live.current.sessionId = r.sessionId
+        live.current.startedMode = r?.mode ?? null
+      })
       .catch(() => { setPhase('idle'); setError({ error: 'unknown' }) })
+  }
+  // Cancel the running session on purpose and start a fresh one for this series (prefs are read only at start).
+  const restartFor = (title) => {
+    const old = live.current.sessionId
+    if (old) { live.current.ignore.add(old); api.watch.cancel(old) }
+    live.current.sessionId = null
+    setMenu(null)
+    start({ query: title, anime: title })
   }
 
   useEffect(() => {
@@ -84,9 +114,27 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     setMenu(null)
     setPhase(line == null ? 'idle' : 'busy')
   }
-  const pickAnime = (line) => { setAnime(animeLineTitle(line)); answer(line) }
+  const pickAnime = async (line) => {
+    const title = animeLineTitle(line)
+    const requestId = menu.requestId
+    setAnime(title)
+    setMenu(null)
+    setPhase('busy')
+    // The session was started with prefs resolved for the search text; saved prefs of the picked series need a fresh start.
+    const p = await api.seriesPrefs.get(title).catch(() => null)
+    if (p?.quality || p?.mode) restartFor(title)
+    else api.watch.answerMenu(requestId, line)
+  }
   const toggle = (ep) => setSelected((s) => (s.includes(ep) ? s.filter((x) => x !== ep) : [...s, ep]))
-  const watchSelected = () => { const ep = [...selected].sort(byNumber)[0]; if (ep) answer(ep) }
+  const watchSelected = () => { const ep = [...selected].sort(byNumber)[0]; if (ep) { live.current.lastEpisode = ep; answer(ep) } }
+
+  const changePrefs = async (patch) => {
+    const started = live.current.startedMode ?? prefs.mode ?? settings.mode
+    const next = await api.seriesPrefs.set(anime, patch)
+    setPrefs(next)
+    if ('mode' in patch && (next.mode ?? settings.mode) !== started && live.current.phase === 'episode') restartFor(anime)
+  }
+  const playSubtitled = () => start({ query: anime, anime, episode: live.current.lastEpisode, mode: 'sub' })
 
   const downloadSelected = async () => {
     let dir = settings.downloadDir
@@ -115,16 +163,19 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   return (
     <section className="page">
       <ReadyNotice ready={ready} onOpenWizard={onOpenWizard} />
-      <form className="search-bar" onSubmit={submit}>
-        <input id="search-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('search.placeholder')} aria-label={t('search.placeholder')} />
-        <button type="submit" className="primary" disabled={!ready || phase !== 'idle'}>{t('search.button')}</button>
-      </form>
+      {(!focused || errorFocus) && (
+        <form className="search-bar" onSubmit={submit}>
+          <input id="search-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('search.placeholder')} aria-label={t('search.placeholder')} />
+          <button type="submit" className="primary" disabled={!ready || phase !== 'idle'}>{t('search.button')}</button>
+        </form>
+      )}
 
       {notice && <div className="notice">{notice}</div>}
       {error && (
         <div className="notice notice--error" role="alert">
           <span>{t(`error.${error.error ?? 'unknown'}`)}</span>
           {error.stderr && <button type="button" onClick={() => setShowDetails((v) => !v)}>{t('error.showDetails')}</button>}
+          {error.error === 'no-dub' && anime && <button type="button" className="primary" onClick={playSubtitled}>{t('search.playSub')}</button>}
           {showDetails && <pre className="details">{error.stderr}</pre>}
         </div>
       )}
@@ -133,6 +184,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
       {phase === 'anime' && menu && (
         <div className="page">
+          <div className="row"><button type="button" onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button></div>
           <h2>{t('search.selectAnime')}</h2>
           <div className="card-grid">
             {menu.lines.map((line) => {
@@ -151,15 +203,9 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
       {phase === 'episode' && menu && (
         <div className="page">
+          <div className="row"><button type="button" onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button></div>
           <h2>{anime} — {t('search.selectEpisode')}</h2>
-          <div className="ep-grid">
-            {menu.lines.map((line) => {
-              const ep = line.trim()
-              const cls = ['ep', selected.includes(ep) && 'ep--selected', watched.includes(Number(ep)) && 'ep--watched'].filter(Boolean).join(' ')
-              return <button type="button" key={ep} className={cls} aria-pressed={selected.includes(ep)} onClick={() => toggle(ep)}>{ep}</button>
-            })}
-          </div>
-          <div className="row">
+          <EpisodePicker episodes={menu.lines.map((l) => l.trim())} selected={selected} watched={watched} onToggle={toggle} prefs={prefs} onPrefs={changePrefs}>
             <button type="button" className="primary" disabled={!ready || selected.length === 0} onClick={watchSelected}>{t('search.watch')}</button>
             <button type="button" disabled={!ready || selected.length === 0} onClick={downloadSelected}>{t('search.download')}</button>
             {!settings.downloadDir && (
@@ -170,7 +216,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
             )}
             <button type="button" onClick={addToWatchlist}>{t('search.addToWatchlist')}</button>
             <button type="button" onClick={() => answer(null)}>{t('search.cancel')}</button>
-          </div>
+          </EpisodePicker>
         </div>
       )}
     </section>
