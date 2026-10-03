@@ -6,13 +6,13 @@ import { Readable } from 'node:stream'
 export const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 const CORS = { 'Access-Control-Allow-Origin': '*' }
 
-// Every non-comment line and every URI="…" attribute becomes a local, allow-listed URL.
+// Every non-comment line and every URI="…" attribute becomes a local, allow-listed URL (toLocal returning null leaves the entry untouched).
 export function rewritePlaylist(text, baseUrl, toLocal) {
   return text.split(/\r?\n/).map((line) => {
     const t = line.trim()
     if (!t) return line
-    if (t.startsWith('#')) return line.replace(/URI="([^"]+)"/g, (_, uri) => `URI="${toLocal(new URL(uri, baseUrl).href)}"`)
-    return toLocal(new URL(t, baseUrl).href)
+    if (t.startsWith('#')) return line.replace(/URI="([^"]+)"/g, (m, uri) => { const l = toLocal(new URL(uri, baseUrl).href); return l == null ? m : `URI="${l}"` })
+    return toLocal(new URL(t, baseUrl).href) ?? line
   }).join('\n')
 }
 
@@ -26,6 +26,7 @@ export function createStreamServer({ fetchImpl = fetch, userAgent = DEFAULT_USER
   const base = (id) => `http://127.0.0.1:${port}/s/${token}/${id}`
 
   function allow(pb, id, url) {
+    if (!/^https?:\/\//i.test(url)) return null
     let n = pb.index.get(url)
     if (n == null) { n = pb.urls.push(url) - 1; pb.index.set(url, n) }
     return `${base(id)}/r/${n}`
@@ -62,7 +63,7 @@ export function createStreamServer({ fetchImpl = fetch, userAgent = DEFAULT_USER
   async function proxy(req, res, pb, id, url, kind) {
     const ac = new AbortController()
     res.on('close', () => ac.abort())
-    const headers = { 'User-Agent': userAgent }
+    const headers = { 'User-Agent': userAgent, 'Accept-Encoding': 'identity' }
     if (pb.referrer) { headers.Referer = pb.referrer; headers.Origin = pb.origin }
     if (req.headers.range) headers.Range = req.headers.range
     let up
