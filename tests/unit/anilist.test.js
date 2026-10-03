@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createAniList, bestMatch, cleanDescription } from '../../src/main/anilist.js'
+import { createAniList, bestMatch, cleanDescription, SEARCH_VERSION } from '../../src/main/anilist.js'
 
 const media = (id, romaji, english, extra = {}) => ({
   id, title: { romaji, english, native: null }, coverImage: { large: `https://img/${id}.jpg` },
@@ -197,5 +197,18 @@ describe('anilist rate limiting', () => {
     t = 8 * 24 * 3600 * 1000
     await al.getForTitle('Nothing: Here At All')
     expect(f.mock.calls.length).toBeGreaterThan(calls)
+  })
+  it('forgets a "not found" written by older search logic', async () => {
+    const f = vi.fn(async () => json(page([])))
+    const al = createAniList({ cacheDir, fetchImpl: f, sleep: async () => {}, now: () => 0 })
+    await al.getForTitle('Nothing: Here At All')
+    const [file] = fs.readdirSync(cacheDir).map((n) => path.join(cacheDir, n))
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).searchVersion).toBe(SEARCH_VERSION)
+    for (const stale of [{ notFound: true, at: 0 }, { notFound: true, at: 0, searchVersion: SEARCH_VERSION - 1 }]) {
+      fs.writeFileSync(file, JSON.stringify(stale))
+      const calls = f.mock.calls.length
+      await al.getForTitle('Nothing: Here At All')
+      expect(f.mock.calls.length).toBeGreaterThan(calls)
+    }
   })
 })

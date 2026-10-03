@@ -64,6 +64,9 @@ function toInfo(m) {
 const MAX_ATTEMPTS = 3
 const MAX_WAIT_MS = 65_000
 const NOT_FOUND_TTL_MS = 7 * 24 * 3600 * 1000
+// Stored with every "not found" entry. Bump it whenever searchCandidates/bestMatch change, so misses
+// remembered by older logic are retried right after an update instead of waiting out the 7 days.
+export const SEARCH_VERSION = 2
 
 const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -152,7 +155,7 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
     const file = cacheFile(cacheKey(title, aniListId))
     const cached = readJson(file, null).data
     if (cached?.notFound) {
-      if (now() - cached.at < NOT_FOUND_TTL_MS) return null
+      if (cached.searchVersion === SEARCH_VERSION && now() - cached.at < NOT_FOUND_TTL_MS) return null
     } else if (cached) return cached
     try {
       let m
@@ -160,7 +163,7 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
       else {
         const found = await findByTitle(title)
         m = found.m
-        if (!m && found.complete) writeJsonAtomic(file, { notFound: true, at: now() })
+        if (!m && found.complete) writeJsonAtomic(file, { notFound: true, at: now(), searchVersion: SEARCH_VERSION })
       }
       if (!m) return null
       const info = toInfo(m)

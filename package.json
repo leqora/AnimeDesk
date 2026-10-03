@@ -1,7 +1,7 @@
 {
   "name": "animedesk",
   "productName": "AnimeDesk",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Desktop GUI for ani-cli with a personal anime watchlist",
   "main": "./out/main/index.js",
   "author": "leqora <dzonzi777@gmail.com>",

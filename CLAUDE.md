@@ -27,7 +27,7 @@ Windows desktop aplikacija (Electron + React) koja je grafički interfejs za ori
 
 ```bash
 npm run dev        # pokretanje u razvoju
-npm test           # vitest (unit + integration), ~322 testa
+npm test           # vitest (unit + integration), ~323 testa
 npm run test:e2e   # build + Playwright smoke (izolovan userData preko ANIMEDESK_USER_DATA)
 npm run test:live  # pravi ani-cli self-test (internet)
 npm run dist       # instaler u dist/ (bez objave)
@@ -41,7 +41,7 @@ npm run release    # objava (vidi gore)
   - ani-cli: `aniCliBridge.js`, `bridgeServer.js`, `watchService.js`, `playerMonitor.js`, `run.js`;
   - alati: `toolManager.js`, `toolSources.js`, `healthCheck.js` (semafor);
   - podaci: `library.js` (watchlist), `settings.js`, `downloads.js`, `watchLog.js`, `progress.js`, `tracker.js`, `jsonStore.js`;
-  - `anilist.js` — slike/opisi: red zahteva (jedan po jedan, 429/`Retry-After`), rezervne pretrage (`searchCandidates`), keš u `Cache\anilist` (+ „nije nađeno” 7 dana);
+  - `anilist.js` — slike/opisi: red zahteva (jedan po jedan, 429/`Retry-After`), rezervne pretrage (`searchCandidates`), keš u `Cache\anilist` (+ „nije nađeno” 7 dana, sa `SEARCH_VERSION` — povećaj ga kad menjaš pretragu);
   - `updater.js` — omotač oko `electron-updater` (stanja: idle/checking/none/available/downloading/ready/error/disabled; instalacija samo na klik, `autoInstallOnAppQuit = false`); `whatsNew.js` — „Ažurirano na X” jednom po verziji.
 - `src/preload/index.js` — `window.animedesk.*` API; kanali u `src/shared/channels.js`.
 - `src/renderer/` — React: `App.jsx`, `pages/` (Home, Search, Watchlist, Downloads, Profile, Settings, SetupWizard, AnimeDetail), `components/` (Sidebar, Hero, Poster, UpdateBanner, WhatsNewDialog, LevelUpOverlay…), `i18n/sr.json` + `en.json`, `styles.css` (samo CSS tokeni, bez hex boja van `:root`), `sound.js`.
