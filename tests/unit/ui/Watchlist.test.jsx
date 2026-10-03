@@ -7,7 +7,7 @@ import { AnimeDetail } from '../../../src/renderer/pages/AnimeDetail.jsx'
 
 const entry = (over = {}) => ({
   id: 'a1', title: 'Frieren', aniCliTitle: 'Frieren', aniListId: null, status: 'watching', rating: null, comment: '',
-  totalEpisodes: 4, watchedEpisodes: [1, 2], episodeNotes: { 2: 'lepo' }, lastWatchedAt: null, ...over,
+  totalEpisodes: 4, watchedEpisodes: [1, 2], episodeNotes: { 2: 'lepo' }, lastWatchedAt: null, pinnedAt: null, ...over,
 })
 
 describe('sortItems', () => {
@@ -38,6 +38,30 @@ describe('WatchlistPage', () => {
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'dropped' } })
     expect(screen.queryByText('Frieren')).not.toBeInTheDocument()
     expect(screen.getByText('Naruto')).toBeInTheDocument()
+  })
+  it('pins from the detail page and explains the limit', async () => {
+    const api = makeFakeApi({ library: { list: vi.fn(async () => [entry({ id: 'a', title: 'Show' })]) } })
+    api.library.setPinned.mockResolvedValueOnce({ ok: false, error: 'pin-limit' })
+    renderUi(<WatchlistPage ready onContinue={() => {}} initialOpenId="a" />, { api })
+    fireEvent.click(await screen.findByRole('button', { name: /Dodaj u omiljene/ }))
+    expect(await screen.findByText('Možeš zakačiti najviše 5 serija. Otkači neku pa pokušaj ponovo.')).toBeInTheDocument()
+    expect(api.library.setPinned).toHaveBeenCalledWith('a', true)
+  })
+  it('pins from a watchlist card without opening it', async () => {
+    const api = makeFakeApi({ library: { list: vi.fn(async () => [entry({ id: 'a', title: 'Show', pinnedAt: '2026-10-03T00:00:00Z' })]) } })
+    renderUi(<WatchlistPage ready onContinue={() => {}} />, { api })
+    const star = await screen.findByRole('button', { name: 'Ukloni iz omiljenih: Show' })
+    expect(star).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(star)
+    expect(api.library.setPinned).toHaveBeenCalledWith('a', false)
+    expect(screen.queryByRole('button', { name: /Nazad/ })).not.toBeInTheDocument()
+  })
+  it('pages a long series in the detail page', async () => {
+    const api = makeFakeApi({ library: { list: vi.fn(async () => [entry({ id: 'a', title: 'Long', totalEpisodes: 1100, watchedEpisodes: [], episodeNotes: {} })]) } })
+    renderUi(<WatchlistPage ready onContinue={() => {}} initialOpenId="a" />, { api })
+    expect(await screen.findByRole('group', { name: 'Grupe epizoda' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '7' }))
+    expect(screen.getByLabelText('Beleška za epizodu 7')).toBeInTheDocument()
   })
 })
 

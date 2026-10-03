@@ -210,3 +210,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation: none !important; transition: none !important; }
+
+.watch-card { position: relative; }
+.watch-card__pin { position: absolute; top: 14px; right: 14px; padding: 6px; border-radius: 50%; }
+.watch-card__pin[aria-pressed="true"], button[aria-pressed="true"] > svg { color: var(--accent-2); }

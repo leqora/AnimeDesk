@@ -3,6 +3,8 @@ import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Poster } from '../components/Poster.jsx'
 import { ConfirmButton } from '../components/ConfirmButton.jsx'
+import { EpisodePicker } from '../components/EpisodePicker.jsx'
+import { Icon } from '../components/Icon.jsx'
 import { usePosterTint } from '../theme/usePosterTint.js'
 import { STATUSES, nextEpisode } from '../../shared/domain.js'
 
@@ -15,6 +17,7 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
   const [comment, setComment] = useState(entry.comment)
   const [noteEp, setNoteEp] = useState(null)
   const [noteText, setNoteText] = useState('')
+  const [pinNotice, setPinNotice] = useState(null)
 
   useEffect(() => {
     let live = true
@@ -40,10 +43,20 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
   const toggleWatched = (ep) => save({ watchedEpisodes: watched.includes(ep) ? watched.filter((x) => x !== ep) : [...watched, ep] })
   const remove = async () => { await api.library.remove(entry.id); onBack(); onChanged() }
   const animeKey = entry.aniCliTitle ?? entry.title
+  const togglePin = async () => {
+    const r = await api.library.setPinned(entry.id, !entry.pinnedAt)
+    if (!r.ok) { setPinNotice(t('pin.limit')); return }
+    setPinNotice(null)
+    onChanged()
+  }
 
   return (
     <section className="page">
-      <div className="row"><button type="button" onClick={onBack}>{t('detail.back')}</button></div>
+      <div className="row">
+        <button type="button" onClick={onBack}>{t('detail.back')}</button>
+        <button type="button" aria-pressed={Boolean(entry.pinnedAt)} onClick={togglePin}><Icon name="star" /> {entry.pinnedAt ? t('pin.remove') : t('pin.add')}</button>
+      </div>
+      {pinNotice && <div className="notice" role="status">{pinNotice}</div>}
       <div className="banner" style={tint ? { '--poster-tint': tint } : undefined}>
         {info?.poster && <div className="hero__bg" style={{ backgroundImage: `url(${info.poster})` }} />}
         <div className="banner__body">
@@ -86,12 +99,17 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
             </div>
           )}
           <h3>{t('detail.episodes')}</h3>
-          <div className="ep-grid">
-            {episodes.map((ep) => {
-              const cls = ['ep', watched.includes(ep) && 'ep--watched', noteEp === ep && 'ep--selected', entry.episodeNotes[String(ep)] && 'ep--note'].filter(Boolean).join(' ')
-              return <button type="button" key={ep} className={cls} onClick={() => openNote(ep)}>{ep}</button>
-            })}
-          </div>
+          <EpisodePicker
+            episodes={episodes.map(String)}
+            selected={noteEp != null ? [String(noteEp)] : []}
+            watched={watched}
+            noted={Object.keys(entry.episodeNotes)}
+            onToggle={(ep) => openNote(Number(ep))}
+          >
+            <button type="button" className="primary" disabled={!ready} onClick={() => onContinue({ query: animeKey, anime: animeKey, episode: String(nextEp) })}>
+              {t('detail.continue')}
+            </button>
+          </EpisodePicker>
           {noteEp != null && (
             <div className="page">
               <label className="field">
@@ -107,9 +125,6 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
             </div>
           )}
           <div className="row">
-            <button type="button" className="primary" disabled={!ready} onClick={() => onContinue({ query: animeKey, anime: animeKey, episode: String(nextEp) })}>
-              {t('detail.continue')}
-            </button>
             <ConfirmButton label={t('detail.delete')} confirmLabel={t('detail.confirmDelete')} onConfirm={remove} />
           </div>
         </div>
