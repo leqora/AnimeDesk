@@ -10,6 +10,7 @@ describe('paths', () => {
     expect(p.cache).toBe(path.join('C:\\Data\\AnimeDesk', 'cache', 'anilist'))
     expect(p.watchLog).toBe(path.join('C:\\Data\\AnimeDesk', 'watchlog.json'))
     expect(p.profile).toBe(path.join('C:\\Data\\AnimeDesk', 'profile.json'))
+    expect(p.seriesPrefs).toBe(path.join('C:\\Data\\AnimeDesk', 'series-prefs.json'))
   })
   it('converts Windows paths to MSYS paths, keeping spaces and unicode', () => {
     expect(toMsysPath('C:\\Users\\Nikola\\Moji anime\\Šou')).toBe('/c/Users/Nikola/Moji anime/Šou')
