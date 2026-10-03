@@ -24,7 +24,8 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
   async function runPlayer(info) {
     const mpv = (args) => player.play(args, { extraArgs: mpvExtraArgs() })
     if (!internalPlayer || settings.get().playerMode !== 'internal') return mpv(info.mpvArgs)
-    const r = await internalPlayer.play(info)
+    let r
+    try { r = await internalPlayer.play(info) } catch { return mpv(info.mpvArgs) } // e.g. a malformed referrer: still play, in mpv
     if (r.reason !== 'external') return r
     const ext = await mpv([...info.mpvArgs, `--start=${Math.floor(r.position ?? 0)}`])
     return { exitCode: ext.exitCode, maxPercent: Math.max(r.maxPercent ?? 0, ext.maxPercent ?? 0) }

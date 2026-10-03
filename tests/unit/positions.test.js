@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -54,11 +54,14 @@ describe('positions', () => {
   it('does not throw when the disk write fails', () => {
     const blocker = path.join(path.dirname(file), 'blocker')
     fs.writeFileSync(blocker, 'x')
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const p = createPositions(path.join(blocker, 'sub', 'positions.json'), { now: () => 0 })
     expect(() => p.save('A b', 1, { position: 100, duration: 1400 })).not.toThrow()
     expect(p.get('A b', 1)).toEqual({ position: 100, duration: 1400 })
     expect(() => p.clear('A b', 1)).not.toThrow()
     p.save('A b', 2, { position: 100, duration: 1400 })
     expect(() => p.prune(60)).not.toThrow()
+    expect(warn).toHaveBeenCalledWith('positions: write failed', expect.any(String))
+    warn.mockRestore()
   })
 })

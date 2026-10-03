@@ -154,4 +154,19 @@ describe('watchService', () => {
     expect(internalPlayer.stop).toHaveBeenCalled()
     expect(library.recordWatched).not.toHaveBeenCalled()
   })
+  it('falls back to mpv when the in-app player fails to start', async () => {
+    const internalPlayer = { play: vi.fn(async () => { throw new Error('bad referrer') }), stop: vi.fn() }
+    const { svc, player, library } = setup({ settings: { playerMode: 'internal' }, internalPlayer })
+    svc.watch({ query: 'fake' })
+    await flush()
+    expect(player.play).toHaveBeenCalledWith(['--force-media-title=Fake Anime Episode 2', 'https://v'], expect.any(Object))
+    expect(library.recordWatched).toHaveBeenCalledWith({ aniCliTitle: 'Fake Anime', episode: '2' })
+  })
+  it('plays local files in the in-app player in internal mode', async () => {
+    const internalPlayer = { play: vi.fn(async () => ({ exitCode: 0, maxPercent: 95, reason: 'ended' })), stop: vi.fn() }
+    const { svc, player } = setup({ settings: { playerMode: 'internal' }, internalPlayer })
+    await svc.playLocal({ file: 'D:\A\A Episode 1.mp4', title: 'A', episode: 1 })
+    expect(internalPlayer.play).toHaveBeenCalledWith(expect.objectContaining({ file: 'D:\A\A Episode 1.mp4', title: 'A', episode: '1', url: 'D:\A\A Episode 1.mp4' }))
+    expect(player.play).not.toHaveBeenCalled()
+  })
 })

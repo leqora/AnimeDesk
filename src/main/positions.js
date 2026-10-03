@@ -9,7 +9,7 @@ export function createPositions(file, { now = () => Date.now() } = {}) {
   const db = loaded && !Array.isArray(loaded) && typeof loaded.items === 'object' && loaded.items !== null ? loaded : { version: 1, items: {} }
   const key = (title, episode) => `${normalizeTitle(String(title ?? '')).toLowerCase()}#${String(Number(episode))}`
   const persist = () => {
-    try { writeJsonAtomic(file, db) } catch { /* a disk error must not break playback; the in-memory state stays valid */ }
+    try { writeJsonAtomic(file, db) } catch (err) { console.warn('positions: write failed', err?.message) } // a disk error must not break playback; in-memory state stays valid
   }
 
   return {
