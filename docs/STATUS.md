@@ -20,7 +20,7 @@ Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, �
 ## Šta je stvarno provereno (ne samo testovima)
 
 - 380 unit/integration testa prolaze (`npm test`, 0.4.0), e2e smoke (`npm run test:e2e`) prolazi.
-- **0.4.0: živa ručna provera (One Piece grupe, sub↔dub, „nema dub-a”, F11, 5 favorita, GitHub veza) tek treba da se uradi sa korisnikom pre objave.** Dodatno proveriti uživo: Esc dok je „Šta je novo” otvoren u punom ekranu (zatvara samo prozorčić); pretraga → izbor serije sa sačuvanim dub-om → pušta dub; pun ekran → izlaz → ponovno pokretanje zadržava pun ekran.
+- **0.4.0 provereno uživo sa korisnikom (2026-10-03):** One Piece grupe i „Idi na epizodu”, sub↔dub na stranici epizoda, „nema dub-a” + „Pusti sa titlom”, serija sa sačuvanim dub-om iz pretrage pušta dub, F11 / dugme / Esc i pamćenje punog ekrana posle ponovnog pokretanja, Esc u dijalogu ne izlazi iz punog ekrana, 5 favorita + poruka za šesti, „O aplikaciji” → GitHub, „by Leqora” i nova ikonica.
 - **Auto-update radi u praksi:**
   - lokalna proba (generic provider na `localhost`, 0.2.90 → 0.2.91): instalacija tek na klik, podaci netaknuti, bez SmartScreen-a;
   - pravo ažuriranje preko GitHub-a **0.3.0 → 0.3.1 → 0.3.2 → 0.3.3** — korisnik potvrdio.
