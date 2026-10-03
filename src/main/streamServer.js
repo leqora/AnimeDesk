@@ -1,7 +1,7 @@
 import http from 'node:http'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
-import { Readable } from 'node:stream'
+import { Readable, pipeline } from 'node:stream'
 
 export const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 const CORS = { 'Access-Control-Allow-Origin': '*' }
@@ -14,6 +14,11 @@ export function rewritePlaylist(text, baseUrl, toLocal) {
     if (t.startsWith('#')) return line.replace(/URI="([^"]+)"/g, (m, uri) => { const l = toLocal(new URL(uri, baseUrl).href); return l == null ? m : `URI="${l}"` })
     return toLocal(new URL(t, baseUrl).href) ?? line
   }).join('\n')
+}
+
+// pipeline destroys the read stream on client abort and swallows read errors (no fd leak, no uncaught 'error').
+function sendFile(res, file, range) {
+  pipeline(fs.createReadStream(file, range), res, () => {})
 }
 
 const looksLikePlaylist = (type, url) => /mpegurl/i.test(type) || /\.m3u8(\?|$)/i.test(url)
@@ -45,13 +50,13 @@ export function createStreamServer({ fetchImpl = fetch, userAgent = DEFAULT_USER
     const m = /^bytes=(\d+)-(\d*)$/.exec(req.headers.range ?? '')
     if (!m) {
       res.writeHead(200, { ...head, 'Content-Length': size })
-      return req.method === 'HEAD' ? res.end() : fs.createReadStream(file).pipe(res)
+      return req.method === 'HEAD' ? res.end() : sendFile(res, file)
     }
     const start = Number(m[1])
     const end = Math.min(m[2] ? Number(m[2]) : size - 1, size - 1)
     if (start >= size || start > end) return res.writeHead(416, { ...CORS, 'Content-Range': `bytes */${size}` }).end()
     res.writeHead(206, { ...head, 'Content-Length': end - start + 1, 'Content-Range': `bytes ${start}-${end}/${size}` })
-    return req.method === 'HEAD' ? res.end() : fs.createReadStream(file, { start, end }).pipe(res)
+    return req.method === 'HEAD' ? res.end() : sendFile(res, file, { start, end })
   }
 
   function register({ url, referrer = null, subUrl = null }) {
