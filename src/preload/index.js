@@ -18,7 +18,9 @@ contextBridge.exposeInMainWorld('animedesk', {
     setEpisodeNote: invoke(INVOKE.libraryNote),
     recordWatched: invoke(INVOKE.libraryRecord),
     wasCorrupt: invoke(INVOKE.libraryWasCorrupt),
+    setPinned: invoke(INVOKE.librarySetPinned),
   },
+  seriesPrefs: { get: invoke(INVOKE.seriesPrefsGet), set: invoke(INVOKE.seriesPrefsSet) },
   anilist: { forTitle: invoke(INVOKE.anilistForTitle), search: invoke(INVOKE.anilistSearch) },
   tools: {
     status: invoke(INVOKE.toolsStatus),

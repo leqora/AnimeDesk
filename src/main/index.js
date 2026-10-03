@@ -5,6 +5,7 @@ import extractZip from 'extract-zip'
 import { createPaths } from './paths.js'
 import { createSettings } from './settings.js'
 import { createLibrary } from './library.js'
+import { createSeriesPrefs } from './seriesPrefs.js'
 import { createToolManager } from './toolManager.js'
 import { getJson, download, isOnline } from './http.js'
 import { run } from './run.js'
@@ -64,6 +65,7 @@ async function main() {
   whatsNew.init()
   const updater = createUpdater({ autoUpdater, isPackaged: app.isPackaged, currentVersion: app.getVersion(), getSettings: () => settings.get(), notify: send })
   const library = createLibrary(paths.library)
+  const seriesPrefs = createSeriesPrefs(paths.seriesPrefs)
   const anilist = createAniList({ cacheDir: paths.cache })
   const watchLog = createWatchLog(paths.watchLog)
   const computeSnapshot = () => {
@@ -96,12 +98,12 @@ async function main() {
     historyDir: paths.aniCliHistory,
   })
   const player = createPlayer({ getMpvPath: () => toolManager.toolPaths().mpv })
-  const watch = createWatchService({ aniCli, player, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send })
-  const downloads = createDownloads({ file: paths.downloads, aniCli, onChange: () => send(EVENTS.downloads, downloads.queueItems()) })
+  const watch = createWatchService({ aniCli, player, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs })
+  const downloads = createDownloads({ file: paths.downloads, aniCli, onChange: () => send(EVENTS.downloads, downloads.queueItems()), resolvePrefs: (title) => seriesPrefs.resolve(title, settings.get()) })
   const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
 
   registerIpc(ipcMain, createHandlers({
-    settings, library, tracker, progress, anilist, toolManager, health, watch, downloads, updater, whatsNew, send,
+    settings, library, seriesPrefs, tracker, progress, anilist, toolManager, health, watch, downloads, updater, whatsNew, send,
     electron: {
       pickFolder: async () => {
         const r = await dialog.showOpenDialog(win, { properties: ['openDirectory', 'createDirectory'] })

@@ -5,7 +5,8 @@ import { createHandlers, registerIpc } from '../../src/main/ipc.js'
 function services() {
   return {
     settings: { get: vi.fn(() => ({ language: 'sr' })), update: vi.fn((p) => p) },
-    library: { list: vi.fn(() => []), add: vi.fn(), update: vi.fn(), remove: vi.fn(), setEpisodeNote: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })), wasCorrupt: true },
+    library: { list: vi.fn(() => []), add: vi.fn(), update: vi.fn(), remove: vi.fn(), setEpisodeNote: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })), setPinned: vi.fn(), wasCorrupt: true },
+    seriesPrefs: { get: vi.fn(() => ({ quality: null, mode: null })), set: vi.fn((t, p) => p) },
     anilist: { getForTitle: vi.fn(), search: vi.fn() },
     toolManager: { status: vi.fn(), installMissing: vi.fn(async (cb) => { cb({ id: 'mpv', phase: 'done' }); return {} }), updateAll: vi.fn(async () => []) },
     health: { get: vi.fn(), run: vi.fn() },
@@ -21,6 +22,26 @@ function services() {
 }
 
 describe('ipc', () => {
+  it('pins through the library and reports the limit without throwing', () => {
+    const s = services()
+    const h = createHandlers(s)
+    s.library.setPinned.mockReturnValueOnce({ id: 'a', pinnedAt: 'x' })
+    expect(h[INVOKE.librarySetPinned]('a', true)).toEqual({ ok: true, entry: { id: 'a', pinnedAt: 'x' } })
+    expect(s.send).toHaveBeenCalledWith(EVENTS.libraryChanged)
+    s.send.mockClear()
+    s.library.setPinned.mockImplementationOnce(() => { throw new Error('pin-limit') })
+    expect(h[INVOKE.librarySetPinned]('b', true)).toEqual({ ok: false, error: 'pin-limit' })
+    expect(s.send).not.toHaveBeenCalled()
+    s.library.setPinned.mockImplementationOnce(() => { throw new Error('unknown anime id: z') })
+    expect(() => h[INVOKE.librarySetPinned]('z', true)).toThrow('unknown anime id')
+  })
+  it('reads and writes series prefs', () => {
+    const s = services()
+    const h = createHandlers(s)
+    h[INVOKE.seriesPrefsGet]('Show')
+    expect(s.seriesPrefs.get).toHaveBeenCalledWith('Show')
+    expect(h[INVOKE.seriesPrefsSet]('Show', { mode: 'dub' })).toEqual({ mode: 'dub' })
+  })
   it('notifies the renderer after library update and remove', () => {
     const s = services()
     s.tracker.update.mockReturnValue({ id: 'id1' })

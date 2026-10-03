@@ -34,6 +34,18 @@ export function createHandlers(s) {
       return entry
     },
     [INVOKE.libraryWasCorrupt]: () => s.library.wasCorrupt,
+    [INVOKE.librarySetPinned]: (id, pinned) => {
+      try {
+        const entry = s.library.setPinned(id, Boolean(pinned))
+        s.send(EVENTS.libraryChanged)
+        return { ok: true, entry }
+      } catch (err) {
+        if (err.message === 'pin-limit') return { ok: false, error: 'pin-limit' }
+        throw err
+      }
+    },
+    [INVOKE.seriesPrefsGet]: (title) => s.seriesPrefs.get(title),
+    [INVOKE.seriesPrefsSet]: (title, patch) => s.seriesPrefs.set(title, patch),
     [INVOKE.anilistForTitle]: (title, aniListId = null) => s.anilist.getForTitle(title, { aniListId }),
     [INVOKE.anilistSearch]: (query) => s.anilist.search(query),
     [INVOKE.toolsStatus]: () => s.toolManager.status(),
