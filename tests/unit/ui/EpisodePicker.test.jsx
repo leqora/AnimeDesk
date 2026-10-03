@@ -58,4 +58,23 @@ describe('EpisodePicker', () => {
     fireEvent.change(screen.getByLabelText('Režim'), { target: { value: '' } })
     expect(onPrefs).toHaveBeenLastCalledWith({ mode: null })
   })
+  it('scrolls once per jump, including repeated jumps to the same episode', () => {
+    const orig = Element.prototype.scrollIntoView
+    const scroll = vi.fn()
+    Element.prototype.scrollIntoView = scroll
+    try {
+      renderUi(<EpisodePicker {...base({ episodes: range(1, 150) })} />)
+      const input = screen.getByLabelText('Idi na epizodu')
+      fireEvent.change(input, { target: { value: '120' } })
+      fireEvent.submit(input)
+      expect(scroll).toHaveBeenCalledTimes(1)
+      fireEvent.submit(input)
+      expect(scroll).toHaveBeenCalledTimes(2)
+      fireEvent.click(screen.getByRole('button', { name: '1–100' }))
+      fireEvent.click(screen.getByRole('button', { name: '101–150' }))
+      expect(scroll).toHaveBeenCalledTimes(2)
+    } finally {
+      Element.prototype.scrollIntoView = orig
+    }
+  })
 })

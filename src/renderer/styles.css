@@ -124,7 +124,6 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .ep-groups { display: flex; flex-wrap: wrap; gap: 6px; }
 .ep-group[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .episode-bar { position: sticky; bottom: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; background: var(--glass-strong); backdrop-filter: blur(var(--blur)); border: 1px solid var(--glass-border); border-radius: var(--radius); }
-.field--inline { flex-direction: row; align-items: center; gap: 6px; }
 .ep--note::after { content: "•"; margin-left: 2px; color: var(--warn); }
 
 /* detail banner */
@@ -135,6 +134,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .detail { display: flex; flex-direction: column; gap: 18px; }
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field > span { color: var(--text-muted); font-size: 12px; font-family: var(--font-hud); text-transform: uppercase; letter-spacing: .08em; }
+.field--inline { flex-direction: row; align-items: center; gap: 6px; }
 .check { display: flex; gap: 8px; align-items: center; }
 .description { white-space: pre-wrap; background: var(--glass); padding: 12px; border-radius: var(--radius-sm); }
 

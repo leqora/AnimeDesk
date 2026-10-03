@@ -150,8 +150,7 @@
   "profile.noGenres": "Genres appear once the app has fetched series details.",
   "profile.streak": "Day streak: {days}",
   "profile.activity": "Activity · last 4 weeks",
-  "profile.activityCell": "{date}: {count} ep."
-,
+  "profile.activityCell": "{date}: {count} ep.",
   "home.continue": "Continue watching",
   "home.continueEp": "Continue EP {episode}",
   "home.details": "Details",

@@ -10,12 +10,12 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
   const [group, setGroup] = useState(() => Math.floor(firstUnwatchedIndex(episodes, watched) / GROUP_SIZE))
   const [goTo, setGoTo] = useState('')
   const [missing, setMissing] = useState(false)
-  const [focusEp, setFocusEp] = useState(null)
+  const [focus, setFocus] = useState(null)
   const buttons = useRef({})
 
   useEffect(() => {
-    if (focusEp != null) buttons.current[focusEp]?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
-  }, [focusEp, group])
+    if (focus) buttons.current[focus.ep]?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+  }, [focus])
 
   const current = groups[group] ?? groups[0]
   const visible = current ? episodes.slice(current.from, current.to + 1) : []
@@ -28,7 +28,7 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
     const ep = episodes[i]
     setGroup(Math.floor(i / GROUP_SIZE))
     if (!selected.includes(ep)) onToggle(ep)
-    setFocusEp(ep)
+    setFocus((f) => ({ ep, n: (f?.n ?? 0) + 1 }))
   }
 
   return (
