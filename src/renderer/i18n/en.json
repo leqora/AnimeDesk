@@ -195,5 +195,7 @@
   "episodes.default": "Default",
   "search.back": "Back",
   "search.playSub": "Play subtitled",
-  "error.no-dub": "This episode has no dub."
+  "error.no-dub": "This episode has no dub.",
+  "window.fullscreen": "Full screen (F11)",
+  "window.exitFullscreen": "Exit full screen (Esc)"
 }

@@ -30,4 +30,12 @@ describe('Sidebar', () => {
     rerender(<Sidebar {...props({ version: '' })} />)
     expect(screen.queryByText(/^v\d/)).not.toBeInTheDocument()
   })
+  it('toggles fullscreen from the footer', () => {
+    const onToggleFullscreen = vi.fn()
+    const { rerender } = renderUi(<Sidebar {...props({ fullscreen: false, onToggleFullscreen })} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Ceo ekran (F11)' }))
+    expect(onToggleFullscreen).toHaveBeenCalled()
+    rerender(<Sidebar {...props({ fullscreen: true, onToggleFullscreen })} />)
+    expect(screen.getByRole('button', { name: 'Izađi iz celog ekrana (Esc)' })).toBeInTheDocument()
+  })
 })

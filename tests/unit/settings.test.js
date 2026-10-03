@@ -13,7 +13,7 @@ describe('settings', () => {
       language: 'sr', autoTrack: true, watchedThreshold: 85, askOnClose: false,
       downloadDir: null, quality: 'best', mode: 'sub', autoUpdateTools: true,
       profileName: null, soundKey: true, soundUi: false, soundVolume: 60, animations: true,
-      autoDownloadUpdates: true, lastSeenVersion: null,
+      autoDownloadUpdates: true, lastSeenVersion: null, fullscreen: false,
     })
   })
   it('clamps the threshold and ignores invalid values', () => {
@@ -61,5 +61,10 @@ describe('settings', () => {
     expect(sanitizeSettings({ lastSeenVersion: '0.3.1' }).lastSeenVersion).toBe('0.3.1')
     expect(sanitizeSettings({ lastSeenVersion: 'v0.3.1' }).lastSeenVersion).toBeNull()
     expect(sanitizeSettings({ lastSeenVersion: 3 }).lastSeenVersion).toBeNull()
+  })
+  it('keeps a boolean fullscreen flag, off by default', () => {
+    expect(DEFAULT_SETTINGS.fullscreen).toBe(false)
+    expect(sanitizeSettings({ fullscreen: true }).fullscreen).toBe(true)
+    expect(sanitizeSettings({ fullscreen: 'yes' }).fullscreen).toBe(false)
   })
 })

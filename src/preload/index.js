@@ -59,6 +59,7 @@ contextBridge.exposeInMainWorld('animedesk', {
     onState: on(EVENTS.updateState),
   },
   whatsNew: { get: invoke(INVOKE.whatsNewGet), seen: invoke(INVOKE.whatsNewSeen) },
+  window: { getFullscreen: invoke(INVOKE.windowGetFullscreen), setFullscreen: invoke(INVOKE.windowSetFullscreen), onFullscreen: on(EVENTS.fullscreen) },
   dialog: { pickFolder: invoke(INVOKE.dialogPickFolder) },
   onLibraryChanged: on(EVENTS.libraryChanged),
 })

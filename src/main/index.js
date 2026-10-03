@@ -22,6 +22,7 @@ import { computeStats } from '../shared/stats.js'
 import { createHealthCheck } from './healthCheck.js'
 import { createHandlers, registerIpc } from './ipc.js'
 import { hardenWindow } from './windowSecurity.js'
+import { attachFullscreen } from './fullscreen.js'
 import { autoUpdater } from 'electron-updater'
 import { createUpdater } from './updater.js'
 import { createWhatsNew, readReleaseNotes } from './whatsNew.js'
@@ -35,12 +36,15 @@ app.setPath('userData', process.env.ANIMEDESK_USER_DATA ?? path.join(app.getPath
 let win = null
 const send = (channel, payload) => { if (win && !win.isDestroyed()) win.webContents.send(channel, payload) }
 
-function createWindow() {
+let fullscreen = null
+
+function createWindow(settings) {
   win = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 800,
     minHeight: 560,
+    fullscreen: settings.get().fullscreen,
     backgroundColor: '#15151c',
     autoHideMenuBar: true,
     title: 'AnimeDesk',
@@ -52,6 +56,7 @@ function createWindow() {
     },
   })
   hardenWindow(win.webContents, { devUrl: process.env.ELECTRON_RENDERER_URL ?? null })
+  fullscreen = attachFullscreen({ win, settings, send })
   if (process.env.ELECTRON_RENDERER_URL) win.loadURL(process.env.ELECTRON_RENDERER_URL)
   else win.loadFile(path.join(__dirname, '../renderer/index.html'))
 }
@@ -104,6 +109,7 @@ async function main() {
 
   registerIpc(ipcMain, createHandlers({
     settings, library, seriesPrefs, tracker, progress, anilist, toolManager, health, watch, downloads, updater, whatsNew, send,
+    window: { get: () => fullscreen?.get() ?? false, set: (v) => fullscreen?.set(v) },
     electron: {
       pickFolder: async () => {
         const r = await dialog.showOpenDialog(win, { properties: ['openDirectory', 'createDirectory'] })
@@ -113,7 +119,7 @@ async function main() {
     },
   }))
 
-  createWindow()
+  createWindow(settings)
   updater.start()
   health.run().then(() => health.dailyUpdate({ enabled: settings.get().autoUpdateTools, now: new Date().toISOString() }))
   setInterval(() => { if (health.get().reason === 'source-down') health.run() }, SIX_HOURS)

@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   animations: true,
   autoDownloadUpdates: true,
   lastSeenVersion: null,
+  fullscreen: false,
 })
 
 export const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
@@ -40,6 +41,7 @@ export function sanitizeSettings(input = {}) {
   if (typeof input.animations === 'boolean') s.animations = input.animations
   if (typeof input.autoDownloadUpdates === 'boolean') s.autoDownloadUpdates = input.autoDownloadUpdates
   if (typeof input.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(input.lastSeenVersion)) s.lastSeenVersion = input.lastSeenVersion
+  if (typeof input.fullscreen === 'boolean') s.fullscreen = input.fullscreen
   return s
 }
 

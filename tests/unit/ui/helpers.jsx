@@ -33,6 +33,7 @@ export function makeFakeApi(overrides = {}) {
       check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(async () => true), install: vi.fn(async () => true), onState: sub(),
     },
     whatsNew: { get: vi.fn(async () => null), seen: vi.fn(async () => {}) },
+    window: { getFullscreen: vi.fn(async () => false), setFullscreen: vi.fn(async () => {}), onFullscreen: sub() },
     dialog: { pickFolder: vi.fn(async () => null) },
     onLibraryChanged: sub(),
   }

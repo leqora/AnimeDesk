@@ -53,6 +53,7 @@ export default function App({ api, sound: injectedSound }) {
   const [openAnimeId, setOpenAnimeId] = useState(null)
   const [updateState, setUpdateState] = useState({ status: 'idle', currentVersion: '' })
   const [whatsNew, setWhatsNew] = useState(null)
+  const [fullscreen, setFullscreen] = useState(false)
 
   useEffect(() => {
     api.settings.get().then(setSettings)
@@ -96,6 +97,19 @@ export default function App({ api, sound: injectedSound }) {
     return () => document.documentElement.classList.remove('reduce-motion')
   }, [motionOff])
 
+  useEffect(() => {
+    api.window.getFullscreen().then(setFullscreen)
+    return api.window.onFullscreen(setFullscreen)
+  }, [api])
+  useEffect(() => {
+    // Dialogs close on Esc too; leave fullscreen only when no dialog is open.
+    const onKey = (e) => {
+      if (e.key === 'Escape' && !e.defaultPrevented && fullscreen && !document.querySelector('[role="dialog"]')) api.window.setFullscreen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [api, fullscreen])
+
   useEffect(() => { if (health.reason === 'missing-tools') setWizardOpen(true) }, [health.reason])
 
   if (!settings) return null
@@ -120,6 +134,8 @@ export default function App({ api, sound: injectedSound }) {
             profileName={settings.profileName || settings.systemName}
             stats={stats}
             version={updateState.currentVersion}
+            fullscreen={fullscreen}
+            onToggleFullscreen={() => api.window.setFullscreen(!fullscreen)}
           />
           <main className="content">
             <UpdateBanner state={updateState} onWhatsNew={openWhatsNew} />

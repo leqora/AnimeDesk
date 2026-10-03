@@ -17,6 +17,7 @@ function services() {
     progress: { snapshot: vi.fn(() => ({ level: 1 })), check: vi.fn() },
     updater: { getState: vi.fn(() => ({ status: 'idle' })), check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(() => true), install: vi.fn(() => true), applySettings: vi.fn() },
     whatsNew: { get: vi.fn(() => null), seen: vi.fn() },
+    window: { get: vi.fn(() => true), set: vi.fn() },
     send: vi.fn(),
   }
 }
@@ -120,5 +121,12 @@ describe('ipc', () => {
     expect(s.updater.applySettings).not.toHaveBeenCalled()
     h[INVOKE.settingsUpdate]({ autoDownloadUpdates: false })
     expect(s.updater.applySettings).toHaveBeenCalledTimes(1)
+  })
+  it('reads and sets window fullscreen', () => {
+    const s = services()
+    const h = createHandlers(s)
+    expect(h[INVOKE.windowGetFullscreen]()).toBe(true)
+    h[INVOKE.windowSetFullscreen](false)
+    expect(s.window.set).toHaveBeenCalledWith(false)
   })
 })

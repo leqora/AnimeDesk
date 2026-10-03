@@ -15,6 +15,8 @@ export function createHandlers(s) {
     [INVOKE.updateInstall]: () => s.updater.install(),
     [INVOKE.whatsNewGet]: () => s.whatsNew.get(),
     [INVOKE.whatsNewSeen]: () => s.whatsNew.seen(),
+    [INVOKE.windowGetFullscreen]: () => s.window.get(),
+    [INVOKE.windowSetFullscreen]: (value) => s.window.set(Boolean(value)),
     [INVOKE.libraryList]: () => s.library.list(),
     [INVOKE.libraryAdd]: (entry) => s.library.add(entry),
     [INVOKE.libraryUpdate]: (id, patch) => {

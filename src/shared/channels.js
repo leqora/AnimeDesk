@@ -38,6 +38,8 @@ export const INVOKE = {
   downloadsOpenFolder: 'downloads:open-folder',
   dialogPickFolder: 'dialog:pick-folder',
   statsGet: 'stats:get',
+  windowGetFullscreen: 'window:get-fullscreen',
+  windowSetFullscreen: 'window:set-fullscreen',
 }
 
 export const EVENTS = {
@@ -52,4 +54,5 @@ export const EVENTS = {
   levelUp: 'event:level-up',
   seriesCompleted: 'event:series-completed',
   updateState: 'event:update-state',
+  fullscreen: 'event:fullscreen',
 }

@@ -195,5 +195,7 @@
   "episodes.default": "Podrazumevano",
   "search.back": "Nazad",
   "search.playSub": "Pusti sa titlom",
-  "error.no-dub": "Ova epizoda nema dub."
+  "error.no-dub": "Ova epizoda nema dub.",
+  "window.fullscreen": "Ceo ekran (F11)",
+  "window.exitFullscreen": "Izađi iz celog ekrana (Esc)"
 }
