@@ -1,6 +1,6 @@
 # AnimeDesk — stanje projekta
 
-Poslednje ažuriranje: 2026-10-02. Trenutna verzija: **0.3.3** (GitHub release „Latest”).
+Poslednje ažuriranje: 2026-10-03. Trenutna verzija: **0.3.4** (GitHub release „Latest”).
 
 Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, šta je otvoreno. Detalji dizajna su u `docs/superpowers/specs/`, planovi u `docs/superpowers/plans/`, beleške izdanja u `docs/releases/`.
 
@@ -14,20 +14,21 @@ Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, �
 | 0.3.1 | 2026-10-02 | Rezervne AniList pretrage po podnaslovu (posle `:`); verzija u donjem levom uglu menija | — (mala izmena) |
 | 0.3.2 | 2026-10-02 | AniList zahtevi u redu jedan po jedan, poštovanje 429 / `Retry-After` / `X-RateLimit-*`; podnaslov posle ` - `; pamćenje „nije nađeno” 7 dana | — |
 | 0.3.3 | 2026-10-02 | Poslednja rezervna pretraga: naslov bez „Movie N”/„OVA N” i interpunkcije | — |
+| 0.3.4 | 2026-10-03 | Zapis „nije nađeno” nosi `searchVersion`; zapisi starije logike pretrage se zanemaruju | — |
 
 ## Šta je stvarno provereno (ne samo testovima)
 
-- 322 unit/integration testa prolaze (`npm test`), e2e smoke (`npm run test:e2e`) prolazi.
+- 323 unit/integration testa prolaze (`npm test`), e2e smoke (`npm run test:e2e`) prolazi.
 - **Auto-update radi u praksi:**
   - lokalna proba (generic provider na `localhost`, 0.2.90 → 0.2.91): instalacija tek na klik, podaci netaknuti, bez SmartScreen-a;
-  - pravo ažuriranje preko GitHub-a **0.3.0 → 0.3.1 → 0.3.2** — korisnik potvrdio (ažuriranje na 0.3.3 još nije potvrđeno).
+  - pravo ažuriranje preko GitHub-a **0.3.0 → 0.3.1 → 0.3.2 → 0.3.3** — korisnik potvrdio.
 - „Šta je novo” posle ažuriranja se prikazuje jednom (`lastSeenVersion` u `settings.json`).
 - Slike iz AniList-a: za pretragu „naruto” 24/26 naslova dobija tačnu sliku, nijedna pogrešna (provereno uživo).
 - Korisnik je instalirao aplikaciju i koristi je (pretraga, slike, ažuriranje).
 
 ## Poznati problemi / otvoreno
 
-1. **Keš „nije nađeno” ne zna za promene logike pretrage.** Zapis `{ notFound: true, at }` u `%APPDATA%\AnimeDesk\Cache\anilist\*.json` važi 7 dana čak i kad nova verzija ima bolju pretragu (zato „-Bonds-” posle 0.3.3 nije odmah dobio sliku; zapisi su ručno obrisani kod korisnika). **Popravka za sledeću verziju:** upisati verziju logike (npr. `searchVersion`) u zapis i zanemariti zapise sa starom verzijom.
+1. **Pravilo za pretragu slika:** svaka izmena `searchCandidates`/`bestMatch` u `anilist.js` mora da poveća `SEARCH_VERSION`, inače zapamćeni promašaji važe do 7 dana (popravljeno u 0.3.4).
 2. Bez slike ostaju naslovi koje AniList nema na engleskom ili uopšte: npr. „Naruto OVA7: Chunin Exam on Fire!…” (na AniList-u samo japanski naziv) i „Naruto (Shinsaku Anime)” (AniList ga nema). Namerno se ne traži po jednoj reči (pogrešna slika je gora od prazne).
 3. AniList trenutno dozvoljava ~30 zahteva/min; velika pretraga prvi put popunjava slike postepeno (do par minuta), posle iz keša.
 4. Aplikacija nije potpisana (nema code-signing sertifikata); SmartScreen se do sada nije pojavio, ali može.
@@ -36,6 +37,5 @@ Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, �
 
 ## Mogući sledeći koraci (ideje, ništa nije dogovoreno)
 
-- Popravka #1 (verzija keša „nije nađeno”).
 - Ručno povezivanje naslova iz pretrage sa AniList unosom (postoji za watchlist preko `aniListId`, ne i u mreži pretrage).
 - Preporuke na osnovu žanrova, praćenje novih epizoda (iz `Claude/Anime/IDEJE.md`).
