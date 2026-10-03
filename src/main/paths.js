@@ -13,6 +13,7 @@ export function createPaths(baseDir) {
     watchLog: path.join(baseDir, 'watchlog.json'),
     profile: path.join(baseDir, 'profile.json'),
     seriesPrefs: path.join(baseDir, 'series-prefs.json'),
+    positions: path.join(baseDir, 'positions.json'),
   }
 }
 
