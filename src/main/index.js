@@ -49,6 +49,7 @@ function createWindow(settings) {
     backgroundColor: '#15151c',
     autoHideMenuBar: true,
     title: 'AnimeDesk',
+    icon: app.isPackaged ? undefined : path.join(app.getAppPath(), 'build', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
