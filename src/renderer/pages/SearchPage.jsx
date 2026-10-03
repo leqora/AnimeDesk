@@ -29,7 +29,8 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   // ignore: sessions we cancelled on purpose (mode switch) — their late events must not touch the new session
   const live = useRef({ sessionId: null, phase: 'idle', ignore: new Set(), lastEpisode: null })
   useEffect(() => { live.current.phase = phase }, [phase])
-  const focused = phase === 'anime' || phase === 'episode'
+  // Stay focused between the anime and episode menus (and during a sub/dub restart) so the home sections do not flash back.
+  const focused = phase === 'anime' || phase === 'episode' || (phase === 'busy' && anime != null)
   useEffect(() => { onFocusChange(focused) }, [focused])
 
   useEffect(() => {
@@ -111,7 +112,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     const before = prefs.mode ?? settings.mode
     const next = await api.seriesPrefs.set(anime, patch)
     setPrefs(next)
-    if ('mode' in patch && (next.mode ?? settings.mode) !== before && phase === 'episode') restart()
+    if ('mode' in patch && (next.mode ?? settings.mode) !== before && live.current.phase === 'episode') restart()
   }
   const playSubtitled = () => start({ query: anime, anime, episode: live.current.lastEpisode, mode: 'sub' })
 

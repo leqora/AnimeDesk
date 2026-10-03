@@ -141,6 +141,19 @@ describe('SearchPage', () => {
     expect(onFocusChange).toHaveBeenLastCalledWith(false)
   })
 
+  it('stays focused while busy after an anime was picked', () => {
+    const { api, handlers } = withEvents()
+    const onFocusChange = vi.fn()
+    renderUi(<SearchPage {...props({ onFocusChange })} />, { api })
+    search()
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show'] }))
+    fireEvent.click(screen.getByRole('button', { name: /Show/ }))
+    expect(onFocusChange).toHaveBeenLastCalledWith(true)
+    expect(screen.queryByLabelText('Naziv animea…')).not.toBeInTheDocument()
+    act(() => handlers.end({ sessionId: 's1', result: { ok: false, error: 'cancelled' } }))
+    expect(onFocusChange).toHaveBeenLastCalledWith(false)
+  })
+
   it('pages long episode lists', () => {
     const { api, handlers } = withEvents()
     renderUi(<SearchPage {...props()} />, { api })

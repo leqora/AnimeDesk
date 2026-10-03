@@ -105,6 +105,13 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 /* rails + cards */
 .rail { display: flex; flex-direction: column; gap: 10px; }
 .rail__track { display: grid; grid-auto-flow: column; grid-auto-columns: 150px; gap: 14px; overflow-x: auto; padding-bottom: 6px; }
+.rail__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.rail__track { scroll-behavior: smooth; }
+.series-card { position: relative; }
+.series-card__open { display: flex; flex-direction: column; gap: 6px; padding: 0; background: none; border: 0; text-align: left; }
+.series-card__progress { display: flex; align-items: center; gap: 8px; }
+.series-card__progress .xp-bar { flex: 1; }
+.series-card__play { position: absolute; top: 14px; right: 14px; padding: 6px; border-radius: 50%; }
 .search-bar { display: flex; gap: 8px; }
 .search-bar input { flex: 1; }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
