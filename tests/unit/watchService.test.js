@@ -3,7 +3,7 @@ import { createWatchService } from '../../src/main/watchService.js'
 import { EVENTS } from '../../src/shared/channels.js'
 import { DEFAULT_SETTINGS } from '../../src/main/settings.js'
 
-function setup({ settings = {}, maxPercent = 90, menus = [] } = {}) {
+function setup({ settings = {}, maxPercent = 90, menus = [], seriesPrefs } = {}) {
   const events = []
   let resolveDone
   const aniCli = {
@@ -23,12 +23,32 @@ function setup({ settings = {}, maxPercent = 90, menus = [] } = {}) {
     aniCli, player, library,
     settings: { get: () => ({ ...DEFAULT_SETTINGS, ...settings }) },
     notify: (ch, p) => events.push([ch, p]),
+    seriesPrefs,
   })
   return { svc, aniCli, player, library, events, menus }
 }
 const flush = () => new Promise((r) => setTimeout(r, 20))
 
 describe('watchService', () => {
+  it('starts ani-cli with the series quality and mode, and a one-off mode wins', async () => {
+    const seriesPrefs = { resolve: vi.fn(() => ({ quality: '720', mode: 'dub' })) }
+    const { svc, aniCli } = setup({ seriesPrefs })
+    svc.watch({ query: 'show', anime: 'Show (12 episodes)' })
+    expect(seriesPrefs.resolve).toHaveBeenCalledWith('Show (12 episodes)', expect.objectContaining({ quality: 'best' }))
+    expect(aniCli.startSession).toHaveBeenLastCalledWith(expect.objectContaining({ quality: '720', mode: 'dub' }))
+    svc.watch({ query: 'show', anime: 'Show (12 episodes)', mode: 'sub' })
+    expect(aniCli.startSession).toHaveBeenLastCalledWith(expect.objectContaining({ quality: '720', mode: 'sub' }))
+    svc.watch({ query: 'show', mode: 'weird' })
+    expect(seriesPrefs.resolve).toHaveBeenLastCalledWith('show', expect.anything())
+    expect(aniCli.startSession).toHaveBeenLastCalledWith(expect.objectContaining({ mode: 'dub' }))
+    await flush()
+  })
+  it('falls back to global settings without a prefs store', async () => {
+    const { svc, aniCli } = setup({ settings: { quality: '480', mode: 'dub' } })
+    svc.watch({ query: 'x' })
+    expect(aniCli.startSession).toHaveBeenLastCalledWith(expect.objectContaining({ quality: '480', mode: 'dub' }))
+    await flush()
+  })
   it('records the episode when watched past the threshold', async () => {
     const { svc, library, events, player } = setup({ maxPercent: 90 })
     svc.watch({ query: 'fake' })

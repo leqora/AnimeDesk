@@ -46,6 +46,14 @@ describe('parseProgress', () => {
 })
 
 describe('downloads', () => {
+  it('downloads with the series quality and mode', async () => {
+    const resolvePrefs = vi.fn(() => ({ quality: '360', mode: 'dub' }))
+    let n = 0
+    dl = createDownloads({ file: path.join(base, 'downloads2.json'), aniCli, onChange: () => changes++, uuid: () => `p${++n}`, now: () => '2026-10-01T00:00:00Z', resolvePrefs })
+    dl.enqueue({ title: 'Show', aniCliTitle: 'Show', episodes: ['1'], dir: base })
+    expect(resolvePrefs).toHaveBeenCalledWith('Show')
+    expect(aniCli.startSession).toHaveBeenCalledWith(expect.objectContaining({ quality: '360', mode: 'dub' }))
+  })
   it('runs one episode at a time into a safe series folder', async () => {
     dl.enqueue({ title: 'Re:Zero', aniCliTitle: 'Re:Zero', episodes: ['1', '2'], dir: base })
     expect(aniCli.startSession).toHaveBeenCalledTimes(1)

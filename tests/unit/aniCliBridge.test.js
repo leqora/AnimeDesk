@@ -3,8 +3,15 @@ import { mapError, menuKind, autoAnswer, parsePlayerArgs, buildEnv, stripAnsi } 
 import { DEFAULT_SETTINGS } from '../../src/main/settings.js'
 
 describe('aniCliBridge helpers', () => {
+  it('lets a session override quality and mode', () => {
+    const base = { baseEnv: {}, tools: {}, bridges: { menu: 'm', player: 'p' }, server: { port: 1, token: 't' }, sessionId: 's', player: 'play', settings: { ...DEFAULT_SETTINGS, quality: '720', mode: 'sub' }, historyDir: 'h' }
+    expect(buildEnv(base)).toMatchObject({ ANI_CLI_QUALITY: '720', ANI_CLI_MODE: 'sub' })
+    expect(buildEnv({ ...base, quality: '1080', mode: 'dub' })).toMatchObject({ ANI_CLI_QUALITY: '1080', ANI_CLI_MODE: 'dub' })
+    expect(buildEnv({ ...base, quality: null, mode: undefined })).toMatchObject({ ANI_CLI_QUALITY: '720', ANI_CLI_MODE: 'sub' })
+  })
   it('maps ani-cli errors (with ANSI colors) to codes', () => {
     expect(mapError('\x1b[2K\r\x1b[1;31mNo results found!\x1b[0m\n')).toBe('no-results')
+    expect(mapError('[1;31mNo sources found for dub![0m')).toBe('no-dub')
     expect(mapError('Episode not released!')).toBe('episode-not-released')
     expect(mapError('Blocked by cloudflare.')).toBe('blocked')
     expect(mapError('weird')).toBe('unknown')

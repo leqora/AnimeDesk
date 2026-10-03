@@ -13,6 +13,7 @@ export function mapError(stderr) {
   if (/No results found/i.test(s)) return 'no-results'
   if (/Episode not released|Out of range/i.test(s)) return 'episode-not-released'
   if (/Blocked by cloudflare/i.test(s)) return 'blocked'
+  if (/No sources found for dub/i.test(s)) return 'no-dub'
   return 'unknown'
 }
 
@@ -42,7 +43,7 @@ export function parsePlayerArgs(args) {
   return { mpvArgs: args, title: m ? m[1] : full, episode: m ? m[2] : null, url }
 }
 
-export function buildEnv({ baseEnv, tools, bridges, server, sessionId, player, downloadDir, settings, historyDir }) {
+export function buildEnv({ baseEnv, tools, bridges, server, sessionId, player, downloadDir, settings, historyDir, quality = null, mode = null }) {
   const env = { ...baseEnv }
   const pathKey = Object.keys(env).find((k) => k.toUpperCase() === 'PATH')
   const oldPath = pathKey ? env[pathKey] : ''
@@ -63,8 +64,8 @@ export function buildEnv({ baseEnv, tools, bridges, server, sessionId, player, d
     ANI_CLI_NO_DETACH: '1',
     ANI_CLI_EXIT_AFTER_PLAY: '1',
     ANI_CLI_LOG: '0',
-    ANI_CLI_QUALITY: settings.quality,
-    ANI_CLI_MODE: settings.mode,
+    ANI_CLI_QUALITY: quality ?? settings.quality,
+    ANI_CLI_MODE: mode ?? settings.mode,
     ANI_CLI_HIST_DIR: toMsysPath(historyDir),
     ANIMEDESK_PORT: String(server.port),
     ANIMEDESK_TOKEN: server.token,
@@ -79,7 +80,7 @@ export function buildEnv({ baseEnv, tools, bridges, server, sessionId, player, d
 export function createAniCliBridge({ toolManager, server, bridges, getSettings, historyDir, runImpl = run, baseEnv = process.env }) {
   function startSession({
     query, player = 'play', episodes = null, index = null, downloadDir = null,
-    onMenu = async () => null, onPlay = async () => 0, onLine, timeoutMs,
+    onMenu = async () => null, onPlay = async () => 0, onLine, timeoutMs, quality = null, mode = null,
   }) {
     const tools = toolManager.toolPaths()
     if (!tools.bash || !tools.aniCli) throw new Error('tools-missing')
@@ -97,7 +98,7 @@ export function createAniCliBridge({ toolManager, server, bridges, getSettings, 
     if (index != null) args.push('-S', String(index))
     if (episodes != null) args.push('-e', String(episodes))
     args.push(...String(query).trim().split(/\s+/))
-    const env = buildEnv({ baseEnv, tools, bridges, server, sessionId, player, downloadDir, settings: getSettings(), historyDir })
+    const env = buildEnv({ baseEnv, tools, bridges, server, sessionId, player, downloadDir, settings: getSettings(), historyDir, quality, mode })
     const proc = runImpl(tools.bash, args, { env, onLine, timeoutMs })
     const done = proc.done.then((r) => {
       server.unregisterSession(sessionId)

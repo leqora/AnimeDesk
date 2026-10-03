@@ -25,7 +25,7 @@ function findEpisodeFile(dir, episode) {
   return null
 }
 
-export function createDownloads({ file, aniCli, onChange = () => {}, now = () => new Date().toISOString(), uuid = () => crypto.randomUUID() }) {
+export function createDownloads({ file, aniCli, onChange = () => {}, now = () => new Date().toISOString(), uuid = () => crypto.randomUUID(), resolvePrefs = null }) {
   const db = readJson(file, { version: 1, items: [] }).data
   const save = () => writeJsonAtomic(file, db)
   // Unfinished items survive an app restart; whatever was running or waiting comes back paused.
@@ -47,8 +47,11 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
     let notFound = false
     try {
       fs.mkdirSync(targetDir, { recursive: true }) // ani-cli never creates it
+      const prefs = resolvePrefs ? resolvePrefs(item.aniCliTitle) : {}
       session = aniCli.startSession({
         query: item.aniCliTitle,
+        quality: prefs.quality,
+        mode: prefs.mode,
         player: 'download',
         episodes: item.episode,
         downloadDir: targetDir,
