@@ -1,4 +1,5 @@
 import http from 'node:http'
+import fs from 'node:fs'
 import crypto from 'node:crypto'
 import { Readable } from 'node:stream'
 
@@ -28,6 +29,28 @@ export function createStreamServer({ fetchImpl = fetch, userAgent = DEFAULT_USER
     let n = pb.index.get(url)
     if (n == null) { n = pb.urls.push(url) - 1; pb.index.set(url, n) }
     return `${base(id)}/r/${n}`
+  }
+
+  function registerFile(filePath) {
+    const id = crypto.randomUUID()
+    playbacks.set(id, { file: filePath, urls: [], index: new Map() })
+    return { id, fileUrl: `${base(id)}/file` }
+  }
+
+  function serveFile(req, res, file) {
+    let size
+    try { size = fs.statSync(file).size } catch { return res.writeHead(404, CORS).end() }
+    const head = { ...CORS, 'Content-Type': 'video/mp4', 'Accept-Ranges': 'bytes' }
+    const m = /^bytes=(\d+)-(\d*)$/.exec(req.headers.range ?? '')
+    if (!m) {
+      res.writeHead(200, { ...head, 'Content-Length': size })
+      return req.method === 'HEAD' ? res.end() : fs.createReadStream(file).pipe(res)
+    }
+    const start = Number(m[1])
+    const end = Math.min(m[2] ? Number(m[2]) : size - 1, size - 1)
+    if (start >= size || start > end) return res.writeHead(416, { ...CORS, 'Content-Range': `bytes */${size}` }).end()
+    res.writeHead(206, { ...head, 'Content-Length': end - start + 1, 'Content-Range': `bytes ${start}-${end}/${size}` })
+    return req.method === 'HEAD' ? res.end() : fs.createReadStream(file, { start, end }).pipe(res)
   }
 
   function register({ url, referrer = null, subUrl = null }) {
@@ -87,7 +110,9 @@ export function createStreamServer({ fetchImpl = fetch, userAgent = DEFAULT_USER
     if (req.method === 'OPTIONS') return res.writeHead(204, { ...CORS, 'Access-Control-Allow-Headers': 'Range' }).end()
     if (req.method !== 'GET' && req.method !== 'HEAD') return res.writeHead(405, CORS).end()
     const pb = playbacks.get(m[2])
-    if (!pb || m[3] === 'file') return res.writeHead(404, CORS).end()
+    if (!pb) return res.writeHead(404, CORS).end()
+    if (pb.file) return m[3] === 'file' ? serveFile(req, res, pb.file) : res.writeHead(404, CORS).end()
+    if (m[3] === 'file') return res.writeHead(404, CORS).end()
     if (m[3] === 'playlist') return proxy(req, res, pb, m[2], pb.playlist, 'playlist')
     if (m[3] === 'sub') return pb.sub ? proxy(req, res, pb, m[2], pb.sub, 'sub') : res.writeHead(404, CORS).end()
     const url = pb.urls[Number(m[4])]
@@ -102,6 +127,7 @@ export function createStreamServer({ fetchImpl = fetch, userAgent = DEFAULT_USER
     }),
     stop: () => new Promise((resolve) => { if (!server) return resolve(); server.closeAllConnections?.(); server.close(() => resolve()) }),
     register,
+    registerFile,
     unregister: (id) => { playbacks.delete(id) },
   }
 }

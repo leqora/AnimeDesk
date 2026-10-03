@@ -1,10 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import http from 'node:http'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { createStreamServer, rewritePlaylist, DEFAULT_USER_AGENT } from '../../src/main/streamServer.js'
 
-let upstream, upBase, seen, server, streams
+let upstream, upBase, seen, streams
 const routes = {}
 beforeEach(async () => {
+  for (const k of Object.keys(routes)) delete routes[k]
   seen = []
   upstream = http.createServer((req, res) => {
     seen.push({ url: req.url, headers: req.headers })
@@ -15,7 +19,7 @@ beforeEach(async () => {
   await new Promise((ok) => upstream.listen(0, '127.0.0.1', ok))
   upBase = `http://127.0.0.1:${upstream.address().port}`
   streams = createStreamServer({})
-  server = await streams.start()
+  await streams.start()
 })
 afterEach(async () => { await streams.stop(); await new Promise((ok) => upstream.close(ok)) })
 
@@ -94,5 +98,25 @@ describe('streamServer', () => {
     await new Promise((r) => setTimeout(r, 200))
     expect(upstreamClosed).toBe(true)
     expect((await fetch(reg.playlistUrl)).status).toBe(200)
+  })
+  it('serves a registered local file with byte ranges', async () => {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-ss-')), 'Show Episode 1.mp4')
+    fs.writeFileSync(file, Buffer.from('0123456789'))
+    const { id, fileUrl } = streams.registerFile(file)
+    const full = await fetch(fileUrl)
+    expect(full.status).toBe(200)
+    expect(full.headers.get('content-type')).toBe('video/mp4')
+    expect(full.headers.get('accept-ranges')).toBe('bytes')
+    expect(await full.text()).toBe('0123456789')
+    const part = await fetch(fileUrl, { headers: { Range: 'bytes=2-5' } })
+    expect(part.status).toBe(206)
+    expect(part.headers.get('content-range')).toBe('bytes 2-5/10')
+    expect(await part.text()).toBe('2345')
+    const tail = await fetch(fileUrl, { headers: { Range: 'bytes=7-' } })
+    expect(await tail.text()).toBe('789')
+    expect((await fetch(fileUrl, { headers: { Range: 'bytes=20-' } })).status).toBe(416)
+    fs.rmSync(file)
+    expect((await fetch(fileUrl)).status).toBe(404)
+    streams.unregister(id)
   })
 })
