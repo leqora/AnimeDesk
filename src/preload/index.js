@@ -9,6 +9,7 @@ const on = (channel) => (cb) => {
 }
 
 contextBridge.exposeInMainWorld('animedesk', {
+  player: { onOpen: on(EVENTS.playerOpen), onClose: on(EVENTS.playerClose), progress: invoke(INVOKE.playerProgress), closed: invoke(INVOKE.playerClosed) },
   settings: { get: invoke(INVOKE.settingsGet), update: invoke(INVOKE.settingsUpdate) },
   library: {
     list: invoke(INVOKE.libraryList),

@@ -12,6 +12,9 @@ import { run } from './run.js'
 import { createBridgeServer } from './bridgeServer.js'
 import { createAniCliBridge } from './aniCliBridge.js'
 import { createPlayer } from './playerMonitor.js'
+import { createStreamServer } from './streamServer.js'
+import { createInternalPlayer } from './internalPlayer.js'
+import { createPositions } from './positions.js'
 import { createWatchService } from './watchService.js'
 import { createDownloads } from './downloads.js'
 import { createAniList } from './anilist.js'
@@ -74,6 +77,10 @@ async function main() {
   const library = createLibrary(paths.library)
   const seriesPrefs = createSeriesPrefs(paths.seriesPrefs)
   const anilist = createAniList({ cacheDir: paths.cache })
+  const positions = createPositions(paths.positions)
+  positions.prune(60)
+  const streams = createStreamServer()
+  await streams.start()
   const watchLog = createWatchLog(paths.watchLog)
   const computeSnapshot = () => {
     const entries = library.list()
@@ -105,12 +112,16 @@ async function main() {
     historyDir: paths.aniCliHistory,
   })
   const player = createPlayer({ getMpvPath: () => toolManager.toolPaths().mpv })
-  const watch = createWatchService({ aniCli, player, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs })
+  const internalPlayer = createInternalPlayer({
+    streams, notify: send, positions,
+    getTotalEpisodes: (title) => library.findByAniCliTitle(title)?.totalEpisodes ?? anilist.getCached(title)?.episodes ?? null,
+  })
+  const watch = createWatchService({ aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs })
   const downloads = createDownloads({ file: paths.downloads, aniCli, onChange: () => send(EVENTS.downloads, downloads.queueItems()), resolvePrefs: (title) => seriesPrefs.resolve(title, settings.get()) })
   const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
 
   registerIpc(ipcMain, createHandlers({
-    settings, library, seriesPrefs, tracker, progress, anilist, toolManager, health, watch, downloads, updater, whatsNew, send,
+    settings, library, seriesPrefs, tracker, progress, anilist, toolManager, health, watch, internalPlayer, downloads, updater, whatsNew, send,
     window: { get: () => fullscreen?.get() ?? false, set: (v) => fullscreen?.set(v) },
     electron: {
       pickFolder: async () => {
@@ -128,7 +139,7 @@ async function main() {
   setInterval(() => { if (health.get().reason === 'source-down') health.run() }, SIX_HOURS)
 
   app.on('window-all-closed', () => app.quit())
-  app.on('before-quit', () => { server.stop() })
+  app.on('before-quit', () => { server.stop(); streams.stop() })
 }
 
 main()

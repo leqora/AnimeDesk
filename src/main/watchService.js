@@ -3,7 +3,7 @@ import { EVENTS } from '../shared/channels.js'
 import { autoAnswer, menuKind, parsePlayerArgs } from './aniCliBridge.js'
 import { decideWatched } from './playerMonitor.js'
 
-export function createWatchService({ aniCli, player, library, settings, notify, seriesPrefs = null }) {
+export function createWatchService({ aniCli, player, internalPlayer = null, library, settings, notify, seriesPrefs = null, positions = null, mpvExtraArgs = () => [] }) {
   const pending = new Map() // requestId -> { sessionId, resolve }
   const sessions = new Map() // sessionId -> session
 
@@ -13,10 +13,21 @@ export function createWatchService({ aniCli, player, library, settings, notify, 
     if (episode == null) return 'none'
     if (decision === 'watched') {
       library.recordWatched({ aniCliTitle: title, episode })
+      positions?.clear(title, episode)
       notify(EVENTS.libraryChanged)
     }
     if (decision === 'ask') notify(EVENTS.ask, { aniCliTitle: title, episode })
     return decision
+  }
+
+  // Both players resolve to { exitCode, maxPercent, ... }, so tracking does not care which one ran.
+  async function runPlayer(info) {
+    const mpv = (args) => player.play(args, { extraArgs: mpvExtraArgs() })
+    if (!internalPlayer || settings.get().playerMode !== 'internal') return mpv(info.mpvArgs)
+    const r = await internalPlayer.play(info)
+    if (r.reason !== 'external') return r
+    const ext = await mpv([...info.mpvArgs, `--start=${Math.floor(r.position ?? 0)}`])
+    return { exitCode: ext.exitCode, maxPercent: Math.max(r.maxPercent ?? 0, ext.maxPercent ?? 0) }
   }
 
   function answerMenu(requestId, line) {
@@ -51,7 +62,7 @@ export function createWatchService({ aniCli, player, library, settings, notify, 
         const info = parsePlayerArgs(args)
         notify(EVENTS.playing, { title: info.title, episode: info.episode })
         entry.playing = true
-        const r = await player.play(info.mpvArgs)
+        const r = await runPlayer(info)
         entry.playing = false
         // A cancelled session must not mark the episode as watched.
         if (!entry.cancelled) afterPlayback({ title: info.title, episode: info.episode, maxPercent: r.maxPercent })
@@ -74,12 +85,13 @@ export function createWatchService({ aniCli, player, library, settings, notify, 
     const entry = sessions.get(sessionId)
     if (!entry) return
     entry.cancelled = true
-    if (entry.playing) player.stop() // mpv is the app's child, killing ani-cli does not close it
+    if (entry.playing) { player.stop(); internalPlayer?.stop() } // mpv is the app's child, killing ani-cli does not close it
     entry.session.kill()
   }
 
   async function playLocal({ file, title, episode }) {
-    const r = await player.play([`--force-media-title=${title} Episode ${episode}`, file])
+    const mpvArgs = [`--force-media-title=${title} Episode ${episode}`, file]
+    const r = await runPlayer({ mpvArgs, file, title, episode: String(episode), url: file, referrer: null, subUrl: null })
     return afterPlayback({ title, episode: String(episode), maxPercent: r.maxPercent })
   }
 

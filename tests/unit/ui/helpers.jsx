@@ -36,6 +36,7 @@ export function makeFakeApi(overrides = {}) {
     window: { getFullscreen: vi.fn(async () => false), setFullscreen: vi.fn(async () => {}), onFullscreen: sub() },
     dialog: { pickFolder: vi.fn(async () => null) },
     app: { openRepo: vi.fn(async () => {}) },
+    player: { onOpen: sub(), onClose: sub(), progress: vi.fn(async () => {}), closed: vi.fn(async () => {}) },
     onLibraryChanged: sub(),
   }
   for (const [group, fns] of Object.entries(overrides)) Object.assign(api[group], fns)

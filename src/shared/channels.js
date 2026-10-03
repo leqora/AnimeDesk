@@ -41,6 +41,8 @@ export const INVOKE = {
   statsGet: 'stats:get',
   windowGetFullscreen: 'window:get-fullscreen',
   windowSetFullscreen: 'window:set-fullscreen',
+  playerProgress: 'player:progress',
+  playerClosed: 'player:closed',
 }
 
 export const EVENTS = {

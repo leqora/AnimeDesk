@@ -84,6 +84,8 @@ export function createHandlers(s) {
     [INVOKE.dialogPickFolder]: () => s.electron.pickFolder(),
     [INVOKE.appOpenRepo]: () => s.electron.openRepo(),
     [INVOKE.statsGet]: () => s.progress.snapshot(),
+    [INVOKE.playerProgress]: (p) => s.internalPlayer.progress(p),
+    [INVOKE.playerClosed]: (p) => s.internalPlayer.closed(p),
   }
 }
 

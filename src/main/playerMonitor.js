@@ -35,12 +35,12 @@ export function createPlayer({ getMpvPath, spawnImpl = spawn, connect = net.conn
     stop() {
       for (const child of running) child.kill()
     },
-    play(args) {
+    play(args, { extraArgs = [] } = {}) {
       return new Promise((resolve, reject) => {
         const mpv = getMpvPath()
         if (!mpv) return reject(new Error('mpv-missing'))
         const pipe = `\\\\.\\pipe\\animedesk-mpv-${crypto.randomUUID()}`
-        const child = spawnImpl(mpv, [`--input-ipc-server=${pipe}`, ...args], { stdio: 'ignore' })
+        const child = spawnImpl(mpv, [`--input-ipc-server=${pipe}`, ...extraArgs, ...args], { stdio: 'ignore' })
         running.add(child)
         const tracker = createPercentTracker()
         let socket = null
