@@ -100,6 +100,7 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
           )}
           <h3>{t('detail.episodes')}</h3>
           <EpisodePicker
+            key={episodes.length}
             episodes={episodes.map(String)}
             selected={noteEp != null ? [String(noteEp)] : []}
             watched={watched}

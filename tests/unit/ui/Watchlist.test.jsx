@@ -128,4 +128,11 @@ describe('AnimeDetail', () => {
     expect(container.querySelector('.banner .hero__bg').style.backgroundImage).toContain('data:image/png;base64,AA')
     expect(within(container.querySelector('.banner')).getByRole('heading', { name: 'Frieren' })).toBeInTheDocument()
   })
+  it('reopens the episode group once the total episode count arrives', () => {
+    const watched = Array.from({ length: 100 }, (_, i) => i + 1)
+    const props = { ready: true, onBack: () => {}, onChanged: () => {}, onContinue: () => {} }
+    const { rerender } = renderUi(<AnimeDetail entry={entry({ totalEpisodes: null, watchedEpisodes: watched, episodeNotes: {} })} {...props} />)
+    rerender(<AnimeDetail entry={entry({ totalEpisodes: 300, watchedEpisodes: watched, episodeNotes: {} })} {...props} />)
+    expect(screen.getByRole('button', { name: '101–200' })).toHaveAttribute('aria-pressed', 'true')
+  })
 })

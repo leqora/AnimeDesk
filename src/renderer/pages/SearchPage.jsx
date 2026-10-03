@@ -31,7 +31,9 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const live = useRef({ sessionId: null, phase: 'idle', ignore: new Set(), lastEpisode: null, startedMode: null, startSeq: 0 })
   useEffect(() => { live.current.phase = phase }, [phase])
   // Stay focused between the anime and episode menus (and during a sub/dub restart) so the home sections do not flash back.
-  const focused = phase === 'anime' || phase === 'episode' || (phase === 'busy' && anime != null)
+  // A "no dub" error for the chosen series also stays on top, so "Play subtitled" is not pushed below the home sections.
+  const errorFocus = phase === 'idle' && error?.error === 'no-dub' && anime != null
+  const focused = phase === 'anime' || phase === 'episode' || (phase === 'busy' && anime != null) || errorFocus
   useEffect(() => { onFocusChange(focused) }, [focused])
 
   useEffect(() => {
@@ -161,7 +163,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   return (
     <section className="page">
       <ReadyNotice ready={ready} onOpenWizard={onOpenWizard} />
-      {!focused && (
+      {(!focused || errorFocus) && (
         <form className="search-bar" onSubmit={submit}>
           <input id="search-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('search.placeholder')} aria-label={t('search.placeholder')} />
           <button type="submit" className="primary" disabled={!ready || phase !== 'idle'}>{t('search.button')}</button>

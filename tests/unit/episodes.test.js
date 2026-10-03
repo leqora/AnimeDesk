@@ -41,7 +41,7 @@ describe('episodes', () => {
   })
   it('finds the first unwatched episode', () => {
     expect(firstUnwatchedIndex(range(1, 5), [1, 2])).toBe(2)
-    expect(firstUnwatchedIndex(range(1, 3), [1, 2, 3])).toBe(0)
+    expect(firstUnwatchedIndex(range(1, 3), [1, 2, 3])).toBe(2) // caught up: land on the last group
     expect(firstUnwatchedIndex([], [])).toBe(0)
     expect(firstUnwatchedIndex(['1', '1.5', '2'], [1])).toBe(1)
   })

@@ -28,5 +28,6 @@ export function groupIndexOf(list, ep, size = GROUP_SIZE) {
 export function firstUnwatchedIndex(list, watched) {
   const seen = new Set(watched.map(Number))
   const i = list.findIndex((x) => !seen.has(Number(x)))
-  return i < 0 ? 0 : i
+  // Caught up: land on the last group (where new episodes appear); an empty list has only index 0.
+  return i < 0 ? Math.max(list.length - 1, 0) : i
 }

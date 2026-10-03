@@ -229,13 +229,17 @@ describe('SearchPage', () => {
 
   it('offers to play subtitled when the episode has no dub', async () => {
     const { api, handlers } = withEvents()
-    renderUi(<SearchPage {...props()} />, { api })
+    const onFocusChange = vi.fn()
+    renderUi(<SearchPage {...props({ onFocusChange })} />, { api })
     search()
     await toEpisodes(api, handlers)
     fireEvent.click(screen.getByRole('button', { name: '2' }))
     fireEvent.click(screen.getByRole('button', { name: 'Gledaj' }))
     act(() => handlers.end({ sessionId: 's1', result: { ok: false, error: 'no-dub', stderr: 'No sources found for dub!' } }))
     expect(screen.getByRole('alert')).toHaveTextContent('Ova epizoda nema dub.')
+    // The alert stays on top of the home sections, and a new search is still possible.
+    expect(onFocusChange).toHaveBeenLastCalledWith(true)
+    expect(screen.getByLabelText('Naziv animea…')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Pusti sa titlom' }))
     expect(api.watch.start).toHaveBeenLastCalledWith({ query: 'Show', anime: 'Show', episode: '2', mode: 'sub' })
   })

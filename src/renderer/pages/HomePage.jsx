@@ -12,7 +12,7 @@ export const pickHeroEntry = (entries) => entries.filter((e) => e.status === 'wa
 export const watchingNow = (entries) => entries.filter((e) => e.status === 'watching').sort(byRecent).slice(0, 10)
 export const pinnedEntries = (entries) => entries.filter((e) => e.pinnedAt).sort((a, b) => String(a.pinnedAt).localeCompare(String(b.pinnedAt)))
 
-function Rail({ title, children }) {
+function Rail({ title, count, children }) {
   const t = useT()
   const track = useRef(null)
   const [overflow, setOverflow] = useState(false)
@@ -23,7 +23,7 @@ function Rail({ title, children }) {
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
-  })
+  }, [count])
   const scroll = (dir) => track.current?.scrollBy?.({ left: dir * track.current.clientWidth, behavior: 'smooth' })
   return (
     <section className="rail" aria-label={title}>
@@ -61,8 +61,8 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
       {!focused && (
         <>
           <Hero entry={pickHeroEntry(entries)} ready={ready} onContinue={onContinue} onDetails={onOpenAnime} onSearch={() => document.getElementById('search-input')?.focus()} />
-          {pinned.length > 0 && <Rail title={t('home.favorites')}>{pinned.map(card)}</Rail>}
-          {rail.length > 0 && <Rail title={t('home.continueWatching')}>{rail.map(card)}</Rail>}
+          {pinned.length > 0 && <Rail title={t('home.favorites')} count={pinned.length}>{pinned.map(card)}</Rail>}
+          {rail.length > 0 && <Rail title={t('home.continueWatching')} count={rail.length}>{rail.map(card)}</Rail>}
         </>
       )}
       <SearchPage ready={ready} settings={settings} onSettings={onSettings} onOpenWizard={onOpenWizard} pendingWatch={pendingWatch} onPendingHandled={onPendingHandled} onFocusChange={setFocused} />

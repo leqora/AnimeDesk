@@ -183,7 +183,6 @@
   "update.titleAfter": "Updated to {version}",
   "update.noNotes": "No notes for this version.",
   "settings.updateSection": "Updates",
-  "settings.updateVersion": "Version {version}",
   "settings.autoDownloadUpdates": "Download updates automatically",
   "settings.updateCheck": "Check for updates",
   "settings.updateChecking": "Checking…",

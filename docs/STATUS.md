@@ -19,8 +19,8 @@ Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, �
 
 ## Šta je stvarno provereno (ne samo testovima)
 
-- 373 unit/integration testa prolaze (`npm test`, 0.4.0), e2e smoke (`npm run test:e2e`) prolazi.
-- **0.4.0: živa ručna provera (One Piece grupe, sub↔dub, „nema dub-a”, F11, 5 favorita, GitHub veza) tek treba da se uradi sa korisnikom pre objave.**
+- 380 unit/integration testa prolaze (`npm test`, 0.4.0), e2e smoke (`npm run test:e2e`) prolazi.
+- **0.4.0: živa ručna provera (One Piece grupe, sub↔dub, „nema dub-a”, F11, 5 favorita, GitHub veza) tek treba da se uradi sa korisnikom pre objave.** Dodatno proveriti uživo: Esc dok je „Šta je novo” otvoren u punom ekranu (zatvara samo prozorčić); pretraga → izbor serije sa sačuvanim dub-om → pušta dub; pun ekran → izlaz → ponovno pokretanje zadržava pun ekran.
 - **Auto-update radi u praksi:**
   - lokalna proba (generic provider na `localhost`, 0.2.90 → 0.2.91): instalacija tek na klik, podaci netaknuti, bez SmartScreen-a;
   - pravo ažuriranje preko GitHub-a **0.3.0 → 0.3.1 → 0.3.2 → 0.3.3** — korisnik potvrdio.
@@ -41,6 +41,6 @@ Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, �
 ## Mogući sledeći koraci (ideje, ništa nije dogovoreno)
 
 - **v0.5:** ugrađeni plejer (podrazumevano unutar aplikacije, uz opciju spoljnog mpv-a), preskakanje uvoda/odjave (AniSkip), moderan izgled mpv-a (uosc).
-- Dalji predlozi su u `ClaudeAnimeAplikacija za gledanje Anime-aIstrazivanje.md`: obaveštenja o novim epizodama, raspored emitovanja, automatski nastavak na sledeću epizodu, AniList sinhronizacija, oznake filler epizoda…
+- Dalji predlozi su u `Claude/Anime/Aplikacija za gledanje Anime-a/Istrazivanje.md`: obaveštenja o novim epizodama, raspored emitovanja, automatski nastavak na sledeću epizodu, AniList sinhronizacija, oznake filler epizoda…
 - Ručno povezivanje naslova iz pretrage sa AniList unosom (postoji za watchlist preko `aniListId`, ne i u mreži pretrage).
 - Preporuke na osnovu žanrova (iz `Claude/Anime/IDEJE.md`).

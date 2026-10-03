@@ -183,7 +183,6 @@
   "update.titleAfter": "Ažurirano na {version}",
   "update.noNotes": "Nema beležaka za ovu verziju.",
   "settings.updateSection": "Ažuriranja",
-  "settings.updateVersion": "Verzija {version}",
   "settings.autoDownloadUpdates": "Automatski preuzimaj ažuriranja",
   "settings.updateCheck": "Proveri ažuriranja",
   "settings.updateChecking": "Proveravam…",

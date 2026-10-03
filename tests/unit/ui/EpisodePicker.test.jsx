@@ -18,6 +18,11 @@ describe('EpisodePicker', () => {
     fireEvent.click(screen.getByRole('button', { name: '5' }))
     expect(screen.getByRole('button', { name: 'Akcija' })).toBeInTheDocument()
   })
+  it('opens the last group when every episode is watched', () => {
+    const p = base({ episodes: range(1, 250), watched: range(1, 250).map(Number) })
+    renderUi(<EpisodePicker {...p} />)
+    expect(screen.getByRole('button', { name: '201–250' })).toHaveAttribute('aria-pressed', 'true')
+  })
   it('opens the group with the first unwatched episode in long series', () => {
     const p = base({ episodes: range(1, 1120), watched: range(1, 250).map(Number) })
     renderUi(<EpisodePicker {...p} />)
