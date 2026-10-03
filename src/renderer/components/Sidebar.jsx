@@ -32,7 +32,9 @@ export function Sidebar({ page, onNavigate, health, onSemaphoreClick, profileNam
           <Icon name={fullscreen ? 'minimize' : 'maximize'} size={20} />
           <span className="nav-item__label">{fullscreen ? t('window.exitFullscreen') : t('window.fullscreen')}</span>
         </button>
-        {version && <span className="sidebar__version muted">v{version}</span>}
+        <span className="sidebar__version muted">
+          {version && <span>v{version}</span>}{version ? ' · ' : ''}by Leqora
+        </span>
       </div>
     </aside>
   )

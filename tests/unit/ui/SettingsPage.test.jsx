@@ -24,6 +24,16 @@ describe('SettingsPage', () => {
     fireEvent.click(screen.getByLabelText('Automatsko ažuriranje ani-cli i yt-dlp'))
     expect(onSettings).toHaveBeenLastCalledWith({ autoUpdateTools: false })
   })
+  it('has an About section that opens the repo', async () => {
+    const api = makeFakeApi()
+    renderUi(<SettingsPage settings={{ ...DEFAULT_SETTINGS }} onSettings={() => {}} updateState={{ status: 'disabled', currentVersion: '0.4.0' }} />, { api })
+    expect(screen.getByRole('heading', { name: 'O aplikaciji' })).toBeInTheDocument()
+    expect(screen.getByText('Verzija 0.4.0')).toBeInTheDocument()
+    expect(screen.getByText('Napravio: Leqora')).toBeInTheDocument()
+    expect(screen.getByText('© 2026 Leqora')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'GitHub' }))
+    expect(api.app.openRepo).toHaveBeenCalled()
+  })
   it('picks and clears the download folder', async () => {
     const onSettings = vi.fn()
     const api = makeFakeApi({ dialog: { pickFolder: vi.fn(async () => 'D:\\Anime') } })

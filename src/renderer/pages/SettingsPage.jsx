@@ -112,7 +112,6 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
         {t('settings.animations')}
       </label>
       <h3>{t('settings.updateSection')}</h3>
-      <p className="hud">{t('settings.updateVersion', { version: updateState.currentVersion })}</p>
       <label className="check">
         <input type="checkbox" checked={settings.autoDownloadUpdates} onChange={(e) => onSettings({ autoDownloadUpdates: e.target.checked })} />
         {t('settings.autoDownloadUpdates')}
@@ -143,6 +142,13 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
       </ul>
       <div className="row">
         <button type="button" disabled={checking} onClick={checkUpdates}>{checking ? t('settings.checking') : t('settings.checkUpdates')}</button>
+      </div>
+      <h3>{t('settings.about')}</h3>
+      <p className="hud">AnimeDesk · <span>{t('settings.aboutVersion', { version: updateState.currentVersion })}</span></p>
+      <p>{t('settings.aboutAuthor')}</p>
+      <div className="row">
+        <button type="button" onClick={() => api.app.openRepo()}>{t('settings.aboutRepo')}</button>
+        <span className="muted">© 2026 Leqora</span>
       </div>
     </section>
   )

@@ -24,6 +24,13 @@ describe('Sidebar', () => {
     fireEvent.click(screen.getByRole('button', { name: /LV 1/ }))
     expect(p.onNavigate).toHaveBeenLastCalledWith('profile')
   })
+  it('signs the app as by Leqora, with or without a version', () => {
+    const { rerender } = renderUi(<Sidebar {...props({ version: '0.4.0' })} />)
+    expect(screen.getByText('v0.4.0')).toBeInTheDocument()
+    expect(screen.getByText(/by Leqora/)).toBeInTheDocument()
+    rerender(<Sidebar {...props({ version: '' })} />)
+    expect(screen.getByText('by Leqora')).toBeInTheDocument()
+  })
   it('shows the app version at the bottom, and nothing until it is known', () => {
     const { rerender } = renderUi(<Sidebar {...props({ version: '0.3.1' })} />)
     expect(screen.getByText('v0.3.1')).toBeInTheDocument()

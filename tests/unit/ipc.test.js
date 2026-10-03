@@ -12,7 +12,7 @@ function services() {
     health: { get: vi.fn(), run: vi.fn() },
     watch: { watch: vi.fn(), cancel: vi.fn(), answerMenu: vi.fn(), playLocal: vi.fn(async () => 'watched') },
     downloads: { enqueue: vi.fn(), pause: vi.fn(), resume: vi.fn(), cancel: vi.fn(), queueItems: vi.fn(), listDownloaded: vi.fn(), removeDownloaded: vi.fn(), getDownloaded: vi.fn((id) => (id === 'd1' ? { path: 'D:\\A\\A Episode 1.mp4', title: 'A', episode: '1' } : null)) },
-    electron: { pickFolder: vi.fn(async () => 'D:\\X'), showItemInFolder: vi.fn() },
+    electron: { pickFolder: vi.fn(async () => 'D:\\X'), showItemInFolder: vi.fn(), openRepo: vi.fn() },
     tracker: { update: vi.fn(), remove: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })) },
     progress: { snapshot: vi.fn(() => ({ level: 1 })), check: vi.fn() },
     updater: { getState: vi.fn(() => ({ status: 'idle' })), check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(() => true), install: vi.fn(() => true), applySettings: vi.fn() },
@@ -53,6 +53,11 @@ describe('ipc', () => {
     s.send.mockClear()
     expect(h[INVOKE.libraryRemove]('id1')).toBe(true)
     expect(s.send).toHaveBeenCalledWith(EVENTS.libraryChanged)
+  })
+  it('opens the fixed repo URL through the main process', () => {
+    const s = services()
+    createHandlers(s)[INVOKE.appOpenRepo]('https://evil.example')
+    expect(s.electron.openRepo).toHaveBeenCalledWith()
   })
   it('has a handler for every INVOKE channel and nothing else', () => {
     expect(Object.keys(createHandlers(services())).sort()).toEqual(Object.values(INVOKE).sort())

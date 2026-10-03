@@ -37,6 +37,7 @@ export const INVOKE = {
   downloadsPlay: 'downloads:play',
   downloadsOpenFolder: 'downloads:open-folder',
   dialogPickFolder: 'dialog:pick-folder',
+  appOpenRepo: 'app:open-repo',
   statsGet: 'stats:get',
   windowGetFullscreen: 'window:get-fullscreen',
   windowSetFullscreen: 'window:set-fullscreen',

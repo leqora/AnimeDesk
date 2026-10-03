@@ -29,6 +29,7 @@ import { createWhatsNew, readReleaseNotes } from './whatsNew.js'
 import { markdownToText } from '../shared/releaseNotes.js'
 import { EVENTS } from '../shared/channels.js'
 
+const REPO_URL = 'https://github.com/leqora/AnimeDesk'
 const SIX_HOURS = 6 * 60 * 60 * 1000
 
 app.setPath('userData', process.env.ANIMEDESK_USER_DATA ?? path.join(app.getPath('appData'), 'AnimeDesk'))
@@ -116,6 +117,7 @@ async function main() {
         return r.canceled ? null : r.filePaths[0]
       },
       showItemInFolder: (p) => shell.showItemInFolder(p),
+      openRepo: () => shell.openExternal(REPO_URL),
     },
   }))
 

@@ -1,5 +1,6 @@
 appId: com.leqora.animedesk
 productName: AnimeDesk
+copyright: "© 2026 Leqora"
 directories:
   output: dist
 files:
