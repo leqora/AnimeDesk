@@ -19,6 +19,7 @@ Rizici koji se posebno prate tokom razvoja. Svaki ima test koji ga „zakucava�
 | Promena naziva fajlova u GitHub izdanjima alata | fajlovi se traže po šablonu; greška se jasno prikazuje u wizard-u |
 | WSL bash (`C:\Windows\System32\bash.exe`) umesto Git Bash-a | traži se samo u Git for Windows lokacijama (test u Task 5) |
 | DMCA zahtev prema GitHub repozitorijumu | napomena u README; aplikacija ne sadrži kod za pristup sajtu |
+| Slična aplikacija (Hayase/Miru) je 2025. skinuta zbog DMCA | isto kao gore; pratiti, ne ugrađivati sajtove u aplikaciju |
 
 ## Automatsko ažuriranje i AniList (v0.3)
 
