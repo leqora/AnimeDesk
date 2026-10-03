@@ -150,7 +150,8 @@
   "profile.noGenres": "Genres appear once the app has fetched series details.",
   "profile.streak": "Day streak: {days}",
   "profile.activity": "Activity · last 4 weeks",
-  "profile.activityCell": "{date}: {count} ep.",
+  "profile.activityCell": "{date}: {count} ep."
+,
   "home.continue": "Continue watching",
   "home.continueEp": "Continue EP {episode}",
   "home.details": "Details",
@@ -180,5 +181,11 @@
   "settings.updateDisabled": "Updates only work in the installed app",
   "settings.updateNone": "You have the latest version",
   "settings.updateFailed": "Update check failed",
-  "settings.updateLastChecked": "Last checked: {time}"
+  "settings.updateLastChecked": "Last checked: {time}",
+  "episodes.group": "Episode groups",
+  "episodes.goTo": "Go to episode",
+  "episodes.notFound": "No such episode",
+  "episodes.quality": "Quality",
+  "episodes.mode": "Audio",
+  "episodes.default": "Default"
 }

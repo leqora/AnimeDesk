@@ -150,7 +150,8 @@
   "profile.noGenres": "Žanrovi se pojavljuju kad aplikacija preuzme podatke o serijama.",
   "profile.streak": "Niz dana: {days}",
   "profile.activity": "Aktivnost · poslednje 4 nedelje",
-  "profile.activityCell": "{date}: {count} ep.",
+  "profile.activityCell": "{date}: {count} ep."
+,
   "home.continue": "Nastavi gledanje",
   "home.continueEp": "Nastavi EP {episode}",
   "home.details": "Detalji",
@@ -180,5 +181,11 @@
   "settings.updateDisabled": "Ažuriranja rade samo u instaliranoj aplikaciji",
   "settings.updateNone": "Imaš najnoviju verziju",
   "settings.updateFailed": "Provera nije uspela",
-  "settings.updateLastChecked": "Poslednja provera: {time}"
+  "settings.updateLastChecked": "Poslednja provera: {time}",
+  "episodes.group": "Grupe epizoda",
+  "episodes.goTo": "Idi na epizodu",
+  "episodes.notFound": "Epizoda ne postoji",
+  "episodes.quality": "Kvalitet",
+  "episodes.mode": "Režim",
+  "episodes.default": "Podrazumevano"
 }

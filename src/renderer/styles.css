@@ -120,6 +120,11 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .ep { padding: 8px 0; text-align: center; font-family: var(--font-hud); font-weight: 600; }
 .ep--watched { border-color: var(--accent-2); color: var(--accent-2); }
 .ep--selected { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: var(--glow); }
+.episode-picker { display: flex; flex-direction: column; gap: 12px; }
+.ep-groups { display: flex; flex-wrap: wrap; gap: 6px; }
+.ep-group[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.episode-bar { position: sticky; bottom: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; background: var(--glass-strong); backdrop-filter: blur(var(--blur)); border: 1px solid var(--glass-border); border-radius: var(--radius); }
+.field--inline { flex-direction: row; align-items: center; gap: 6px; }
 .ep--note::after { content: "•"; margin-left: 2px; color: var(--warn); }
 
 /* detail banner */
