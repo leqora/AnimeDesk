@@ -101,14 +101,17 @@ export default function App({ api, sound: injectedSound }) {
     api.window.getFullscreen().then(setFullscreen)
     return api.window.onFullscreen(setFullscreen)
   }, [api])
+  const fullscreenRef = useRef(fullscreen)
+  fullscreenRef.current = fullscreen
   useEffect(() => {
-    // Dialogs close on Esc too; leave fullscreen only when no dialog is open.
+    // Dialogs close on Esc too (and mark it with preventDefault); leave fullscreen only when no dialog handled it.
+    // Registered once so its order relative to dialog listeners never changes.
     const onKey = (e) => {
-      if (e.key === 'Escape' && !e.defaultPrevented && fullscreen && !document.querySelector('[role="dialog"]')) api.window.setFullscreen(false)
+      if (e.key === 'Escape' && !e.defaultPrevented && fullscreenRef.current && !document.querySelector('[role="dialog"]')) api.window.setFullscreen(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [api, fullscreen])
+  }, [api])
 
   useEffect(() => { if (health.reason === 'missing-tools') setWizardOpen(true) }, [health.reason])
 

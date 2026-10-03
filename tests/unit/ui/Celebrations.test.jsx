@@ -28,7 +28,8 @@ describe('LevelUpOverlay', () => {
     expect(screen.getByRole('dialog')).toHaveTextContent('LEVEL UP')
     expect(screen.getByRole('dialog')).toHaveTextContent('LV 11 · Veteran')
     expect(screen.getByRole('progressbar')).toBeInTheDocument()
-    fireEvent.keyDown(window, { key: 'Escape' })
+    // Handled Esc is marked so App does not also leave fullscreen.
+    expect(fireEvent.keyDown(window, { key: 'Escape' })).toBe(false)
     expect(onDone).toHaveBeenCalledTimes(1)
     act(() => vi.advanceTimersByTime(2000))
     expect(onDone).toHaveBeenCalledTimes(2)

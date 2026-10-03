@@ -58,7 +58,8 @@ describe('WhatsNewDialog', () => {
     expect(screen.getByRole('dialog', { name: 'Ažurirano na 0.3.1' })).toBeInTheDocument()
     expect(screen.getByText('Nema beležaka za ovu verziju.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Restartuj i ažuriraj' })).not.toBeInTheDocument()
-    fireEvent.keyDown(window, { key: 'Escape' })
+    // Handled Esc is marked so App does not also leave fullscreen.
+    expect(fireEvent.keyDown(window, { key: 'Escape' })).toBe(false)
     expect(onClose).toHaveBeenCalledTimes(1)
     fireEvent.click(screen.getByRole('button', { name: 'Zatvori' }))
     expect(onClose).toHaveBeenCalledTimes(2)
