@@ -1,6 +1,6 @@
 # AnimeDesk — stanje projekta
 
-Poslednje ažuriranje: 2026-10-03. Trenutna verzija: **0.4.0** (na grani `feat/v0.4`, još nije objavljena; poslednji objavljeni release je 0.3.4).
+Poslednje ažuriranje: 2026-10-03. Trenutna verzija: **0.4.0** (GitHub release „Latest”).
 
 Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, šta je otvoreno. Detalji dizajna su u `docs/superpowers/specs/`, planovi u `docs/superpowers/plans/`, beleške izdanja u `docs/releases/`.
 
