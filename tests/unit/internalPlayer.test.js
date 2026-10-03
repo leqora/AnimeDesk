@@ -57,4 +57,11 @@ describe('internalPlayer', () => {
     await done
     expect(positions.save).not.toHaveBeenCalled()
   })
+  it('never overwrites a saved resume point with a position below 10 seconds', async () => {
+    const { player, positions } = setup({ resume: { position: 600, duration: 1400 } })
+    const done = player.play(info)
+    player.closed({ playbackId: 'p1', maxPercent: 0, position: 0, duration: 1400, reason: 'back' })
+    await done
+    expect(positions.save).not.toHaveBeenCalled()
+  })
 })

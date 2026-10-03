@@ -37,7 +37,8 @@ export function createInternalPlayer({ streams, notify, positions, getTotalEpiso
     active.position = p.position ?? active.position
     active.duration = p.duration ?? active.duration
     active.maxPercent = Math.max(active.maxPercent, p.maxPercent ?? 0)
-    if (active.episode != null && Number.isFinite(p.position)) positions.save(active.title, active.episode, { position: p.position, duration: p.duration })
+    // Below 10 s (e.g. backing out of the resume prompt reports 0) must not overwrite a good resume point.
+    if (active.episode != null && Number.isFinite(p.position) && p.position >= 10) positions.save(active.title, active.episode, { position: p.position, duration: p.duration })
   }
 
   function progress(p) { if (active && p?.playbackId === active.playbackId) remember(p) }
