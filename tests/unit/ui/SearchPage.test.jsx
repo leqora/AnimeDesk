@@ -117,4 +117,70 @@ describe('SearchPage', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: '1' })).toHaveClass('ep--watched'))
     expect(screen.getByRole('button', { name: '2' })).not.toHaveClass('ep--watched')
   })
+
+  const toEpisodes = (handlers, lines = ['1', '2', '3']) => {
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show'] }))
+    fireEvent.click(screen.getByRole('button', { name: /Show/ }))
+    act(() => handlers.menu({ requestId: 'r2', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines }))
+  }
+  const search = (q = 'show') => {
+    fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: q } })
+    fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+  }
+
+  it('reports focus and hides the search form while choosing', () => {
+    const { api, handlers } = withEvents()
+    const onFocusChange = vi.fn()
+    renderUi(<SearchPage {...props({ onFocusChange })} />, { api })
+    search()
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show'] }))
+    expect(onFocusChange).toHaveBeenLastCalledWith(true)
+    expect(screen.queryByLabelText('Naziv animea…')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Nazad/ }))
+    expect(api.watch.answerMenu).toHaveBeenLastCalledWith('r1', null)
+    expect(onFocusChange).toHaveBeenLastCalledWith(false)
+  })
+
+  it('pages long episode lists', () => {
+    const { api, handlers } = withEvents()
+    renderUi(<SearchPage {...props()} />, { api })
+    search()
+    toEpisodes(handlers, Array.from({ length: 250 }, (_, i) => String(i + 1)))
+    expect(screen.getByRole('group', { name: 'Grupe epizoda' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /^\d+$/ })).toHaveLength(100)
+  })
+
+  it('loads and saves series prefs; changing mode restarts the session and ignores the old one', async () => {
+    const { api, handlers } = withEvents()
+    api.seriesPrefs.get.mockResolvedValue({ quality: null, mode: null })
+    api.watch.start.mockResolvedValueOnce({ sessionId: 's1' }).mockResolvedValueOnce({ sessionId: 's2' })
+    renderUi(<SearchPage {...props()} />, { api })
+    search()
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(1))
+    toEpisodes(handlers)
+    await waitFor(() => expect(api.seriesPrefs.get).toHaveBeenCalledWith('Show'))
+    fireEvent.change(screen.getByLabelText('Kvalitet'), { target: { value: '720' } })
+    await waitFor(() => expect(api.seriesPrefs.set).toHaveBeenCalledWith('Show', { quality: '720' }))
+    expect(api.watch.cancel).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByLabelText('Režim'), { target: { value: 'dub' } })
+    await waitFor(() => expect(api.watch.cancel).toHaveBeenCalledWith('s1'))
+    expect(api.watch.start).toHaveBeenLastCalledWith({ query: 'Show', anime: 'Show' })
+    act(() => handlers.end({ sessionId: 's1', result: { ok: false, error: 'cancelled' } }))
+    expect(screen.getByText('Pretraga…')).toBeInTheDocument()
+    act(() => handlers.menu({ requestId: 'r3', sessionId: 's2', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2'] }))
+    expect(screen.getByRole('button', { name: '2' })).toBeInTheDocument()
+  })
+
+  it('offers to play subtitled when the episode has no dub', async () => {
+    const { api, handlers } = withEvents()
+    renderUi(<SearchPage {...props()} />, { api })
+    search()
+    toEpisodes(handlers)
+    fireEvent.click(screen.getByRole('button', { name: '2' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Gledaj' }))
+    act(() => handlers.end({ sessionId: 's1', result: { ok: false, error: 'no-dub', stderr: 'No sources found for dub!' } }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Ova epizoda nema dub.')
+    fireEvent.click(screen.getByRole('button', { name: 'Pusti sa titlom' }))
+    expect(api.watch.start).toHaveBeenLastCalledWith({ query: 'Show', anime: 'Show', episode: '2', mode: 'sub' })
+  })
 })

@@ -3,11 +3,13 @@ import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { ReadyNotice } from '../components/ReadyNotice.jsx'
 import { Poster } from '../components/Poster.jsx'
+import { EpisodePicker } from '../components/EpisodePicker.jsx'
+import { Icon } from '../components/Icon.jsx'
 import { animeLineTitle, normalizeTitle } from '../../shared/domain.js'
 
 const byNumber = (a, b) => Number(a) - Number(b)
 
-export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled }) {
+export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, onFocusChange = () => {} }) {
   const api = useApi()
   const t = useT()
   const [query, setQuery] = useState('')
@@ -23,14 +25,22 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const [notice, setNotice] = useState(null)
 
   // The session id and phase are mirrored in a ref so the unmount cleanup sees the latest values.
-  const live = useRef({ sessionId: null, phase: 'idle' })
+  const [prefs, setPrefs] = useState({ quality: null, mode: null })
+  // ignore: sessions we cancelled on purpose (mode switch) — their late events must not touch the new session
+  const live = useRef({ sessionId: null, phase: 'idle', ignore: new Set(), lastEpisode: null })
   useEffect(() => { live.current.phase = phase }, [phase])
+  const focused = phase === 'anime' || phase === 'episode'
+  useEffect(() => { onFocusChange(focused) }, [focused])
 
   useEffect(() => {
     const offs = [
-      api.watch.onMenu((m) => { live.current.sessionId = m.sessionId; setMenu(m); setSelected([]); setPhase(m.kind === 'episode' ? 'episode' : 'anime') }),
+      api.watch.onMenu((m) => {
+        if (live.current.ignore.has(m.sessionId)) return
+        live.current.sessionId = m.sessionId; setMenu(m); setSelected([]); setPhase(m.kind === 'episode' ? 'episode' : 'anime')
+      }),
       api.watch.onPlaying((p) => { setPlaying(p); setPhase('playing') }),
-      api.watch.onSessionEnd(({ result }) => {
+      api.watch.onSessionEnd(({ sessionId, result }) => {
+        if (live.current.ignore.delete(sessionId)) return
         live.current.sessionId = null
         setMenu(null)
         setPlaying(null)
@@ -48,6 +58,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
   useEffect(() => {
     if (!anime) return
+    api.seriesPrefs.get(anime).then(setPrefs)
     api.library.list().then((list) => {
       const key = anime.toLowerCase()
       const e = list.find((x) => normalizeTitle(x.aniCliTitle ?? x.title).toLowerCase() === key)
@@ -56,6 +67,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   }, [api, anime])
 
   const start = (params) => {
+    live.current.lastEpisode = params.episode ?? null
     setError(null)
     setShowDetails(false)
     setNotice(null)
@@ -86,7 +98,22 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   }
   const pickAnime = (line) => { setAnime(animeLineTitle(line)); answer(line) }
   const toggle = (ep) => setSelected((s) => (s.includes(ep) ? s.filter((x) => x !== ep) : [...s, ep]))
-  const watchSelected = () => { const ep = [...selected].sort(byNumber)[0]; if (ep) answer(ep) }
+  const watchSelected = () => { const ep = [...selected].sort(byNumber)[0]; if (ep) { live.current.lastEpisode = ep; answer(ep) } }
+
+  const restart = () => {
+    const old = live.current.sessionId
+    if (old) { live.current.ignore.add(old); api.watch.cancel(old) }
+    live.current.sessionId = null
+    setMenu(null)
+    start({ query: anime, anime })
+  }
+  const changePrefs = async (patch) => {
+    const before = prefs.mode ?? settings.mode
+    const next = await api.seriesPrefs.set(anime, patch)
+    setPrefs(next)
+    if ('mode' in patch && (next.mode ?? settings.mode) !== before && phase === 'episode') restart()
+  }
+  const playSubtitled = () => start({ query: anime, anime, episode: live.current.lastEpisode, mode: 'sub' })
 
   const downloadSelected = async () => {
     let dir = settings.downloadDir
@@ -115,16 +142,19 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   return (
     <section className="page">
       <ReadyNotice ready={ready} onOpenWizard={onOpenWizard} />
-      <form className="search-bar" onSubmit={submit}>
-        <input id="search-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('search.placeholder')} aria-label={t('search.placeholder')} />
-        <button type="submit" className="primary" disabled={!ready || phase !== 'idle'}>{t('search.button')}</button>
-      </form>
+      {!focused && (
+        <form className="search-bar" onSubmit={submit}>
+          <input id="search-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('search.placeholder')} aria-label={t('search.placeholder')} />
+          <button type="submit" className="primary" disabled={!ready || phase !== 'idle'}>{t('search.button')}</button>
+        </form>
+      )}
 
       {notice && <div className="notice">{notice}</div>}
       {error && (
         <div className="notice notice--error" role="alert">
           <span>{t(`error.${error.error ?? 'unknown'}`)}</span>
           {error.stderr && <button type="button" onClick={() => setShowDetails((v) => !v)}>{t('error.showDetails')}</button>}
+          {error.error === 'no-dub' && anime && <button type="button" className="primary" onClick={playSubtitled}>{t('search.playSub')}</button>}
           {showDetails && <pre className="details">{error.stderr}</pre>}
         </div>
       )}
@@ -133,6 +163,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
       {phase === 'anime' && menu && (
         <div className="page">
+          <div className="row"><button type="button" onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button></div>
           <h2>{t('search.selectAnime')}</h2>
           <div className="card-grid">
             {menu.lines.map((line) => {
@@ -151,15 +182,9 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
       {phase === 'episode' && menu && (
         <div className="page">
+          <div className="row"><button type="button" onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button></div>
           <h2>{anime} — {t('search.selectEpisode')}</h2>
-          <div className="ep-grid">
-            {menu.lines.map((line) => {
-              const ep = line.trim()
-              const cls = ['ep', selected.includes(ep) && 'ep--selected', watched.includes(Number(ep)) && 'ep--watched'].filter(Boolean).join(' ')
-              return <button type="button" key={ep} className={cls} aria-pressed={selected.includes(ep)} onClick={() => toggle(ep)}>{ep}</button>
-            })}
-          </div>
-          <div className="row">
+          <EpisodePicker episodes={menu.lines.map((l) => l.trim())} selected={selected} watched={watched} onToggle={toggle} prefs={prefs} onPrefs={changePrefs}>
             <button type="button" className="primary" disabled={!ready || selected.length === 0} onClick={watchSelected}>{t('search.watch')}</button>
             <button type="button" disabled={!ready || selected.length === 0} onClick={downloadSelected}>{t('search.download')}</button>
             {!settings.downloadDir && (
@@ -170,7 +195,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
             )}
             <button type="button" onClick={addToWatchlist}>{t('search.addToWatchlist')}</button>
             <button type="button" onClick={() => answer(null)}>{t('search.cancel')}</button>
-          </div>
+          </EpisodePicker>
         </div>
       )}
     </section>

@@ -186,5 +186,8 @@
   "episodes.notFound": "Epizoda ne postoji",
   "episodes.quality": "Kvalitet",
   "episodes.mode": "Režim",
-  "episodes.default": "Podrazumevano"
+  "episodes.default": "Podrazumevano",
+  "search.back": "Nazad",
+  "search.playSub": "Pusti sa titlom",
+  "error.no-dub": "Ova epizoda nema dub."
 }

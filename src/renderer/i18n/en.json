@@ -186,5 +186,8 @@
   "episodes.notFound": "No such episode",
   "episodes.quality": "Quality",
   "episodes.mode": "Audio",
-  "episodes.default": "Default"
+  "episodes.default": "Default",
+  "search.back": "Back",
+  "search.playSub": "Play subtitled",
+  "error.no-dub": "This episode has no dub."
 }
