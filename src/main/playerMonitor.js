@@ -3,7 +3,10 @@ import net from 'node:net'
 import crypto from 'node:crypto'
 import { segmentAt } from '../shared/player.js'
 
-const SKIP_TEXT = { op: 'Preskočen uvod', ed: 'Preskočena odjavna špica', recap: 'Preskočen rezime' }
+const SKIP_TEXT = {
+  sr: { op: 'Preskočen uvod', ed: 'Preskočena odjavna špica', recap: 'Preskočen rezime' },
+  en: { op: 'Skipped intro', ed: 'Skipped ending', recap: 'Skipped recap' },
+}
 
 export function decideWatched({ maxPercent, threshold, autoTrack, askOnClose }) {
   if (!autoTrack) return 'none'
@@ -40,7 +43,7 @@ export function createPlayer({ getMpvPath, spawnImpl = spawn, connect = net.conn
     stop() {
       for (const child of running) child.kill()
     },
-    play(args, { extraArgs = [], autoSkip = false, skips = null } = {}) {
+    play(args, { extraArgs = [], autoSkip = false, skips = null, language = 'sr' } = {}) {
       return new Promise((resolve, reject) => {
         const mpv = getMpvPath()
         if (!mpv) return reject(new Error('mpv-missing'))
@@ -59,7 +62,7 @@ export function createPlayer({ getMpvPath, spawnImpl = spawn, connect = net.conn
             if (seg && !skipped.has(seg)) {
               skipped.add(seg)
               socket.write(`${JSON.stringify({ command: ['seek', skipTimes[seg].end, 'absolute'] })}\n`)
-              socket.write(`${JSON.stringify({ command: ['show-text', SKIP_TEXT[seg], 1500] })}\n`)
+              socket.write(`${JSON.stringify({ command: ['show-text', (SKIP_TEXT[language] ?? SKIP_TEXT.sr)[seg], 1500] })}\n`)
             }
           }
         }

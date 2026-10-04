@@ -86,6 +86,18 @@ describe('createPlayer', () => {
       child.emit('exit', 0)
       await done
     })
+    it('shows the skip message in the app language', async () => {
+      const { player, socket, child, connected } = setupPlayer()
+      const skips = vi.fn(async () => ({ op: null, ed: null, recap: { start: 0, end: 60 } }))
+      const done = player.play(['https://v'], { autoSkip: true, skips, language: 'en' })
+      await connected()
+      socket.emit('data', Buffer.from('{"event":"property-change","id":3,"name":"duration","data":1400}\n'))
+      await new Promise((r) => setTimeout(r, 0))
+      socket.emit('data', Buffer.from('{"event":"property-change","id":2,"name":"time-pos","data":5}\n'))
+      expect(socket.write).toHaveBeenCalledWith('{"command":["show-text","Skipped recap",1500]}\n')
+      child.emit('exit', 0)
+      await done
+    })
     it('passes extra args before the media args and does not skip without autoSkip', async () => {
       const { player, socket, child, spawnImpl, connected } = setupPlayer()
       const skips = vi.fn()

@@ -26,6 +26,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     const mpv = (args) => player.play(args, {
       extraArgs: mpvExtraArgs(),
       autoSkip: s.autoSkip,
+      language: s.language,
       skips: skipsFor && info.episode != null ? (duration) => skipsFor(info.title, info.episode, duration) : null,
     })
     if (!internalPlayer || s.playerMode !== 'internal') return mpv(info.mpvArgs)

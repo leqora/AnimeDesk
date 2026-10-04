@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { createAniSkip } from '../../src/main/aniskip.js'
-import { createSkipLookup } from '../../src/main/skipLookup.js'
+import { createSkipLookup, createTotalEpisodes } from '../../src/main/skipLookup.js'
 
 let cacheDir
 beforeEach(() => { cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-skip-')) })
@@ -53,5 +53,23 @@ describe('skipLookup', () => {
     expect(aniskip.getSkipTimes).toHaveBeenCalledWith({ malId: 7, episode: '2', duration: 1400 })
     anilist.getForTitle.mockResolvedValueOnce(null)
     expect(await createSkipLookup({ anilist, aniskip })('X', '1', 1)).toEqual({ op: null, ed: null, recap: null })
+  })
+  it("uses the watchlist's AniList id when the series is on the watchlist", async () => {
+    const anilist = { getForTitle: vi.fn(async () => ({ malId: 7 })) }
+    const aniskip = { getSkipTimes: vi.fn(async () => ({ op: null, ed: null, recap: null })) }
+    const findAniListId = vi.fn((t) => (t === 'Show' ? 42 : null))
+    await createSkipLookup({ anilist, aniskip, findAniListId })('Show', '2', 1400)
+    expect(anilist.getForTitle).toHaveBeenLastCalledWith('Show', { aniListId: 42 })
+    await createSkipLookup({ anilist, aniskip, findAniListId })('Other', '2', 1400)
+    expect(anilist.getForTitle).toHaveBeenLastCalledWith('Other', { aniListId: null })
+  })
+  it('looks up the total episode count with the watchlist entry and its AniList id', () => {
+    const library = { findByAniCliTitle: vi.fn((t) => (t === 'Show' ? { aniListId: 42, totalEpisodes: null } : t === 'Done' ? { totalEpisodes: 12 } : null)) }
+    const anilist = { getCached: vi.fn((t, { aniListId }) => (aniListId === 42 ? { episodes: 24 } : null)) }
+    const total = createTotalEpisodes({ library, anilist })
+    expect(total('Show')).toBe(24)
+    expect(anilist.getCached).toHaveBeenLastCalledWith('Show', { aniListId: 42 })
+    expect(total('Done')).toBe(12)
+    expect(total('Nope')).toBeNull()
   })
 })

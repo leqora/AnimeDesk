@@ -150,6 +150,7 @@ describe('watchService', () => {
     await flush()
     const opts = player.play.mock.calls[0][1]
     expect(opts.autoSkip).toBe(true)
+    expect(opts.language).toBe('sr')
     await opts.skips(1400)
     expect(skipsFor).toHaveBeenCalledWith('Fake Anime', '2', 1400)
   })
