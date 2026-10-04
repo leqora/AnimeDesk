@@ -14,6 +14,8 @@ import { LevelUpOverlay } from './components/LevelUpOverlay.jsx'
 import { Toast } from './components/Toast.jsx'
 import { UpdateBanner } from './components/UpdateBanner.jsx'
 import { WhatsNewDialog } from './components/WhatsNewDialog.jsx'
+import { PlayerView } from './components/PlayerView.jsx'
+import { nextEpisodeNumber } from '../shared/player.js'
 import { createSound } from './sound.js'
 
 function CorruptBanner() {
@@ -54,6 +56,7 @@ export default function App({ api, sound: injectedSound }) {
   const [updateState, setUpdateState] = useState({ status: 'idle', currentVersion: '' })
   const [whatsNew, setWhatsNew] = useState(null)
   const [fullscreen, setFullscreen] = useState(false)
+  const [player, setPlayer] = useState(null)
 
   useEffect(() => {
     api.settings.get().then(setSettings)
@@ -113,6 +116,11 @@ export default function App({ api, sound: injectedSound }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [api])
 
+  useEffect(() => {
+    const offs = [api.player.onOpen(setPlayer), api.player.onClose(() => setPlayer(null))]
+    return () => offs.forEach((off) => off())
+  }, [api])
+
   useEffect(() => { if (health.reason === 'missing-tools') setWizardOpen(true) }, [health.reason])
 
   if (!settings) return null
@@ -128,7 +136,7 @@ export default function App({ api, sound: injectedSound }) {
   return (
     <ApiContext.Provider value={api}>
       <I18nProvider lang={settings.language}>
-        <div className="app-shell">
+        <div className="app-shell" inert={player != null} aria-hidden={player ? 'true' : undefined}>
           <Sidebar
             page={page}
             onNavigate={navigate}
@@ -154,6 +162,18 @@ export default function App({ api, sound: injectedSound }) {
             </div>
           </main>
         </div>
+        {player && (
+          <PlayerView
+            key={player.playbackId} // PlayerView's per-playback refs/state rely on a remount per playback
+            open={player} settings={settings} fullscreen={fullscreen} onSettings={updateSettings}
+            onClose={(reason) => {
+              setPlayer(null)
+              if ((reason === 'next' || reason === 'prev') && player.episode != null) {
+                continueWatching({ query: player.title, anime: player.title, episode: String(nextEpisodeNumber(player.episode, reason === 'next' ? 1 : -1)) })
+              }
+            }}
+          />
+        )}
         {wizardOpen && <SetupWizard health={health} onClose={() => setWizardOpen(false)} />}
         {ask && <AskDialog ask={ask} onDone={() => setAsk(null)} />}
         <Celebrations levelUp={levelUp} toast={toast} stats={stats} motionOff={motionOff} onLevelUpDone={() => setLevelUp(null)} onToastDone={() => setToast(null)} />

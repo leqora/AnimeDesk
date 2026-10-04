@@ -6,6 +6,8 @@ import { makeFakeApi } from './helpers.jsx'
 import { EMPTY_STATS } from '../../../src/shared/stats.js'
 import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
 
+vi.mock('hls.js', async () => ({ default: (await import('./fakeHls.js')).FakeHls }))
+
 describe('App', () => {
   it('opens the wizard automatically when tools are missing', async () => {
     const api = makeFakeApi({ health: { get: vi.fn(async () => ({ light: 'red', reason: 'missing-tools', missing: ['mpv'] })) } })
@@ -88,5 +90,28 @@ describe('App', () => {
     } finally {
       add.mockRestore()
     }
+  })
+  it('shows the player over the app and keeps pages mounted', async () => {
+    let openPlayer, closePlayer
+    const api = makeFakeApi({ player: { onOpen: vi.fn((cb) => { openPlayer = cb; return () => {} }), onClose: vi.fn((cb) => { closePlayer = cb; return () => {} }) } })
+    render(<App api={api} />)
+    const search = await screen.findByLabelText('Naziv animea…')
+    act(() => openPlayer({ playbackId: 'p1', title: 'Show', episode: '3', kind: 'hls', src: 'http://127.0.0.1:9/x', subtitleUrl: null, resumeAt: null, totalEpisodes: 12 }))
+    expect(document.querySelector('.player')).toBeInTheDocument()
+    expect(document.querySelector('.app-shell')).toHaveAttribute('aria-hidden', 'true')
+    expect(document.querySelector('.app-shell')).toHaveAttribute('inert')
+    expect(search).toBeInTheDocument()
+    act(() => closePlayer({ playbackId: 'p1' }))
+    expect(document.querySelector('.player')).not.toBeInTheDocument()
+    expect(api.player.closed).not.toHaveBeenCalled()
+  })
+  it('starts the next episode through the normal continue path', async () => {
+    let openPlayer
+    const api = makeFakeApi({ player: { onOpen: vi.fn((cb) => { openPlayer = cb; return () => {} }) } })
+    render(<App api={api} />)
+    await screen.findByLabelText('Naziv animea…')
+    act(() => openPlayer({ playbackId: 'p1', title: 'Show', episode: '3', kind: 'hls', src: 'http://127.0.0.1:9/x', subtitleUrl: null, resumeAt: null, totalEpisodes: 12 }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sledeća epizoda' }))
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '4' }))
   })
 })
