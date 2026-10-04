@@ -3,7 +3,7 @@ import { EVENTS } from '../shared/channels.js'
 import { autoAnswer, menuKind, parsePlayerArgs } from './aniCliBridge.js'
 import { decideWatched } from './playerMonitor.js'
 
-export function createWatchService({ aniCli, player, internalPlayer = null, library, settings, notify, seriesPrefs = null, positions = null, mpvExtraArgs = () => [] }) {
+export function createWatchService({ aniCli, player, internalPlayer = null, library, settings, notify, seriesPrefs = null, positions = null, mpvExtraArgs = () => [], skipsFor = null }) {
   const pending = new Map() // requestId -> { sessionId, resolve }
   const sessions = new Map() // sessionId -> session
 
@@ -22,8 +22,13 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
 
   // Both players resolve to { exitCode, maxPercent, ... }, so tracking does not care which one ran.
   async function runPlayer(info) {
-    const mpv = (args) => player.play(args, { extraArgs: mpvExtraArgs() })
-    if (!internalPlayer || settings.get().playerMode !== 'internal') return mpv(info.mpvArgs)
+    const s = settings.get()
+    const mpv = (args) => player.play(args, {
+      extraArgs: mpvExtraArgs(),
+      autoSkip: s.autoSkip,
+      skips: skipsFor && info.episode != null ? (duration) => skipsFor(info.title, info.episode, duration) : null,
+    })
+    if (!internalPlayer || s.playerMode !== 'internal') return mpv(info.mpvArgs)
     let r
     try { r = await internalPlayer.play(info) } catch { return mpv(info.mpvArgs) } // e.g. a malformed referrer: still play, in mpv
     if (r.reason !== 'external') return r

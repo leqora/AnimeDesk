@@ -3,7 +3,7 @@ import { createWatchService } from '../../src/main/watchService.js'
 import { EVENTS } from '../../src/shared/channels.js'
 import { DEFAULT_SETTINGS } from '../../src/main/settings.js'
 
-function setup({ settings = {}, maxPercent = 90, menus = [], seriesPrefs, internalPlayer = null, positions = null, mpvExtraArgs } = {}) {
+function setup({ settings = {}, maxPercent = 90, menus = [], seriesPrefs, internalPlayer = null, positions = null, mpvExtraArgs, skipsFor } = {}) {
   const events = []
   let resolveDone
   const aniCli = {
@@ -20,7 +20,7 @@ function setup({ settings = {}, maxPercent = 90, menus = [], seriesPrefs, intern
   const player = { play: vi.fn(async () => ({ exitCode: 0, maxPercent })), stop: vi.fn() }
   const library = { recordWatched: vi.fn() }
   const svc = createWatchService({
-    aniCli, player, library, internalPlayer, positions, ...(mpvExtraArgs ? { mpvExtraArgs } : {}),
+    aniCli, player, library, internalPlayer, positions, ...(mpvExtraArgs ? { mpvExtraArgs } : {}), ...(skipsFor ? { skipsFor } : {}),
     settings: { get: () => ({ ...DEFAULT_SETTINGS, ...settings }) },
     notify: (ch, p) => events.push([ch, p]),
     seriesPrefs,
@@ -141,7 +141,17 @@ describe('watchService', () => {
     const { svc, player } = setup({ settings: { playerMode: 'external' }, mpvExtraArgs: () => ['--config-dir=C:/cfg'] })
     svc.watch({ query: 'fake' })
     await flush()
-    expect(player.play).toHaveBeenCalledWith(['--force-media-title=Fake Anime Episode 2', 'https://v'], { extraArgs: ['--config-dir=C:/cfg'] })
+    expect(player.play).toHaveBeenCalledWith(['--force-media-title=Fake Anime Episode 2', 'https://v'], expect.objectContaining({ extraArgs: ['--config-dir=C:/cfg'] }))
+  })
+  it('gives mpv the series skip lookup and the autoSkip setting', async () => {
+    const skipsFor = vi.fn(async () => ({ op: null, ed: null, recap: null }))
+    const { svc, player } = setup({ settings: { playerMode: 'external', autoSkip: true }, skipsFor })
+    svc.watch({ query: 'fake' })
+    await flush()
+    const opts = player.play.mock.calls[0][1]
+    expect(opts.autoSkip).toBe(true)
+    await opts.skips(1400)
+    expect(skipsFor).toHaveBeenCalledWith('Fake Anime', '2', 1400)
   })
   it('closes the in-app player and records nothing when the session is cancelled', async () => {
     let finishPlay
