@@ -51,6 +51,8 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const close = (reason) => {
     if (closed.current) return
     closed.current = true
+    // leaving for the next episode during the ending counts as having watched it all
+    if (reason === 'next' && live.current.inEnding) maxPercent.current = 100
     live.current.api.player.closed({ ...snapshot(), reason })
     live.current.onClose(reason)
   }
@@ -114,7 +116,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
         case 'f': case 'F': toggleFullscreen(); break
         case 'm': case 'M': v.muted = !v.muted; setMuted(v.muted); break
         case 's': case 'S': setSubsOn((x) => !x); break
-        case 'n': case 'N': close('next'); return
+        case 'n': case 'N': if (!live.current.lastEpisode) close('next'); return
         default: return
       }
       poke()
@@ -125,7 +127,9 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
 
   const finishEpisode = () => {
     video.current?.pause()
-    if (isLastEpisode(open.episode, open.totalEpisodes)) setEnd('done')
+    // reached the ending (or its auto-skip): the episode is watched even if the ED itself was not
+    maxPercent.current = 100
+    if (lastEpisode) setEnd('done')
     else if (settings.autoNext) { setLeft(COUNTDOWN_S); setEnd('countdown') }
     else setEnd('manual')
   }
@@ -160,7 +164,10 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     }
   }
   const segment = segmentAt(time, skips)
-  const inEnding = !end && !isLastEpisode(open.episode, open.totalEpisodes) && (segment === 'ed' || (!skips?.ed && duration > 0 && time >= duration - ENDING_FALLBACK_S))
+  const lastEpisode = isLastEpisode(open.episode, open.totalEpisodes)
+  const inEnding = !end && !lastEpisode && (segment === 'ed' || (!skips?.ed && duration > 0 && time >= duration - ENDING_FALLBACK_S))
+  live.current.inEnding = inEnding
+  live.current.lastEpisode = lastEpisode
   const startAt = (sec) => { video.current.currentTime = sec; setResume(null); play() }
 
   return (
@@ -195,7 +202,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       <PlayerControls
         segments={['op', 'ed', 'recap'].filter((k) => skips?.[k]).map((k) => ({ kind: k, ...skips[k] }))}
         time={time} duration={duration} playing={playing} muted={muted} volume={volume} subsOn={subsOn}
-        subtitleSize={settings.subtitleSize} fullscreen={fullscreen} canPrev={Number(open.episode) > 1}
+        subtitleSize={settings.subtitleSize} fullscreen={fullscreen} canPrev={Number(open.episode) > 1} canNext={!lastEpisode}
         onTogglePlay={togglePlay} onSeek={(s) => { video.current.currentTime = s }} onStep={step}
         onPrev={() => close('prev')} onNext={() => close('next')}
         onToggleMute={() => { video.current.muted = !video.current.muted }} onVolume={(x) => { video.current.volume = x; video.current.muted = false }}

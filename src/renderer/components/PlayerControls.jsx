@@ -2,7 +2,7 @@ import { useT } from '../i18n/I18nContext.jsx'
 import { Icon } from './Icon.jsx'
 import { formatTime } from '../../shared/player.js'
 
-export function PlayerControls({ time, duration, playing, muted, volume, subsOn, subtitleSize, fullscreen, canPrev, segments = [], onTogglePlay, onSeek, onStep, onPrev, onNext, onToggleMute, onVolume, onToggleSubs, onSubtitleSize, onToggleFullscreen }) {
+export function PlayerControls({ time, duration, playing, muted, volume, subsOn, subtitleSize, fullscreen, canPrev, canNext = true, segments = [], onTogglePlay, onSeek, onStep, onPrev, onNext, onToggleMute, onVolume, onToggleSubs, onSubtitleSize, onToggleFullscreen }) {
   const t = useT()
   return (
     <div className="player__bar">
@@ -17,7 +17,7 @@ export function PlayerControls({ time, duration, playing, muted, volume, subsOn,
         <button type="button" aria-label={t('player.back10')} onClick={() => onStep(-10)}><Icon name="rewind" /></button>
         <button type="button" className="primary" aria-label={playing ? t('player.pause') : t('player.play')} onClick={onTogglePlay}><Icon name={playing ? 'pause' : 'play'} /></button>
         <button type="button" aria-label={t('player.fwd10')} onClick={() => onStep(10)}><Icon name="fastForward" /></button>
-        <button type="button" aria-label={t('player.next')} onClick={onNext}><Icon name="skipForward" /></button>
+        <button type="button" aria-label={t('player.next')} disabled={!canNext} onClick={onNext}><Icon name="skipForward" /></button>
         <span className="hud player__time">{formatTime(time)} / {formatTime(duration)}</span>
         <span className="player__spacer" />
         <button type="button" aria-label={muted ? t('player.unmute') : t('player.mute')} onClick={onToggleMute}><Icon name={muted ? 'volumeX' : 'volume'} /></button>

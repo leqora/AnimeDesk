@@ -230,6 +230,34 @@ describe('PlayerView skip / next / resume', () => {
     expect(video.pause).toHaveBeenCalledTimes(1)
     expect(onClose).not.toHaveBeenCalled()
   })
+  it('counts an episode finished by auto-skipping into the ending as fully watched', async () => {
+    const { video, meta, api } = view(open(), { settings: { ...DEFAULT_SETTINGS, autoSkip: true } }, { skip: { get: vi.fn(async () => skips) } })
+    await act(async () => meta(1400))
+    await at(video, 1300)
+    fireEvent.click(screen.getByRole('button', { name: 'Pusti sada' }))
+    expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'next', maxPercent: 100 }))
+  })
+  it('counts "Sledeća epizoda" during the ending as fully watched', async () => {
+    const { video, meta, api } = view(open(), {}, { skip: { get: vi.fn(async () => skips) } })
+    await act(async () => meta(1400))
+    await at(video, 1310)
+    fireEvent.click(document.querySelector('.player__next'))
+    expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'next', maxPercent: 100 }))
+  })
+  it('keeps the real percent when skipping ahead mid-episode', async () => {
+    const { video, meta, api } = view(open(), {}, { skip: { get: vi.fn(async () => skips) } })
+    await act(async () => meta(1400))
+    await at(video, 700)
+    fireEvent.click(screen.getByRole('button', { name: 'Sledeća epizoda' }))
+    expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'next', maxPercent: 50 }))
+  })
+  it('disables next episode (button and N key) on the last known episode', async () => {
+    const { meta, onClose } = view(open({ episode: '12', totalEpisodes: 12 }))
+    await act(async () => meta(1400))
+    expect(screen.getByRole('button', { name: 'Sledeća epizoda' })).toBeDisabled()
+    fireEvent.keyDown(window, { key: 'n' })
+    expect(onClose).not.toHaveBeenCalled()
+  })
   it('auto-skipping a recap flashes "Preskočen rezime"', async () => {
     const recapSkips = { op: null, ed: null, recap: { start: 0, end: 60 } }
     const { video, meta } = view(open(), { settings: { ...DEFAULT_SETTINGS, autoSkip: true } }, { skip: { get: vi.fn(async () => recapSkips) } })
