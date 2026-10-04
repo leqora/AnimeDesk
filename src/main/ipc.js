@@ -86,6 +86,7 @@ export function createHandlers(s) {
     [INVOKE.statsGet]: () => s.progress.snapshot(),
     [INVOKE.playerProgress]: (p) => s.internalPlayer.progress(p),
     [INVOKE.playerClosed]: (p) => s.internalPlayer.closed(p),
+    [INVOKE.skipGet]: (title, episode, duration) => s.skipLookup(title, episode, duration),
   }
 }
 

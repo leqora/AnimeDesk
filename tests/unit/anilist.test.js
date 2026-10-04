@@ -5,7 +5,7 @@ import path from 'node:path'
 import { createAniList, bestMatch, cleanDescription, SEARCH_VERSION } from '../../src/main/anilist.js'
 
 const media = (id, romaji, english, extra = {}) => ({
-  id, title: { romaji, english, native: null }, coverImage: { large: `https://img/${id}.jpg` },
+  id, idMal: 900 + id, title: { romaji, english, native: null }, coverImage: { large: `https://img/${id}.jpg` },
   genres: ['Action'], seasonYear: 2020, episodes: 12, description: 'Line one<br><br>Line <i>two</i>', ...extra,
 })
 
@@ -36,6 +36,17 @@ function mkSearchFetch(hits, { failOn = [] } = {}) {
 const searches = (f) => f.mock.calls.filter(([url]) => !url.startsWith('https://img/')).map(([, init]) => JSON.parse(init.body).variables.search)
 
 describe('anilist fallback searches', () => {
+  it('exposes the MAL id and refreshes cached entries saved before it existed', async () => {
+    const info = await api.getForTitle('Attack on Titan')
+    expect(info.malId).toBe(901)
+    const [file] = fs.readdirSync(cacheDir).map((n) => path.join(cacheDir, n))
+    const old = JSON.parse(fs.readFileSync(file, 'utf8'))
+    delete old.malId
+    fs.writeFileSync(file, JSON.stringify(old))
+    const calls = fetchImpl.mock.calls.length
+    expect((await api.getForTitle('Attack on Titan')).malId).toBe(901)
+    expect(fetchImpl.mock.calls.length).toBeGreaterThan(calls)
+  })
   it('falls back to the subtitle after the last colon', async () => {
     const f = mkSearchFetch({ 'Road to Ninja': media(13667, 'ROAD TO NINJA: NARUTO THE MOVIE', 'Road to Ninja: Naruto the Movie') })
     const info = await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto: Shippuuden Movie 6: Road to Ninja')

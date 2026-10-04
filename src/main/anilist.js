@@ -3,7 +3,7 @@ import crypto from 'node:crypto'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 
 const ENDPOINT = 'https://graphql.anilist.co'
-const FIELDS = 'id title { romaji english native } coverImage { large } genres seasonYear episodes duration description(asHtml: false)'
+const FIELDS = 'id idMal title { romaji english native } coverImage { large } genres seasonYear episodes duration description(asHtml: false)'
 const SEARCH = `query ($search: String) { Page(perPage: 10) { media(search: $search, type: ANIME) { ${FIELDS} } } }`
 const BY_ID = `query ($id: Int) { Media(id: $id, type: ANIME) { ${FIELDS} } }`
 
@@ -49,6 +49,7 @@ export function searchCandidates(title) {
 function toInfo(m) {
   return {
     id: m.id,
+    malId: m.idMal ?? null,
     title: m.title.english ?? m.title.romaji,
     romaji: m.title.romaji,
     genres: m.genres ?? [],
@@ -156,7 +157,7 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
     const cached = readJson(file, null).data
     if (cached?.notFound) {
       if (cached.searchVersion === SEARCH_VERSION && now() - cached.at < NOT_FOUND_TTL_MS) return null
-    } else if (cached) return cached
+    } else if (cached && 'malId' in cached) return cached
     try {
       let m
       if (aniListId) m = (await gql(BY_ID, { id: aniListId })).Media

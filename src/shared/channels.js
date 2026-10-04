@@ -43,6 +43,7 @@ export const INVOKE = {
   windowSetFullscreen: 'window:set-fullscreen',
   playerProgress: 'player:progress',
   playerClosed: 'player:closed',
+  skipGet: 'skip:get',
 }
 
 export const EVENTS = {

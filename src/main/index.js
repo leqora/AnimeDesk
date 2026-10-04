@@ -18,6 +18,8 @@ import { createPositions } from './positions.js'
 import { createWatchService } from './watchService.js'
 import { createDownloads } from './downloads.js'
 import { createAniList } from './anilist.js'
+import { createAniSkip } from './aniskip.js'
+import { createSkipLookup } from './skipLookup.js'
 import { createWatchLog } from './watchLog.js'
 import { createProgress } from './progress.js'
 import { createTracker } from './tracker.js'
@@ -77,6 +79,8 @@ async function main() {
   const library = createLibrary(paths.library)
   const seriesPrefs = createSeriesPrefs(paths.seriesPrefs)
   const anilist = createAniList({ cacheDir: paths.cache })
+  const aniskip = createAniSkip({ cacheDir: path.join(paths.base, 'cache', 'aniskip') })
+  const skipLookup = createSkipLookup({ anilist, aniskip })
   const positions = createPositions(paths.positions)
   positions.prune(60)
   const streams = createStreamServer()
@@ -121,7 +125,7 @@ async function main() {
   const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
 
   registerIpc(ipcMain, createHandlers({
-    settings, library, seriesPrefs, tracker, progress, anilist, toolManager, health, watch, internalPlayer, downloads, updater, whatsNew, send,
+    settings, library, seriesPrefs, tracker, progress, anilist, skipLookup, toolManager, health, watch, internalPlayer, downloads, updater, whatsNew, send,
     window: { get: () => fullscreen?.get() ?? false, set: (v) => fullscreen?.set(v) },
     electron: {
       pickFolder: async () => {

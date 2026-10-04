@@ -19,6 +19,7 @@ function services() {
     updater: { getState: vi.fn(() => ({ status: 'idle' })), check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(() => true), install: vi.fn(() => true), applySettings: vi.fn() },
     whatsNew: { get: vi.fn(() => null), seen: vi.fn() },
     window: { get: vi.fn(() => true), set: vi.fn() },
+    skipLookup: vi.fn(async () => ({ op: { start: 1, end: 2 }, ed: null, recap: null })),
     send: vi.fn(),
   }
 }
@@ -106,6 +107,11 @@ describe('ipc', () => {
     h[INVOKE.downloadsOpenFolder]('d1')
     expect(s.electron.showItemInFolder).toHaveBeenCalledWith('D:\\A\\A Episode 1.mp4')
     expect(await h[INVOKE.downloadsPlay]('nope')).toBeNull()
+  })
+  it('looks up skip times', async () => {
+    const s = services()
+    expect(await createHandlers(s)[INVOKE.skipGet]('Show', '1', 1400)).toEqual({ op: { start: 1, end: 2 }, ed: null, recap: null })
+    expect(s.skipLookup).toHaveBeenCalledWith('Show', '1', 1400)
   })
   it('registerIpc strips the event argument', async () => {
     const ipcMain = { handle: vi.fn() }
