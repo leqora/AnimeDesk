@@ -7,14 +7,20 @@ import { createSettings } from './settings.js'
 import { createLibrary } from './library.js'
 import { createSeriesPrefs } from './seriesPrefs.js'
 import { createToolManager } from './toolManager.js'
+import { ensureMpvConfig } from './mpvConfig.js'
 import { getJson, download, isOnline } from './http.js'
 import { run } from './run.js'
 import { createBridgeServer } from './bridgeServer.js'
 import { createAniCliBridge } from './aniCliBridge.js'
 import { createPlayer } from './playerMonitor.js'
+import { createStreamServer } from './streamServer.js'
+import { createInternalPlayer } from './internalPlayer.js'
+import { createPositions } from './positions.js'
 import { createWatchService } from './watchService.js'
 import { createDownloads } from './downloads.js'
 import { createAniList } from './anilist.js'
+import { createAniSkip } from './aniskip.js'
+import { createSkipLookup, createTotalEpisodes } from './skipLookup.js'
 import { createWatchLog } from './watchLog.js'
 import { createProgress } from './progress.js'
 import { createTracker } from './tracker.js'
@@ -74,6 +80,12 @@ async function main() {
   const library = createLibrary(paths.library)
   const seriesPrefs = createSeriesPrefs(paths.seriesPrefs)
   const anilist = createAniList({ cacheDir: paths.cache })
+  const aniskip = createAniSkip({ cacheDir: path.join(paths.base, 'cache', 'aniskip') })
+  const skipLookup = createSkipLookup({ anilist, aniskip, findAniListId: (title) => library.findByAniCliTitle(title)?.aniListId })
+  const positions = createPositions(paths.positions)
+  positions.prune(60)
+  const streams = createStreamServer()
+  await streams.start()
   const watchLog = createWatchLog(paths.watchLog)
   const computeSnapshot = () => {
     const entries = library.list()
@@ -105,12 +117,24 @@ async function main() {
     historyDir: paths.aniCliHistory,
   })
   const player = createPlayer({ getMpvPath: () => toolManager.toolPaths().mpv })
-  const watch = createWatchService({ aniCli, player, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs })
+  const internalPlayer = createInternalPlayer({
+    streams, notify: send, positions,
+    getTotalEpisodes: createTotalEpisodes({ library, anilist }),
+  })
+  const mpvConfigDir = path.join(paths.base, 'mpv-config')
+  const mpvExtraArgs = () => {
+    if (!settings.get().mpvModernUi) return []
+    try {
+      const dir = ensureMpvConfig({ dir: mpvConfigDir, uoscRoot: toolManager.toolPaths().uoscRoot, version: toolManager.version('uosc') })
+      return dir ? [`--config-dir=${dir}`] : []
+    } catch { return [] }
+  }
+  const watch = createWatchService({ mpvExtraArgs, skipsFor: skipLookup, aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs })
   const downloads = createDownloads({ file: paths.downloads, aniCli, onChange: () => send(EVENTS.downloads, downloads.queueItems()), resolvePrefs: (title) => seriesPrefs.resolve(title, settings.get()) })
   const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
 
   registerIpc(ipcMain, createHandlers({
-    settings, library, seriesPrefs, tracker, progress, anilist, toolManager, health, watch, downloads, updater, whatsNew, send,
+    settings, library, seriesPrefs, tracker, progress, anilist, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, updater, whatsNew, send,
     window: { get: () => fullscreen?.get() ?? false, set: (v) => fullscreen?.set(v) },
     electron: {
       pickFolder: async () => {
@@ -125,10 +149,11 @@ async function main() {
   createWindow(settings)
   updater.start()
   health.run().then(() => health.dailyUpdate({ enabled: settings.get().autoUpdateTools, now: new Date().toISOString() }))
+    .then(() => { if (settings.get().mpvModernUi) return toolManager.installOptional() })
   setInterval(() => { if (health.get().reason === 'source-down') health.run() }, SIX_HOURS)
 
   app.on('window-all-closed', () => app.quit())
-  app.on('before-quit', () => { server.stop() })
+  app.on('before-quit', () => { server.stop(); streams.stop() })
 }
 
 main()

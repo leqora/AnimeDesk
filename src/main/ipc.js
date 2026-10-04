@@ -7,6 +7,7 @@ export function createHandlers(s) {
     [INVOKE.settingsUpdate]: (patch) => {
       const updated = s.settings.update(patch)
       if (patch && 'autoDownloadUpdates' in patch) s.updater.applySettings()
+      if (patch?.mpvModernUi === true) s.toolManager.installOptional(progress)
       return updated
     },
     [INVOKE.updateGetState]: () => s.updater.getState(),
@@ -32,6 +33,8 @@ export function createHandlers(s) {
     [INVOKE.libraryNote]: (id, episode, text) => s.library.setEpisodeNote(id, episode, text),
     [INVOKE.libraryRecord]: (payload) => {
       const entry = s.tracker.recordWatched(payload, 'auto')
+      // a watched episode (e.g. "yes" in the ask dialog) must not offer to resume any more
+      if (payload?.aniCliTitle && payload.episode != null) s.positions?.clear(payload.aniCliTitle, payload.episode)
       s.send(EVENTS.libraryChanged)
       return entry
     },
@@ -84,6 +87,9 @@ export function createHandlers(s) {
     [INVOKE.dialogPickFolder]: () => s.electron.pickFolder(),
     [INVOKE.appOpenRepo]: () => s.electron.openRepo(),
     [INVOKE.statsGet]: () => s.progress.snapshot(),
+    [INVOKE.playerProgress]: (p) => s.internalPlayer.progress(p),
+    [INVOKE.playerClosed]: (p) => s.internalPlayer.closed(p),
+    [INVOKE.skipGet]: (title, episode, duration) => s.skipLookup(title, episode, duration),
   }
 }
 

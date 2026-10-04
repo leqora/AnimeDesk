@@ -5,7 +5,7 @@ import path from 'node:path'
 import { createAniList, bestMatch, cleanDescription, SEARCH_VERSION } from '../../src/main/anilist.js'
 
 const media = (id, romaji, english, extra = {}) => ({
-  id, title: { romaji, english, native: null }, coverImage: { large: `https://img/${id}.jpg` },
+  id, idMal: 900 + id, title: { romaji, english, native: null }, coverImage: { large: `https://img/${id}.jpg` },
   genres: ['Action'], seasonYear: 2020, episodes: 12, description: 'Line one<br><br>Line <i>two</i>', ...extra,
 })
 
@@ -36,6 +36,52 @@ function mkSearchFetch(hits, { failOn = [] } = {}) {
 const searches = (f) => f.mock.calls.filter(([url]) => !url.startsWith('https://img/')).map(([, init]) => JSON.parse(init.body).variables.search)
 
 describe('anilist fallback searches', () => {
+  describe('stale entries without malId', () => {
+    const makeStale = async () => {
+      await api.getForTitle('Attack on Titan')
+      const [file] = fs.readdirSync(cacheDir).map((n) => path.join(cacheDir, n))
+      const old = JSON.parse(fs.readFileSync(file, 'utf8'))
+      delete old.malId
+      fs.writeFileSync(file, JSON.stringify(old))
+      return { file, old }
+    }
+    it('keeps returning the cached info when the refresh fails, and does not retry this run', async () => {
+      const { file, old } = await makeStale()
+      const failing = vi.fn(async () => { throw new Error('offline') })
+      const offline = createAniList({ cacheDir, fetchImpl: failing })
+      expect(await offline.getForTitle('Attack on Titan')).toEqual({ ...old, malId: null })
+      expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual(old)
+      const calls = failing.mock.calls.length
+      expect(await offline.getForTitle('Attack on Titan')).toEqual({ ...old, malId: null })
+      expect(failing.mock.calls.length).toBe(calls)
+    })
+    it('does not write a notFound marker over a stale entry when the search finds nothing', async () => {
+      const { file, old } = await makeStale()
+      const empty = createAniList({ cacheDir, fetchImpl: mkFetch([]) })
+      expect((await empty.getForTitle('Attack on Titan')).title).toBe(old.title)
+      expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual(old)
+    })
+    it('persists a null MAL id from the refetch so the next call is served from cache', async () => {
+      await makeStale()
+      const f = mkFetch([media(1, 'Shingeki no Kyojin', 'Attack on Titan', { idMal: null })])
+      const fresh = createAniList({ cacheDir, fetchImpl: f })
+      expect((await fresh.getForTitle('Attack on Titan')).malId).toBeNull()
+      const calls = f.mock.calls.length
+      expect((await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Attack on Titan')).malId).toBeNull()
+      expect(f.mock.calls.length).toBe(calls)
+    })
+  })
+  it('exposes the MAL id and refreshes cached entries saved before it existed', async () => {
+    const info = await api.getForTitle('Attack on Titan')
+    expect(info.malId).toBe(901)
+    const [file] = fs.readdirSync(cacheDir).map((n) => path.join(cacheDir, n))
+    const old = JSON.parse(fs.readFileSync(file, 'utf8'))
+    delete old.malId
+    fs.writeFileSync(file, JSON.stringify(old))
+    const calls = fetchImpl.mock.calls.length
+    expect((await api.getForTitle('Attack on Titan')).malId).toBe(901)
+    expect(fetchImpl.mock.calls.length).toBeGreaterThan(calls)
+  })
   it('falls back to the subtitle after the last colon', async () => {
     const f = mkSearchFetch({ 'Road to Ninja': media(13667, 'ROAD TO NINJA: NARUTO THE MOVIE', 'Road to Ninja: Naruto the Movie') })
     const info = await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto: Shippuuden Movie 6: Road to Ninja')

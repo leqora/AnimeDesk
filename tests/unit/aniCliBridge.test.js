@@ -30,7 +30,12 @@ describe('aniCliBridge helpers', () => {
   })
   it('parses player args from ani-cli', () => {
     const p = parsePlayerArgs(['--referrer=https://r', '--force-media-title=Re:Zero Episode 12.5', 'https://v.m3u8'])
-    expect(p).toEqual({ mpvArgs: ['--referrer=https://r', '--force-media-title=Re:Zero Episode 12.5', 'https://v.m3u8'], title: 'Re:Zero', episode: '12.5', url: 'https://v.m3u8' })
+    expect(p).toEqual({ mpvArgs: ['--referrer=https://r', '--force-media-title=Re:Zero Episode 12.5', 'https://v.m3u8'], title: 'Re:Zero', episode: '12.5', url: 'https://v.m3u8', referrer: 'https://r', subUrl: null })
+  })
+  it('extracts referrer and subtitle url from the player args', () => {
+    const args = ['--referrer=https://ref.example/', '--sub-file=https://cdn.example/subs/a.vtt', '--force-media-title=Show Episode 3', 'https://cdn.example/1080/index.m3u8']
+    expect(parsePlayerArgs(args)).toEqual({ mpvArgs: args, title: 'Show', episode: '3', url: 'https://cdn.example/1080/index.m3u8', referrer: 'https://ref.example/', subUrl: 'https://cdn.example/subs/a.vtt' })
+    expect(parsePlayerArgs(['--force-media-title=X Episode 1', 'https://v'])).toMatchObject({ referrer: null, subUrl: null })
   })
   it('builds env with a single PATH key and MSYS paths', () => {
     const env = buildEnv({

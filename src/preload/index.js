@@ -9,6 +9,7 @@ const on = (channel) => (cb) => {
 }
 
 contextBridge.exposeInMainWorld('animedesk', {
+  player: { onOpen: on(EVENTS.playerOpen), onClose: on(EVENTS.playerClose), progress: invoke(INVOKE.playerProgress), closed: invoke(INVOKE.playerClosed) },
   settings: { get: invoke(INVOKE.settingsGet), update: invoke(INVOKE.settingsUpdate) },
   library: {
     list: invoke(INVOKE.libraryList),
@@ -61,6 +62,7 @@ contextBridge.exposeInMainWorld('animedesk', {
   whatsNew: { get: invoke(INVOKE.whatsNewGet), seen: invoke(INVOKE.whatsNewSeen) },
   window: { getFullscreen: invoke(INVOKE.windowGetFullscreen), setFullscreen: invoke(INVOKE.windowSetFullscreen), onFullscreen: on(EVENTS.fullscreen) },
   dialog: { pickFolder: invoke(INVOKE.dialogPickFolder) },
+  skip: { get: invoke(INVOKE.skipGet) },
   app: { openRepo: invoke(INVOKE.appOpenRepo) },
   onLibraryChanged: on(EVENTS.libraryChanged),
 })

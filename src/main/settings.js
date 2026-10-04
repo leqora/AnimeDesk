@@ -17,10 +17,17 @@ export const DEFAULT_SETTINGS = Object.freeze({
   autoDownloadUpdates: true,
   lastSeenVersion: null,
   fullscreen: false,
+  playerMode: 'internal',
+  autoSkip: false,
+  autoNext: true,
+  subtitleSize: 'M',
+  mpvModernUi: true,
 })
 
 export const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 export const MODES = ['sub', 'dub']
+export const PLAYER_MODES = ['internal', 'external']
+export const SUBTITLE_SIZES = ['S', 'M', 'L']
 
 export function sanitizeSettings(input = {}) {
   const s = { ...DEFAULT_SETTINGS }
@@ -42,6 +49,11 @@ export function sanitizeSettings(input = {}) {
   if (typeof input.autoDownloadUpdates === 'boolean') s.autoDownloadUpdates = input.autoDownloadUpdates
   if (typeof input.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(input.lastSeenVersion)) s.lastSeenVersion = input.lastSeenVersion
   if (typeof input.fullscreen === 'boolean') s.fullscreen = input.fullscreen
+  if (PLAYER_MODES.includes(input.playerMode)) s.playerMode = input.playerMode
+  if (typeof input.autoSkip === 'boolean') s.autoSkip = input.autoSkip
+  if (typeof input.autoNext === 'boolean') s.autoNext = input.autoNext
+  if (SUBTITLE_SIZES.includes(input.subtitleSize)) s.subtitleSize = input.subtitleSize
+  if (typeof input.mpvModernUi === 'boolean') s.mpvModernUi = input.mpvModernUi
   return s
 }
 

@@ -3,6 +3,7 @@ export const SOURCES = {
   'ani-cli': { repo: 'pystardust/ani-cli', asset: /^ani-cli$/, kind: 'file' },
   mpv: { repo: 'mpv-player/mpv', asset: /^mpv-v?[\d.]+-x86_64-pc-windows-msvc\.zip$/, kind: 'zip', exe: 'mpv.exe' },
   'yt-dlp': { repo: 'yt-dlp/yt-dlp', asset: /^yt-dlp\.exe$/, kind: 'file' },
+  uosc: { repo: 'tomasklaen/uosc', asset: /^uosc\.zip$/, kind: 'zip', exe: 'main.lua' },
   ffmpeg: { repo: 'GyanD/codexffmpeg', asset: /^ffmpeg-[\d.]+-essentials_build\.zip$/, kind: 'zip', exe: 'ffmpeg.exe' },
 }
 

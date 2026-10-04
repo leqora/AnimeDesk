@@ -41,6 +41,9 @@ export const INVOKE = {
   statsGet: 'stats:get',
   windowGetFullscreen: 'window:get-fullscreen',
   windowSetFullscreen: 'window:set-fullscreen',
+  playerProgress: 'player:progress',
+  playerClosed: 'player:closed',
+  skipGet: 'skip:get',
 }
 
 export const EVENTS = {
@@ -56,4 +59,6 @@ export const EVENTS = {
   seriesCompleted: 'event:series-completed',
   updateState: 'event:update-state',
   fullscreen: 'event:fullscreen',
+  playerOpen: 'event:player-open',
+  playerClose: 'event:player-close',
 }

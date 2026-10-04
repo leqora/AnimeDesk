@@ -213,3 +213,29 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .watch-card { position: relative; }
 .watch-card__pin { position: absolute; top: 14px; right: 14px; padding: 6px; border-radius: 50%; }
 .watch-card__pin[aria-pressed="true"], button[aria-pressed="true"] > svg { color: var(--accent-2); }
+
+/* player */
+.player { position: fixed; inset: 0; z-index: 15; background: var(--bg); display: flex; flex-direction: column; }
+.player__video { flex: 1; width: 100%; min-height: 0; background: var(--bg); }
+.player__top, .player__bar { position: absolute; left: 0; right: 0; padding: 14px 18px; display: flex; gap: 12px; align-items: center; background: linear-gradient(0deg, transparent, color-mix(in srgb, var(--bg) 85%, transparent)); transition: opacity 200ms var(--ease); }
+.player__top { top: 0; }
+.player__bar { bottom: 0; flex-direction: column; align-items: stretch; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg) 90%, transparent)); }
+.player--idle .player__top, .player--idle .player__bar { opacity: 0; }
+.player--idle { cursor: none; }
+.player__title { margin: 0; font-size: 18px; }
+.player__timeline { position: relative; }
+.player__timeline input[type="range"] { width: 100%; position: relative; }
+.player__segment { position: absolute; top: 50%; height: 6px; transform: translateY(-50%); border-radius: 3px; pointer-events: none; }
+.player__segment--op { background: color-mix(in srgb, var(--accent-2) 70%, transparent); }
+.player__segment--ed { background: color-mix(in srgb, var(--accent) 70%, transparent); }
+.player__segment--recap { background: color-mix(in srgb, var(--warn) 70%, transparent); }
+.player__buttons { display: flex; gap: 8px; align-items: center; }
+.player__spacer { flex: 1; }
+.player__time { font-size: 13px; }
+.player__error { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.player--subs-S .player__video::cue { font-size: 0.9rem; }
+.player--subs-M .player__video::cue { font-size: 1.3rem; }
+.player--subs-L .player__video::cue { font-size: 1.8rem; }
+.player__skip, .player__next { position: absolute; right: 24px; bottom: 120px; }
+.player__card { position: absolute; right: 24px; bottom: 120px; padding: 14px 18px; border-radius: var(--radius); background: var(--glass-strong); border: 1px solid var(--glass-border); backdrop-filter: blur(var(--blur)); display: flex; flex-direction: column; gap: 10px; }
+.player__flash { position: absolute; left: 24px; bottom: 120px; padding: 6px 12px; border-radius: var(--radius-sm); background: var(--glass-strong); }

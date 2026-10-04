@@ -36,11 +36,11 @@ export function autoAnswer(prompt, lines, { anime = null, episode = null } = {})
 }
 
 export function parsePlayerArgs(args) {
-  const titleArg = args.find((a) => a.startsWith('--force-media-title='))
-  const full = titleArg ? titleArg.slice('--force-media-title='.length) : ''
+  const opt = (name) => { const a = args.find((x) => x.startsWith(`--${name}=`)); return a ? a.slice(name.length + 3) : null }
+  const full = opt('force-media-title') ?? ''
   const m = /^(.*) Episode (\S+)$/.exec(full)
   const url = [...args].reverse().find((a) => !a.startsWith('--')) ?? null
-  return { mpvArgs: args, title: m ? m[1] : full, episode: m ? m[2] : null, url }
+  return { mpvArgs: args, title: m ? m[1] : full, episode: m ? m[2] : null, url, referrer: opt('referrer'), subUrl: opt('sub-file') }
 }
 
 export function buildEnv({ baseEnv, tools, bridges, server, sessionId, player, downloadDir, settings, historyDir, quality = null, mode = null }) {

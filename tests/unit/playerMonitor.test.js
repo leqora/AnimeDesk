@@ -57,6 +57,59 @@ describe('createPlayer', () => {
     expect(child.kill).toHaveBeenCalled()
     expect((await playing).exitCode).toBe(1)
   })
+  describe('auto-skip', () => {
+    function setupPlayer() {
+      const child = new EventEmitter()
+      const socket = new EventEmitter()
+      socket.write = vi.fn()
+      socket.destroy = () => {}
+      const spawnImpl = vi.fn(() => child)
+      const player = createPlayer({ getMpvPath: () => 'mpv.exe', spawnImpl, connect: () => { setTimeout(() => socket.emit('connect'), 1); return socket }, retryMs: 1 })
+      const connected = () => new Promise((r) => setTimeout(r, 15))
+      return { player, socket, child, spawnImpl, connected }
+    }
+    it('auto-skips each segment once through mpv IPC', async () => {
+      const { player, socket, child, connected } = setupPlayer()
+      const skips = vi.fn(async () => ({ op: { start: 3, end: 93 }, ed: null, recap: null }))
+      const done = player.play(['https://v'], { autoSkip: true, skips })
+      await connected()
+      socket.emit('data', Buffer.from('{"event":"property-change","id":3,"name":"duration","data":1400}\n'))
+      await Promise.resolve()
+      expect(skips).toHaveBeenCalledWith(1400)
+      await new Promise((r) => setTimeout(r, 0))
+      socket.emit('data', Buffer.from('{"event":"property-change","id":2,"name":"time-pos","data":5}\n'))
+      expect(socket.write).toHaveBeenCalledWith('{"command":["seek",93,"absolute"]}\n')
+      expect(socket.write).toHaveBeenCalledWith('{"command":["show-text","Preskočen uvod",1500]}\n')
+      socket.write.mockClear()
+      socket.emit('data', Buffer.from('{"event":"property-change","id":2,"name":"time-pos","data":10}\n'))
+      expect(socket.write).not.toHaveBeenCalledWith(expect.stringContaining('seek'))
+      child.emit('exit', 0)
+      await done
+    })
+    it('shows the skip message in the app language', async () => {
+      const { player, socket, child, connected } = setupPlayer()
+      const skips = vi.fn(async () => ({ op: null, ed: null, recap: { start: 0, end: 60 } }))
+      const done = player.play(['https://v'], { autoSkip: true, skips, language: 'en' })
+      await connected()
+      socket.emit('data', Buffer.from('{"event":"property-change","id":3,"name":"duration","data":1400}\n'))
+      await new Promise((r) => setTimeout(r, 0))
+      socket.emit('data', Buffer.from('{"event":"property-change","id":2,"name":"time-pos","data":5}\n'))
+      expect(socket.write).toHaveBeenCalledWith('{"command":["show-text","Skipped recap",1500]}\n')
+      child.emit('exit', 0)
+      await done
+    })
+    it('passes extra args before the media args and does not skip without autoSkip', async () => {
+      const { player, socket, child, spawnImpl, connected } = setupPlayer()
+      const skips = vi.fn()
+      const done = player.play(['https://v'], { extraArgs: ['--config-dir=C:/cfg'], skips })
+      expect(spawnImpl.mock.calls.at(-1)[1]).toEqual([expect.stringMatching(/^--input-ipc-server=/), '--config-dir=C:/cfg', 'https://v'])
+      await connected()
+      socket.emit('data', Buffer.from('{"event":"property-change","id":3,"name":"duration","data":1400}\n'))
+      expect(skips).not.toHaveBeenCalled()
+      child.emit('exit', 0)
+      await done
+    })
+  })
   it('rejects when mpv is missing', async () => {
     await expect(createPlayer({ getMpvPath: () => null }).play([])).rejects.toThrow('mpv-missing')
   })

@@ -98,6 +98,8 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   useEffect(() => {
     if (pendingWatch && ready) {
       setAnime(pendingWatch.anime)
+      // The previous episode's session is still winding down; its late sessionEnd must not reset this one.
+      if (live.current.sessionId) live.current.ignore.add(live.current.sessionId)
       start(pendingWatch)
       onPendingHandled()
     }

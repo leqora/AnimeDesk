@@ -21,6 +21,12 @@ describe('styles.css', () => {
       for (const part of m[1].split(',')) expect(part.trim().split(/\s+/)[0], m[0]).toMatch(/^(transform|opacity|none)$/)
     }
   })
+  it('keeps the player below dialogs, the level-up overlay and toasts', () => {
+    const z = (sel) => Number(new RegExp(`(^|\\n)\\${sel} \\{[^}]*z-index: (\\d+)`).exec(css)?.[2])
+    const player = z('.player')
+    expect(Number.isFinite(player)).toBe(true)
+    for (const sel of ['.modal', '.levelup', '.toast']) expect(player, sel).toBeLessThan(z(sel))
+  })
   it('honours reduced motion', () => {
     expect(css).toContain('@media (prefers-reduced-motion: reduce)')
     expect(css).toContain('.reduce-motion')

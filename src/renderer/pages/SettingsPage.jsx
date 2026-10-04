@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Icon } from '../components/Icon.jsx'
-import { TOOL_IDS } from '../../shared/domain.js'
+import { TOOL_IDS, OPTIONAL_TOOL_IDS } from '../../shared/domain.js'
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 
@@ -76,6 +76,32 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
           <option value="dub">{t('settings.mode.dub')}</option>
         </select>
       </label>
+      <h3>{t('settings.playerSection')}</h3>
+      <label className="field">
+        <span>{t('settings.playerMode')}</span>
+        <select aria-label={t('settings.playerMode')} value={settings.playerMode} onChange={(e) => onSettings({ playerMode: e.target.value })}>
+          <option value="internal">{t('settings.playerMode.internal')}</option>
+          <option value="external">{t('settings.playerMode.external')}</option>
+        </select>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={settings.autoSkip} onChange={(e) => onSettings({ autoSkip: e.target.checked })} />
+        {t('settings.autoSkip')}
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={settings.autoNext} onChange={(e) => onSettings({ autoNext: e.target.checked })} />
+        {t('settings.autoNext')}
+      </label>
+      <label className="field">
+        <span>{t('settings.subtitleSize')}</span>
+        <select aria-label={t('settings.subtitleSize')} value={settings.subtitleSize} onChange={(e) => onSettings({ subtitleSize: e.target.value })}>
+          {['S', 'M', 'L'].map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={settings.mpvModernUi} onChange={(e) => onSettings({ mpvModernUi: e.target.checked })} />
+        {t('settings.mpvModernUi')}
+      </label>
       <label className="check">
         <input type="checkbox" checked={settings.autoUpdateTools} onChange={(e) => onSettings({ autoUpdateTools: e.target.checked })} />
         {t('settings.autoUpdate')}
@@ -133,7 +159,7 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
       )}
       <h3>{t('settings.tools')}</h3>
       <ul className="tool-list">
-        {TOOL_IDS.map((id) => (
+        {[...TOOL_IDS, ...OPTIONAL_TOOL_IDS].map((id) => (
           <li key={id} className="tool-row">
             <span className="tool-row__name">{t(`tool.${id}`)}</span>
             <span className="tool-row__state">{tools[id]?.installed ? tools[id].version : t('tool.missing')}</span>

@@ -1,5 +1,6 @@
 export const STATUSES = ['watching', 'completed', 'planned', 'paused', 'dropped']
 export const TOOL_IDS = ['bash', 'ani-cli', 'mpv', 'yt-dlp', 'ffmpeg']
+export const OPTIONAL_TOOL_IDS = ['uosc']
 
 export function normalizeTitle(title) {
   return String(title).replace(/\s*\(\d+\s+episodes?\)\s*$/i, '').trim()
