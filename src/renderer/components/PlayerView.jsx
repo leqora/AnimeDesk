@@ -13,6 +13,9 @@ const HIDE_MS = 3000
 const PROGRESS_MS = 5000
 const COUNTDOWN_S = 10
 const ENDING_FALLBACK_S = 30
+const NET_RETRIES = 3
+// hls.js 1.x: startLoad() is a no-op until a manifest has been parsed, so these must reload the source
+const MANIFEST_ERRORS = new Set(['manifestLoadError', 'manifestLoadTimeOut', 'manifestParsingError'])
 
 export function PlayerView({ open, settings, fullscreen, onSettings, onClose, HlsImpl = Hls }) {
   const api = useApi()
@@ -60,7 +63,12 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     let mediaRecovered = false
     hls.on(HlsImpl.Events.ERROR, (_e, d) => {
       if (!d.fatal) return
-      if (d.type === HlsImpl.ErrorTypes.NETWORK_ERROR && netRetries < 3) { netRetries++; hls.startLoad(); return }
+      if (d.type === HlsImpl.ErrorTypes.NETWORK_ERROR && netRetries < NET_RETRIES) {
+        netRetries++
+        if (MANIFEST_ERRORS.has(d.details) || !hls.levels?.length) hls.loadSource(open.src)
+        else hls.startLoad()
+        return
+      }
       if (d.type === HlsImpl.ErrorTypes.MEDIA_ERROR && !mediaRecovered) { mediaRecovered = true; hls.recoverMediaError(); return }
       setFailed(true)
     })
@@ -163,6 +171,8 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
         onPlay={() => { setPlaying(true); setResume(null); poke() }} onPause={() => { setPlaying(false); setIdle(false); api.player.progress(snapshot()) }}
         onVolumeChange={() => { setVolume(video.current.volume); setMuted(video.current.muted) }}
         onEnded={finishEpisode} onClick={togglePlay}
+        // a downloaded file the browser cannot decode; hls streams report through hls.js (with recovery) instead
+        onError={() => { if (open.kind === 'file') setFailed(true) }}
       >
         {open.subtitleUrl && <track kind="subtitles" src={open.subtitleUrl} default />}
       </video>

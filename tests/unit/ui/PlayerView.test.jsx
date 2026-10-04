@@ -88,6 +88,34 @@ describe('PlayerView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Pusti u spoljnom plejeru (mpv)' }))
     expect(onClose).toHaveBeenCalledWith('external')
   })
+  it('reloads the playlist on fatal manifest errors, then offers mpv after the retry budget', () => {
+    view()
+    const hls = FakeHls.last
+    hls.levels = []
+    for (let i = 0; i < 3; i++) act(() => hls.emitError('networkError', true, 'manifestLoadError'))
+    expect(hls.loadSource).toHaveBeenCalledTimes(4)
+    expect(hls.loadSource).toHaveBeenLastCalledWith('http://127.0.0.1:9/s/t/p1/playlist')
+    expect(hls.startLoad).not.toHaveBeenCalled()
+    expect(screen.queryByText('Video ne može da se pusti u aplikaciji.')).not.toBeInTheDocument()
+    act(() => hls.emitError('networkError', true, 'manifestLoadError'))
+    expect(screen.getByText('Video ne može da se pusti u aplikaciji.')).toBeInTheDocument()
+  })
+  it('treats manifest timeouts as manifest-level even with known levels', () => {
+    view()
+    act(() => FakeHls.last.emitError('networkError', true, 'manifestLoadTimeOut'))
+    expect(FakeHls.last.loadSource).toHaveBeenCalledTimes(2)
+    expect(FakeHls.last.startLoad).not.toHaveBeenCalled()
+  })
+  it('offers mpv when a downloaded file cannot be decoded', () => {
+    const { video } = view(open({ kind: 'file', src: 'http://127.0.0.1:9/s/t/f1/file', subtitleUrl: null }))
+    fireEvent(video, new Event('error'))
+    expect(screen.getByText('Video ne može da se pusti u aplikaciji.')).toBeInTheDocument()
+  })
+  it('leaves hls media errors to hls.js recovery', () => {
+    const { video } = view()
+    fireEvent(video, new Event('error'))
+    expect(screen.queryByText('Video ne može da se pusti u aplikaciji.')).not.toBeInTheDocument()
+  })
   it('reports progress every 5 seconds and hides controls when idle', () => {
     vi.useFakeTimers()
     try {
