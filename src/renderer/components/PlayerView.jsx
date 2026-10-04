@@ -146,7 +146,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       autoSkipped.current.add(seg)
       if (seg === 'ed') { finishEpisode(); return }
       v.currentTime = skips[seg].end
-      setFlash(t(seg === 'op' ? 'player.skipped' : 'player.skipRecap'))
+      setFlash(t(seg === 'op' ? 'player.skipped' : 'player.skippedRecap'))
       clearTimeout(flashTimer.current)
       flashTimer.current = setTimeout(() => setFlash(null), 1500)
     }
@@ -160,7 +160,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       <video
         ref={video} className="player__video" crossOrigin="anonymous"
         onLoadedMetadata={onLoadedMetadata} onTimeUpdate={onTimeUpdate}
-        onPlay={() => { setPlaying(true); poke() }} onPause={() => { setPlaying(false); setIdle(false); api.player.progress(snapshot()) }}
+        onPlay={() => { setPlaying(true); setResume(null); poke() }} onPause={() => { setPlaying(false); setIdle(false); api.player.progress(snapshot()) }}
         onVolumeChange={() => { setVolume(video.current.volume); setMuted(video.current.muted) }}
         onEnded={finishEpisode} onClick={togglePlay}
       >
@@ -178,8 +178,8 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
         </div>
       )}
       {resume != null && <ResumePrompt at={resume} onResume={() => startAt(resume)} onRestart={() => startAt(0)} />}
-      <SkipButton segment={segment} onSkip={() => { video.current.currentTime = skips[segment].end }} />
-      {inEnding && <button type="button" className="player__next primary" onClick={() => close('next')}>{t('player.next')}</button>}
+      {resume == null && <SkipButton segment={segment} onSkip={() => { video.current.currentTime = skips[segment].end }} />}
+      {inEnding && resume == null && <button type="button" className="player__next primary" onClick={() => close('next')}>{t('player.next')}</button>}
       {flash && <div className="player__flash hud" role="status">{flash}</div>}
       {end && <NextEpisodeCard mode={end} seconds={left} onNext={() => close('next')} onCancel={() => setEnd('manual')} onBack={() => close('ended')} />}
       <PlayerControls

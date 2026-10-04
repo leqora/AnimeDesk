@@ -219,6 +219,7 @@
   "player.skipIntro": "Skip intro",
   "player.skipRecap": "Skip recap",
   "player.skipped": "Intro skipped",
+  "player.skippedRecap": "Recap skipped",
   "player.nextIn": "Next episode in {n} s",
   "player.playNow": "Play now",
   "player.cancel": "Cancel",

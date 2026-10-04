@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, fireEvent, act } from '@testing-library/react'
+import { screen, fireEvent, act, within } from '@testing-library/react'
 import { renderUi, makeFakeApi } from './helpers.jsx'
 import { FakeHls } from './fakeHls.js'
 import { PlayerView } from '../../../src/renderer/components/PlayerView.jsx'
@@ -147,7 +147,7 @@ describe('PlayerView skip / next / resume', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Otkaži' }))
       act(() => { vi.advanceTimersByTime(10000) })
       expect(onClose).not.toHaveBeenCalled()
-      fireEvent.click(screen.getAllByRole('button', { name: 'Sledeća epizoda' }).at(-1))
+      fireEvent.click(within(document.querySelector('.player__card')).getByRole('button', { name: 'Sledeća epizoda' }))
       expect(onClose).toHaveBeenCalledWith('next')
     } finally { vi.useRealTimers() }
   })
@@ -161,12 +161,63 @@ describe('PlayerView skip / next / resume', () => {
       expect(onClose).toHaveBeenCalledWith('next')
     } finally { vi.useRealTimers() }
   })
-  it('does not count down without autoNext and congratulates after the last episode', async () => {
+  it('does not count down without autoNext and offers manual next / back in the card', async () => {
     const a = view(open(), { settings: { ...DEFAULT_SETTINGS, autoNext: false } })
     await act(async () => a.meta(1400))
     act(() => { fireEvent(a.video, new Event('ended')) })
     expect(screen.queryByText(/Sledeća epizoda za/)).not.toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: 'Sledeća epizoda' }).length).toBeGreaterThan(0)
+    const card = within(document.querySelector('.player__card'))
+    expect(card.getByRole('button', { name: 'Sledeća epizoda' })).toBeInTheDocument()
+    expect(card.getByRole('button', { name: 'Nazad' })).toBeInTheDocument()
+    fireEvent.click(card.getByRole('button', { name: 'Nazad' }))
+    expect(a.onClose).toHaveBeenCalledWith('ended')
+  })
+  it('after Cancel the card offers manual next and back', async () => {
+    vi.useFakeTimers()
+    try {
+      const { video, meta } = view()
+      await act(async () => meta(1400))
+      act(() => { fireEvent(video, new Event('ended')) })
+      fireEvent.click(screen.getByRole('button', { name: 'Otkaži' }))
+      const card = within(document.querySelector('.player__card'))
+      expect(card.getByRole('button', { name: 'Sledeća epizoda' })).toBeInTheDocument()
+      expect(card.getByRole('button', { name: 'Nazad' })).toBeInTheDocument()
+    } finally { vi.useRealTimers() }
+  })
+  it('"Pusti sada" plays the next episode immediately', async () => {
+    const { video, meta, onClose } = view()
+    await act(async () => meta(1400))
+    act(() => { fireEvent(video, new Event('ended')) })
+    fireEvent.click(screen.getByRole('button', { name: 'Pusti sada' }))
+    expect(onClose).toHaveBeenCalledWith('next')
+  })
+  it('auto-skip into the ending finishes the episode once', async () => {
+    const { video, meta, onClose } = view(open(), { settings: { ...DEFAULT_SETTINGS, autoSkip: true } }, { skip: { get: vi.fn(async () => skips) } })
+    await act(async () => meta(1400))
+    await at(video, 1310)
+    expect(video.pause).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('Sledeća epizoda za 10 s')).toBeInTheDocument()
+    await at(video, 1320)
+    await at(video, 1330)
+    expect(video.pause).toHaveBeenCalledTimes(1)
+    expect(onClose).not.toHaveBeenCalled()
+  })
+  it('auto-skipping a recap flashes "Preskočen rezime"', async () => {
+    const recapSkips = { op: null, ed: null, recap: { start: 0, end: 60 } }
+    const { video, meta } = view(open(), { settings: { ...DEFAULT_SETTINGS, autoSkip: true } }, { skip: { get: vi.fn(async () => recapSkips) } })
+    await act(async () => meta(1400))
+    await at(video, 5)
+    expect(video.currentTime).toBe(60)
+    expect(screen.getByText('Preskočen rezime')).toBeInTheDocument()
+  })
+  it('hides skip controls under the resume prompt and dismisses it when playback starts otherwise', async () => {
+    const { video, meta } = view(open({ resumeAt: 754 }), {}, { skip: { get: vi.fn(async () => ({ op: { start: 0, end: 90 }, ed: null, recap: null })) } })
+    await act(async () => meta(1400))
+    await at(video, 0)
+    expect(screen.queryByRole('button', { name: 'Preskoči uvod' })).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: ' ' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
   it('congratulates after the last episode', async () => {
     const { video, meta, onClose } = view(open({ episode: '12', totalEpisodes: 12 }))
@@ -199,7 +250,7 @@ describe('PlayerView skip / next / resume', () => {
   })
 
   it('uses the latest onClose inside long-lived handlers', () => {
-    const { video, meta, rerender } = view()
+    const { meta, rerender } = view()
     meta()
     const later = vi.fn()
     rerender({ onClose: later })
@@ -224,10 +275,11 @@ describe('PlayerView skip / next / resume', () => {
     video.play = vi.fn(() => Promise.reject(new Error('AbortError')))
     const seen = vi.fn()
     process.on('unhandledRejection', seen)
-    meta()
-    await act(async () => { await new Promise((r) => setTimeout(r, 0)) })
-    process.off('unhandledRejection', seen)
-    expect(video.play).toHaveBeenCalled()
-    expect(seen).not.toHaveBeenCalled()
+    try {
+      meta()
+      await act(async () => { await new Promise((r) => setTimeout(r, 0)) })
+      expect(video.play).toHaveBeenCalled()
+      expect(seen).not.toHaveBeenCalled()
+    } finally { process.off('unhandledRejection', seen) }
   })
 })
