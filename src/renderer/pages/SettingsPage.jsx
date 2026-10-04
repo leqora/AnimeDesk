@@ -76,6 +76,32 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
           <option value="dub">{t('settings.mode.dub')}</option>
         </select>
       </label>
+      <h3>{t('settings.playerSection')}</h3>
+      <label className="field">
+        <span>{t('settings.playerMode')}</span>
+        <select aria-label={t('settings.playerMode')} value={settings.playerMode} onChange={(e) => onSettings({ playerMode: e.target.value })}>
+          <option value="internal">{t('settings.playerMode.internal')}</option>
+          <option value="external">{t('settings.playerMode.external')}</option>
+        </select>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={settings.autoSkip} onChange={(e) => onSettings({ autoSkip: e.target.checked })} />
+        {t('settings.autoSkip')}
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={settings.autoNext} onChange={(e) => onSettings({ autoNext: e.target.checked })} />
+        {t('settings.autoNext')}
+      </label>
+      <label className="field">
+        <span>{t('settings.subtitleSize')}</span>
+        <select aria-label={t('settings.subtitleSize')} value={settings.subtitleSize} onChange={(e) => onSettings({ subtitleSize: e.target.value })}>
+          {['S', 'M', 'L'].map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={settings.mpvModernUi} onChange={(e) => onSettings({ mpvModernUi: e.target.checked })} />
+        {t('settings.mpvModernUi')}
+      </label>
       <label className="check">
         <input type="checkbox" checked={settings.autoUpdateTools} onChange={(e) => onSettings({ autoUpdateTools: e.target.checked })} />
         {t('settings.autoUpdate')}
