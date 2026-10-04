@@ -1,4 +1,4 @@
-import { House, ListVideo, Download, UserRound, Settings, Play, Info, Check, Flame, Search, Film, Volume2, ArrowLeft, Star, ChevronLeft, ChevronRight, Maximize, Minimize } from 'lucide-react'
+import { House, ListVideo, Download, UserRound, Settings, Play, Info, Check, Flame, Search, Film, Volume2, ArrowLeft, Star, ChevronLeft, ChevronRight, Maximize, Minimize, Pause, Rewind, FastForward, SkipBack, SkipForward, VolumeX, Subtitles } from 'lucide-react'
 
 const ICONS = {
   home: House, watchlist: ListVideo, downloads: Download, profile: UserRound, settings: Settings,

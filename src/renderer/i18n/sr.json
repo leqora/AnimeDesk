@@ -200,5 +200,20 @@
   "search.playSub": "Pusti sa titlom",
   "error.no-dub": "Ova epizoda nema dub.",
   "window.fullscreen": "Ceo ekran (F11)",
-  "window.exitFullscreen": "Izađi iz celog ekrana (Esc)"
+  "window.exitFullscreen": "Izađi iz celog ekrana (Esc)",
+  "player.episode": "EP {episode}",
+  "player.play": "Pusti",
+  "player.pause": "Pauza",
+  "player.back10": "Nazad 10 s",
+  "player.fwd10": "Napred 10 s",
+  "player.prev": "Prethodna epizoda",
+  "player.next": "Sledeća epizoda",
+  "player.seek": "Pozicija u epizodi",
+  "player.volume": "Jačina zvuka",
+  "player.mute": "Isključi zvuk",
+  "player.unmute": "Uključi zvuk",
+  "player.subs": "Titlovi",
+  "player.subsSize": "Veličina titlova",
+  "player.error": "Video ne može da se pusti u aplikaciji.",
+  "player.playExternal": "Pusti u spoljnom plejeru (mpv)"
 }

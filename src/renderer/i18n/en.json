@@ -200,5 +200,20 @@
   "search.playSub": "Play subtitled",
   "error.no-dub": "This episode has no dub.",
   "window.fullscreen": "Full screen (F11)",
-  "window.exitFullscreen": "Exit full screen (Esc)"
+  "window.exitFullscreen": "Exit full screen (Esc)",
+  "player.episode": "EP {episode}",
+  "player.play": "Play",
+  "player.pause": "Pause",
+  "player.back10": "Back 10 s",
+  "player.fwd10": "Forward 10 s",
+  "player.prev": "Previous episode",
+  "player.next": "Next episode",
+  "player.seek": "Position in episode",
+  "player.volume": "Volume",
+  "player.mute": "Mute",
+  "player.unmute": "Unmute",
+  "player.subs": "Subtitles",
+  "player.subsSize": "Subtitle size",
+  "player.error": "This video can't be played in the app.",
+  "player.playExternal": "Play in the external player (mpv)"
 }
