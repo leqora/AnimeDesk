@@ -7,6 +7,7 @@ export function createHandlers(s) {
     [INVOKE.settingsUpdate]: (patch) => {
       const updated = s.settings.update(patch)
       if (patch && 'autoDownloadUpdates' in patch) s.updater.applySettings()
+      if (patch?.mpvModernUi === true) s.toolManager.installOptional(progress)
       return updated
     },
     [INVOKE.updateGetState]: () => s.updater.getState(),

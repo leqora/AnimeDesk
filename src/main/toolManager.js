@@ -119,8 +119,11 @@ export function createToolManager({
 
   async function installOptional(onProgress = () => {}) {
     for (const id of OPTIONAL_TOOL_IDS) {
-      if (exePath(id)) continue
-      try { await install(id, onProgress) } catch (err) { onProgress({ id, phase: 'error', message: err.message }) }
+      try {
+        const m = load().tools[id]
+        if (exePath(id) && (await latest(id)).tag_name === m?.version) continue
+        await install(id, onProgress)
+      } catch (err) { onProgress({ id, phase: 'error', message: err.message }) }
     }
   }
 

@@ -8,7 +8,7 @@ function services() {
     library: { list: vi.fn(() => []), add: vi.fn(), update: vi.fn(), remove: vi.fn(), setEpisodeNote: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })), setPinned: vi.fn(), wasCorrupt: true },
     seriesPrefs: { get: vi.fn(() => ({ quality: null, mode: null })), set: vi.fn((t, p) => p) },
     anilist: { getForTitle: vi.fn(), search: vi.fn() },
-    toolManager: { status: vi.fn(), installMissing: vi.fn(async (cb) => { cb({ id: 'mpv', phase: 'done' }); return {} }), updateAll: vi.fn(async () => []) },
+    toolManager: { status: vi.fn(), installMissing: vi.fn(async (cb) => { cb({ id: 'mpv', phase: 'done' }); return {} }), updateAll: vi.fn(async () => []), installOptional: vi.fn(async () => {}) },
     health: { get: vi.fn(), run: vi.fn() },
     internalPlayer: { progress: vi.fn(), closed: vi.fn() },
     watch: { watch: vi.fn(), cancel: vi.fn(), answerMenu: vi.fn(), playLocal: vi.fn(async () => 'watched') },
@@ -141,6 +141,14 @@ describe('ipc', () => {
     expect(s.updater.applySettings).not.toHaveBeenCalled()
     h[INVOKE.settingsUpdate]({ autoDownloadUpdates: false })
     expect(s.updater.applySettings).toHaveBeenCalledTimes(1)
+  })
+  it('installs the optional uosc skin when mpvModernUi is turned on', () => {
+    const s = services()
+    const h = createHandlers(s)
+    h[INVOKE.settingsUpdate]({ mpvModernUi: false })
+    expect(s.toolManager.installOptional).not.toHaveBeenCalled()
+    h[INVOKE.settingsUpdate]({ mpvModernUi: true })
+    expect(s.toolManager.installOptional).toHaveBeenCalledTimes(1)
   })
   it('reads and sets window fullscreen', () => {
     const s = services()

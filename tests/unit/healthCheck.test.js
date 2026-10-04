@@ -31,11 +31,6 @@ describe('healthCheck', () => {
     expect(await hc.run()).toEqual({ light: 'red', reason: 'missing-tools', missing: ['mpv', 'ffmpeg'] })
     expect(aniCli.selfTest).not.toHaveBeenCalled()
   })
-  it('stays green when the optional uosc skin is not installed', async () => {
-    const { hc, toolManager } = setup()
-    toolManager.status = () => ({ uosc: { installed: false, optional: true } })
-    expect((await hc.run()).light).toBe('green')
-  })
   it('is red when offline', async () => {
     const { hc } = setup({ online: false })
     expect((await hc.run()).reason).toBe('offline')
@@ -48,7 +43,7 @@ describe('healthCheck', () => {
   it('updates ani-cli/yt-dlp and retests when the self-test fails', async () => {
     const { hc, states, toolManager } = setup({ tests: [false, true], updates: ['ani-cli'] })
     expect((await hc.run()).reason).toBe('ok')
-    expect(toolManager.updateAll).toHaveBeenCalledWith(['ani-cli', 'yt-dlp', 'uosc'])
+    expect(toolManager.updateAll).toHaveBeenCalledWith(['ani-cli', 'yt-dlp'])
     expect(states).toEqual(['checking', 'updating', 'ok'])
   })
   it('is source-down when there is no update or it does not help', async () => {

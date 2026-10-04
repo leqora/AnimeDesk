@@ -23,11 +23,11 @@ describe('toolSources', () => {
     expect(c.some((p) => /system32/i.test(p))).toBe(false)
   })
   it('auto-updates ani-cli and yt-dlp', () => {
-    expect(AUTO_UPDATE_TOOLS).toEqual(['ani-cli', 'yt-dlp', 'uosc'])
+    expect(AUTO_UPDATE_TOOLS).toEqual(['ani-cli', 'yt-dlp'])
   })
   it('knows the optional uosc skin', () => {
     expect(SOURCES.uosc).toMatchObject({ repo: 'tomasklaen/uosc', kind: 'zip', exe: 'main.lua' })
     expect(SOURCES.uosc.asset.test('uosc.zip')).toBe(true)
-    expect(AUTO_UPDATE_TOOLS).toContain('uosc')
+    expect(AUTO_UPDATE_TOOLS).not.toContain('uosc')
   })
 })

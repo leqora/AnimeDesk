@@ -70,6 +70,26 @@ describe('toolManager', () => {
     await expect(t.installOptional((e) => evs.push(e))).resolves.toBeUndefined()
     expect(evs.at(-1)).toMatchObject({ id: 'uosc', phase: 'error' })
   })
+  it('updates an installed uosc when GitHub has a newer tag', async () => {
+    await tm.installOptional()
+    releases['tomasklaen/uosc'].tag_name = '5.14.0'
+    await tm.installOptional()
+    expect(tm.version('uosc')).toBe('5.14.0')
+  })
+  it('does not reinstall uosc when the tag is unchanged', async () => {
+    await tm.installOptional()
+    const evs = []
+    await tm.installOptional((e) => evs.push(e))
+    expect(evs).toEqual([])
+  })
+  it('keeps an installed uosc and does not throw when the update check fails', async () => {
+    await tm.installOptional()
+    const t = make({ http: { getJson: async () => { throw new Error('offline') }, download: async () => {} } })
+    const evs = []
+    await expect(t.installOptional((e) => evs.push(e))).resolves.toBeUndefined()
+    expect(evs.at(-1)).toMatchObject({ id: 'uosc', phase: 'error' })
+    expect(t.status().uosc.installed).toBe(true)
+  })
   it('reports everything missing on a clean machine', () => {
     expect(tm.missing()).toEqual(['bash', 'ani-cli', 'mpv', 'yt-dlp', 'ffmpeg'])
     expect(tm.status().mpv).toEqual({ installed: false, path: null, version: null, optional: false })

@@ -7,7 +7,7 @@ export const SOURCES = {
   ffmpeg: { repo: 'GyanD/codexffmpeg', asset: /^ffmpeg-[\d.]+-essentials_build\.zip$/, kind: 'zip', exe: 'ffmpeg.exe' },
 }
 
-export const AUTO_UPDATE_TOOLS = ['ani-cli', 'yt-dlp', 'uosc']
+export const AUTO_UPDATE_TOOLS = ['ani-cli', 'yt-dlp']
 
 export function resolveDownload(toolId, release) {
   const src = SOURCES[toolId]
