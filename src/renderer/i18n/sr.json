@@ -23,6 +23,7 @@
   "tool.mpv": "mpv (plejer)",
   "tool.yt-dlp": "yt-dlp (preuzimanje)",
   "tool.ffmpeg": "ffmpeg (obrada videa)",
+  "tool.uosc": "uosc (izgled mpv-a, opciono)",
   "tool.installed": "instalirano",
   "tool.missing": "nije instaliran",
   "tool.installing": "instalira se…",

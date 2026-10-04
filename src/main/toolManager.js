@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { TOOL_IDS } from '../shared/domain.js'
+import { TOOL_IDS, OPTIONAL_TOOL_IDS } from '../shared/domain.js'
 import { SOURCES, AUTO_UPDATE_TOOLS, resolveDownload, systemBashCandidates } from './toolSources.js'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 
@@ -65,10 +65,10 @@ export function createToolManager({
 
   function status() {
     const tools = load().tools
-    return Object.fromEntries(TOOL_IDS.map((id) => {
+    return Object.fromEntries([...TOOL_IDS, ...OPTIONAL_TOOL_IDS].map((id) => {
       const p = exePath(id)
       const version = p ? (tools[id] && tools[id].path === p ? tools[id].version : 'system') : null
-      return [id, { installed: !!p, path: p, version }]
+      return [id, { installed: !!p, path: p, version, optional: OPTIONAL_TOOL_IDS.includes(id) }]
     }))
   }
 
@@ -117,6 +117,13 @@ export function createToolManager({
     return errors
   }
 
+  async function installOptional(onProgress = () => {}) {
+    for (const id of OPTIONAL_TOOL_IDS) {
+      if (exePath(id)) continue
+      try { await install(id, onProgress) } catch (err) { onProgress({ id, phase: 'error', message: err.message }) }
+    }
+  }
+
   async function updatesAvailable(ids = AUTO_UPDATE_TOOLS) {
     const out = []
     for (const id of ids) {
@@ -141,12 +148,14 @@ export function createToolManager({
       mpv: exePath('mpv'),
       ytDlp: exePath('yt-dlp'),
       ffmpeg: exePath('ffmpeg'),
+      uoscRoot: exePath('uosc') ? path.join(paths.tools, 'uosc') : null,
       gitRoot: bash ? path.resolve(path.dirname(bash), '..') : null,
     }
   }
 
   return {
-    status, missing, install, installMissing, updatesAvailable, updateAll, toolPaths,
+    status, missing, install, installMissing, installOptional, updatesAvailable, updateAll, toolPaths,
+    version: (id) => load().tools[id]?.version ?? null,
     lastUpdateCheck: () => load().lastUpdateCheck ?? null,
     markUpdateCheck: (iso) => { const m = load(); m.lastUpdateCheck = iso; save(m) },
   }

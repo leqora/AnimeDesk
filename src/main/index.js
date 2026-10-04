@@ -7,6 +7,7 @@ import { createSettings } from './settings.js'
 import { createLibrary } from './library.js'
 import { createSeriesPrefs } from './seriesPrefs.js'
 import { createToolManager } from './toolManager.js'
+import { ensureMpvConfig } from './mpvConfig.js'
 import { getJson, download, isOnline } from './http.js'
 import { run } from './run.js'
 import { createBridgeServer } from './bridgeServer.js'
@@ -120,7 +121,15 @@ async function main() {
     streams, notify: send, positions,
     getTotalEpisodes: (title) => library.findByAniCliTitle(title)?.totalEpisodes ?? anilist.getCached(title)?.episodes ?? null,
   })
-  const watch = createWatchService({ aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs })
+  const mpvConfigDir = path.join(paths.base, 'mpv-config')
+  const mpvExtraArgs = () => {
+    if (!settings.get().mpvModernUi) return []
+    try {
+      const dir = ensureMpvConfig({ dir: mpvConfigDir, uoscRoot: toolManager.toolPaths().uoscRoot, version: toolManager.version('uosc') })
+      return dir ? [`--config-dir=${dir}`] : []
+    } catch { return [] }
+  }
+  const watch = createWatchService({ mpvExtraArgs, aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs })
   const downloads = createDownloads({ file: paths.downloads, aniCli, onChange: () => send(EVENTS.downloads, downloads.queueItems()), resolvePrefs: (title) => seriesPrefs.resolve(title, settings.get()) })
   const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
 
@@ -140,6 +149,7 @@ async function main() {
   createWindow(settings)
   updater.start()
   health.run().then(() => health.dailyUpdate({ enabled: settings.get().autoUpdateTools, now: new Date().toISOString() }))
+    .then(() => { if (settings.get().mpvModernUi) return toolManager.installOptional() })
   setInterval(() => { if (health.get().reason === 'source-down') health.run() }, SIX_HOURS)
 
   app.on('window-all-closed', () => app.quit())

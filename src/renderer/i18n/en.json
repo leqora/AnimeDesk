@@ -23,6 +23,7 @@
   "tool.mpv": "mpv (player)",
   "tool.yt-dlp": "yt-dlp (downloader)",
   "tool.ffmpeg": "ffmpeg (video processing)",
+  "tool.uosc": "uosc (mpv look, optional)",
   "tool.installed": "installed",
   "tool.missing": "not installed",
   "tool.installing": "installing…",

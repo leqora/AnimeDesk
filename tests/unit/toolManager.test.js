@@ -10,6 +10,7 @@ const RELEASES = {
   'pystardust/ani-cli': { tag_name: 'v5.1', assets: [{ name: 'ani-cli', browser_download_url: 'u/ani' }] },
   'mpv-player/mpv': { tag_name: 'v0.41.0', assets: [{ name: 'mpv-v0.41.0-x86_64-pc-windows-msvc.zip', browser_download_url: 'u/mpv' }] },
   'yt-dlp/yt-dlp': { tag_name: '2026.08.19', assets: [{ name: 'yt-dlp.exe', browser_download_url: 'u/ytdlp' }] },
+  'tomasklaen/uosc': { tag_name: '5.13.0', assets: [{ name: 'uosc.zip', browser_download_url: 'u/uosc' }] },
   'GyanD/codexffmpeg': { tag_name: '9.0.2', assets: [{ name: 'ffmpeg-9.0.2-essentials_build.zip', browser_download_url: 'u/ffmpeg' }] },
 }
 
@@ -23,6 +24,13 @@ function make(extra = {}) {
       download: async (url, dest, onProgress) => { fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, url); onProgress({ received: 5, total: 10 }) },
     },
     extractZip: async (file, dir) => {
+      if (file.includes('uosc')) {
+        fs.mkdirSync(path.join(dir, 'scripts', 'uosc'), { recursive: true })
+        fs.mkdirSync(path.join(dir, 'fonts'), { recursive: true })
+        fs.writeFileSync(path.join(dir, 'scripts', 'uosc', 'main.lua'), 'lua')
+        fs.writeFileSync(path.join(dir, 'fonts', 'uosc_icons.otf'), 'f')
+        return
+      }
       const inner = path.join(dir, 'pkg', 'bin')
       fs.mkdirSync(inner, { recursive: true })
       const exe = file.includes('mpv') ? 'mpv.exe' : 'ffmpeg.exe'
@@ -47,9 +55,24 @@ beforeEach(() => {
 })
 
 describe('toolManager', () => {
+  it('treats uosc as optional: not missing, installable, reported with a root path', async () => {
+    expect(tm.missing()).not.toContain('uosc')
+    expect(tm.status().uosc).toMatchObject({ installed: false, optional: true })
+    expect(tm.toolPaths().uoscRoot).toBeNull()
+    await tm.installOptional()
+    expect(tm.status().uosc.installed).toBe(true)
+    expect(tm.toolPaths().uoscRoot).toBe(path.join(paths.tools, 'uosc'))
+    expect(tm.version('uosc')).toBe('5.13.0')
+  })
+  it('never throws when the optional install fails', async () => {
+    const t = make({ http: { getJson: async () => { throw new Error('offline') }, download: async () => {} } })
+    const evs = []
+    await expect(t.installOptional((e) => evs.push(e))).resolves.toBeUndefined()
+    expect(evs.at(-1)).toMatchObject({ id: 'uosc', phase: 'error' })
+  })
   it('reports everything missing on a clean machine', () => {
     expect(tm.missing()).toEqual(['bash', 'ani-cli', 'mpv', 'yt-dlp', 'ffmpeg'])
-    expect(tm.status().mpv).toEqual({ installed: false, path: null, version: null })
+    expect(tm.status().mpv).toEqual({ installed: false, path: null, version: null, optional: false })
   })
   it('installs all tools, records versions and exposes paths', async () => {
     const errors = await tm.installMissing((e) => events.push(e))
@@ -72,7 +95,7 @@ describe('toolManager', () => {
     fs.writeFileSync(gitBash, '')
     const t = make({ env: { ProgramFiles: path.join(base, 'pf'), 'ProgramFiles(x86)': path.join(base, 'no-pf') } })
     expect(t.missing()).not.toContain('bash')
-    expect(t.status().bash).toEqual({ installed: true, path: gitBash, version: 'system' })
+    expect(t.status().bash).toEqual({ installed: true, path: gitBash, version: 'system', optional: false })
     expect(t.toolPaths().gitRoot).toBe(path.join(base, 'pf', 'Git'))
   })
   it('keeps going when one tool fails and reports its error', async () => {

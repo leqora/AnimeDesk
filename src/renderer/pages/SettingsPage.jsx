@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Icon } from '../components/Icon.jsx'
-import { TOOL_IDS } from '../../shared/domain.js'
+import { TOOL_IDS, OPTIONAL_TOOL_IDS } from '../../shared/domain.js'
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 
@@ -159,7 +159,7 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
       )}
       <h3>{t('settings.tools')}</h3>
       <ul className="tool-list">
-        {TOOL_IDS.map((id) => (
+        {[...TOOL_IDS, ...OPTIONAL_TOOL_IDS].map((id) => (
           <li key={id} className="tool-row">
             <span className="tool-row__name">{t(`tool.${id}`)}</span>
             <span className="tool-row__state">{tools[id]?.installed ? tools[id].version : t('tool.missing')}</span>

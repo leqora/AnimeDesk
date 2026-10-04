@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveDownload, systemBashCandidates, AUTO_UPDATE_TOOLS } from '../../src/main/toolSources.js'
+import { resolveDownload, systemBashCandidates, AUTO_UPDATE_TOOLS, SOURCES } from '../../src/main/toolSources.js'
 
 const rel = (tag, ...names) => ({ tag_name: tag, assets: names.map((name) => ({ name, browser_download_url: `https://x/${name}` })) })
 
@@ -23,6 +23,11 @@ describe('toolSources', () => {
     expect(c.some((p) => /system32/i.test(p))).toBe(false)
   })
   it('auto-updates ani-cli and yt-dlp', () => {
-    expect(AUTO_UPDATE_TOOLS).toEqual(['ani-cli', 'yt-dlp'])
+    expect(AUTO_UPDATE_TOOLS).toEqual(['ani-cli', 'yt-dlp', 'uosc'])
+  })
+  it('knows the optional uosc skin', () => {
+    expect(SOURCES.uosc).toMatchObject({ repo: 'tomasklaen/uosc', kind: 'zip', exe: 'main.lua' })
+    expect(SOURCES.uosc.asset.test('uosc.zip')).toBe(true)
+    expect(AUTO_UPDATE_TOOLS).toContain('uosc')
   })
 })
