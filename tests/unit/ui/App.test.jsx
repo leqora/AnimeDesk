@@ -30,6 +30,23 @@ describe('App', () => {
     act(() => ask({ aniCliTitle: 'Show', episode: '5' }))
     expect(screen.getByText('Označi epizodu 5 (Show) kao odgledanu?')).toBeInTheDocument()
   })
+  it('queues ask dialogs so no answer is lost', async () => {
+    let ask
+    const api = makeFakeApi({ watch: { onAsk: vi.fn((cb) => { ask = cb; return () => {} }) } })
+    render(<App api={api} />)
+    await waitFor(() => expect(ask).toBeDefined())
+    act(() => ask({ aniCliTitle: 'Show', episode: '5' }))
+    act(() => ask({ aniCliTitle: 'Show', episode: '6' }))
+    expect(screen.getByText('Označi epizodu 5 (Show) kao odgledanu?')).toBeInTheDocument()
+    expect(screen.queryByText('Označi epizodu 6 (Show) kao odgledanu?')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Da' }))
+    await waitFor(() => expect(screen.getByText('Označi epizodu 6 (Show) kao odgledanu?')).toBeInTheDocument())
+    expect(api.library.recordWatched).toHaveBeenCalledWith({ aniCliTitle: 'Show', episode: '5' })
+    fireEvent.click(screen.getByRole('button', { name: 'Da' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(api.library.recordWatched).toHaveBeenLastCalledWith({ aniCliTitle: 'Show', episode: '6' })
+    expect(api.library.recordWatched).toHaveBeenCalledTimes(2)
+  })
   it('warns when the watchlist file was corrupt', async () => {
     const api = makeFakeApi({ library: { wasCorrupt: vi.fn(async () => true) } })
     render(<App api={api} />)

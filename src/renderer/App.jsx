@@ -49,7 +49,8 @@ export default function App({ api, sound: injectedSound }) {
   const [page, setPage] = useState('home')
   const [stats, setStats] = useState(EMPTY_STATS)
   const [wizardOpen, setWizardOpen] = useState(false)
-  const [ask, setAsk] = useState(null)
+  // FIFO: an ask for episode N must survive the ask for N+1 (askOnClose + autoNext)
+  const [asks, setAsks] = useState([])
   const [pendingWatch, setPendingWatch] = useState(null)
   const [corrupt, setCorrupt] = useState(false)
   const [openAnimeId, setOpenAnimeId] = useState(null)
@@ -62,7 +63,7 @@ export default function App({ api, sound: injectedSound }) {
     api.settings.get().then(setSettings)
     api.health.get().then(setHealth)
     api.library.wasCorrupt().then(setCorrupt)
-    const offs = [api.health.onChange(setHealth), api.watch.onAsk(setAsk)]
+    const offs = [api.health.onChange(setHealth), api.watch.onAsk((a) => setAsks((q) => [...q, a]))]
     return () => offs.forEach((off) => off())
   }, [api])
 
@@ -175,7 +176,7 @@ export default function App({ api, sound: injectedSound }) {
           />
         )}
         {wizardOpen && <SetupWizard health={health} onClose={() => setWizardOpen(false)} />}
-        {ask && <AskDialog ask={ask} onDone={() => setAsk(null)} />}
+        {asks.length > 0 && <AskDialog ask={asks[0]} onDone={() => setAsks((q) => q.slice(1))} />}
         <Celebrations levelUp={levelUp} toast={toast} stats={stats} motionOff={motionOff} onLevelUpDone={() => setLevelUp(null)} onToastDone={() => setToast(null)} />
         {whatsNew && <WhatsNewDialog mode={whatsNew.mode} version={whatsNew.version} notes={whatsNew.notes} status={updateState.status} onClose={closeWhatsNew} />}
       </I18nProvider>
