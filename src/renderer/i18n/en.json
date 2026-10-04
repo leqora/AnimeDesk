@@ -215,5 +215,14 @@
   "player.subs": "Subtitles",
   "player.subsSize": "Subtitle size",
   "player.error": "This video can't be played in the app.",
-  "player.playExternal": "Play in the external player (mpv)"
+  "player.playExternal": "Play in the external player (mpv)",
+  "player.skipIntro": "Skip intro",
+  "player.skipRecap": "Skip recap",
+  "player.skipped": "Intro skipped",
+  "player.nextIn": "Next episode in {n} s",
+  "player.playNow": "Play now",
+  "player.cancel": "Cancel",
+  "player.seriesDone": "You finished the series 🎉",
+  "player.resumeFrom": "Resume from {time}",
+  "player.fromStart": "From the start"
 }

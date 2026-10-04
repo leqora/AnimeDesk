@@ -236,3 +236,6 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .player--subs-S .player__video::cue { font-size: 0.9rem; }
 .player--subs-M .player__video::cue { font-size: 1.3rem; }
 .player--subs-L .player__video::cue { font-size: 1.8rem; }
+.player__skip, .player__next { position: absolute; right: 24px; bottom: 120px; }
+.player__card { position: absolute; right: 24px; bottom: 120px; padding: 14px 18px; border-radius: var(--radius); background: var(--glass-strong); border: 1px solid var(--glass-border); backdrop-filter: blur(var(--blur)); display: flex; flex-direction: column; gap: 10px; }
+.player__flash { position: absolute; left: 24px; bottom: 120px; padding: 6px 12px; border-radius: var(--radius-sm); background: var(--glass-strong); }

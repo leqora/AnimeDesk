@@ -4,13 +4,21 @@ import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Icon } from './Icon.jsx'
 import { PlayerControls } from './PlayerControls.jsx'
-import { trackMax } from '../../shared/player.js'
+import { SkipButton } from './SkipButton.jsx'
+import { NextEpisodeCard } from './NextEpisodeCard.jsx'
+import { ResumePrompt } from './ResumePrompt.jsx'
+import { trackMax, segmentAt, isLastEpisode } from '../../shared/player.js'
 
 const HIDE_MS = 3000
 const PROGRESS_MS = 5000
+const COUNTDOWN_S = 10
+const ENDING_FALLBACK_S = 30
 
 export function PlayerView({ open, settings, fullscreen, onSettings, onClose, HlsImpl = Hls }) {
   const api = useApi()
+  // latest props/api for long-lived handlers (keydown, intervals) so they are never stale
+  const live = useRef({})
+  live.current = { onClose, open, api }
   const t = useT()
   const video = useRef(null)
   const maxPercent = useRef(0)
@@ -24,16 +32,24 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const [idle, setIdle] = useState(false)
   const [failed, setFailed] = useState(false)
   const idleTimer = useRef(null)
+  const [skips, setSkips] = useState(null)
+  const [resume, setResume] = useState(open.resumeAt)
+  const [end, setEnd] = useState(null)
+  const [left, setLeft] = useState(COUNTDOWN_S)
+  const [flash, setFlash] = useState(null)
+  const autoSkipped = useRef(new Set())
+  const flashTimer = useRef(null)
 
   const snapshot = () => {
     const v = video.current
+    const { open } = live.current
     return { playbackId: open.playbackId, position: v?.currentTime ?? 0, duration: Number.isFinite(v?.duration) ? v.duration : 0, maxPercent: Math.round(maxPercent.current) }
   }
   const close = (reason) => {
     if (closed.current) return
     closed.current = true
-    api.player.closed({ ...snapshot(), reason })
-    onClose(reason)
+    live.current.api.player.closed({ ...snapshot(), reason })
+    live.current.onClose(reason)
   }
 
   useEffect(() => {
@@ -54,7 +70,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   }, [open.playbackId])
 
   useEffect(() => {
-    const id = setInterval(() => api.player.progress(snapshot()), PROGRESS_MS)
+    const id = setInterval(() => live.current.api.player.progress(snapshot()), PROGRESS_MS)
     return () => clearInterval(id)
   }, [open.playbackId])
 
@@ -68,11 +84,13 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     clearTimeout(idleTimer.current)
     idleTimer.current = setTimeout(() => { if (video.current && !video.current.paused) setIdle(true) }, HIDE_MS)
   }
-  useEffect(() => { poke(); return () => clearTimeout(idleTimer.current) }, [])
+  useEffect(() => { poke(); return () => { clearTimeout(idleTimer.current); clearTimeout(flashTimer.current) } }, [])
 
-  const togglePlay = () => { const v = video.current; if (v.paused) v.play(); else v.pause() }
+  // autoplay policy / aborted loads reject play(); that is never fatal
+  const play = () => { const p = video.current?.play(); if (p && typeof p.catch === 'function') p.catch(() => {}) }
+  const togglePlay = () => { const v = video.current; if (v.paused) play(); else v.pause() }
   const step = (s) => { const v = video.current; v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + s)) }
-  const toggleFullscreen = () => api.window.setFullscreen(!fullscreen)
+  const toggleFullscreen = () => live.current.api.window.setFullscreen(!fullscreen)
 
   useEffect(() => {
     const onKey = (e) => {
@@ -97,21 +115,54 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     return () => window.removeEventListener('keydown', onKey)
   }, [fullscreen])
 
-  const onLoadedMetadata = () => { setDuration(video.current.duration); video.current.play() }
+  const finishEpisode = () => {
+    video.current?.pause()
+    if (isLastEpisode(open.episode, open.totalEpisodes)) setEnd('done')
+    else if (settings.autoNext) { setLeft(COUNTDOWN_S); setEnd('countdown') }
+    else setEnd('manual')
+  }
+  useEffect(() => {
+    if (end !== 'countdown') return undefined
+    const id = setInterval(() => setLeft((n) => n - 1), 1000)
+    return () => clearInterval(id)
+  }, [end])
+  useEffect(() => { if (end === 'countdown' && left <= 0) close('next') }, [left, end])
+
+  const onLoadedMetadata = () => {
+    const v = video.current
+    setDuration(v.duration)
+    if (open.episode != null) {
+      const request = Promise.resolve().then(() => api.skip.get(open.title, open.episode, v.duration))
+      request.then(setSkips).catch(() => setSkips(null))
+    }
+    if (resume == null) play()
+  }
   const onTimeUpdate = () => {
     const v = video.current
     setTime(v.currentTime)
     maxPercent.current = trackMax(maxPercent.current, v.currentTime, v.duration)
+    const seg = segmentAt(v.currentTime, skips)
+    if (settings.autoSkip && seg && !autoSkipped.current.has(seg)) {
+      autoSkipped.current.add(seg)
+      if (seg === 'ed') { finishEpisode(); return }
+      v.currentTime = skips[seg].end
+      setFlash(t(seg === 'op' ? 'player.skipped' : 'player.skipRecap'))
+      clearTimeout(flashTimer.current)
+      flashTimer.current = setTimeout(() => setFlash(null), 1500)
+    }
   }
+  const segment = segmentAt(time, skips)
+  const inEnding = !end && !isLastEpisode(open.episode, open.totalEpisodes) && (segment === 'ed' || (!skips?.ed && duration > 0 && time >= duration - ENDING_FALLBACK_S))
+  const startAt = (sec) => { video.current.currentTime = sec; setResume(null); play() }
 
   return (
     <div className={`player player--subs-${settings.subtitleSize}${idle ? ' player--idle' : ''}`} onMouseMove={poke}>
       <video
         ref={video} className="player__video" crossOrigin="anonymous"
         onLoadedMetadata={onLoadedMetadata} onTimeUpdate={onTimeUpdate}
-        onPlay={() => setPlaying(true)} onPause={() => { setPlaying(false); setIdle(false); api.player.progress(snapshot()) }}
+        onPlay={() => { setPlaying(true); poke() }} onPause={() => { setPlaying(false); setIdle(false); api.player.progress(snapshot()) }}
         onVolumeChange={() => { setVolume(video.current.volume); setMuted(video.current.muted) }}
-        onEnded={() => close('ended')} onClick={togglePlay}
+        onEnded={finishEpisode} onClick={togglePlay}
       >
         {open.subtitleUrl && <track kind="subtitles" src={open.subtitleUrl} default />}
       </video>
@@ -126,7 +177,13 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
           <button type="button" onClick={() => close('back')}>{t('search.back')}</button>
         </div>
       )}
+      {resume != null && <ResumePrompt at={resume} onResume={() => startAt(resume)} onRestart={() => startAt(0)} />}
+      <SkipButton segment={segment} onSkip={() => { video.current.currentTime = skips[segment].end }} />
+      {inEnding && <button type="button" className="player__next primary" onClick={() => close('next')}>{t('player.next')}</button>}
+      {flash && <div className="player__flash hud" role="status">{flash}</div>}
+      {end && <NextEpisodeCard mode={end} seconds={left} onNext={() => close('next')} onCancel={() => setEnd('manual')} onBack={() => close('ended')} />}
       <PlayerControls
+        segments={['op', 'ed', 'recap'].filter((k) => skips?.[k]).map((k) => ({ kind: k, ...skips[k] }))}
         time={time} duration={duration} playing={playing} muted={muted} volume={volume} subsOn={subsOn}
         subtitleSize={settings.subtitleSize} fullscreen={fullscreen} canPrev={Number(open.episode) > 1}
         onTogglePlay={togglePlay} onSeek={(s) => { video.current.currentTime = s }} onStep={step}

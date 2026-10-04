@@ -20,14 +20,15 @@ const fakeMediaState = (video) => {
     Object.defineProperty(video, key, { configurable: true, get: () => state[key], set: (v) => { state[key] = v } })
   }
 }
-const view = (o = open(), extra = {}) => {
+const view = (o = open(), extra = {}, apiOverrides = {}) => {
   const onClose = vi.fn()
-  const api = makeFakeApi()
-  renderUi(<PlayerView open={o} settings={{ ...DEFAULT_SETTINGS }} fullscreen={false} onSettings={vi.fn()} onClose={onClose} HlsImpl={FakeHls} {...extra} />, { api })
+  const api = makeFakeApi(apiOverrides)
+  const ui = (props = {}) => <PlayerView open={o} settings={{ ...DEFAULT_SETTINGS }} fullscreen={false} onSettings={vi.fn()} onClose={onClose} HlsImpl={FakeHls} {...extra} {...props} />
+  const { rerender } = renderUi(ui(), { api })
   const video = document.querySelector('video')
   fakeMediaState(video)
   const meta = (duration = 1400) => { Object.defineProperty(video, 'duration', { configurable: true, value: duration }); fireEvent(video, new Event('loadedmetadata')) }
-  return { api, onClose, video, meta }
+  return { api, onClose, video, meta, rerender: (props) => rerender(ui(props)) }
 }
 
 describe('PlayerView', () => {
@@ -105,5 +106,128 @@ describe('PlayerView', () => {
     view(open({ episode: '1' }), { settings: { ...DEFAULT_SETTINGS, subtitleSize: 'L' } })
     expect(screen.getByRole('button', { name: 'Prethodna epizoda' })).toBeDisabled()
     expect(document.querySelector('.player')).toHaveClass('player--subs-L')
+  })
+})
+
+describe('PlayerView skip / next / resume', () => {
+  const skips = { op: { start: 3, end: 93 }, ed: { start: 1300, end: 1390 }, recap: null }
+  const at = async (video, sec) => { video.currentTime = sec; await act(async () => { fireEvent(video, new Event('timeupdate')) }) }
+
+  it('asks for skip times once the duration is known and offers "Preskoči uvod"', async () => {
+    const { api, video, meta } = view(open(), {}, { skip: { get: vi.fn(async () => skips) } })
+    await act(async () => meta(1400))
+    expect(api.skip.get).toHaveBeenCalledWith('Show', '3', 1400)
+    await at(video, 10)
+    fireEvent.click(screen.getByRole('button', { name: 'Preskoči uvod' }))
+    expect(video.currentTime).toBe(93)
+    await at(video, 200)
+    expect(screen.queryByRole('button', { name: 'Preskoči uvod' })).not.toBeInTheDocument()
+    expect(document.querySelectorAll('.player__segment')).toHaveLength(2)
+  })
+  it('auto-skips the intro only once', async () => {
+    const { video, meta } = view(open(), { settings: { ...DEFAULT_SETTINGS, autoSkip: true } }, { skip: { get: vi.fn(async () => skips) } })
+    await act(async () => meta(1400))
+    await at(video, 5)
+    expect(video.currentTime).toBe(93)
+    expect(screen.getByText('Preskočen uvod')).toBeInTheDocument()
+    await at(video, 20)
+    expect(video.currentTime).toBe(20)
+  })
+  it('shows "Sledeća epizoda" during the ending and counts down at the end', async () => {
+    vi.useFakeTimers()
+    try {
+      const { video, meta, onClose } = view(open(), {}, { skip: { get: vi.fn(async () => skips) } })
+      await act(async () => meta(1400))
+      await at(video, 1310)
+      expect(document.querySelector('.player__next')).toBeInTheDocument()
+      act(() => { fireEvent(video, new Event('ended')) })
+      expect(screen.getByText('Sledeća epizoda za 10 s')).toBeInTheDocument()
+      act(() => { vi.advanceTimersByTime(3000) })
+      expect(screen.getByText('Sledeća epizoda za 7 s')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Otkaži' }))
+      act(() => { vi.advanceTimersByTime(10000) })
+      expect(onClose).not.toHaveBeenCalled()
+      fireEvent.click(screen.getAllByRole('button', { name: 'Sledeća epizoda' }).at(-1))
+      expect(onClose).toHaveBeenCalledWith('next')
+    } finally { vi.useRealTimers() }
+  })
+  it('plays the next episode when the countdown ends', async () => {
+    vi.useFakeTimers()
+    try {
+      const { video, meta, onClose } = view()
+      await act(async () => meta(1400))
+      act(() => { fireEvent(video, new Event('ended')) })
+      act(() => { vi.advanceTimersByTime(10000) })
+      expect(onClose).toHaveBeenCalledWith('next')
+    } finally { vi.useRealTimers() }
+  })
+  it('does not count down without autoNext and congratulates after the last episode', async () => {
+    const a = view(open(), { settings: { ...DEFAULT_SETTINGS, autoNext: false } })
+    await act(async () => a.meta(1400))
+    act(() => { fireEvent(a.video, new Event('ended')) })
+    expect(screen.queryByText(/Sledeća epizoda za/)).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Sledeća epizoda' }).length).toBeGreaterThan(0)
+  })
+  it('congratulates after the last episode', async () => {
+    const { video, meta, onClose } = view(open({ episode: '12', totalEpisodes: 12 }))
+    await act(async () => meta(1400))
+    act(() => { fireEvent(video, new Event('ended')) })
+    expect(screen.getByText('Završio si seriju 🎉')).toBeInTheDocument()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+  it('asks where to resume before playing', async () => {
+    const { video, meta } = view(open({ resumeAt: 754 }))
+    await act(async () => meta(1400))
+    expect(video.play).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Nastavi od 12:34' }))
+    expect(video.currentTime).toBe(754)
+    expect(video.play).toHaveBeenCalled()
+  })
+  it('can start from the beginning instead', async () => {
+    const { video, meta } = view(open({ resumeAt: 754 }))
+    await act(async () => meta(1400))
+    fireEvent.click(screen.getByRole('button', { name: 'Od početka' }))
+    expect(video.currentTime).toBe(0)
+    expect(video.play).toHaveBeenCalled()
+  })
+  it('shows no skip controls when AniSkip has nothing or fails', async () => {
+    const { video, meta } = view(open(), {}, { skip: { get: vi.fn(async () => { throw new Error('offline') }) } })
+    await act(async () => meta(1400))
+    await at(video, 10)
+    expect(screen.queryByRole('button', { name: /Preskoči/ })).not.toBeInTheDocument()
+    expect(document.querySelectorAll('.player__segment')).toHaveLength(0)
+  })
+
+  it('uses the latest onClose inside long-lived handlers', () => {
+    const { video, meta, rerender } = view()
+    meta()
+    const later = vi.fn()
+    rerender({ onClose: later })
+    fireEvent.keyDown(window, { key: 'n' })
+    expect(later).toHaveBeenCalledWith('next')
+  })
+  it('hides the controls again after playback resumes without mouse movement', () => {
+    vi.useFakeTimers()
+    try {
+      const { video, meta } = view()
+      meta()
+      act(() => { vi.advanceTimersByTime(3000) })
+      act(() => { video.pause() })
+      expect(document.querySelector('.player')).not.toHaveClass('player--idle')
+      act(() => { video.play() })
+      act(() => { vi.advanceTimersByTime(3000) })
+      expect(document.querySelector('.player')).toHaveClass('player--idle')
+    } finally { vi.useRealTimers() }
+  })
+  it('swallows a rejected play() call', async () => {
+    const { video, meta } = view()
+    video.play = vi.fn(() => Promise.reject(new Error('AbortError')))
+    const seen = vi.fn()
+    process.on('unhandledRejection', seen)
+    meta()
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)) })
+    process.off('unhandledRejection', seen)
+    expect(video.play).toHaveBeenCalled()
+    expect(seen).not.toHaveBeenCalled()
   })
 })

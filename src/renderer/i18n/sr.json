@@ -215,5 +215,14 @@
   "player.subs": "Titlovi",
   "player.subsSize": "Veličina titlova",
   "player.error": "Video ne može da se pusti u aplikaciji.",
-  "player.playExternal": "Pusti u spoljnom plejeru (mpv)"
+  "player.playExternal": "Pusti u spoljnom plejeru (mpv)",
+  "player.skipIntro": "Preskoči uvod",
+  "player.skipRecap": "Preskoči rezime",
+  "player.skipped": "Preskočen uvod",
+  "player.nextIn": "Sledeća epizoda za {n} s",
+  "player.playNow": "Pusti sada",
+  "player.cancel": "Otkaži",
+  "player.seriesDone": "Završio si seriju 🎉",
+  "player.resumeFrom": "Nastavi od {time}",
+  "player.fromStart": "Od početka"
 }
