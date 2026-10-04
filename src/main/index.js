@@ -134,7 +134,7 @@ async function main() {
   const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
 
   registerIpc(ipcMain, createHandlers({
-    settings, library, seriesPrefs, tracker, progress, anilist, skipLookup, toolManager, health, watch, internalPlayer, downloads, updater, whatsNew, send,
+    settings, library, seriesPrefs, tracker, progress, anilist, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, updater, whatsNew, send,
     window: { get: () => fullscreen?.get() ?? false, set: (v) => fullscreen?.set(v) },
     electron: {
       pickFolder: async () => {

@@ -76,6 +76,21 @@ describe('toolManager', () => {
     await tm.installOptional()
     expect(tm.version('uosc')).toBe('5.14.0')
   })
+  it('shares one in-flight optional install between concurrent callers', async () => {
+    const downloads = []
+    const t = make({ http: {
+      getJson: async (url) => structuredClone(releases[url.match(/repos\/(.+)\/releases/)[1]]),
+      download: async (url, dest) => { downloads.push(url); await new Promise((r) => setTimeout(r, 5)); fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.writeFileSync(dest, url) },
+    } })
+    const a = t.installOptional()
+    const b = t.installOptional()
+    expect(b).toBe(a)
+    await Promise.all([a, b])
+    expect(downloads).toEqual(['u/uosc'])
+    expect(t.status().uosc.installed).toBe(true)
+    await t.installOptional()
+    expect(downloads).toEqual(['u/uosc'])
+  })
   it('does not reinstall uosc when the tag is unchanged', async () => {
     await tm.installOptional()
     const evs = []

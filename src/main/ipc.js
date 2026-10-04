@@ -33,6 +33,8 @@ export function createHandlers(s) {
     [INVOKE.libraryNote]: (id, episode, text) => s.library.setEpisodeNote(id, episode, text),
     [INVOKE.libraryRecord]: (payload) => {
       const entry = s.tracker.recordWatched(payload, 'auto')
+      // a watched episode (e.g. "yes" in the ask dialog) must not offer to resume any more
+      if (payload?.aniCliTitle && payload.episode != null) s.positions?.clear(payload.aniCliTitle, payload.episode)
       s.send(EVENTS.libraryChanged)
       return entry
     },

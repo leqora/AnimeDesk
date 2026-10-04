@@ -117,14 +117,22 @@ export function createToolManager({
     return errors
   }
 
-  async function installOptional(onProgress = () => {}) {
-    for (const id of OPTIONAL_TOOL_IDS) {
-      try {
-        const m = load().tools[id]
-        if (exePath(id) && (await latest(id)).tag_name === m?.version) continue
-        await install(id, onProgress)
-      } catch (err) { onProgress({ id, phase: 'error', message: err.message }) }
-    }
+  // Single-flight: startup and the settings toggle may both ask; they share one run and every caller gets its progress.
+  let optionalRun = null
+  const optionalListeners = new Set()
+  function installOptional(listener = () => {}) {
+    optionalListeners.add(listener)
+    const onProgress = (e) => { for (const l of optionalListeners) l(e) }
+    optionalRun ??= (async () => {
+      for (const id of OPTIONAL_TOOL_IDS) {
+        try {
+          const m = load().tools[id]
+          if (exePath(id) && (await latest(id)).tag_name === m?.version) continue
+          await install(id, onProgress)
+        } catch (err) { onProgress({ id, phase: 'error', message: err.message }) }
+      }
+    })().finally(() => { optionalRun = null; optionalListeners.clear() })
+    return optionalRun
   }
 
   async function updatesAvailable(ids = AUTO_UPDATE_TOOLS) {

@@ -19,6 +19,7 @@ function services() {
     updater: { getState: vi.fn(() => ({ status: 'idle' })), check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(() => true), install: vi.fn(() => true), applySettings: vi.fn() },
     whatsNew: { get: vi.fn(() => null), seen: vi.fn() },
     window: { get: vi.fn(() => true), set: vi.fn() },
+    positions: { clear: vi.fn() },
     skipLookup: vi.fn(async () => ({ op: { start: 1, end: 2 }, ed: null, recap: null })),
     send: vi.fn(),
   }
@@ -92,6 +93,11 @@ describe('ipc', () => {
     createHandlers(s)[INVOKE.libraryRecord]({ aniCliTitle: 'A', episode: '1' })
     expect(s.tracker.recordWatched).toHaveBeenCalledWith({ aniCliTitle: 'A', episode: '1' }, 'auto')
     expect(s.send).toHaveBeenCalledWith(EVENTS.libraryChanged)
+  })
+  it('clears the resume position of an episode marked watched from the ask dialog', () => {
+    const s = services()
+    createHandlers(s)[INVOKE.libraryRecord]({ aniCliTitle: 'A', episode: '1' })
+    expect(s.positions.clear).toHaveBeenCalledWith('A', '1')
   })
   it('installMissing streams progress and re-runs the health check', async () => {
     const s = services()
