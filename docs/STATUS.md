@@ -20,8 +20,8 @@ Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, �
 
 ## Šta je stvarno provereno (ne samo testovima)
 
-- 468 unit/integration testa prolaze (`npm test`, 0.5.0), e2e smoke (`npm run test:e2e`) prolazi.
-- **0.5.0 — uživo provere još NISU urađene (na čekanju):** (1) Frieren ep 1 u aplikaciji (slika, zvuk, titlovi, S/M/L); (2) „Preskoči uvod” i automatsko preskakanje; (3) kraj → odbrojavanje → sledeća epizoda; (4) zatvori pa „Nastavi od…”; (5) prečice + pun ekran; (6) preuzeta epizoda u aplikaciji; (7) spoljni režim sa uosc i automatskim preskakanjem; (8) dugme „Pusti u spoljnom plejeru”; (9) ažuriranje 0.4.0 → 0.5.0.
+- 486 unit/integration testova prolazi (`npm test`, 0.5.0), e2e smoke (`npm run test:e2e`) prolazi.
+- **0.5.0 — uživo provere još NISU urađene (na čekanju):** (1) Frieren ep 1 u aplikaciji (slika, zvuk, titlovi, S/M/L); (2) „Preskoči uvod” i automatsko preskakanje; (3) kraj → odbrojavanje → sledeća epizoda; (4) zatvori pa „Nastavi od…”; (5) prečice + pun ekran; (6) preuzeta epizoda u aplikaciji; (7) spoljni režim sa uosc i automatskim preskakanjem; (8) dugme „Pusti u spoljnom plejeru”; (9) ažuriranje 0.4.0 → 0.5.0; (10) nameran kvar playliste (npr. bez interneta / pogrešan link) prikazuje ekran sa greškom i dugmetom za mpv, ne crn ekran; (11) preuzeta epizoda sa titlom (`.vtt` pored videa) prikazuje titlove u aplikaciji; (12) „Pitaj pri zatvaranju” + automatska sledeća epizoda: odgovor za prethodnu epizodu se ne gubi (dijalog vidljiv iznad plejera, pitanja u redu); (13) posle automatskog prelaska na sledeću epizodu sa pragom 95 % prethodna epizoda je označena kao odgledana.
 - **0.4.0 provereno uživo sa korisnikom (2026-10-03):** One Piece grupe i „Idi na epizodu”, sub↔dub na stranici epizoda, „nema dub-a” + „Pusti sa titlom”, serija sa sačuvanim dub-om iz pretrage pušta dub, F11 / dugme / Esc i pamćenje punog ekrana posle ponovnog pokretanja, Esc u dijalogu ne izlazi iz punog ekrana, 5 favorita + poruka za šesti, „O aplikaciji” → GitHub, „by Leqora” i nova ikonica.
 - **Auto-update radi u praksi:**
   - lokalna proba (generic provider na `localhost`, 0.2.90 → 0.2.91): instalacija tek na klik, podaci netaknuti, bez SmartScreen-a;
@@ -38,8 +38,8 @@ Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, �
 4. Aplikacija nije potpisana (nema code-signing sertifikata); SmartScreen se do sada nije pojavio, ali može.
 5. Sitnice iz završnog pregleda v0.3 koje su svesno ostavljene: kratko treptanje dugmeta „Preuzmi” kad je auto-preuzimanje uključeno; nema sha512 provere `latest.yml` u skripti; `fail`/`fail0` u `updater.js` bi mogli u jednu funkciju; Escape u „Šta je novo” nema focus-trap.
 6. Windows može da prikazuje staru ikonicu prečice dok ne osveži keš ikonica (nova ikonica u 0.4.0).
-8. Rizici v0.5: ako sajt promeni zaštitu (zaglavlja, maskirani segmenti), popravka ide u `streamServer.js` (do tada dugme „Pusti u spoljnom plejeru”); AniSkip nema podatke za sve serije/epizode (tada nema dugmadi za preskakanje).
 7. Ručno još neprovereno iz v0.2: zvuci i level-up animacija pri stvarnom gledanju, puno gledanje epizode do kraja sa automatskim praćenjem.
+8. Rizici v0.5: ako sajt promeni zaštitu (zaglavlja, maskirani segmenti), popravka ide u `streamServer.js` (do tada dugme „Pusti u spoljnom plejeru”); AniSkip nema podatke za sve serije/epizode (tada nema dugmadi za preskakanje).
 
 ## Mogući sledeći koraci (ideje, ništa nije dogovoreno)
 
