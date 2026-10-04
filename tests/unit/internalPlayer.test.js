@@ -57,6 +57,14 @@ describe('internalPlayer', () => {
     await done
     expect(positions.save).not.toHaveBeenCalled()
   })
+  it('passes the subtitles of a downloaded file to the player', async () => {
+    const { streams, events, player } = setup()
+    streams.registerFile.mockReturnValueOnce({ id: 'f2', fileUrl: 'http://127.0.0.1:9/s/t/f2/file', subtitleUrl: 'http://127.0.0.1:9/s/t/f2/sub' })
+    const done = player.play({ file: 'D:\A\Show Episode 2.mp4', title: 'Show', episode: null, mpvArgs: [] })
+    expect(events[0][1]).toMatchObject({ kind: 'file', src: 'http://127.0.0.1:9/s/t/f2/file', subtitleUrl: 'http://127.0.0.1:9/s/t/f2/sub' })
+    player.closed({ playbackId: 'f2', maxPercent: 10, position: 100, duration: 1400, reason: 'back' })
+    await done
+  })
   it('never overwrites a saved resume point with a position below 10 seconds', async () => {
     const { player, positions } = setup({ resume: { position: 600, duration: 1400 } })
     const done = player.play(info)

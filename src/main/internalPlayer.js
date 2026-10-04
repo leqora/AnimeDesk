@@ -27,7 +27,7 @@ export function createInternalPlayer({ streams, notify, positions, getTotalEpiso
       active = { playbackId: reg.id, resolve, title: info.title, episode: info.episode, maxPercent: 0, position: 0, duration: 0 }
       notify(EVENTS.playerOpen, {
         playbackId: reg.id, title: info.title, episode: info.episode, kind: local ? 'file' : 'hls',
-        src: local ? reg.fileUrl : reg.playlistUrl, subtitleUrl: local ? null : reg.subtitleUrl,
+        src: local ? reg.fileUrl : reg.playlistUrl, subtitleUrl: reg.subtitleUrl ?? null,
         resumeAt: resume?.position ?? null, totalEpisodes: getTotalEpisodes(info.title),
       })
     })

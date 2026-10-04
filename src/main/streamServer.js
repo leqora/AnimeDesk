@@ -1,6 +1,7 @@
 import http from 'node:http'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
+import path from 'node:path'
 import { Readable, pipeline } from 'node:stream'
 
 export const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
@@ -37,10 +38,25 @@ export function createStreamServer({ fetchImpl = fetch, userAgent = DEFAULT_USER
     return `${base(id)}/r/${n}`
   }
 
+  // ani-cli downloads soft subs next to the video as "<same name>.vtt" (mpv auto-loads them; the in-app player gets /sub).
+  function siblingVtt(filePath) {
+    const vtt = path.join(path.dirname(filePath), `${path.parse(filePath).name}.vtt`)
+    try { return fs.statSync(vtt).isFile() ? vtt : null } catch { return null }
+  }
+
   function registerFile(filePath) {
     const id = crypto.randomUUID()
-    playbacks.set(id, { file: filePath, urls: [], index: new Map() })
-    return { id, fileUrl: `${base(id)}/file` }
+    const subFile = siblingVtt(filePath)
+    playbacks.set(id, { file: filePath, subFile, urls: [], index: new Map() })
+    return { id, fileUrl: `${base(id)}/file`, subtitleUrl: subFile ? `${base(id)}/sub` : null }
+  }
+
+  function serveSubFile(req, res, file) {
+    fs.readFile(file, 'utf8', (err, text) => {
+      if (err) return res.writeHead(404, CORS).end()
+      const head = { ...CORS, 'Content-Type': 'text/vtt; charset=utf-8', 'Cache-Control': 'no-store' }
+      return req.method === 'HEAD' ? res.writeHead(200, head).end() : res.writeHead(200, head).end(text)
+    })
   }
 
   function serveFile(req, res, file) {
@@ -117,7 +133,11 @@ export function createStreamServer({ fetchImpl = fetch, userAgent = DEFAULT_USER
     if (req.method !== 'GET' && req.method !== 'HEAD') return res.writeHead(405, CORS).end()
     const pb = playbacks.get(m[2])
     if (!pb) return res.writeHead(404, CORS).end()
-    if (pb.file) return m[3] === 'file' ? serveFile(req, res, pb.file) : res.writeHead(404, CORS).end()
+    if (pb.file) {
+      if (m[3] === 'file') return serveFile(req, res, pb.file)
+      if (m[3] === 'sub' && pb.subFile) return serveSubFile(req, res, pb.subFile)
+      return res.writeHead(404, CORS).end()
+    }
     if (m[3] === 'file') return res.writeHead(404, CORS).end()
     if (m[3] === 'playlist') return proxy(req, res, pb, m[2], pb.playlist, 'playlist')
     if (m[3] === 'sub') return pb.sub ? proxy(req, res, pb, m[2], pb.sub, 'sub') : res.writeHead(404, CORS).end()
