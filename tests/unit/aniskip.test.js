@@ -40,6 +40,8 @@ describe('aniskip', () => {
     expect(await createAniSkip({ cacheDir, fetchImpl: bad }).getSkipTimes({ malId: 5, episode: 1, duration: 1400 })).toEqual({ op: null, ed: null, recap: null })
     expect(fs.readdirSync(cacheDir)).toEqual([])
     expect(await s.getSkipTimes({ malId: null, episode: 1, duration: 1400 })).toEqual({ op: null, ed: null, recap: null })
+    expect(await s.getSkipTimes({ malId: 5, episode: 'abc', duration: 1400 })).toEqual({ op: null, ed: null, recap: null })
+    expect(fail).toHaveBeenCalledTimes(1)
   })
 })
 

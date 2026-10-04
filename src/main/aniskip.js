@@ -7,7 +7,7 @@ const KIND = { op: 'op', 'mixed-op': 'op', ed: 'ed', 'mixed-ed': 'ed', recap: 'r
 
 export function createAniSkip({ cacheDir, fetchImpl = fetch, now = () => Date.now() }) {
   async function getSkipTimes({ malId, episode, duration }) {
-    if (!Number.isInteger(malId)) return { ...EMPTY }
+    if (!Number.isInteger(malId) || !Number.isFinite(Number(episode))) return { ...EMPTY }
     const ep = String(Number(episode))
     const file = path.join(cacheDir, `${malId}-${ep}.json`)
     const cached = readJson(file, null).data

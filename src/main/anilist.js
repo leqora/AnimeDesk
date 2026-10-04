@@ -152,27 +152,36 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
     return { m: null, complete }
   }
 
+  const refreshed = new Set()
+
   async function getForTitle(title, { aniListId = null } = {}) {
     const file = cacheFile(cacheKey(title, aniListId))
     const cached = readJson(file, null).data
     if (cached?.notFound) {
       if (cached.searchVersion === SEARCH_VERSION && now() - cached.at < NOT_FOUND_TTL_MS) return null
     } else if (cached && 'malId' in cached) return cached
+    // Entry saved before malId existed: refresh it once per run, but never lose it if the refresh fails.
+    const stale = cached && !cached.notFound ? cached : null
+    const fallback = () => (stale ? { ...stale, malId: null } : null)
+    if (stale) {
+      if (refreshed.has(file)) return fallback()
+      refreshed.add(file)
+    }
     try {
       let m
       if (aniListId) m = (await gql(BY_ID, { id: aniListId })).Media
       else {
         const found = await findByTitle(title)
         m = found.m
-        if (!m && found.complete) writeJsonAtomic(file, { notFound: true, at: now(), searchVersion: SEARCH_VERSION })
+        if (!m && found.complete && !stale) writeJsonAtomic(file, { notFound: true, at: now(), searchVersion: SEARCH_VERSION })
       }
-      if (!m) return null
+      if (!m) return fallback()
       const info = toInfo(m)
       info.poster = await posterDataUrl(info.coverUrl).catch(() => null)
       writeJsonAtomic(file, info)
       return info
     } catch {
-      return null
+      return fallback()
     }
   }
 
