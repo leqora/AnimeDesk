@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { screen, fireEvent, waitFor } from '@testing-library/react'
+import { screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { renderUi, makeFakeApi } from './helpers.jsx'
 import { SettingsPage } from '../../../src/renderer/pages/SettingsPage.jsx'
 import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
@@ -87,10 +87,44 @@ describe('SettingsPage', () => {
     expect(onSettings).toHaveBeenLastCalledWith({ autoSkip: true })
     fireEvent.click(screen.getByLabelText('Automatski pusti sledeću epizodu'))
     expect(onSettings).toHaveBeenLastCalledWith({ autoNext: false })
-    fireEvent.change(screen.getByLabelText('Veličina titlova'), { target: { value: 'L' } })
-    expect(onSettings).toHaveBeenLastCalledWith({ subtitleSize: 'L' })
     fireEvent.click(screen.getByLabelText('Moderan izgled mpv-a (uosc)'))
     expect(onSettings).toHaveBeenLastCalledWith({ mpvModernUi: false })
+  })
+  it('has a subtitle section with a live preview', () => {
+    vi.useFakeTimers()
+    try {
+      const onSettings = vi.fn()
+      renderUi(<SettingsPage settings={{ ...DEFAULT_SETTINGS }} onSettings={onSettings} updateState={{ status: 'disabled', currentVersion: '0.6.1' }} />)
+      expect(screen.getByRole('heading', { name: 'Titlovi' })).toBeInTheDocument()
+      fireEvent.click(screen.getByLabelText('Titl za dub epizode'))
+      expect(onSettings).toHaveBeenLastCalledWith({ subtitles: { enabled: { dub: true } } })
+      fireEvent.change(screen.getByLabelText('Font'), { target: { value: 'georgia' } })
+      expect(onSettings).toHaveBeenLastCalledWith({ subtitles: { font: 'georgia' } })
+      fireEvent.change(screen.getByLabelText('Boja teksta'), { target: { value: 'yellow' } })
+      expect(onSettings).toHaveBeenLastCalledWith({ subtitles: { color: 'yellow' } })
+      fireEvent.click(screen.getByLabelText('Tamni okvir oko titla'))
+      expect(onSettings).toHaveBeenLastCalledWith({ subtitles: { box: false } })
+      onSettings.mockClear()
+      const preview = document.querySelector('.subs-preview .subs')
+      expect(preview).toHaveTextContent('Ovo je primer titla')
+      fireEvent.change(screen.getByLabelText('Veličina titla'), { target: { value: '80' } })
+      fireEvent.change(screen.getByLabelText('Veličina titla'), { target: { value: '90' } })
+      expect(preview.style.getPropertyValue('--sub-size')).toBe('7.45cqh')
+      expect(screen.getByText('90 %')).toBeInTheDocument()
+      expect(onSettings).not.toHaveBeenCalled()
+      act(() => vi.advanceTimersByTime(250))
+      expect(onSettings).toHaveBeenCalledTimes(1)
+      expect(onSettings).toHaveBeenLastCalledWith({ subtitles: { size: 90 } })
+      fireEvent.change(screen.getByLabelText('Razmak između redova'), { target: { value: '0' } })
+      act(() => vi.advanceTimersByTime(250))
+      expect(onSettings).toHaveBeenLastCalledWith({ subtitles: { lineSpacing: 0 } })
+      fireEvent.click(screen.getByRole('button', { name: 'Vrati podrazumevano' }))
+      expect(onSettings).toHaveBeenLastCalledWith({ subtitles: DEFAULT_SETTINGS.subtitles })
+    } finally { vi.useRealTimers() }
+  })
+  it('disables the box opacity when the box is off', () => {
+    renderUi(<SettingsPage settings={{ ...DEFAULT_SETTINGS, subtitles: { ...DEFAULT_SETTINGS.subtitles, box: false } }} onSettings={() => {}} />)
+    expect(screen.getByLabelText('Zatamnjenost okvira')).toBeDisabled()
   })
   it('shows the update section and checks for updates', async () => {
     const onSettings = vi.fn()

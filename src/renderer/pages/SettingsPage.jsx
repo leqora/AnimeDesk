@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { TOOL_IDS, OPTIONAL_TOOL_IDS } from '../../shared/domain.js'
+import { SubtitleOverlay } from '../components/SubtitleOverlay.jsx'
+import { DEFAULT_SUBTITLES, SUBTITLE_FONT_STACKS, SUBTITLE_COLORS } from '../../shared/subtitles.js'
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
+const FONT_NAMES = { segoe: 'Segoe UI', arial: 'Arial', verdana: 'Verdana', trebuchet: 'Trebuchet MS', georgia: 'Georgia', exo2: 'Exo 2' }
+const SLIDE_SAVE_MS = 250
 
 export function SettingsPage({ settings, onSettings, onTestSound = () => {}, updateState = { status: 'disabled', currentVersion: '' } }) {
   const api = useApi()
@@ -16,6 +20,27 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
 
   useEffect(() => { api.tools.status().then(setTools) }, [api])
   useEffect(() => { setThreshold(settings.watchedThreshold) }, [settings.watchedThreshold])
+
+  // Sliders move the preview at once and save after a short pause (dragging must not write settings.json per pixel).
+  const [subs, setSubs] = useState(settings.subtitles)
+  const slideTimer = useRef(null)
+  const pendingSlide = useRef(null)
+  useEffect(() => { setSubs(settings.subtitles) }, [settings.subtitles])
+  const flushSlide = () => {
+    clearTimeout(slideTimer.current)
+    const p = pendingSlide.current
+    pendingSlide.current = null
+    if (p) onSettings({ subtitles: p })
+  }
+  useEffect(() => () => flushSlide(), [])
+  const slide = (field) => (e) => {
+    const value = Number(e.target.value)
+    setSubs((s) => ({ ...s, [field]: value }))
+    pendingSlide.current = { ...(pendingSlide.current ?? {}), [field]: value }
+    clearTimeout(slideTimer.current)
+    slideTimer.current = setTimeout(flushSlide, SLIDE_SAVE_MS)
+  }
+  const setSub = (patch) => { setSubs((s) => ({ ...s, ...patch, enabled: { ...s.enabled, ...(patch.enabled ?? {}) } })); onSettings({ subtitles: patch }) }
 
   const pickDir = async () => {
     const dir = await api.dialog.pickFolder()
@@ -92,12 +117,6 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
         <input type="checkbox" checked={settings.autoNext} onChange={(e) => onSettings({ autoNext: e.target.checked })} />
         {t('settings.autoNext')}
       </label>
-      <label className="field">
-        <span>{t('settings.subtitleSize')}</span>
-        <select aria-label={t('settings.subtitleSize')} value={settings.subtitleSize} onChange={(e) => onSettings({ subtitleSize: e.target.value })}>
-          {['S', 'M', 'L'].map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </label>
       <label className="check">
         <input type="checkbox" checked={settings.mpvModernUi} onChange={(e) => onSettings({ mpvModernUi: e.target.checked })} />
         {t('settings.mpvModernUi')}
@@ -106,6 +125,53 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
         <input type="checkbox" checked={settings.autoUpdateTools} onChange={(e) => onSettings({ autoUpdateTools: e.target.checked })} />
         {t('settings.autoUpdate')}
       </label>
+      <h3>{t('settings.subsSection')}</h3>
+      <div className="subs-preview" aria-hidden="true">
+        <SubtitleOverlay subtitles={subs} cues={[{ id: 'preview', text: t('settings.subs.preview'), top: false }]} />
+      </div>
+      <label className="check">
+        <input type="checkbox" checked={subs.enabled.sub} onChange={(e) => setSub({ enabled: { sub: e.target.checked } })} />
+        {t('settings.subs.enabledSub')}
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={subs.enabled.dub} onChange={(e) => setSub({ enabled: { dub: e.target.checked } })} />
+        {t('settings.subs.enabledDub')}
+      </label>
+      {[['size', 'settings.subs.size'], ['lineSpacing', 'settings.subs.lineSpacing']].map(([field, key]) => (
+        <label key={field} className="field">
+          <span>{t(key)}</span>
+          <div className="row">
+            <input type="range" min="0" max="100" step="1" aria-label={t(key)} value={subs[field]} onChange={slide(field)} />
+            <span className="hud">{subs[field]} %</span>
+          </div>
+        </label>
+      ))}
+      <label className="field">
+        <span>{t('settings.subs.font')}</span>
+        <select aria-label={t('settings.subs.font')} value={subs.font} onChange={(e) => setSub({ font: e.target.value })}>
+          {Object.keys(SUBTITLE_FONT_STACKS).map((f) => (
+            <option key={f} value={f} style={{ fontFamily: SUBTITLE_FONT_STACKS[f] }}>{f === 'default' ? t('settings.subs.font.default') : FONT_NAMES[f]}</option>
+          ))}
+        </select>
+      </label>
+      <label className="field">
+        <span>{t('settings.subs.color')}</span>
+        <select aria-label={t('settings.subs.color')} value={subs.color} onChange={(e) => setSub({ color: e.target.value })}>
+          {SUBTITLE_COLORS.map((c) => <option key={c} value={c}>{{ white: t('settings.subs.color.white'), yellow: t('settings.subs.color.yellow') }[c]}</option>)}
+        </select>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={subs.box} onChange={(e) => setSub({ box: e.target.checked })} />
+        {t('settings.subs.box')}
+      </label>
+      <label className="field">
+        <span>{t('settings.subs.boxOpacity')}</span>
+        <div className="row">
+          <input type="range" min="0" max="100" step="1" aria-label={t('settings.subs.boxOpacity')} value={subs.boxOpacity} disabled={!subs.box} onChange={slide('boxOpacity')} />
+          <span className="hud">{subs.boxOpacity} %</span>
+        </div>
+      </label>
+      <button type="button" onClick={() => { clearTimeout(slideTimer.current); pendingSlide.current = null; setSubs(DEFAULT_SUBTITLES); onSettings({ subtitles: DEFAULT_SUBTITLES }) }}>{t('settings.subs.reset')}</button>
       <h3>{t('settings.profileSection')}</h3>
       <label className="field">
         <span>{t('settings.profileName')}</span>
