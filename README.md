@@ -9,7 +9,7 @@ Desktop aplikacija (Windows) za gledanje i preuzimanje animea preko [ani-cli](ht
 - Pretraga, izbor epizode (grupe, „idi na epizodu”) i gledanje u **ugrađenom plejeru** ili spoljnom **mpv**-u.
 - Preskakanje uvoda/rezimea (AniSkip, i automatski), sledeća epizoda sa odbrojavanjem, „Nastavi od…”.
 - Plejer: krug učitavanja i „Sporo učitavanje…”, pamćenje jačine zvuka, dvoklik = pun ekran, bedž prave rezolucije i obaveštenje kad ani-cli ne dâ traženi kvalitet (u ugrađenom plejeru), automatski oporavak zaglavljenog strima.
-- Titlovi: veći na punom ekranu i zbijeni u dva reda; podešavanja (veličina, razmak, font, boja, tamni okvir) sa živim pregledom; meni titlova u plejeru; pomak titla prečicama `G`/`H` (Shift = 1 s) koji se pamti po seriji i posebno za sub i dub; na dub epizodama titl je podrazumevano isključen; radi i SRT (i `.srt` pored preuzete epizode).
+- Titlovi: veći na punom ekranu i zbijeni u dva reda; podešavanja (veličina, razmak, font, boja, tamni okvir) sa živim pregledom; meni titlova u plejeru; pomak titla prečicama `G`/`H` (Shift = 1 s) koji se pamti po seriji i posebno za sub i dub; na dub epizodama titl je podrazumevano isključen; radi i SRT (i `.srt` pored preuzete epizode; mora da se zove kao video, `<ime>.srt` ili `<ime>.en.srt`, i da stoji pored njega; Windows-1250 i UTF-16 se čitaju ispravno).
 - Kvalitet i sub/dub po seriji, favoriti i „Nastavi gledanje”, pun ekran (F11).
 - Watchlist: status (Gledam, Završeno, Planiram, Pauzirano, Odustao), ocena 1–10, komentar i beleške po epizodi. Napredak se prati automatski (podesivo).
 - Preuzimanje epizoda u izabrani folder, red preuzimanja sa pauzom.
@@ -45,7 +45,7 @@ ani-cli koristi neoficijalne izvore sadržaja. To je pravno siva zona; korisnik 
 - Search, pick an episode (groups, "go to episode") and watch it in the **built-in player** or external **mpv**.
 - Skip intro/recap (AniSkip, optionally automatic), next episode with a countdown, "Resume from…".
 - Player: loading spinner and "Slow connection…", remembered volume, double-click = fullscreen, real-resolution badge and a notice when ani-cli cannot deliver the requested quality (built-in player only), automatic recovery of a stalled stream.
-- Subtitles: larger on fullscreen and compact in two lines; settings (size, line spacing, font, colour, dark box) with a live preview; a subtitle menu in the player; subtitle delay with `G`/`H` (Shift = 1 s), remembered per series and separately for sub and dub; subtitles are off by default on dub episodes; SRT works too (including a `.srt` next to a downloaded episode).
+- Subtitles: larger on fullscreen and compact in two lines; settings (size, line spacing, font, colour, dark box) with a live preview; a subtitle menu in the player; subtitle delay with `G`/`H` (Shift = 1 s), remembered per series and separately for sub and dub; subtitles are off by default on dub episodes; SRT works too (including a `.srt` next to a downloaded episode; it must be named like the video, `<name>.srt` or `<name>.en.srt`, and sit next to it; Windows-1250 and UTF-16 are read correctly).
 - Per-series quality and sub/dub, favourites and "Continue watching", fullscreen (F11).
 - Watchlist with status, 1–10 rating, comment and per-episode notes; progress is tracked automatically (configurable).
 - Download episodes to a folder of your choice, with a pausable queue.

@@ -15,6 +15,12 @@ function sendSubtitle(req, res, status, text) {
   res.writeHead(status, VTT_HEAD)
   return req.method === 'HEAD' ? res.end() : res.end(vtt)
 }
+// Local subtitle files: UTF-16 by BOM, else UTF-8, else Windows-1250 (Serbian/Central European legacy .srt).
+export function decodeSubtitleBytes(buf) {
+  if (buf[0] === 0xff && buf[1] === 0xfe) return new TextDecoder('utf-16le').decode(buf)
+  if (buf[0] === 0xfe && buf[1] === 0xff) return new TextDecoder('utf-16be').decode(buf)
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf) } catch { return new TextDecoder('windows-1250').decode(buf) }
+}
 const SUB_SUFFIXES = ['.vtt', '.srt', '.en.vtt', '.en.srt']
 
 // Every non-comment line and every URI="…" attribute becomes a local, allow-listed URL (toLocal returning null leaves the entry untouched).
@@ -66,9 +72,9 @@ export function createStreamServer({ fetchImpl = fetch, userAgent = DEFAULT_USER
   }
 
   function serveSubFile(req, res, file) {
-    fs.readFile(file, 'utf8', (err, text) => {
+    fs.readFile(file, (err, buf) => {
       if (err) return res.writeHead(404, CORS).end()
-      return sendSubtitle(req, res, 200, text)
+      return sendSubtitle(req, res, 200, decodeSubtitleBytes(buf))
     })
   }
 

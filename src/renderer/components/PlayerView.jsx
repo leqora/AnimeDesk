@@ -205,7 +205,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     Promise.resolve().then(() => probeSub(open.subtitleUrl)).then((status) => {
       if (cancelled || status !== 415) return
       setSubsUnsupported(true)
-      showFlash(t('player.subsUnsupported'), SUBS_FLASH_MS)
+      if (live.current.subsOn) showFlash(t('player.subsUnsupported'), SUBS_FLASH_MS)
     }, () => {})
     return () => { cancelled = true }
   }, [open.playbackId])
@@ -231,6 +231,8 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     const onKey = (e) => {
       // Only text entry keeps its keys; a focused slider or select must not swallow the player shortcuts.
       if (e.ctrlKey || e.altKey || e.metaKey || e.target?.closest?.(TEXT_FIELD)) return
+      // The subtitle menu's size slider owns its keys (arrows move the slider, they must not seek); other menu controls keep the shortcuts.
+      if (e.target?.closest?.('.player__subs-menu input[type="range"]')) return
       const v = video.current
       if (!v) return
       switch (shortcutKey(e)) {

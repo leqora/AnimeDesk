@@ -3,7 +3,7 @@ import http from 'node:http'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createStreamServer, rewritePlaylist, DEFAULT_USER_AGENT } from '../../src/main/streamServer.js'
+import { createStreamServer, rewritePlaylist, DEFAULT_USER_AGENT, decodeSubtitleBytes } from '../../src/main/streamServer.js'
 
 let upstream, upBase, seen, streams
 const routes = {}
@@ -184,6 +184,29 @@ describe('streamServer', () => {
     const reg = streams.registerFile(video)
     expect(reg.subtitleUrl).not.toBeNull()
     expect(await (await fetch(reg.subtitleUrl)).text()).toBe('WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000\nĆao\n')
+  })
+  it('decodes a Windows-1250 local .srt (Serbian letters)', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-srt-'))
+    const video = path.join(dir, 'W 1.mp4')
+    fs.writeFileSync(video, 'x')
+    fs.writeFileSync(path.join(dir, 'W 1.srt'), Buffer.concat([Buffer.from('1\n00:00:01,000 --> 00:00:02,000\n'), Buffer.from([0x9a, 0xe8, 0xe6, 0x9e, 0xf0]), Buffer.from('\n')]))
+    const reg = streams.registerFile(video)
+    expect(await (await fetch(reg.subtitleUrl)).text()).toBe('WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000\nščćžđ\n')
+  })
+  it('decodes a UTF-16LE local .srt with a BOM', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-srt-'))
+    const video = path.join(dir, 'U 1.mp4')
+    fs.writeFileSync(video, 'x')
+    fs.writeFileSync(path.join(dir, 'U 1.srt'), Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from('1\n00:00:01,000 --> 00:00:02,000\nĆao\n', 'utf16le')]))
+    const res = await fetch(streams.registerFile(video).subtitleUrl)
+    expect(res.status).toBe(200)
+    expect(await res.text()).toBe('WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000\nĆao\n')
+  })
+  it('decodeSubtitleBytes handles UTF-8 (with BOM), UTF-16BE and Windows-1250', () => {
+    expect(decodeSubtitleBytes(Buffer.from('Ćao', 'utf8'))).toBe('Ćao')
+    expect(decodeSubtitleBytes(Buffer.from([0xef, 0xbb, 0xbf, 0x41]))).toBe('A')
+    expect(decodeSubtitleBytes(Buffer.from([0xfe, 0xff, 0x01, 0x06, 0x00, 0x61]))).toBe('Ća')
+    expect(decodeSubtitleBytes(Buffer.from([0x9a, 0xe8]))).toBe('šč')
   })
   it('prefers .vtt, then .srt, then .en.vtt, then .en.srt next to a local file', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-srt-'))

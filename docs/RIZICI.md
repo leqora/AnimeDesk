@@ -53,5 +53,5 @@ Rizici koji se posebno prate tokom razvoja. Svaki ima test koji ga „zakucava�
 | Rizik | Šta bi se desilo | Kako je rešeno |
 |---|---|---|
 | Titl u nepodržanom formatu (ASS/SSA) | ugrađeni plejer ne može da ga prikaže | proxy vraća 415, plejer jednom po epizodi javlja poruku sa predlogom za mpv; JASSUB tek ako se pokaže potreba |
-| SRT u kodnoj strani koja nije UTF-8 | pogrešni znakovi (čita se kao UTF-8) | prihvaćeno; po potrebi dodati detekciju kodne strane |
+| Lokalni SRT u kodnoj strani koja nije UTF-8 | druga slova mogu biti pogrešna | UTF-16 se prepoznaje po BOM-u, inače UTF-8, a ako nije ispravan UTF-8 čita se kao Windows-1250 (srpski latinični); druge kodne strane (npr. Windows-1251 ćirilica) mogu i dalje da prikažu pogrešna slova; titl sa strima se ne menja |
 | Pomak titla je za seriju i režim, ne za pojedinačnu epizodu | epizoda sa drugačijim vremenom titla traži ručno podešavanje | `G`/`H` + „Resetuj” u meniju titla; pomak se ne prenosi u spoljni mpv |

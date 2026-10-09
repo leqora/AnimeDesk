@@ -15,7 +15,7 @@ Poslednje ažuriranje: 2026-10-10 (v0.6.1, korak 4).
   ErrorBoundary + ekran „Pokušaj ponovo” + `main().catch`, red preuzimanja bez duplikata + „Ponovi neuspele”, minifikacija (2,07 → 0,91 MB),
   statistika samo na promenu biblioteke / otvaranje Profila. 508/508 testova, e2e prolazi, provereno u pravoj aplikaciji (Playwright `_electron`).
 - [x] **v0.6 = P0-B koraci 1–3 objavljeni kao v0.6.0** (2026-10-09, spojeno u `main`) (spinner/baferovanje, jačina/mute, dvoklik, bedž rezolucije + upozorenje o kvalitetu, `no-sources` + „Pokušaj ponovo”, detekcija zastoja i automatski oporavak, retry/timeout u `streamServer.js`). 559/559 testova, e2e prolazi, provereno u pravoj aplikaciji (vidi `docs/STATUS.md`).
-- [x] **P0-B korak 4 urađen u v0.6.1** (titlovi: SRT→VTT, pomak `G`/`H` po seriji i režimu, sopstveni overlay, podešavanja sa pregledom, meni titlova; grana `feat/v0.6.1-subtitles`, 616/616 testova, provereno u pravoj aplikaciji; vidi `docs/STATUS.md`).
+- [x] **P0-B korak 4 urađen u v0.6.1** (titlovi: SRT→VTT, pomak `G`/`H` po seriji i režimu, sopstveni overlay, podešavanja sa pregledom, meni titlova; grana `feat/v0.6.1-subtitles`, 621/621 testova, provereno u pravoj aplikaciji; vidi `docs/STATUS.md`).
 - [ ] **SLEDEĆE: P0-B koraci 5–7** (nastavak u mpv-u + prag „odgledano”, lazy `PlayerView` + brzina + razbijanje na hook-ove, prefetch sledeće epizode) — ide kroz superpowers tok kao v0.6, nova grana.
 
 ## Odluke korisnika (važe za dalje)

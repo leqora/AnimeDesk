@@ -602,6 +602,22 @@ describe('PlayerView subtitles', () => {
     fireEvent.keyDown(window, { key: 'h', code: 'KeyH' })
     expect(screen.queryByText(/Titl:/)).toBeNull()
   })
+  it('does not flash the unsupported-format note when subtitles are off (dub)', async () => {
+    const probeSub = vi.fn(async () => 415)
+    view(open({ mode: 'dub' }), { probeSub })
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+    expect(probeSub).toHaveBeenCalledTimes(1)
+    expect(screen.queryByText(/Format titla nije podr/)).toBeNull()
+  })
+  it('keeps the player shortcuts out of the subtitle menu (slider arrows do not seek)', () => {
+    const { video } = view(open({ subOffset: 0 }))
+    video.currentTime = 100
+    document.querySelector('track').track = { mode: 'disabled', cues: [] }
+    act(() => { document.querySelector('track').dispatchEvent(new Event('load')) })
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja titla' }))
+    fireEvent.keyDown(screen.getByLabelText('Veličina titlova'), { key: 'ArrowRight', code: 'ArrowRight' })
+    expect(video.currentTime).toBe(100)
+  })
   it('raises the subtitles while the controls are visible', () => {
     const { video } = view()
     loadTrack([{ startTime: 1, endTime: 3, text: 'Hi' }])
