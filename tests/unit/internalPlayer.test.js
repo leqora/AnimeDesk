@@ -20,7 +20,7 @@ describe('internalPlayer', () => {
     const { streams, positions, events, player } = setup({ resume: { position: 600, duration: 1400 } })
     const done = player.play(info)
     expect(streams.register).toHaveBeenCalledWith({ url: 'https://cdn/x.m3u8', referrer: 'https://ref/', subUrl: 'https://cdn/a.vtt' })
-    expect(events[0]).toEqual([EVENTS.playerOpen, { playbackId: 'p1', title: 'Show', episode: '3', kind: 'hls', src: 'http://127.0.0.1:9/s/t/p1/playlist', subtitleUrl: 'http://127.0.0.1:9/s/t/p1/sub', resumeAt: 600, totalEpisodes: 12 }])
+    expect(events[0]).toEqual([EVENTS.playerOpen, { playbackId: 'p1', title: 'Show', episode: '3', kind: 'hls', src: 'http://127.0.0.1:9/s/t/p1/playlist', subtitleUrl: 'http://127.0.0.1:9/s/t/p1/sub', resumeAt: 600, autoResume: false, qualityFallback: null, totalEpisodes: 12 }])
     expect(player.isActive()).toBe(true)
     player.progress({ playbackId: 'p1', position: 300, duration: 1400, maxPercent: 21 })
     expect(positions.save).toHaveBeenCalledWith('Show', '3', { position: 300, duration: 1400 })
@@ -64,6 +64,32 @@ describe('internalPlayer', () => {
     expect(events[0][1]).toMatchObject({ kind: 'file', src: 'http://127.0.0.1:9/s/t/f2/file', subtitleUrl: 'http://127.0.0.1:9/s/t/f2/sub' })
     player.closed({ playbackId: 'f2', maxPercent: 10, position: 100, duration: 1400, reason: 'back' })
     await done
+  })
+  it('resumes a recovery at the given second without asking, and passes the quality fallback', () => {
+    const { positions, events, player } = setup({ resume: { position: 600, duration: 1400 } })
+    player.play({ ...info, resume: { at: 5, auto: true, title: 'Show', episode: '3' }, qualityFallback: '720' })
+    expect(positions.get).not.toHaveBeenCalled()
+    expect(events[0][1]).toMatchObject({ resumeAt: 5, autoResume: true, qualityFallback: '720' })
+  })
+  it('reports the active playback', () => {
+    const { player } = setup()
+    expect(player.current()).toBeNull()
+    player.play(info)
+    expect(player.current()).toEqual({ playbackId: 'p1', title: 'Show', episode: '3' })
+  })
+  it('retry resolves with the snapshot position even below 10 s and tells the renderer to close', async () => {
+    const { positions, events, player } = setup()
+    const done = player.play(info)
+    player.closed({ playbackId: 'p1', position: 4, duration: 1400, maxPercent: 0, reason: 'retry' })
+    expect(events).toContainEqual([EVENTS.playerClose, { playbackId: 'p1' }])
+    expect(positions.save).not.toHaveBeenCalled()
+    await expect(done).resolves.toMatchObject({ reason: 'retry', position: 4 })
+  })
+  it('does not send playerClose for a normal close (the renderer closed itself)', () => {
+    const { events, player } = setup()
+    player.play(info)
+    player.closed({ playbackId: 'p1', position: 700, duration: 1400, maxPercent: 50, reason: 'back' })
+    expect(events.some(([c]) => c === EVENTS.playerClose)).toBe(false)
   })
   it('never overwrites a saved resume point with a position below 10 seconds', async () => {
     const { player, positions } = setup({ resume: { position: 600, duration: 1400 } })
