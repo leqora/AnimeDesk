@@ -105,13 +105,29 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
     if (next) start(next)
   }
 
+  const isDownloaded = (title, episode) => db.items.some((e) => e.title === title && e.episode === episode && fs.existsSync(e.path))
+
   function enqueue({ title, aniCliTitle, episodes, dir }) {
-    for (const episode of episodes) {
-      queue.push({ id: uuid(), title, aniCliTitle, episode: String(episode), dir, status: 'queued', percent: 0, error: null })
+    for (const ep of episodes) {
+      const episode = String(ep)
+      const existing = queue.find((i) => i.aniCliTitle === aniCliTitle && i.episode === episode && !['done', 'cancelled'].includes(i.status))
+      if (existing) {
+        // asking again for a stopped episode means "try again", never a second copy
+        if (['paused', 'error'].includes(existing.status)) existing.status = 'queued'
+        continue
+      }
+      if (isDownloaded(title, episode)) continue
+      queue.push({ id: uuid(), title, aniCliTitle, episode, dir, status: 'queued', percent: 0, error: null })
     }
     emit()
     pump()
     return queueItems()
+  }
+
+  function retryFailed() {
+    for (const i of queue) if (i.status === 'error') i.status = 'queued'
+    emit()
+    pump()
   }
 
   function pause(id) {
@@ -149,7 +165,7 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
   const withMissing = (e) => ({ ...e, missing: !fs.existsSync(e.path) })
 
   return {
-    enqueue, pause, resume, cancel, queueItems,
+    enqueue, retryFailed, pause, resume, cancel, queueItems,
     listDownloaded: () => db.items.map(withMissing),
     getDownloaded: (id) => { const e = db.items.find((x) => x.id === id); return e ? withMissing(e) : null },
     removeDownloaded(id, { deleteFile = false } = {}) {

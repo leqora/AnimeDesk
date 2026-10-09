@@ -30,6 +30,7 @@ export const INVOKE = {
   downloadsEnqueue: 'downloads:enqueue',
   downloadsPause: 'downloads:pause',
   downloadsResume: 'downloads:resume',
+  downloadsRetryFailed: 'downloads:retry-failed',
   downloadsCancel: 'downloads:cancel',
   downloadsQueue: 'downloads:queue',
   downloadsList: 'downloads:list',

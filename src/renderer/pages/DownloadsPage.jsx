@@ -26,12 +26,15 @@ export function DownloadsPage() {
   }, [api])
 
   const remove = async (id, deleteFile) => { await api.downloads.remove(id, deleteFile); loadList() }
+  // a single failure already has its own "resume" button
+  const failed = queue.filter((q) => q.status === 'error').length
 
   return (
     <section className="page">
       {queue.length > 0 && (
         <div className="page">
           <h2>{t('downloads.queue')}</h2>
+          {failed > 1 && <button type="button" onClick={() => api.downloads.retryFailed()}>{t('downloads.retryFailed', { count: failed })}</button>}
           {queue.map((q) => (
             <div key={q.id} className="queue-item">
               <span className="queue-item__title">{q.title} — {t('downloads.episode', { episode: q.episode })}</span>

@@ -24,7 +24,7 @@ export function makeFakeApi(overrides = {}) {
       onMenu: sub(), onAsk: sub(), onPlaying: sub(), onSessionEnd: sub(),
     },
     downloads: {
-      enqueue: vi.fn(async () => []), pause: vi.fn(), resume: vi.fn(), cancel: vi.fn(), queue: vi.fn(async () => []), list: vi.fn(async () => []),
+      enqueue: vi.fn(async () => []), pause: vi.fn(), resume: vi.fn(), retryFailed: vi.fn(async () => {}), cancel: vi.fn(), queue: vi.fn(async () => []), list: vi.fn(async () => []),
       remove: vi.fn(async () => true), play: vi.fn(async () => 'none'), openFolder: vi.fn(), onChange: sub(),
     },
     stats: { get: vi.fn(async () => ({ ...EMPTY_STATS })), onLevelUp: sub(), onSeriesCompleted: sub() },

@@ -43,6 +43,7 @@ contextBridge.exposeInMainWorld('animedesk', {
     enqueue: invoke(INVOKE.downloadsEnqueue),
     pause: invoke(INVOKE.downloadsPause),
     resume: invoke(INVOKE.downloadsResume),
+    retryFailed: invoke(INVOKE.downloadsRetryFailed),
     cancel: invoke(INVOKE.downloadsCancel),
     queue: invoke(INVOKE.downloadsQueue),
     list: invoke(INVOKE.downloadsList),

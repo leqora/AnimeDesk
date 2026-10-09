@@ -239,5 +239,6 @@
   "error.body": "Ovaj deo aplikacije je naišao na grešku. Ostatak aplikacije radi normalno.",
   "error.close": "Zatvori",
   "boot.failed": "Aplikacija nije mogla da se pokrene",
-  "boot.retry": "Pokušaj ponovo"
+  "boot.retry": "Pokušaj ponovo",
+  "downloads.retryFailed": "Ponovi neuspele ({count})"
 }
