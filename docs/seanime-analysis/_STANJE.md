@@ -14,7 +14,7 @@ Poslednje ažuriranje: 2026-10-09 (kraj sesije v0.6).
   Ikone plejera, prečice (klizač, `e.code`, Ctrl/Alt), „Završeno” tek kad su sve epizode odgledane, AniList TTL za serije koje se emituju,
   ErrorBoundary + ekran „Pokušaj ponovo” + `main().catch`, red preuzimanja bez duplikata + „Ponovi neuspele”, minifikacija (2,07 → 0,91 MB),
   statistika samo na promenu biblioteke / otvaranje Profila. 508/508 testova, e2e prolazi, provereno u pravoj aplikaciji (Playwright `_electron`).
-- [x] **v0.6 = P0-B koraci 1–3 urađeni** na grani `feat/v0.6-player` (spinner/baferovanje, jačina/mute, dvoklik, bedž rezolucije + upozorenje o kvalitetu, `no-sources` + „Pokušaj ponovo”, detekcija zastoja i automatski oporavak, retry/timeout u `streamServer.js`). 555/555 testova, e2e prolazi, provereno u pravoj aplikaciji (vidi `docs/STATUS.md`). **Čeka potvrdu korisnika za merge/objavu 0.6.0.**
+- [x] **v0.6 = P0-B koraci 1–3 objavljeni kao v0.6.0** (2026-10-09, spojeno u `main`) (spinner/baferovanje, jačina/mute, dvoklik, bedž rezolucije + upozorenje o kvalitetu, `no-sources` + „Pokušaj ponovo”, detekcija zastoja i automatski oporavak, retry/timeout u `streamServer.js`). 559/559 testova, e2e prolazi, provereno u pravoj aplikaciji (vidi `docs/STATUS.md`).
 - [ ] **SLEDEĆE: P0-B koraci 4–7** (titlovi SRT/offset, nastavak u mpv-u + prag „odgledano”, lazy `PlayerView` + brzina + razbijanje na hook-ove, prefetch sledeće epizode) — ide kroz superpowers tok kao v0.6, nova grana.
 
 ## Odluke korisnika (važe za dalje)
