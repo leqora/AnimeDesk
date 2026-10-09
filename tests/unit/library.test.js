@@ -61,12 +61,20 @@ describe('library', () => {
     expect(e).toMatchObject({ title: 'Dandadan', aniCliTitle: 'Dandadan', status: 'watching', watchedEpisodes: [1] })
     expect(e.lastWatchedAt).not.toBeNull()
   })
-  it('recordWatched moves paused to watching and last episode to completed', () => {
+  it('recordWatched moves paused to watching and completes only when every episode is watched', () => {
     const e = lib.add({ title: 'Show', aniCliTitle: 'Show', totalEpisodes: 3 })
     lib.update(e.id, { status: 'paused' })
     expect(lib.recordWatched({ aniCliTitle: 'show', episode: 2 }).status).toBe('watching')
-    expect(lib.recordWatched({ aniCliTitle: 'Show', episode: 3 }).status).toBe('completed')
+    // the last episode alone does not finish the series while episode 1 is unwatched
+    expect(lib.recordWatched({ aniCliTitle: 'Show', episode: 3 }).status).toBe('watching')
     expect(lib.recordWatched({ aniCliTitle: 'Show', episode: 1 }).status).toBe('completed')
+    expect(lib.recordWatched({ aniCliTitle: 'Show', episode: 2 }).status).toBe('completed')
+  })
+  it('recordWatched does not count specials like 1.5 as regular episodes', () => {
+    lib.add({ title: 'S', aniCliTitle: 'S', totalEpisodes: 2 })
+    lib.recordWatched({ aniCliTitle: 'S', episode: 1 })
+    expect(lib.recordWatched({ aniCliTitle: 'S', episode: '1.5' }).status).toBe('watching')
+    expect(lib.recordWatched({ aniCliTitle: 'S', episode: 2 }).status).toBe('completed')
   })
   it('recordWatched fills totalEpisodes only when unknown', () => {
     lib.recordWatched({ aniCliTitle: 'A', episode: 1, totalEpisodes: 12 })

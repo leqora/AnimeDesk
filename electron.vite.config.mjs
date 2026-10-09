@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   main: {},
   preload: {},
-  renderer: { build: { assetsInlineLimit: 0 }, plugins: [react()] },
+  renderer: { build: { assetsInlineLimit: 0, minify: 'esbuild' }, plugins: [react()] },
 })

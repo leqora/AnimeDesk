@@ -63,6 +63,19 @@ describe('DownloadsPage', () => {
     renderUi(<DownloadsPage />, { api })
     await waitFor(() => expect(screen.getByText('Anime više nije pronađen u pretrazi.')).toBeInTheDocument())
   })
+  it('retries all failed downloads at once when more than one failed', async () => {
+    const failed = (id, episode) => ({ id, title: 'Show', episode, status: 'error', percent: 0, error: 'unknown' })
+    const api = makeFakeApi({ downloads: { queue: vi.fn(async () => [failed('q1', '1'), failed('q2', '2')]), retryFailed: vi.fn(async () => {}) } })
+    renderUi(<DownloadsPage />, { api })
+    fireEvent.click(await screen.findByRole('button', { name: 'Ponovi neuspele (2)' }))
+    expect(api.downloads.retryFailed).toHaveBeenCalled()
+  })
+  it('does not show the retry-all button for a single failure', async () => {
+    const api = makeFakeApi({ downloads: { queue: vi.fn(async () => [{ id: 'q1', title: 'Show', episode: '1', status: 'error', percent: 0, error: 'unknown' }]) } })
+    renderUi(<DownloadsPage />, { api })
+    await screen.findByRole('button', { name: 'Nastavi' })
+    expect(screen.queryByRole('button', { name: /Ponovi neuspele/ })).not.toBeInTheDocument()
+  })
   it('shows an empty message', async () => {
     renderUi(<DownloadsPage />)
     await waitFor(() => expect(screen.getByText('Nema preuzetih epizoda.')).toBeInTheDocument())

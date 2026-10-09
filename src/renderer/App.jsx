@@ -15,12 +15,29 @@ import { Toast } from './components/Toast.jsx'
 import { UpdateBanner } from './components/UpdateBanner.jsx'
 import { WhatsNewDialog } from './components/WhatsNewDialog.jsx'
 import { PlayerView } from './components/PlayerView.jsx'
+import { ErrorBoundary } from './components/ErrorBoundary.jsx'
 import { nextEpisodeNumber } from '../shared/player.js'
 import { createSound } from './sound.js'
 
 function CorruptBanner() {
   const t = useT()
   return <div className="notice notice--warn" role="status">{t('library.corrupt')}</div>
+}
+
+function BootText({ k }) {
+  const t = useT()
+  return t(k)
+}
+
+// Settings (and so the language) are unknown here, so the message is shown in both languages.
+function BootError({ onRetry }) {
+  const both = (k) => <><I18nProvider lang="sr"><BootText k={k} /></I18nProvider> / <I18nProvider lang="en"><BootText k={k} /></I18nProvider></>
+  return (
+    <div className="boot-error glass" role="alert">
+      <p>{both('boot.failed')}</p>
+      <button type="button" className="primary" onClick={onRetry}>{both('boot.retry')}</button>
+    </div>
+  )
 }
 
 const SILENT = { soundKey: false, soundUi: false, soundVolume: 0 }
@@ -58,9 +75,15 @@ export default function App({ api, sound: injectedSound }) {
   const [whatsNew, setWhatsNew] = useState(null)
   const [fullscreen, setFullscreen] = useState(false)
   const [player, setPlayer] = useState(null)
+  const [bootFailed, setBootFailed] = useState(false)
+
+  const loadSettings = () => api.settings.get().then(
+    (s) => { setBootFailed(false); setSettings(s) },
+    (err) => { console.error('settings.get failed', err); setBootFailed(true) },
+  )
 
   useEffect(() => {
-    api.settings.get().then(setSettings)
+    loadSettings()
     api.health.get().then(setHealth)
     api.library.wasCorrupt().then(setCorrupt)
     const offs = [api.health.onChange(setHealth), api.watch.onAsk((a) => setAsks((q) => [...q, a]))]
@@ -73,11 +96,13 @@ export default function App({ api, sound: injectedSound }) {
     return api.update.onState(setUpdateState)
   }, [api])
 
+  // Library changes are pushed; the profile also depends on AniList info and the date, so refresh on opening it.
+  const onProfile = page === 'profile'
   useEffect(() => {
     const refresh = () => api.stats.get().then(setStats)
     refresh()
     return api.onLibraryChanged(refresh)
-  }, [api, page])
+  }, [api, onProfile])
 
   useEffect(() => {
     const refresh = () => api.stats.get().then(setStats)
@@ -124,7 +149,7 @@ export default function App({ api, sound: injectedSound }) {
 
   useEffect(() => { if (health.reason === 'missing-tools') setWizardOpen(true) }, [health.reason])
 
-  if (!settings) return null
+  if (!settings) return bootFailed ? <BootError onRetry={loadSettings} /> : null
   settingsRef.current = settings
   const ready = health.light === 'green'
   const updateSettings = async (patch) => setSettings(await api.settings.update(patch))
@@ -152,28 +177,32 @@ export default function App({ api, sound: injectedSound }) {
           <main className="content">
             <UpdateBanner state={updateState} onWhatsNew={openWhatsNew} />
             <div key={page} className="page-enter">
-              {corrupt && <CorruptBanner />}
-              {page === 'home' && (
-                <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} />
-              )}
-              {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} initialOpenId={openAnimeId} />}
-              {page === 'downloads' && <DownloadsPage />}
-              {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} />}
-              {page === 'settings' && <SettingsPage settings={settings} onSettings={updateSettings} onTestSound={() => sound.play('levelUp')} updateState={updateState} />}
+              <ErrorBoundary>
+                {corrupt && <CorruptBanner />}
+                {page === 'home' && (
+                  <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} />
+                )}
+                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} initialOpenId={openAnimeId} />}
+                {page === 'downloads' && <DownloadsPage />}
+                {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} />}
+                {page === 'settings' && <SettingsPage settings={settings} onSettings={updateSettings} onTestSound={() => sound.play('levelUp')} updateState={updateState} />}
+              </ErrorBoundary>
             </div>
           </main>
         </div>
         {player && (
-          <PlayerView
-            key={player.playbackId} // PlayerView's per-playback refs/state rely on a remount per playback
-            open={player} settings={settings} fullscreen={fullscreen} onSettings={updateSettings}
-            onClose={(reason) => {
-              setPlayer(null)
-              if ((reason === 'next' || reason === 'prev') && player.episode != null) {
-                continueWatching({ query: player.title, anime: player.title, episode: String(nextEpisodeNumber(player.episode, reason === 'next' ? 1 : -1)) })
-              }
-            }}
-          />
+          <ErrorBoundary key={player.playbackId} className="error-fallback--overlay" actionLabelKey="error.close" onAction={() => setPlayer(null)}>
+            <PlayerView
+              key={player.playbackId} // PlayerView's per-playback refs/state rely on a remount per playback
+              open={player} settings={settings} fullscreen={fullscreen} onSettings={updateSettings}
+              onClose={(reason) => {
+                setPlayer(null)
+                if ((reason === 'next' || reason === 'prev') && player.episode != null) {
+                  continueWatching({ query: player.title, anime: player.title, episode: String(nextEpisodeNumber(player.episode, reason === 'next' ? 1 : -1)) })
+                }
+              }}
+            />
+          </ErrorBoundary>
         )}
         {wizardOpen && <SetupWizard health={health} onClose={() => setWizardOpen(false)} />}
         {asks.length > 0 && <AskDialog ask={asks[0]} onDone={() => setAsks((q) => q.slice(1))} />}

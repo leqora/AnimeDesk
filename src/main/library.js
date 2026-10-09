@@ -10,6 +10,14 @@ function uniqSorted(eps) {
   return [...new Set(eps.map(Number).filter(Number.isFinite))].sort((a, b) => a - b)
 }
 
+// Every regular episode 1..total is watched; specials such as 12.5 are not required.
+function watchedAll(e) {
+  if (e.totalEpisodes == null) return false
+  const watched = new Set(e.watchedEpisodes.filter(Number.isInteger))
+  for (let n = 1; n <= e.totalEpisodes; n++) if (!watched.has(n)) return false
+  return true
+}
+
 function validatePatch(patch) {
   const out = {}
   for (const k of EDITABLE) if (k in patch) out[k] = patch[k]
@@ -94,7 +102,7 @@ export function createLibrary(file, { now = () => new Date().toISOString(), uuid
     if (e.totalEpisodes == null && Number.isInteger(totalEpisodes) && totalEpisodes > 0) e.totalEpisodes = totalEpisodes
     e.watchedEpisodes = uniqSorted([...e.watchedEpisodes, ep])
     if (e.status !== 'completed') e.status = 'watching'
-    if (e.totalEpisodes != null && ep >= e.totalEpisodes) e.status = 'completed'
+    if (watchedAll(e)) e.status = 'completed'
     e.lastWatchedAt = e.updatedAt = now()
     save()
     return copy(e)

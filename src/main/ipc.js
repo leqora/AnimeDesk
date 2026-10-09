@@ -72,6 +72,7 @@ export function createHandlers(s) {
     [INVOKE.downloadsEnqueue]: (params) => s.downloads.enqueue(params),
     [INVOKE.downloadsPause]: (id) => s.downloads.pause(id),
     [INVOKE.downloadsResume]: (id) => s.downloads.resume(id),
+    [INVOKE.downloadsRetryFailed]: () => s.downloads.retryFailed(),
     [INVOKE.downloadsCancel]: (id) => s.downloads.cancel(id),
     [INVOKE.downloadsQueue]: () => s.downloads.queueItems(),
     [INVOKE.downloadsList]: () => s.downloads.listDownloaded(),

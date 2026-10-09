@@ -31,4 +31,12 @@ Rizici koji se posebno prate tokom razvoja. Svaki ima test koji ga „zakucava�
 | Nepotpisana aplikacija | SmartScreen upozorenje | do sada se nije pojavio (lokalna proba i 0.3.0 → 0.3.1); prati se |
 | AniList ograničenje (~30 zahteva/min, 429) | slike ostanu prazne u velikim pretragama | red zahteva jedan po jedan, čekanje po `Retry-After` / `X-RateLimit-Reset` (0.3.2) |
 | Pogrešna slika iz preširoke pretrage | korisnik vidi tuđi anime | nikad se ne traži po jednoj reči (`searchCandidates`) |
-| Keš „nije nađeno” nadživi bolju pretragu | posle ažuriranja slika i dalje fali do 7 dana | **otvoreno** — vidi `docs/STATUS.md`, poznati problem #1 |
+| Keš „nije nađeno” nadživi bolju pretragu | posle ažuriranja slika i dalje fali do 7 dana | rešeno u 0.3.4: zapis nosi `searchVersion`; pravilo: povećaj `SEARCH_VERSION` pri svakoj izmeni pretrage (`docs/STATUS.md`, problem #1) |
+
+## Ugrađeni plejer (v0.5)
+
+| Rizik | Šta bi se desilo | Kako je rešeno |
+|---|---|---|
+| Sajt promeni zaštitu (zaglavlja, maskirani segmenti) | ugrađeni plejer ne može da pusti epizodu | popravka u `streamServer.js`; do tada ekran sa greškom + dugme „Pusti u spoljnom plejeru” (mpv) |
+| Lokalni proxy dostupan drugim programima | tuđi proces koristi stream server | sluša samo na `127.0.0.1`, svaki zahtev traži token, dozvoljeni samo `http(s)` izvori |
+| AniSkip nema podatke za seriju/epizodu | nema dugmadi za preskakanje | normalno ponašanje; dugmad se prikazuju samo kad podaci postoje |

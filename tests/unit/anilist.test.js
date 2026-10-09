@@ -258,3 +258,56 @@ describe('anilist rate limiting', () => {
     }
   })
 })
+
+describe('anilist cache freshness', () => {
+  const DAY = 24 * 3600 * 1000
+  let t
+  const clock = () => t
+  const make = (list) => {
+    const f = mkFetch(list)
+    return { f, al: createAniList({ cacheDir, fetchImpl: f, now: clock }) }
+  }
+  const apiCalls = (f) => f.mock.calls.filter(([url]) => !url.startsWith('https://img/')).length
+  const imgCalls = (f) => f.mock.calls.filter(([url]) => url.startsWith('https://img/')).length
+  beforeEach(() => { t = 1_000_000_000_000 })
+
+  it('stores the airing status and when it was fetched', async () => {
+    const { al } = make([media(1, 'Frieren', 'Frieren', { status: 'RELEASING' })])
+    expect(await al.getForTitle('Frieren')).toMatchObject({ status: 'RELEASING', fetchedAt: t })
+  })
+  it('refreshes an airing series after a day, keeping the poster when the cover did not change', async () => {
+    await make([media(1, 'Frieren', 'Frieren', { status: 'RELEASING', episodes: null })]).al.getForTitle('Frieren')
+    t += DAY / 2
+    const half = make([media(1, 'Frieren', 'Frieren', { status: 'RELEASING', episodes: 28 })])
+    expect((await half.al.getForTitle('Frieren')).episodes).toBeNull()
+    expect(apiCalls(half.f)).toBe(0)
+    t += DAY
+    const later = make([media(1, 'Frieren', 'Frieren', { status: 'FINISHED', episodes: 28 })])
+    expect(await later.al.getForTitle('Frieren')).toMatchObject({ episodes: 28, status: 'FINISHED', fetchedAt: t })
+    expect(imgCalls(later.f)).toBe(0)
+  })
+  it('never refreshes a finished series', async () => {
+    await make([media(1, 'Frieren', 'Frieren', { status: 'FINISHED' })]).al.getForTitle('Frieren')
+    t += 365 * DAY
+    const { f, al } = make([media(1, 'Frieren', 'Frieren', { status: 'FINISHED' })])
+    await al.getForTitle('Frieren')
+    expect(apiCalls(f)).toBe(0)
+  })
+  it('keeps the cached entry unchanged when the refresh fails', async () => {
+    const first = await make([media(1, 'Frieren', 'Frieren', { status: 'RELEASING' })]).al.getForTitle('Frieren')
+    t += 2 * DAY
+    const offline = createAniList({ cacheDir, fetchImpl: vi.fn(async () => { throw new Error('offline') }), now: clock })
+    expect(await offline.getForTitle('Frieren')).toEqual(first)
+  })
+  it('refreshes entries cached before the status was stored', async () => {
+    await make([media(1, 'Frieren', 'Frieren')]).al.getForTitle('Frieren')
+    const [file] = fs.readdirSync(cacheDir).map((n) => path.join(cacheDir, n))
+    const old = JSON.parse(fs.readFileSync(file, 'utf8'))
+    delete old.fetchedAt
+    delete old.status
+    fs.writeFileSync(file, JSON.stringify(old))
+    const { f, al } = make([media(1, 'Frieren', 'Frieren', { status: 'FINISHED' })])
+    expect((await al.getForTitle('Frieren')).status).toBe('FINISHED')
+    expect(apiCalls(f)).toBe(1)
+  })
+})

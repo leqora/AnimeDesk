@@ -6,7 +6,9 @@ Desktop aplikacija (Windows) za gledanje i preuzimanje animea preko [ani-cli](ht
 ## Srpski
 
 ### Šta radi
-- Pretraga, izbor epizode i gledanje u **mpv** plejeru.
+- Pretraga, izbor epizode (grupe, „idi na epizodu”) i gledanje u **ugrađenom plejeru** ili spoljnom **mpv**-u.
+- Preskakanje uvoda/rezimea (AniSkip, i automatski), sledeća epizoda sa odbrojavanjem, „Nastavi od…”.
+- Kvalitet i sub/dub po seriji, favoriti i „Nastavi gledanje”, pun ekran (F11).
 - Watchlist: status (Gledam, Završeno, Planiram, Pauzirano, Odustao), ocena 1–10, komentar i beleške po epizodi. Napredak se prati automatski (podesivo).
 - Preuzimanje epizoda u izabrani folder, red preuzimanja sa pauzom.
 - Semafor pokazuje da li sve radi; ako izvor prestane da radi, aplikacija sama preuzme novu verziju ani-cli.
@@ -38,7 +40,9 @@ ani-cli koristi neoficijalne izvore sadržaja. To je pravno siva zona; korisnik 
 ## English
 
 ### Features
-- Search, pick an episode and watch it in **mpv**.
+- Search, pick an episode (groups, "go to episode") and watch it in the **built-in player** or external **mpv**.
+- Skip intro/recap (AniSkip, optionally automatic), next episode with a countdown, "Resume from…".
+- Per-series quality and sub/dub, favourites and "Continue watching", fullscreen (F11).
 - Watchlist with status, 1–10 rating, comment and per-episode notes; progress is tracked automatically (configurable).
 - Download episodes to a folder of your choice, with a pausable queue.
 - A status light shows whether everything works; if the source breaks, the app fetches the newest ani-cli by itself.

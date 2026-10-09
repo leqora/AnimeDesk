@@ -9,6 +9,16 @@ import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
 vi.mock('hls.js', async () => ({ default: (await import('./fakeHls.js')).FakeHls }))
 
 describe('App', () => {
+  it('shows a bilingual error with a retry button instead of a blank window when settings fail to load', async () => {
+    const api = makeFakeApi()
+    api.settings.get.mockRejectedValueOnce(new Error('disk'))
+    render(<App api={api} />)
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Aplikacija nije mogla da se pokrene')
+    expect(alert).toHaveTextContent('The app could not start')
+    fireEvent.click(screen.getByRole('button', { name: /Pokušaj ponovo/ }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Podešavanja' })).toBeInTheDocument())
+  })
   it('opens the wizard automatically when tools are missing', async () => {
     const api = makeFakeApi({ health: { get: vi.fn(async () => ({ light: 'red', reason: 'missing-tools', missing: ['mpv'] })) } })
     render(<App api={api} />)
@@ -61,6 +71,20 @@ describe('App', () => {
     fireEvent.click(card)
     expect(await screen.findByRole('heading', { name: 'nikola' })).toBeInTheDocument()
     expect(api.stats.get.mock.calls.length).toBeGreaterThanOrEqual(2)
+  })
+  it('does not recompute stats on every page change, only when opening the profile', async () => {
+    const api = makeFakeApi()
+    render(<App api={api} />)
+    await waitFor(() => screen.getByRole('button', { name: 'Podešavanja' }))
+    await waitFor(() => expect(api.stats.get).toHaveBeenCalled())
+    const before = api.stats.get.mock.calls.length
+    for (const name of ['Watchlist', 'Preuzeto', 'Podešavanja', 'Početna']) {
+      fireEvent.click(screen.getByRole('button', { name }))
+    }
+    await act(async () => {})
+    expect(api.stats.get).toHaveBeenCalledTimes(before)
+    fireEvent.click(screen.getByRole('button', { name: 'Profil' }))
+    await waitFor(() => expect(api.stats.get).toHaveBeenCalledTimes(before + 1))
   })
   it('Esc leaves fullscreen, but not while a dialog is open', async () => {
     const api = makeFakeApi()

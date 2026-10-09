@@ -239,3 +239,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .player__skip, .player__next { position: absolute; right: 24px; bottom: 120px; }
 .player__card { position: absolute; right: 24px; bottom: 120px; padding: 14px 18px; border-radius: var(--radius); background: var(--glass-strong); border: 1px solid var(--glass-border); backdrop-filter: blur(var(--blur)); display: flex; flex-direction: column; gap: 10px; }
 .player__flash { position: absolute; left: 24px; bottom: 120px; padding: 6px 12px; border-radius: var(--radius-sm); background: var(--glass-strong); }
+.error-fallback { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; max-width: 560px; margin: 24px auto; padding: 24px; border-radius: var(--radius); }
+.error-fallback__detail { font-family: var(--font-hud); font-size: 12px; color: var(--text-muted); overflow-wrap: anywhere; }
+.error-fallback--overlay { position: fixed; inset: 0; z-index: 15; max-width: none; margin: 0; justify-content: center; align-items: center; text-align: center; background: var(--bg); }
+.boot-error { display: flex; flex-direction: column; gap: 14px; align-items: center; max-width: 520px; margin: 20vh auto 0; padding: 28px; border-radius: var(--radius); text-align: center; }

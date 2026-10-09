@@ -26,6 +26,12 @@ function services() {
 }
 
 describe('ipc', () => {
+  it('retries all failed downloads', () => {
+    const s = services()
+    s.downloads.retryFailed = vi.fn()
+    createHandlers(s)[INVOKE.downloadsRetryFailed]()
+    expect(s.downloads.retryFailed).toHaveBeenCalled()
+  })
   it('pins through the library and reports the limit without throwing', () => {
     const s = services()
     const h = createHandlers(s)
