@@ -3,7 +3,7 @@ import crypto from 'node:crypto'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 
 const ENDPOINT = 'https://graphql.anilist.co'
-const FIELDS = 'id idMal title { romaji english native } coverImage { large } genres seasonYear episodes duration description(asHtml: false)'
+const FIELDS = 'id idMal status title { romaji english native } coverImage { large } genres seasonYear episodes duration description(asHtml: false)'
 const SEARCH = `query ($search: String) { Page(perPage: 10) { media(search: $search, type: ANIME) { ${FIELDS} } } }`
 const BY_ID = `query ($id: Int) { Media(id: $id, type: ANIME) { ${FIELDS} } }`
 
@@ -58,9 +58,16 @@ function toInfo(m) {
     duration: m.duration ?? null,
     description: cleanDescription(m.description),
     coverUrl: m.coverImage?.large ?? null,
+    status: m.status ?? null,
     poster: null,
   }
 }
+
+// Airing shows gain episodes (and a final count), so their cache entry expires; finished ones never change.
+const AIRING_TTL_MS = 24 * 3600 * 1000
+const AIRING = new Set(['RELEASING', 'NOT_YET_RELEASED'])
+const isFresh = (info, nowMs) =>
+  'malId' in info && info.fetchedAt != null && (!AIRING.has(info.status) || nowMs - info.fetchedAt < AIRING_TTL_MS)
 
 const MAX_ATTEMPTS = 3
 const MAX_WAIT_MS = 65_000
@@ -159,10 +166,10 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
     const cached = readJson(file, null).data
     if (cached?.notFound) {
       if (cached.searchVersion === SEARCH_VERSION && now() - cached.at < NOT_FOUND_TTL_MS) return null
-    } else if (cached && 'malId' in cached) return cached
-    // Entry saved before malId existed: refresh it once per run, but never lose it if the refresh fails.
+    } else if (cached && isFresh(cached, now())) return cached
+    // Expired, or saved before malId/status existed: refresh it once per run, but never lose it if the refresh fails.
     const stale = cached && !cached.notFound ? cached : null
-    const fallback = () => (stale ? { ...stale, malId: null } : null)
+    const fallback = () => (stale ? { malId: null, ...stale } : null)
     if (stale) {
       if (refreshed.has(file)) return fallback()
       refreshed.add(file)
@@ -176,8 +183,10 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
         if (!m && found.complete && !stale) writeJsonAtomic(file, { notFound: true, at: now(), searchVersion: SEARCH_VERSION })
       }
       if (!m) return fallback()
-      const info = toInfo(m)
-      info.poster = await posterDataUrl(info.coverUrl).catch(() => null)
+      const info = { ...toInfo(m), fetchedAt: now() }
+      info.poster = stale?.poster && stale.coverUrl === info.coverUrl
+        ? stale.poster
+        : await posterDataUrl(info.coverUrl).catch(() => null)
       writeJsonAtomic(file, info)
       return info
     } catch {
