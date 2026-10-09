@@ -34,4 +34,4 @@ U repou su od ranije necommitovane izmene README.md, docs/RIZICI.md, docs/STATUS
 - **Za odluku korisnika:** `src/main/library.js:97` — status „completed” čim je ep >= totalEpisodes,
   čak i ako ranije epizode nisu odgledane (možda namerno; pitati).
 - Faza 3 nastavljena posle limita 2026-10-09 03:43 (agenti pišu fajl postepeno).
-- 2026-10-09: faze 0–4 gotove; čeka se izbor stavki od korisnika.
+- 2026-10-09: faze 0–4 gotove. P0-A objavljen kao v0.5.1. Sledeće: P0-B (plejer) → v0.6.
