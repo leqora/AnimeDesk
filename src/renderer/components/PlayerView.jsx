@@ -58,7 +58,8 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const subs = useSubtitleCues(trackEl, video, offset, open.playbackId)
   const subsAvailable = Boolean(open.subtitleUrl) && subs.status !== 'error' && !subsUnsupported
   const subsHint = !open.subtitleUrl ? t('player.noSubs') : subsUnsupported ? t('player.subsUnsupported') : subs.status === 'error' ? t('player.subsFailed') : null
-  Object.assign(live.current, { subsOn, offset, subsAvailable, mode })
+  const [subsMenu, setSubsMenu] = useState(false)
+  Object.assign(live.current, { subsOn, offset, subsAvailable, mode, subsMenu, t })
   const [idle, setIdle] = useState(false)
   const [failed, setFailed] = useState(null) // null | 'retryable' | 'final'
   const failing = useRef(false)
@@ -143,7 +144,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     const next = clampOffset(live.current.offset + delta)
     live.current.offset = next
     setOffset(next)
-    showFlash(t('player.subOffset', { value: formatOffset(next, live.current.settings.language) }))
+    showFlash(live.current.t('player.subOffset', { value: formatOffset(next, live.current.settings.language) }))
     pendingOffset.current = next
     clearTimeout(offsetTimer.current)
     offsetTimer.current = setTimeout(flushOffset, OFFSET_SAVE_MS)
@@ -212,8 +213,9 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const poke = () => {
     setIdle(false)
     clearTimeout(idleTimer.current)
-    idleTimer.current = setTimeout(() => { if (video.current && !video.current.paused) setIdle(true) }, HIDE_MS)
+    idleTimer.current = setTimeout(() => { if (video.current && !video.current.paused && !live.current.subsMenu) setIdle(true) }, HIDE_MS)
   }
+  useEffect(() => { if (!subsMenu) poke() }, [subsMenu])
   useEffect(() => { poke(); return () => { clearTimeout(idleTimer.current); clearTimeout(flashTimer.current) } }, [])
 
   // autoplay policy / aborted loads reject play(); that is never fatal
@@ -341,11 +343,14 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       <PlayerControls
         segments={['op', 'ed', 'recap'].filter((k) => skips?.[k]).map((k) => ({ kind: k, ...skips[k] }))}
         time={time} duration={duration} quality={quality} playing={playing} muted={muted} volume={volume} subsOn={subsOn}
-        subtitleSize={settings.subtitleSize} fullscreen={fullscreen} canPrev={Number(open.episode) > 1} canNext={!lastEpisode}
+        subsAvailable={subsAvailable} subsHint={subsHint} subOffsetLabel={formatOffset(offset, settings.language)} subSize={settings.subtitles.size}
+        subsMenuOpen={subsMenu} onSubsMenu={setSubsMenu} onSubOffset={shiftOffset} onSubOffsetReset={resetOffset}
+        onSubSize={(n) => onSettings({ subtitles: { size: n } })}
+        fullscreen={fullscreen} canPrev={Number(open.episode) > 1} canNext={!lastEpisode}
         onTogglePlay={togglePlay} onSeek={(s) => { video.current.currentTime = s }} onStep={step}
         onPrev={() => close('prev')} onNext={() => close('next')}
         onToggleMute={() => { video.current.muted = !video.current.muted }} onVolume={(x) => { video.current.volume = x; video.current.muted = false }}
-        onToggleSubs={toggleSubs} onSubtitleSize={(s) => onSettings({ subtitleSize: s })} onToggleFullscreen={toggleFullscreen}
+        onToggleSubs={toggleSubs} onToggleFullscreen={toggleFullscreen}
       />
     </div>
   )
