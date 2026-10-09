@@ -1,37 +1,48 @@
-# Seanime analiza — stanje rada (predaja smene)
+# Seanime analiza → unapređenje AnimeDesk-a — stanje rada (predaja smene)
 
-Spec: `C:\Users\Nikola\Desktop\Claude\Anime\Aplikacija za gledanje Anime-a\Seanime\zadatak.txt`
-Seanime klon: `C:\Users\Nikola\Desktop\Projekti\_ref\seanime` (commit 2da73d9, 2026-09-20; ne commitovati).
-Pravilo: NEMA izmena koda dok korisnik ne odobri plan iz `04-plan.md`.
+Poslednje ažuriranje: 2026-10-09 06:50.
 
-## Gotovo
-- [x] Faza 0 — `00-nas-projekat.md`
-- [x] Faza 1 — `01-seanime-arhitektura.md`
-- [x] Faza 2 — `02-seanime-features.md`
+- Spec korisnika: `C:\Users\Nikola\Desktop\Claude\Anime\Aplikacija za gledanje Anime-a\Seanime\zadatak.txt`
+- Seanime klon (referenca, GPL-3.0 — samo inspiracija, ne kopirati kod): `C:\Users\Nikola\Desktop\Projekti\_ref\seanime` (commit 2da73d9; ne commitovati).
+- Glavni dokument sa planom: **`04-plan.md`** (tabela poređenja, quick wins, roadmap P0–P3 sa fajlovima/pristupom/rizicima, „ne preuzimati”, §6 odluke korisnika).
+- Detalji po oblastima: `03-oblast-player.md` (25 preporuka + redosled), `03-oblast-izvori-kvalitet.md`, `03-oblast-epizode.md`, `03-oblast-ui-dizajn.md` (§10 spec redizajna kartice), `03-oblast-ostali-featurei.md`, `03-oblast-performanse.md`.
 
-## Faza 3 (pokrenuto 2026-10-09 ~02:20, paralelni podagenti)
-Proveri koji fajlovi postoje; ako neki fali, ponovo pokreni samo tu oblast
-(uputstvo za svaku oblast je u spec-u, Faza 3, tačke 1–6):
-- [x] `03-oblast-player.md`
-- [x] `03-oblast-izvori-kvalitet.md` (uključuje čitanje instaliranog ani-cli skripta, read-only)
-- [x] `03-oblast-epizode.md`
-- [x] `03-oblast-ui-dizajn.md`
-- [x] `03-oblast-ostali-featurei.md`
-- [x] `03-oblast-performanse.md`
+## Gde smo stali
 
-## Faza 4 — preostaje
-- [x] `04-plan.md` (tabela, quick wins, roadmap P0–P3, fajlovi/pristup/rizici, „ne preuzimati”)
-- [x] Rezime korisniku: top 10 nalaza + top 5 quick wins, pa STOP i čekati izbor.
+- [x] Faze 0–4 analize (00–04 fajlovi), rezime dat korisniku.
+- [x] **P0-A objavljen kao v0.5.1** (2026-10-09, GitHub Release Latest, `main` spojen i push-ovan).
+  Ikone plejera, prečice (klizač, `e.code`, Ctrl/Alt), „Završeno” tek kad su sve epizode odgledane, AniList TTL za serije koje se emituju,
+  ErrorBoundary + ekran „Pokušaj ponovo” + `main().catch`, red preuzimanja bez duplikata + „Ponovi neuspele”, minifikacija (2,07 → 0,91 MB),
+  statistika samo na promenu biblioteke / otvaranje Profila. 508/508 testova, e2e prolazi, provereno u pravoj aplikaciji (Playwright `_electron`).
+- [ ] **SLEDEĆE: v0.6 = P0-B plejer.** Veći paket → po `CLAUDE.md` ide kroz superpowers tok: brainstorming → spec (`docs/superpowers/specs/`) → plan (`docs/superpowers/plans/`) → izvršavanje (korisnik je do sada birao podagente). Grana `feat/v0.6-player`.
 
-## Već potvrđeni nalazi (provereno u kodu)
-- **P0 bag:** `src/renderer/components/Icon.jsx` uvozi Pause, Rewind, FastForward, SkipBack,
-  SkipForward, VolumeX, Subtitles, ali ih nema u mapi `ICONS` → dugmad u
-  `PlayerControls.jsx:16-25` su bez ikone (`Icon` vraća null). Quick win (+ test da svako
-  korišćeno ime postoji u ICONS).
+## Odluke korisnika (važe za dalje)
+1. Serija je „Završeno” tek kad su **sve** epizode odgledane (urađeno u 0.5.1).
+2. Hotfix odvojeno (urađeno), plejer kao v0.6.
+3. Spoiler model: otkrivanje **i po seriji i po epizodi**; podrazumevano uključen; režim „ne renderuj” (ne CSS blur).
 
-## Napomena
-U repou su od ranije necommitovane izmene README.md, docs/RIZICI.md, docs/STATUS.md — nisu iz ove analize.
-- **Za odluku korisnika:** `src/main/library.js:97` — status „completed” čim je ep >= totalEpisodes,
-  čak i ako ranije epizode nisu odgledane (možda namerno; pitati).
-- Faza 3 nastavljena posle limita 2026-10-09 03:43 (agenti pišu fajl postepeno).
-- 2026-10-09: faze 0–4 gotove. P0-A objavljen kao v0.5.1. Sledeće: P0-B (plejer) → v0.6.
+## Preostalo po roadmap-u (detalji u `04-plan.md` §3)
+
+### P0-B — plejer (v0.6) — predloženi redosled iz `03-oblast-player.md`
+1. Spinner učitavanja/baferovanja (`waiting`/`playing`/`canplay`), pamćenje jačine/mute, dvoklik = pun ekran.
+2. Transparentan kvalitet: bedž stvarne rezolucije (`videoHeight`, mpv `height`), upozorenje kad ani-cli spusti kvalitet na `best` (stderr `ani-cli:239`, `watchService` mora da prosledi `onLine`), nova greška `no-sources` + „Pokušaj ponovo”.
+3. Detekcija zastoja + „Pokušaj ponovo” = nova ani-cli sesija, nastavak od pozicije, max 1 automatski po epizodi; hls.js `recoverMediaError`/`swapAudioCodec`; retry + timeout segmenta u `streamServer.js`.
+4. Titlovi: SRT→VTT (strim i lokalni `.srt`, detekcija po sadržaju), offset titlova + prečice, stil preko `::cue` tokena.
+5. Nastavak sa pozicije u spoljnom mpv-u (`time-pos` već pratimo → `positions.js`, `--start=`); „odgledano” na pragu tokom gledanja (bez duplog XP-a); normalizacija AniSkip intervala.
+6. Lazy `PlayerView` (`React.lazy`, hls.js ≈62 % bundle-a), brzina reprodukcije + meni, tooltip vremena + buffered traka; razbiti `PlayerView` na hook-ove pre većih dodataka.
+7. ★ Prefetch linka sledeće epizode (poseban spec; `debug` sesija od ~80 %, TTL).
+
+### P1 — v0.7 (kartice i epizode)
+Spoiler model `src/shared/spoilers.js` (PRE svakog naslova/sličice/opisa epizode) · redizajn kartice (spec `03-oblast-ui-dizajn.md` §10) · progres po epizodi na karticama · keš stvarne ani-cli liste epizoda (umesto `1..max`) · „sledeća epizoda izlazi…” + bedž „N novih” · header detalja · istorija navigacije + pamćenje skrola · zajednički `Modal.jsx` (a11y) · red toastova · keš postera u rendereru.
+
+### P2 — v0.8+ (novi feature-i)
+Obaveštenja o novim epizodama (Seanime ovo NEMA) · tray/autostart/single-instance · OS notifikacija za preuzimanja · „Propušteni nastavci” · uvoz AniList liste po korisničkom imenu · watchlist filteri/pretraga + sekcija „Podaci” · proba kvaliteta preko ani-cli `debug` + izbor rezolucije (`^720p`) · metapodaci epizoda (ani.zip) + kartice epizoda · filler (Jikan) · auto-preuzimanje novih epizoda · AniList prijava + slanje progresa · optimistično pokretanje · posteri kao fajlovi.
+
+### P3 — nice-to-have
+JASSUB/ASS, Anime4K za mpv, nedeljni raspored, command palette, Discord RPC (bez naziva epizode), discover/preporuke, dostignuća, `@ts-check`.
+
+## Napomene za sledeću sesiju
+- Ručna provera aplikacije: Playwright `_electron` skripta sa izolovanim `ANIMEDESK_USER_DATA` i probnim videom ubačenim u `downloads.json` (ffmpeg `testsrc`). Chrome-devtools MCP ne radi za ovo (nema preload-a).
+- Python na ovoj mašini ne pokretati preko heredoc-a (Windows alias visi) — koristiti `node -e`.
+- vitest ponekad prijavi „Timeout waiting for worker” pri prvom pokretanju — samo ponoviti.
+- Uživo još neprovereno iz 0.5.1: duplikati u redu preuzimanja sa pravim ani-cli tokom; prečice na ćiriličnom rasporedu (pokriveno unit testom).
