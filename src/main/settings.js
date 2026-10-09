@@ -1,4 +1,5 @@
 import { readJson, writeJsonAtomic } from './jsonStore.js'
+import { DEFAULT_SUBTITLES, SUBTITLE_FONT_STACKS, SUBTITLE_COLORS } from '../shared/subtitles.js'
 
 export const DEFAULT_SETTINGS = Object.freeze({
   language: 'sr',
@@ -20,7 +21,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   playerMode: 'internal',
   autoSkip: false,
   autoNext: true,
-  subtitleSize: 'M',
+  subtitles: DEFAULT_SUBTITLES,
   mpvModernUi: true,
   playerVolume: 1,
   playerMuted: false,
@@ -29,7 +30,26 @@ export const DEFAULT_SETTINGS = Object.freeze({
 export const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 export const MODES = ['sub', 'dub']
 export const PLAYER_MODES = ['internal', 'external']
-export const SUBTITLE_SIZES = ['S', 'M', 'L']
+const LEGACY_SUBTITLE_SIZE = { S: 20, M: 40, L: 65 }
+const pct = (v, fallback) => (Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : fallback)
+
+// Each field on its own: one bad value must not reset the rest. An old S/M/L size seeds `size` once.
+export function sanitizeSubtitles(input, legacySize) {
+  const d = DEFAULT_SUBTITLES
+  const has = input !== null && typeof input === 'object'
+  const i = has ? input : {}
+  const en = i.enabled !== null && typeof i.enabled === 'object' ? i.enabled : {}
+  const bool = (v, fallback) => (typeof v === 'boolean' ? v : fallback)
+  return {
+    enabled: { sub: bool(en.sub, d.enabled.sub), dub: bool(en.dub, d.enabled.dub) },
+    size: pct(i.size, has ? d.size : LEGACY_SUBTITLE_SIZE[legacySize] ?? d.size),
+    lineSpacing: pct(i.lineSpacing, d.lineSpacing),
+    font: Object.hasOwn(SUBTITLE_FONT_STACKS, i.font) ? i.font : d.font,
+    color: SUBTITLE_COLORS.includes(i.color) ? i.color : d.color,
+    box: bool(i.box, d.box),
+    boxOpacity: pct(i.boxOpacity, d.boxOpacity),
+  }
+}
 
 export function sanitizeSettings(input = {}) {
   const s = { ...DEFAULT_SETTINGS }
@@ -54,7 +74,7 @@ export function sanitizeSettings(input = {}) {
   if (PLAYER_MODES.includes(input.playerMode)) s.playerMode = input.playerMode
   if (typeof input.autoSkip === 'boolean') s.autoSkip = input.autoSkip
   if (typeof input.autoNext === 'boolean') s.autoNext = input.autoNext
-  if (SUBTITLE_SIZES.includes(input.subtitleSize)) s.subtitleSize = input.subtitleSize
+  s.subtitles = sanitizeSubtitles(input.subtitles, input.subtitleSize)
   if (typeof input.mpvModernUi === 'boolean') s.mpvModernUi = input.mpvModernUi
   if (Number.isFinite(input.playerVolume)) s.playerVolume = Math.min(1, Math.max(0, input.playerVolume))
   if (typeof input.playerMuted === 'boolean') s.playerMuted = input.playerMuted
@@ -67,7 +87,12 @@ export function createSettings(file, { systemName = 'Player' } = {}) {
   return {
     get: view,
     update(patch) {
-      current = sanitizeSettings({ ...current, ...patch })
+      const next = { ...current, ...patch }
+      // partial subtitle patches (e.g. only enabled.dub) keep the other subtitle fields
+      if (patch?.subtitles && typeof patch.subtitles === 'object') {
+        next.subtitles = { ...current.subtitles, ...patch.subtitles, enabled: { ...current.subtitles.enabled, ...(patch.subtitles.enabled ?? {}) } }
+      }
+      current = sanitizeSettings(next)
       writeJsonAtomic(file, current)
       return view()
     },
