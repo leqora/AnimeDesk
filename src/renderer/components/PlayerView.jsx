@@ -16,6 +16,10 @@ const ENDING_FALLBACK_S = 30
 const NET_RETRIES = 3
 // hls.js 1.x: startLoad() is a no-op until a manifest has been parsed, so these must reload the source
 const MANIFEST_ERRORS = new Set(['manifestLoadError', 'manifestLoadTimeOut', 'manifestParsingError'])
+// Physical keys, so letter shortcuts also work on non-Latin layouts (e.g. Serbian Cyrillic).
+const KEY_BY_CODE = { KeyF: 'f', KeyM: 'm', KeyS: 's', KeyN: 'n', Space: ' ' }
+const TEXT_FIELD = 'input:not([type=range]), textarea, [contenteditable="true"]'
+const shortcutKey = (e) => KEY_BY_CODE[e.code] ?? (e.key.length === 1 ? e.key.toLowerCase() : e.key)
 
 export function PlayerView({ open, settings, fullscreen, onSettings, onClose, HlsImpl = Hls }) {
   const api = useApi()
@@ -104,21 +108,23 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.target?.closest?.('input, select, textarea')) return
+      // Only text entry keeps its keys; a focused slider or select must not swallow the player shortcuts.
+      if (e.ctrlKey || e.altKey || e.metaKey || e.target?.closest?.(TEXT_FIELD)) return
       const v = video.current
       if (!v) return
-      switch (e.key) {
-        case ' ': e.preventDefault(); togglePlay(); break
+      switch (shortcutKey(e)) {
+        case ' ': togglePlay(); break
         case 'ArrowLeft': step(-10); break
         case 'ArrowRight': step(10); break
         case 'ArrowUp': v.volume = Math.min(1, v.volume + 0.1); break
         case 'ArrowDown': v.volume = Math.max(0, v.volume - 0.1); break
-        case 'f': case 'F': toggleFullscreen(); break
-        case 'm': case 'M': v.muted = !v.muted; setMuted(v.muted); break
-        case 's': case 'S': setSubsOn((x) => !x); break
-        case 'n': case 'N': if (!live.current.lastEpisode) close('next'); return
+        case 'f': toggleFullscreen(); break
+        case 'm': v.muted = !v.muted; setMuted(v.muted); break
+        case 's': setSubsOn((x) => !x); break
+        case 'n': e.preventDefault(); if (!live.current.lastEpisode) close('next'); return
         default: return
       }
+      e.preventDefault() // the focused control (slider, select) must not react to the same key
       poke()
     }
     window.addEventListener('keydown', onKey)
