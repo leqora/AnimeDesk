@@ -4,19 +4,36 @@ Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.1** — objavljena 20
 
 ## Dokle smo stigli (ukratko)
 
-- Objavljeno: 0.1.0 → 0.6.0 (11 izdanja, 2026-10-01 – 2026-10-09).
+- Objavljeno: 0.1.0 → 0.6.1 (12 izdanja, 2026-10-01 – 2026-10-10).
 - Testovi: 65 fajlova, **621/621 prolazi** (0.6.1), e2e smoke prolazi.
 - 2026-10-09: komparativna analiza Seanime-a → plan unapređenja u `docs/seanime-analysis/` (`04-plan.md` = roadmap P0–P3 sa odlukama korisnika). Iz nje je urađen hotfix 0.5.1 (P0-A).
 - **v0.6.0 (objavljeno 2026-10-09):** P0-B koraci 1–3 — spinner/baferovanje, pamćenje jačine, dvoklik = pun ekran, bedž rezolucije + upozorenje o kvalitetu, poruka „nema ispravnih izvora” + „Pokušaj ponovo”, automatski oporavak zaglavljenog strima, retry/timeout u proxy-ju. Spec: `docs/superpowers/specs/2026-10-09-v0.6-player-design.md`. Beleške: `docs/releases/v0.6.0.md`.
-- **v0.6.1 (na grani, čeka objavu):** P0-B korak 4 — titlovi: SRT→VTT (strim i lokalni `.srt`), pomak `G`/`H` po seriji i režimu (`series-prefs.json`), sopstveni overlay (veći na punom ekranu, zbijeni redovi), podešavanja sa pregledom, meni titlova u plejeru, dub podrazumevano bez titla, poruka za nepodržan format. Spec: `docs/superpowers/specs/2026-10-09-v0.6.1-subtitles-design.md`. Beleške: `docs/releases/v0.6.1.md`.
-- **Posle objave:** P0-B koraci 5–7 (nastavak u mpv-u, lazy `PlayerView`, prefetch) iz `docs/seanime-analysis/04-plan.md`.
+- **v0.6.1 (objavljeno 2026-10-10, Latest):** P0-B korak 4 — titlovi: SRT→VTT (strim i lokalni `.srt`, i Windows-1250/UTF-16), pomak `G`/`H` po seriji i režimu (`series-prefs.json`), sopstveni overlay (veći na punom ekranu, zbijeni redovi), podešavanja sa živim pregledom, meni titlova u plejeru, dub podrazumevano bez titla, poruka za nepodržan format (ASS). Spec: `docs/superpowers/specs/2026-10-09-v0.6.1-subtitles-design.md`, plan: `docs/superpowers/plans/2026-10-09-v0.6.1-subtitles.md`. Beleške: `docs/releases/v0.6.1.md`.
+- **Sledeće:** P0-B koraci 5–7 (nastavak u mpv-u + „odgledano” na pragu + AniSkip normalizacija; lazy `PlayerView` + brzina + buffered traka; prefetch) iz `docs/seanime-analysis/04-plan.md`.
 
-## Gde smo stali (2026-10-10) i kako dalje
+## Gde smo stali (2026-10-10, kraj sesije) i kako dalje
 
-- v0.6.1 (titlovi) je objavljen kao Latest 2026-10-10 (621/621 testova, provereno u pravoj aplikaciji); `main` = `origin/main`, grana `feat/v0.6.1-subtitles` obrisana posle spajanja (`--no-ff`).
-- Kako je rađeno v0.6: brainstorming (4 dela dizajna, odluke korisnika: v0.6 = koraci 1–3; oporavak „1 automatski po epizodi, pa dugme”; pristup B = oporavak vodi main proces, plejer ostaje „otvoren” uz ekran „Ponovno povezivanje…”; bedž u kontrolama + jednokratna poruka o kvalitetu) → spec → plan (11 zadataka) → podagenti (implementer + pregled po zadatku) → završni pregled cele grane → jedan krug ispravki → merge `--no-ff` → `npm run release`.
-- **Prvo u sledećoj sesiji (preporuka):** uživo proveriti oporavak strima na pravoj epizodi (zastoj → „Ponovno povezivanje…” → nastavak od iste sekunde bez pitanja „Nastavi od…”; drugi zastoj u istoj epizodi → ekran sa „Pokušaj ponovo” / mpv / „Nazad”) i poruke `no-sources` / „kvalitet nije dostupan” sa pravim ani-cli-jem. Rezultat upisati u „Šta je stvarno provereno”.
-- **Lista za uživo proveru 0.6.0 (korisnik radi naknadno; dogovoreno 2026-10-09):**
+### Stanje repoa
+- v0.6.1 je objavljen kao **Latest** (GitHub Release `v0.6.1`: `.exe`, `.blockmap`, `latest.yml`, SHA-256 provereni). `main` = `origin/main`, radno stablo čisto, nema otvorenih `feat/` grana (`feat/v0.6.1-subtitles` spojena sa `--no-ff` i obrisana). Radni folder podagenata (`.superpowers/sdd/`, ignorisan u git-u) je obrisan; istorija je u `git log`.
+
+### Šta je urađeno u sesiji 2026-10-09/10 (v0.6.1 titlovi)
+- **Brainstorming — odluke korisnika:**
+  1. cilj: zaštita (SRT) + offset i stil kao poboljšanje; izgled je smetao (titl premali na punom ekranu, veliki razmak između redova — zahtev iz `Claude/Anime/Aplikacija za gledanje Anime-a/Dodaci2.txt`: veličina 0–100 %, razmak redova, font, tamni okvir podrazumevano uključen);
+  2. na **dub** epizodama titl podrazumevano **isključen**; uključeno/isključeno se pamti odvojeno za sub i dub (korisnik je primetio da na engleskom dub-u titlovi kasne ili ne odgovaraju);
+  3. pomak titla se pamti **po seriji i režimu**;
+  4. prikaz: **sopstveni overlay** (ne nativni `::cue`, ne JASSUB);
+  5. izdanje **v0.6.1**.
+- **Tok:** spec → plan (11 zadataka) → podagenti (implementer + pregled po zadatku; ispravke u zadacima 7, 9 i 11) → završni pregled cele grane (Opus) → jedan krug ispravki (dekodiranje lokalnog `.srt` Windows-1250/UTF-16, poruka 415 samo kad je titl uključen, strelice na klizaču u meniju ne premotavaju, dokumentacija) → merge `--no-ff` → push → `npm run release`.
+- **Važne tehničke odluke (iz pregleda):** titl nove epizode se prikazuje tek kad se njen `<track>` učita (ne prikazuju se cue-ovi prethodne epizode); `Esc` zatvara meni titlova odakle god; prečice plejera rade i kad je fokus na prekidaču u meniju; nepodržan format se prepoznaje `HEAD` zahtevom na `/sub` (415); greška izvora titla (404/500) se prosleđuje, ne pretvara u 415.
+- **Svesno ostavljeno (vidi „Poznati problemi” 10–11):** klizač veličine u meniju plejera upisuje na svaki korak; pomak je vezan za naziv u plejeru (strim i preuzeta epizoda iste serije mogu imati različit ključ). Takođe: HTML stranica sa statusom 200 umesto titla daje poruku „format nije podržan”; nema upravljanja fokusom u meniju titlova (a11y); Windows-1251 (ćirilični) `.srt` može imati pogrešna slova.
+
+### Uživo neprovereno — korisnik proverava i javlja rezultat
+- **0.6.1 titlovi:**
+  1. **dub** epizoda sa pravim ani-cli-jem: titl na početku isključen; uključi (`S` ili dugme) → `G`/`H` poravnaju titl sa govorom; sledeća epizoda iste serije u dub-u zadrži pomak;
+  2. **sub** epizoda strima: titl uključen, nov izgled (veći na punom ekranu, zbijeni redovi), iznad kontrola dok su vidljive — proveriti i **u prozoru** (mereno samo na punom ekranu);
+  3. Podešavanja → Titlovi: veličina / razmak / font / boja / okvir menjaju i pravi plejer;
+  4. (opciono) srpski `.srt` pored preuzete epizode, isto ime kao video — slova č/ć/š/ž/đ ispravna.
+- **0.6.0 oporavak strima** (dogovoreno 2026-10-09, i dalje neprovereno):
   1. prava epizoda, posle ~1 min isključi Wi-Fi → kad se pojavi „Ponovno povezivanje…” (~12 s) uključi → nastavak od iste sekunde, bez „Nastavi od…”;
   2. ponovi u istoj epizodi → ekran sa „Pokušaj ponovo” / mpv / „Nazad” (bez drugog automatskog oporavka);
   3. „Pokušaj ponovo” sa tog ekrana → nastavak od iste pozicije;
@@ -25,7 +42,11 @@ Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.1** — objavljena 20
   6. spora mreža (npr. hotspot) → „Sporo učitavanje…” posle ~8 s;
   7. kvalitet koji izvor nema (npr. 1080 na starijem naslovu) → jednokratno obaveštenje + bedž stvarne rezolucije;
   8. `no-sources` — samo ako se slučajno pojavi: radi li „Pokušaj ponovo”.
-- **Sledeći razvoj:** (korak 4 titlovi je urađen u 0.6.1) P0-B korak 5 (nastavak u spoljnom mpv-u, „odgledano” na pragu tokom gledanja, normalizacija AniSkip intervala), 6 (lazy `PlayerView`, brzina reprodukcije, buffered traka + tooltip, razbijanje `PlayerView` na hook-ove), 7 (prefetch linka sledeće epizode — poseban spec). Detalji i fajlovi: `docs/seanime-analysis/03-oblast-player.md` (tabela „Top preporuke”) i `04-plan.md` §3. Isti tok: brainstorming → spec → plan → podagenti, nova grana `feat/v0.7-…`.
+- Rezultate upisati u „Šta je stvarno provereno”.
+
+### Sledeći razvoj
+- **P0-B korak 5:** nastavak sa pozicije u spoljnom mpv-u (`time-pos` već pratimo → `positions.js`, `--start=`); „odgledano” na pragu tokom gledanja (bez duplog XP-a); normalizacija AniSkip intervala. Zatim 6 (lazy `PlayerView` — hls.js ≈62 % bundle-a; brzina reprodukcije + meni; buffered traka + tooltip vremena; razbijanje `PlayerView` na hook-ove) i 7 (prefetch linka sledeće epizode — poseban spec). Detalji i fajlovi: `docs/seanime-analysis/03-oblast-player.md` (tabela „Top preporuke”) i `04-plan.md` §3.
+- Isti tok: brainstorming → spec → plan → podagenti; nova grana `feat/v0.7-…` (ili `feat/v0.6.2-…` ako je obim mali); merge/push/release samo uz dozvolu korisnika.
 
 Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, šta je otvoreno. Detalji dizajna su u `docs/superpowers/specs/`, planovi u `docs/superpowers/plans/`, beleške izdanja u `docs/releases/`.
 
@@ -44,7 +65,7 @@ Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, �
 | 0.5.0 | 2026-10-04 | Ugrađeni plejer (hls.js preko lokalnog proxy-ja, spoljni mpv kao opcija), kontrole + prečice, preskakanje uvoda/rezimea (AniSkip) i opciono automatsko, sledeća epizoda sa odbrojavanjem, „Nastavi od…”, rezervni prelaz na mpv, preuzete epizode u aplikaciji, moderan mpv (uosc), AniList podaci i offline | `2026-10-03-v0.5-player-design.md` / `2026-10-03-v0.5-player.md` |
 | 0.5.1 | 2026-10-09 | Hotfix iz Seanime analize (P0-A): ikone plejera, prečice posle klika na klizač + po fizičkom tasteru (ćirilica), „Završeno” tek kad su sve epizode odgledane, AniList keš se osvežava dnevno za serije koje se emituju, error boundary + ekran „Pokušaj ponovo”, red preuzimanja bez duplikata + „Ponovi neuspele”, minifikacija (2,07 MB → 0,91 MB), statistika se ne računa na svaku navigaciju | `docs/seanime-analysis/04-plan.md` |
 | 0.6.0 | 2026-10-09 | Plejer (P0-B 1–3): spinner + „Sporo učitavanje…” posle 8 s, pamćenje jačine/mute, dvoklik = pun ekran (jedan klik pauzira posle 220 ms), bedž prave rezolucije + jednokratno obaveštenje o kvalitetu, greška „nema ispravnih izvora” + „Pokušaj ponovo”, automatski oporavak zastoja (watchdog 12 s, jednom po epizodi, ekran „Ponovno povezivanje…”), proxy: timeout zaglavlja 20 s + 1 ponovni pokušaj segmenta | `2026-10-09-v0.6-player-design.md` |
-| 0.6.1 | 2026-10-10 (na grani, neobjavljeno) | Titlovi (P0-B 4): SRT→VTT za strim i lokalni `.srt`, sopstveni overlay (skalira sa plejerom, zbijeni redovi, gore/dole), podešavanja (veličina, razmak, font, boja, okvir) sa živim pregledom, meni titlova u plejeru, pomak `G`/`H` po seriji i režimu, dub bez titla podrazumevano, poruka za ASS/nepodržan format | `2026-10-09-v0.6.1-subtitles-design.md` |
+| 0.6.1 | 2026-10-10 | Titlovi (P0-B 4): SRT→VTT za strim i lokalni `.srt`, sopstveni overlay (skalira sa plejerom, zbijeni redovi, gore/dole), podešavanja (veličina, razmak, font, boja, okvir) sa živim pregledom, meni titlova u plejeru, pomak `G`/`H` po seriji i režimu, dub bez titla podrazumevano, poruka za ASS/nepodržan format, lokalni `.srt` u Windows-1250/UTF-16 | `2026-10-09-v0.6.1-subtitles-design.md` |
 
 ## Šta je stvarno provereno (ne samo testovima)
 
