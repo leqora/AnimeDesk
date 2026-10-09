@@ -183,3 +183,61 @@ describe('streamServer', () => {
     expect((await next.arrayBuffer()).byteLength).toBe(4)
   })
 })
+
+describe('streamServer upstream resilience', () => {
+  const onePiece = () => `#EXTM3U\n#EXTINF:10,\n${upBase}/seg/a.ts\n#EXT-X-ENDLIST\n`
+  const segmentUrl = async () => {
+    routes['/p/index.m3u8'] = (req, res) => res.writeHead(200, { 'Content-Type': 'application/vnd.apple.mpegurl' }).end(onePiece())
+    const reg = streams.register({ url: `${upBase}/p/index.m3u8`, referrer: null, subUrl: null })
+    const text = await (await fetch(reg.playlistUrl)).text()
+    return text.split('\n').find((l) => l.startsWith('http://127.0.0.1'))
+  }
+  it('retries a segment once after a 5xx', async () => {
+    let n = 0
+    routes['/seg/a.ts'] = (req, res) => (++n === 1 ? res.writeHead(502).end() : res.writeHead(200, { 'Content-Type': 'video/mp2t' }).end('ok'))
+    const res = await fetch(await segmentUrl())
+    expect(res.status).toBe(200)
+    expect(await res.text()).toBe('ok')
+    expect(n).toBe(2)
+  })
+  it('gives up on a segment after the second failure', async () => {
+    let n = 0
+    routes['/seg/a.ts'] = (req, res) => { n++; res.writeHead(503).end() }
+    const res = await fetch(await segmentUrl())
+    expect(res.status).toBe(503)
+    expect(n).toBe(2)
+  })
+  it('does not retry playlists', async () => {
+    let n = 0
+    routes['/p/bad.m3u8'] = (req, res) => { n++; res.writeHead(503).end() }
+    const reg = streams.register({ url: `${upBase}/p/bad.m3u8`, referrer: null, subUrl: null })
+    expect((await fetch(reg.playlistUrl)).status).toBe(503)
+    expect(n).toBe(1)
+  })
+  it('answers 504 when upstream headers never arrive', async () => {
+    const hanging = (url, { signal }) => new Promise((_, reject) => signal.addEventListener('abort', () => reject(new Error('aborted'))))
+    const slow = createStreamServer({ fetchImpl: hanging, headerTimeoutMs: 50 })
+    await slow.start()
+    try {
+      const reg = slow.register({ url: 'https://cdn.example/p.m3u8', referrer: null, subUrl: null })
+      expect((await fetch(reg.playlistUrl)).status).toBe(504)
+    } finally { await slow.stop() }
+  })
+  it('keeps streaming a segment body past the header deadline', async () => {
+    routes['/seg/a.ts'] = (req, res) => {
+      res.writeHead(200, { 'Content-Type': 'video/mp2t' })
+      res.write('he')
+      setTimeout(() => res.end('llo'), 120)
+    }
+    const slow = createStreamServer({ headerTimeoutMs: 50 })
+    await slow.start()
+    try {
+      const reg = slow.register({ url: `${upBase}/p/index.m3u8`, referrer: null, subUrl: null })
+      routes['/p/index.m3u8'] = (req, res) => res.writeHead(200, { 'Content-Type': 'application/vnd.apple.mpegurl' }).end(onePiece())
+      const text = await (await fetch(reg.playlistUrl)).text()
+      const res = await fetch(text.split('\n').find((l) => l.startsWith('http://127.0.0.1')))
+      expect(res.status).toBe(200)
+      expect(await res.text()).toBe('hello')
+    } finally { await slow.stop() }
+  })
+})

@@ -56,6 +56,7 @@ describe('watchService', () => {
     expect(player.play).toHaveBeenCalledWith(['--force-media-title=Fake Anime Episode 2', 'https://v'], expect.any(Object))
     expect(library.recordWatched).toHaveBeenCalledWith({ aniCliTitle: 'Fake Anime', episode: '2' })
     expect(events.map((e) => e[0])).toEqual([EVENTS.playing, EVENTS.libraryChanged, EVENTS.sessionEnd])
+    expect(events.at(-1)[1]).toMatchObject({ retry: false })
   })
   it('does not record below the threshold', async () => {
     const { svc, library } = setup({ maxPercent: 50 })
@@ -179,5 +180,157 @@ describe('watchService', () => {
     await svc.playLocal({ file: 'D:\A\A Episode 1.mp4', title: 'A', episode: 1 })
     expect(internalPlayer.play).toHaveBeenCalledWith(expect.objectContaining({ file: 'D:\A\A Episode 1.mp4', title: 'A', episode: '1', url: 'D:\A\A Episode 1.mp4' }))
     expect(player.play).not.toHaveBeenCalled()
+  })
+})
+
+function retrySetup({ settings = {}, now = () => 1000 } = {}) {
+  const events = []
+  const sessions = []
+  const aniCli = {
+    startSession: vi.fn((opts) => {
+      let finish
+      const done = new Promise((r) => { finish = r })
+      const s = { opts, sessionId: `s${sessions.length + 1}`, finish, kill: vi.fn() }
+      sessions.push(s)
+      return { sessionId: s.sessionId, done, kill: s.kill }
+    }),
+  }
+  let active = null
+  const internalPlayer = {
+    play: vi.fn((info) => new Promise((resolve) => { active = { info, resolve, playbackId: `p${internalPlayer.play.mock.calls.length}` } })),
+    current: () => (active ? { playbackId: active.playbackId, title: active.info.title, episode: active.info.episode } : null),
+    closed: vi.fn((p) => { const a = active; active = null; a.resolve({ exitCode: 0, maxPercent: p.maxPercent, position: p.position, duration: p.duration, reason: p.reason }) }),
+    stop: vi.fn(),
+  }
+  const library = { recordWatched: vi.fn() }
+  const positions = { clear: vi.fn() }
+  const svc = createWatchService({
+    aniCli, player: { play: vi.fn(), stop: vi.fn() }, internalPlayer, library, positions, now,
+    settings: { get: () => ({ ...DEFAULT_SETTINGS, ...settings }) },
+    notify: (ch, p) => events.push([ch, p]),
+  })
+  const args = ['--force-media-title=Show Episode 3', 'https://v']
+  return { svc, aniCli, sessions, internalPlayer, library, positions, events, args }
+}
+
+describe('watchService recovery', () => {
+  it('retry skips afterPlayback even at 95 % and restarts the same episode with the same quality and mode', async () => {
+    const { svc, sessions, internalPlayer, library, positions, events, args } = retrySetup({ settings: { quality: '720', mode: 'dub' } })
+    svc.watch({ query: 'show', anime: 'Show', episode: '3' })
+    const playing = sessions[0].opts.onPlay({ args })
+    await flush()
+    expect(svc.recover({ playbackId: 'p1', position: 1300, duration: 1400, maxPercent: 95 })).toEqual({ ok: true })
+    await playing
+    expect(library.recordWatched).not.toHaveBeenCalled()
+    expect(positions.clear).not.toHaveBeenCalled()
+    expect(sessions).toHaveLength(2)
+    expect(sessions[1].opts).toMatchObject({ query: 'show', episodes: '3', quality: '720', mode: 'dub' })
+    expect(events).toContainEqual([EVENTS.playerRetry, { title: 'Show', episode: '3', state: 'reconnecting', sessionId: 's2' }])
+    sessions[1].opts.onPlay({ args })
+    await flush()
+    expect(internalPlayer.play).toHaveBeenLastCalledWith(expect.objectContaining({ resume: { at: 1300, auto: true, title: 'Show', episode: '3' } }))
+  })
+  it('allows one automatic recovery per episode; manual ones always pass', async () => {
+    const { svc, sessions, args } = retrySetup()
+    svc.watch({ query: 'show', anime: 'Show', episode: '3' })
+    sessions[0].opts.onPlay({ args })
+    await flush()
+    expect(svc.recover({ playbackId: 'p1', position: 100 })).toEqual({ ok: true })
+    await flush()
+    sessions[1].opts.onPlay({ args })
+    await flush()
+    expect(svc.recover({ playbackId: 'p2', position: 120 })).toEqual({ ok: true, auto: false })
+    expect(svc.recover({ playbackId: 'p2', position: 120 }, { manual: true })).toEqual({ ok: true })
+  })
+  it('forgets the budget after 30 minutes and after a normal finish', async () => {
+    let t = 0
+    const { svc, sessions, internalPlayer, args } = retrySetup({ now: () => t })
+    svc.watch({ query: 'show', anime: 'Show', episode: '3' })
+    sessions[0].opts.onPlay({ args })
+    await flush()
+    svc.recover({ playbackId: 'p1', position: 100 })
+    await flush()
+    sessions[1].opts.onPlay({ args })
+    await flush()
+    t = 30 * 60 * 1000 + 1
+    expect(svc.recover({ playbackId: 'p2', position: 100 })).toEqual({ ok: true })
+    await flush()
+    const ending = sessions[2].opts.onPlay({ args })
+    await flush()
+    internalPlayer.closed({ playbackId: 'p3', position: 1400, duration: 1400, maxPercent: 100, reason: 'ended' })
+    await ending
+    svc.watch({ query: 'show', anime: 'Show', episode: '3' })
+    sessions[3].opts.onPlay({ args })
+    await flush()
+    expect(svc.recover({ playbackId: 'p4', position: 5 })).toEqual({ ok: true })
+  })
+  it('refuses to recover a playback that is no longer active', () => {
+    const { svc } = retrySetup()
+    expect(svc.recover({ playbackId: 'nope', position: 1 })).toEqual({ ok: false })
+  })
+  it('reuses the anime picked in the menu', async () => {
+    const { svc, sessions, events, args } = retrySetup()
+    svc.watch({ query: 'show' })
+    const answer = sessions[0].opts.onMenu({ prompt: 'Select anime: ', lines: ['1 Show (12 episodes)', '2 Other'] })
+    await flush()
+    const [, req] = events.find(([c]) => c === EVENTS.menu)
+    svc.answerMenu(req.requestId, '1 Show (12 episodes)')
+    await answer
+    sessions[0].opts.onPlay({ args })
+    await flush()
+    svc.recover({ playbackId: 'p1', position: 200 })
+    await flush()
+    await expect(sessions[1].opts.onMenu({ prompt: 'Select anime: ', lines: ['1 Other', '2 Show (12 episodes)'] })).resolves.toBe('2 Show (12 episodes)')
+  })
+  it('a recovery that hits an unknown menu fails instead of showing it', async () => {
+    const { svc, sessions, events, args } = retrySetup()
+    svc.watch({ query: 'show', anime: 'Show', episode: '3' })
+    sessions[0].opts.onPlay({ args })
+    await flush()
+    svc.recover({ playbackId: 'p1', position: 200 })
+    await flush()
+    await expect(sessions[1].opts.onMenu({ prompt: 'Select anime: ', lines: ['1 Something else'] })).resolves.toBeNull()
+    expect(events.some(([c]) => c === EVENTS.menu)).toBe(false)
+    sessions[1].finish({ ok: false, error: 'cancelled', stderr: '' })
+    await flush()
+    expect(events).toContainEqual([EVENTS.playerRetry, { title: 'Show', episode: '3', state: 'failed', error: 'not-found', sessionId: 's2' }])
+    expect(events).toContainEqual([EVENTS.sessionEnd, expect.objectContaining({ sessionId: 's2', retry: true })])
+  })
+  it('reports the ani-cli error of a failed recovery and can try again by hand', async () => {
+    const { svc, sessions, events, args } = retrySetup()
+    svc.watch({ query: 'show', anime: 'Show', episode: '3' })
+    sessions[0].opts.onPlay({ args })
+    await flush()
+    svc.recover({ playbackId: 'p1', position: 200 })
+    await flush()
+    sessions[1].finish({ ok: false, error: 'no-sources', stderr: 'Episode is released, but no valid sources!' })
+    await flush()
+    expect(events).toContainEqual([EVENTS.playerRetry, { title: 'Show', episode: '3', state: 'failed', error: 'no-sources', sessionId: 's2' }])
+    svc.retryAgain()
+    expect(sessions).toHaveLength(3)
+    expect(sessions[2].opts).toMatchObject({ episodes: '3' })
+    expect(events.at(-1)).toEqual([EVENTS.playerRetry, { title: 'Show', episode: '3', state: 'reconnecting', sessionId: 's3' }])
+    svc.retryAgain()
+    expect(sessions).toHaveLength(3)
+  })
+  it('a cancelled recovery reports nothing', async () => {
+    const { svc, sessions, events, args } = retrySetup()
+    svc.watch({ query: 'show', anime: 'Show', episode: '3' })
+    sessions[0].opts.onPlay({ args })
+    await flush()
+    svc.recover({ playbackId: 'p1', position: 200 })
+    await flush()
+    svc.cancel('s2')
+    sessions[1].finish({ ok: false, error: 'cancelled', stderr: '' })
+    await flush()
+    expect(events.some(([c, p]) => c === EVENTS.playerRetry && p.state === 'failed')).toBe(false)
+  })
+  it('passes the ani-cli quality fallback to the player', async () => {
+    const { svc, sessions, internalPlayer, args } = retrySetup()
+    svc.watch({ query: 'show', anime: 'Show', episode: '3' })
+    sessions[0].opts.onLine('\x1b[1;33m720 not found, defaulting to best\x1b[0m')
+    sessions[0].opts.onPlay({ args })
+    await flush()
+    expect(internalPlayer.play).toHaveBeenCalledWith(expect.objectContaining({ qualityFallback: '720', resume: null }))
   })
 })

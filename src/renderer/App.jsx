@@ -15,6 +15,7 @@ import { Toast } from './components/Toast.jsx'
 import { UpdateBanner } from './components/UpdateBanner.jsx'
 import { WhatsNewDialog } from './components/WhatsNewDialog.jsx'
 import { PlayerView } from './components/PlayerView.jsx'
+import { PlayerReconnecting } from './components/PlayerReconnecting.jsx'
 import { ErrorBoundary } from './components/ErrorBoundary.jsx'
 import { nextEpisodeNumber } from '../shared/player.js'
 import { createSound } from './sound.js'
@@ -75,6 +76,7 @@ export default function App({ api, sound: injectedSound }) {
   const [whatsNew, setWhatsNew] = useState(null)
   const [fullscreen, setFullscreen] = useState(false)
   const [player, setPlayer] = useState(null)
+  const [reconnecting, setReconnecting] = useState(null)
   const [bootFailed, setBootFailed] = useState(false)
 
   const loadSettings = () => api.settings.get().then(
@@ -143,7 +145,11 @@ export default function App({ api, sound: injectedSound }) {
   }, [api])
 
   useEffect(() => {
-    const offs = [api.player.onOpen(setPlayer), api.player.onClose(() => setPlayer(null))]
+    const offs = [
+      api.player.onOpen((p) => { setReconnecting(null); setPlayer(p) }),
+      api.player.onClose(() => setPlayer(null)),
+      api.player.onRetry(setReconnecting),
+    ]
     return () => offs.forEach((off) => off())
   }, [api])
 
@@ -159,10 +165,12 @@ export default function App({ api, sound: injectedSound }) {
   const openWhatsNew = () => setWhatsNew({ mode: 'before', version: updateState.version, notes: updateState.notes })
   const closeWhatsNew = () => { if (whatsNew?.mode === 'after') api.whatsNew.seen(); setWhatsNew(null) }
 
+  const overlay = player != null || reconnecting != null
+
   return (
     <ApiContext.Provider value={api}>
       <I18nProvider lang={settings.language}>
-        <div className="app-shell" inert={player != null} aria-hidden={player ? 'true' : undefined}>
+        <div className="app-shell" inert={overlay} aria-hidden={overlay ? 'true' : undefined}>
           <Sidebar
             page={page}
             onNavigate={navigate}
@@ -203,6 +211,13 @@ export default function App({ api, sound: injectedSound }) {
               }}
             />
           </ErrorBoundary>
+        )}
+        {!player && reconnecting && (
+          <PlayerReconnecting
+            state={reconnecting.state} title={reconnecting.title} episode={reconnecting.episode} error={reconnecting.error}
+            onRetry={() => api.player.retryAgain()}
+            onBack={() => { if (reconnecting.state === 'reconnecting' && reconnecting.sessionId) api.watch.cancel(reconnecting.sessionId); setReconnecting(null) }}
+          />
         )}
         {wizardOpen && <SetupWizard health={health} onClose={() => setWizardOpen(false)} />}
         {asks.length > 0 && <AskDialog ask={asks[0]} onDone={() => setAsks((q) => q.slice(1))} />}

@@ -37,7 +37,11 @@ export function makeFakeApi(overrides = {}) {
     dialog: { pickFolder: vi.fn(async () => null) },
     app: { openRepo: vi.fn(async () => {}) },
     skip: { get: vi.fn(async () => ({ op: null, ed: null, recap: null })) },
-    player: { onOpen: sub(), onClose: sub(), progress: vi.fn(async () => {}), closed: vi.fn(async () => {}) },
+    player: {
+      onOpen: sub(), onClose: sub(), onRetry: sub(), progress: vi.fn(async () => {}), closed: vi.fn(async () => {}),
+      // by default the automatic recovery is already used up, so the player shows its error screen
+      recover: vi.fn(async () => ({ ok: true, auto: false })), retryAgain: vi.fn(async () => {}),
+    },
     onLibraryChanged: sub(),
   }
   for (const [group, fns] of Object.entries(overrides)) Object.assign(api[group], fns)

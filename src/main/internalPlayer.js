@@ -22,13 +22,16 @@ export function createInternalPlayer({ streams, notify, positions, getTotalEpiso
     if (active) stop()
     const local = Boolean(info.file)
     const reg = local ? streams.registerFile(info.file) : streams.register({ url: info.url, referrer: info.referrer, subUrl: info.subUrl })
-    const resume = info.episode != null ? positions.get(info.title, info.episode) : null
+    // A recovery carries its own position (it may be under the 10 s that positions keeps) and must not ask again;
+    // the quality notice was already shown for this episode, so it is not repeated.
+    const saved = info.resume || info.episode == null ? null : positions.get(info.title, info.episode)
     return new Promise((resolve) => {
       active = { playbackId: reg.id, resolve, title: info.title, episode: info.episode, maxPercent: 0, position: 0, duration: 0 }
       notify(EVENTS.playerOpen, {
         playbackId: reg.id, title: info.title, episode: info.episode, kind: local ? 'file' : 'hls',
         src: local ? reg.fileUrl : reg.playlistUrl, subtitleUrl: reg.subtitleUrl ?? null,
-        resumeAt: resume?.position ?? null, totalEpisodes: getTotalEpisodes(info.title),
+        resumeAt: info.resume ? info.resume.at : saved?.position ?? null, autoResume: Boolean(info.resume),
+        qualityFallback: info.resume ? null : info.qualityFallback ?? null, totalEpisodes: getTotalEpisodes(info.title),
       })
     })
   }
@@ -42,12 +45,19 @@ export function createInternalPlayer({ streams, notify, positions, getTotalEpiso
   }
 
   function progress(p) { if (active && p?.playbackId === active.playbackId) remember(p) }
-  function closed(p) { if (active && p?.playbackId === active.playbackId) { remember(p); finish(p) } }
+  function closed(p) {
+    if (!active || p?.playbackId !== active.playbackId) return
+    // A recovery is decided in main, so main also takes the player off screen.
+    if (p.reason === 'retry') notify(EVENTS.playerClose, { playbackId: active.playbackId })
+    remember(p)
+    finish(p)
+  }
+  const current = () => (active ? { playbackId: active.playbackId, title: active.title, episode: active.episode } : null)
   function stop() {
     if (!active) return
     notify(EVENTS.playerClose, { playbackId: active.playbackId })
     finish({ reason: 'back' })
   }
 
-  return { play, progress, closed, stop, isActive: () => active != null }
+  return { play, progress, closed, stop, current, isActive: () => active != null }
 }

@@ -14,6 +14,22 @@ function withEvents() {
 const props = (over = {}) => ({ ready: true, settings: { ...DEFAULT_SETTINGS }, onSettings: vi.fn(), onOpenWizard: vi.fn(), pendingWatch: null, onPendingHandled: vi.fn(), ...over })
 
 describe('SearchPage', () => {
+  it('offers try again when the episode has no working sources', async () => {
+    const { api, handlers } = withEvents()
+    renderUi(<SearchPage {...props({ pendingWatch: { query: 'Show', anime: 'Show', episode: '2' } })} />, { api })
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(1))
+    act(() => handlers.end({ sessionId: 's1', result: { ok: false, error: 'no-sources', stderr: 'Episode is released, but no valid sources!' } }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Epizoda je izašla, ali trenutno nema ispravnih izvora.')
+    fireEvent.click(screen.getByRole('button', { name: 'Pokušaj ponovo' }))
+    expect(api.watch.start).toHaveBeenLastCalledWith({ query: 'Show', anime: 'Show', episode: '2' })
+  })
+  it('does not show errors of a background recovery session', async () => {
+    const { api, handlers } = withEvents()
+    renderUi(<SearchPage {...props()} />, { api })
+    await waitFor(() => expect(handlers.end).toBeDefined())
+    act(() => handlers.end({ sessionId: 's9', retry: true, result: { ok: false, error: 'no-sources', stderr: '' } }))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
   it('is blocked until components are ready', () => {
     const p = props({ ready: false })
     renderUi(<SearchPage {...p} />)
@@ -75,6 +91,24 @@ describe('SearchPage', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Nema rezultata.')
     fireEvent.click(screen.getByRole('button', { name: 'Prikaži detalje' }))
     expect(screen.getByText('No results found!')).toBeInTheDocument()
+  })
+
+  it('a late end of a recovery session does not reset a search for the next episode', async () => {
+    const { api, handlers } = withEvents()
+    renderUi(<SearchPage {...props({ pendingWatch: { query: 'Show', anime: 'Show', episode: '5' } })} />, { api })
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(1))
+    expect(screen.getByText('Pretraga…')).toBeInTheDocument()
+    act(() => handlers.end({ sessionId: 's9', retry: true, result: { ok: true } }))
+    expect(screen.getByText('Pretraga…')).toBeInTheDocument()
+  })
+  it('a recovery end while its own playing phase is shown returns to idle', async () => {
+    const { api, handlers } = withEvents()
+    renderUi(<SearchPage {...props()} />, { api })
+    await waitFor(() => expect(handlers.playing).toBeDefined())
+    act(() => handlers.playing({ title: 'Show', episode: '3' }))
+    act(() => handlers.end({ sessionId: 's9', retry: true, result: { ok: true } }))
+    expect(screen.queryByText('Pretraga…')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Traži' })).toBeEnabled()
   })
 
   it('starts a pending "continue watching" request once ready', async () => {

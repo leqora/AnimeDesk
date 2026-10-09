@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatTime, segmentAt, nextEpisodeNumber, shouldOfferResume, trackMax, isLastEpisode } from '../../src/shared/player.js'
+import { formatTime, segmentAt, nextEpisodeNumber, shouldOfferResume, trackMax, isLastEpisode, qualityLabel, qualityName } from '../../src/shared/player.js'
 
 describe('player helpers', () => {
   it('formats time', () => {
@@ -43,5 +43,24 @@ describe('player helpers', () => {
     expect(isLastEpisode('12', 12)).toBe(true)
     expect(isLastEpisode('11', 12)).toBe(false)
     expect(isLastEpisode('5', null)).toBe(false)
+  })
+})
+
+describe('qualityLabel', () => {
+  it('snaps near-standard heights and keeps odd ones raw', () => {
+    expect(qualityLabel(1080)).toBe('1080p')
+    expect(qualityLabel(1072)).toBe('1080p')
+    expect(qualityLabel(1088)).toBe('1080p')
+    expect(qualityLabel(714)).toBe('720p')
+    expect(qualityLabel(2160)).toBe('2160p')
+    expect(qualityLabel(800)).toBe('800p')
+    expect(qualityLabel(240)).toBe('240p')
+  })
+  it('returns null without a real height', () => {
+    for (const h of [0, -5, Number.NaN, undefined, null]) expect(qualityLabel(h)).toBeNull()
+  })
+  it('names ani-cli qualities for people', () => {
+    expect(qualityName('720')).toBe('720p')
+    expect(qualityName('best')).toBe('best')
   })
 })

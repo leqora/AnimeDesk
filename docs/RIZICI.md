@@ -40,3 +40,10 @@ Rizici koji se posebno prate tokom razvoja. Svaki ima test koji ga „zakucava�
 | Sajt promeni zaštitu (zaglavlja, maskirani segmenti) | ugrađeni plejer ne može da pusti epizodu | popravka u `streamServer.js`; do tada ekran sa greškom + dugme „Pusti u spoljnom plejeru” (mpv) |
 | Lokalni proxy dostupan drugim programima | tuđi proces koristi stream server | sluša samo na `127.0.0.1`, svaki zahtev traži token, dozvoljeni samo `http(s)` izvori |
 | AniSkip nema podatke za seriju/epizodu | nema dugmadi za preskakanje | normalno ponašanje; dugmad se prikazuju samo kad podaci postoje |
+
+## Plejer: kvalitet i oporavak (v0.6)
+
+| Rizik | Šta bi se desilo | Kako je rešeno |
+|---|---|---|
+| Poruka ani-cli-ja o kvalitetu se promeni u upstream-u | nestaje samo upozorenje „traženi kvalitet nije dostupan”; bedž prave rezolucije i dalje radi | prihvaćeno; po potrebi ispraviti prepoznavanje poruke u `parseQualityFallback` u `aniCliBridge.js` |
+| Watchdog od 12 s može okinuti na veoma sporoj vezi | jedan tihi oporavak (nova ani-cli sesija), pa ekran sa izborom („Pokušaj ponovo” / mpv / Nazad) | oporavak je ograničen na jedan po epizodi; ne beleži epizodu kao odgledanu i ne dira sačuvanu poziciju |

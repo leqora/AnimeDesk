@@ -24,11 +24,11 @@ const view = (o = open(), extra = {}, apiOverrides = {}) => {
   const onClose = vi.fn()
   const api = makeFakeApi(apiOverrides)
   const ui = (props = {}) => <PlayerView open={o} settings={{ ...DEFAULT_SETTINGS }} fullscreen={false} onSettings={vi.fn()} onClose={onClose} HlsImpl={FakeHls} {...extra} {...props} />
-  const { rerender } = renderUi(ui(), { api })
+  const { rerender, unmount } = renderUi(ui(), { api })
   const video = document.querySelector('video')
   fakeMediaState(video)
   const meta = (duration = 1400) => { Object.defineProperty(video, 'duration', { configurable: true, value: duration }); fireEvent(video, new Event('loadedmetadata')) }
-  return { api, onClose, video, meta, rerender: (props) => rerender(ui(props)) }
+  return { api, onClose, video, meta, unmount, rerender: (props) => rerender(ui(props)) }
 }
 
 describe('PlayerView', () => {
@@ -104,19 +104,19 @@ describe('PlayerView', () => {
     expect(api.window.setFullscreen).not.toHaveBeenCalled()
     expect(video.muted).toBe(false)
   })
-  it('retries network errors, recovers media errors, then offers mpv', () => {
+  it('retries network errors, recovers media errors, then offers mpv', async () => {
     const { onClose } = view()
     for (let i = 0; i < 3; i++) act(() => FakeHls.last.emitError('networkError'))
     expect(FakeHls.last.startLoad).toHaveBeenCalledTimes(3)
     act(() => FakeHls.last.emitError('mediaError'))
     expect(FakeHls.last.recoverMediaError).toHaveBeenCalledTimes(1)
     expect(screen.queryByText('Video ne može da se pusti u aplikaciji.')).not.toBeInTheDocument()
-    act(() => FakeHls.last.emitError('networkError'))
-    expect(screen.getByText('Video ne može da se pusti u aplikaciji.')).toBeInTheDocument()
+    await act(async () => FakeHls.last.emitError('networkError'))
+    expect(await screen.findByText('Video ne može da se pusti u aplikaciji.')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Pusti u spoljnom plejeru (mpv)' }))
     expect(onClose).toHaveBeenCalledWith('external')
   })
-  it('reloads the playlist on fatal manifest errors, then offers mpv after the retry budget', () => {
+  it('reloads the playlist on fatal manifest errors, then offers mpv after the retry budget', async () => {
     view()
     const hls = FakeHls.last
     hls.levels = []
@@ -125,8 +125,8 @@ describe('PlayerView', () => {
     expect(hls.loadSource).toHaveBeenLastCalledWith('http://127.0.0.1:9/s/t/p1/playlist')
     expect(hls.startLoad).not.toHaveBeenCalled()
     expect(screen.queryByText('Video ne može da se pusti u aplikaciji.')).not.toBeInTheDocument()
-    act(() => hls.emitError('networkError', true, 'manifestLoadError'))
-    expect(screen.getByText('Video ne može da se pusti u aplikaciji.')).toBeInTheDocument()
+    await act(async () => hls.emitError('networkError', true, 'manifestLoadError'))
+    expect(await screen.findByText('Video ne može da se pusti u aplikaciji.')).toBeInTheDocument()
   })
   it('treats manifest timeouts as manifest-level even with known levels', () => {
     view()
@@ -341,6 +341,84 @@ describe('PlayerView skip / next / resume', () => {
     fireEvent.keyDown(window, { key: 'n' })
     expect(later).toHaveBeenCalledWith('next')
   })
+  it('tries swapAudioCodec on the second media error and resets the counters when fragments advance', async () => {
+    view()
+    const hls = FakeHls.last
+    act(() => hls.emitError('mediaError'))
+    act(() => hls.emitError('mediaError'))
+    expect(hls.recoverMediaError).toHaveBeenCalledTimes(2)
+    expect(hls.swapAudioCodec).toHaveBeenCalledTimes(1)
+    act(() => hls.emit(FakeHls.Events.FRAG_CHANGED))
+    act(() => hls.emitError('mediaError'))
+    expect(hls.recoverMediaError).toHaveBeenCalledTimes(3)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+  it('asks main to recover when hls.js gives up; main closes the player for the automatic retry', async () => {
+    const recover = vi.fn(async () => ({ ok: true }))
+    const { api } = view(open(), {}, { player: { recover } })
+    for (let i = 0; i < 4; i++) await act(async () => FakeHls.last.emitError('networkError'))
+    expect(recover).toHaveBeenCalledTimes(1)
+    expect(recover).toHaveBeenCalledWith({ playbackId: 'p1', position: 0, duration: 0, maxPercent: 0 })
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(api.player.closed).not.toHaveBeenCalled()
+  })
+  it('offers try again, mpv and back once the automatic retry is used up', async () => {
+    const { api, onClose } = view()
+    for (let i = 0; i < 4; i++) await act(async () => FakeHls.last.emitError('networkError'))
+    const alert = await screen.findByRole('alert')
+    fireEvent.click(within(alert).getByRole('button', { name: 'Pokušaj ponovo' }))
+    expect(api.player.recover).toHaveBeenLastCalledWith(expect.objectContaining({ playbackId: 'p1' }), { manual: true })
+    fireEvent.click(within(alert).getByRole('button', { name: 'Pusti u spoljnom plejeru (mpv)' }))
+    expect(onClose).toHaveBeenCalledWith('external')
+  })
+  it('recovers after 12 s without progress while playing, but not while paused', async () => {
+    vi.useFakeTimers()
+    try {
+      const { api, video, meta } = view()
+      meta()
+      video.paused = true
+      await act(async () => vi.advanceTimersByTime(20000))
+      expect(api.player.recover).not.toHaveBeenCalled()
+      video.paused = false
+      await act(async () => vi.advanceTimersByTime(13000))
+      expect(api.player.recover).toHaveBeenCalledTimes(1)
+    } finally { vi.useRealTimers() }
+  })
+  it('does not watch for stalls while the resume prompt is open', async () => {
+    vi.useFakeTimers()
+    try {
+      const { api, video, meta } = view(open({ resumeAt: 754 }))
+      meta()
+      video.paused = false
+      await act(async () => vi.advanceTimersByTime(20000))
+      expect(api.player.recover).not.toHaveBeenCalled()
+    } finally { vi.useRealTimers() }
+  })
+  it('jumps straight to the position after a recovery, without the resume prompt', () => {
+    const { video, meta } = view(open({ resumeAt: 754, autoResume: true }))
+    expect(screen.queryByRole('button', { name: /Nastavi od/ })).not.toBeInTheDocument()
+    meta()
+    expect(video.currentTime).toBe(754)
+    expect(video.play).toHaveBeenCalled()
+  })
+  it('a broken local file only offers mpv and back', () => {
+    const { video, api } = view(open({ kind: 'file', src: 'http://127.0.0.1:9/s/t/f1/file', subtitleUrl: null }))
+    fireEvent(video, new Event('error'))
+    const alert = screen.getByRole('alert')
+    expect(within(alert).queryByRole('button', { name: 'Pokušaj ponovo' })).not.toBeInTheDocument()
+    expect(api.player.recover).not.toHaveBeenCalled()
+  })
+  it('hides the spinner when time advances while playing, even if the browser reported a stall', () => {
+    const { video, meta } = view()
+    meta()
+    video.paused = false
+    fireEvent(video, new Event('timeupdate'))
+    fireEvent(video, new Event('waiting'))
+    expect(screen.getByRole('status', { name: 'Učitavanje' })).toBeInTheDocument()
+    video.currentTime = 5
+    fireEvent(video, new Event('timeupdate'))
+    expect(screen.queryByRole('status', { name: 'Učitavanje' })).not.toBeInTheDocument()
+  })
   it('hides the controls again after playback resumes without mouse movement', () => {
     vi.useFakeTimers()
     try {
@@ -366,4 +444,85 @@ describe('PlayerView skip / next / resume', () => {
       expect(seen).not.toHaveBeenCalled()
     } finally { process.off('unhandledRejection', seen) }
   })
+  it('shows a spinner until playback starts, and a slow note after 8 s', () => {
+    vi.useFakeTimers()
+    try {
+      const { video } = view()
+      expect(screen.getByRole('status', { name: 'Učitavanje' })).toBeInTheDocument()
+      act(() => vi.advanceTimersByTime(8000))
+      expect(screen.getByText('Sporo učitavanje…')).toBeInTheDocument()
+      fireEvent(video, new Event('playing'))
+      expect(screen.queryByRole('status', { name: 'Učitavanje' })).not.toBeInTheDocument()
+      video.paused = false
+      fireEvent(video, new Event('waiting'))
+      expect(screen.getByRole('status', { name: 'Učitavanje' })).toBeInTheDocument()
+    } finally { vi.useRealTimers() }
+  })
+  it('applies the remembered volume and mute', () => {
+    renderUi(<PlayerView open={open()} settings={{ ...DEFAULT_SETTINGS, playerVolume: 0.4, playerMuted: true }} fullscreen={false} onSettings={vi.fn()} onClose={vi.fn()} HlsImpl={FakeHls} />)
+    const video = document.querySelector('video')
+    expect(video.volume).toBeCloseTo(0.4)
+    expect(video.muted).toBe(true)
+  })
+  it('saves volume changes once, 500 ms after the last change, and on close', () => {
+    vi.useFakeTimers()
+    try {
+      const onSettings = vi.fn()
+      const { video, unmount } = view(open(), { onSettings })
+      video.volume = 0.3
+      fireEvent(video, new Event('volumechange'))
+      video.volume = 0.2
+      fireEvent(video, new Event('volumechange'))
+      act(() => vi.advanceTimersByTime(499))
+      expect(onSettings).not.toHaveBeenCalled()
+      act(() => vi.advanceTimersByTime(1))
+      expect(onSettings).toHaveBeenCalledTimes(1)
+      expect(onSettings).toHaveBeenCalledWith({ playerVolume: 0.2, playerMuted: false })
+      video.muted = true
+      fireEvent(video, new Event('volumechange'))
+      unmount()
+      expect(onSettings).toHaveBeenLastCalledWith({ playerVolume: 0.2, playerMuted: true })
+    } finally { vi.useRealTimers() }
+  })
+  it('double click toggles fullscreen without pausing; a single click pauses after 220 ms', () => {
+    vi.useFakeTimers()
+    try {
+      const { video, meta, api } = view()
+      meta()
+      fireEvent.click(video)
+      fireEvent.click(video)
+      fireEvent.doubleClick(video)
+      act(() => vi.advanceTimersByTime(300))
+      expect(api.window.setFullscreen).toHaveBeenCalledWith(true)
+      expect(video.pause).not.toHaveBeenCalled()
+      fireEvent.click(video)
+      act(() => vi.advanceTimersByTime(219))
+      expect(video.pause).not.toHaveBeenCalled()
+      act(() => vi.advanceTimersByTime(1))
+      expect(video.pause).toHaveBeenCalled()
+    } finally { vi.useRealTimers() }
+  })
+})
+
+it('shows the real resolution and follows level switches', () => {
+  const { video, meta } = view()
+  Object.defineProperty(video, 'videoHeight', { configurable: true, value: 1072 })
+  meta()
+  expect(document.querySelector('.player__quality')).toHaveTextContent('1080p')
+  Object.defineProperty(video, 'videoHeight', { configurable: true, value: 720 })
+  fireEvent(video, new Event('resize'))
+  expect(document.querySelector('.player__quality')).toHaveTextContent('720p')
+})
+it('says once that the asked quality was not available', () => {
+  vi.useFakeTimers()
+  try {
+    const { video, meta } = view(open({ qualityFallback: '720' }))
+    Object.defineProperty(video, 'videoHeight', { configurable: true, value: 1080 })
+    meta()
+    expect(screen.getByText('720p nije dostupan, pušta se 1080p')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(4000))
+    expect(screen.queryByText('720p nije dostupan, pušta se 1080p')).not.toBeInTheDocument()
+    fireEvent(video, new Event('resize'))
+    expect(screen.queryByText(/nije dostupan/)).not.toBeInTheDocument()
+  } finally { vi.useRealTimers() }
 })

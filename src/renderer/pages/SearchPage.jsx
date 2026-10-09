@@ -43,13 +43,15 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
         live.current.sessionId = m.sessionId; setMenu(m); setSelected([]); setPhase(m.kind === 'episode' ? 'episode' : 'anime')
       }),
       api.watch.onPlaying((p) => { setPlaying(p); setPhase('playing') }),
-      api.watch.onSessionEnd(({ sessionId, result }) => {
+      api.watch.onSessionEnd(({ sessionId, result, retry }) => {
         if (live.current.ignore.delete(sessionId)) return
+        // A recovery session is started by main, never by this page; only undo the 'playing' phase its own onPlaying set.
+        if (retry && live.current.phase !== 'playing') return
         live.current.sessionId = null
         setMenu(null)
         setPlaying(null)
         setPhase('idle')
-        if (!result.ok && result.error !== 'cancelled') setError(result)
+        if (!result.ok && result.error !== 'cancelled' && !retry) setError(result)
       }),
     ]
     return () => {
@@ -71,6 +73,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   }, [api, anime])
 
   const start = (params) => {
+    live.current.lastParams = params
     live.current.lastEpisode = params.episode ?? null
     live.current.startedMode = null
     const seq = ++live.current.startSeq
@@ -86,6 +89,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
       })
       .catch(() => { setPhase('idle'); setError({ error: 'unknown' }) })
   }
+  const retrySame = () => start({ ...live.current.lastParams, ...(anime ? { query: anime, anime } : {}), ...(live.current.lastEpisode != null ? { episode: live.current.lastEpisode } : {}) })
   // Cancel the running session on purpose and start a fresh one for this series (prefs are read only at start).
   const restartFor = (title) => {
     const old = live.current.sessionId
@@ -178,6 +182,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
           <span>{t(`error.${error.error ?? 'unknown'}`)}</span>
           {error.stderr && <button type="button" onClick={() => setShowDetails((v) => !v)}>{t('error.showDetails')}</button>}
           {error.error === 'no-dub' && anime && <button type="button" className="primary" onClick={playSubtitled}>{t('search.playSub')}</button>}
+          {error.error === 'no-sources' && live.current.lastParams && <button type="button" className="primary" onClick={retrySame}>{t('search.retry')}</button>}
           {showDetails && <pre className="details">{error.stderr}</pre>}
         </div>
       )}

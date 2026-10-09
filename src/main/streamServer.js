@@ -24,7 +24,7 @@ function sendFile(res, file, range) {
 
 const looksLikePlaylist = (type, url) => /mpegurl/i.test(type) || /\.m3u8(\?|$)/i.test(url)
 
-export function createStreamServer({ fetchImpl = fetch, userAgent = DEFAULT_USER_AGENT } = {}) {
+export function createStreamServer({ fetchImpl = fetch, userAgent = DEFAULT_USER_AGENT, headerTimeoutMs = 20000 } = {}) {
   const token = crypto.randomBytes(16).toString('hex')
   const playbacks = new Map()
   let server = null
@@ -81,17 +81,38 @@ export function createStreamServer({ fetchImpl = fetch, userAgent = DEFAULT_USER
     return { id, playlistUrl: `${base(id)}/playlist`, subtitleUrl: subUrl ? `${base(id)}/sub` : null }
   }
 
+  // Deadline for the response headers only: a long segment body may keep streaming past it.
+  async function fetchUpstream(url, headers, parent) {
+    const ac = new AbortController()
+    parent.addEventListener('abort', () => ac.abort(), { once: true })
+    let timedOut = false
+    const timer = setTimeout(() => { timedOut = true; ac.abort() }, headerTimeoutMs)
+    try {
+      return { up: await fetchImpl(url, { headers, signal: ac.signal }) }
+    } catch {
+      return { error: timedOut ? 'timeout' : 'network' }
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
   async function proxy(req, res, pb, id, url, kind) {
     const ac = new AbortController()
     res.on('close', () => ac.abort())
     const headers = { 'User-Agent': userAgent, 'Accept-Encoding': 'identity' }
     if (pb.referrer) { headers.Referer = pb.referrer; headers.Origin = pb.origin }
     if (req.headers.range) headers.Range = req.headers.range
-    let up
-    try {
-      up = await fetchImpl(url, { headers, signal: ac.signal })
-    } catch {
-      if (!res.headersSent) res.writeHead(502, CORS).end()
+    // Segments get one more try (CDN hiccups); playlists and subtitles are re-requested by hls.js itself.
+    const attempts = kind === 'r' ? 2 : 1
+    let up = null
+    let failure = 'network'
+    for (let i = 0; i < attempts && !ac.signal.aborted; i++) {
+      const r = await fetchUpstream(url, headers, ac.signal)
+      if (r.up && (r.up.status < 500 || i === attempts - 1)) { up = r.up; break }
+      if (r.up) { try { await r.up.body?.cancel() } catch { /* already closed */ } } else failure = r.error
+    }
+    if (!up) {
+      if (!res.headersSent) res.writeHead(failure === 'timeout' ? 504 : 502, CORS).end()
       return
     }
     const type = up.headers.get('content-type') ?? ''

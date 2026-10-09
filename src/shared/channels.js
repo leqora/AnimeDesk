@@ -44,6 +44,8 @@ export const INVOKE = {
   windowSetFullscreen: 'window:set-fullscreen',
   playerProgress: 'player:progress',
   playerClosed: 'player:closed',
+  playerRecover: 'player:recover',
+  playerRetryAgain: 'player:retry-again',
   skipGet: 'skip:get',
 }
 
@@ -62,4 +64,5 @@ export const EVENTS = {
   fullscreen: 'event:fullscreen',
   playerOpen: 'event:player-open',
   playerClose: 'event:player-close',
+  playerRetry: 'event:player-retry',
 }
