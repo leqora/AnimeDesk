@@ -425,3 +425,26 @@ describe('PlayerView skip / next / resume', () => {
     } finally { vi.useRealTimers() }
   })
 })
+
+it('shows the real resolution and follows level switches', () => {
+  const { video, meta } = view()
+  Object.defineProperty(video, 'videoHeight', { configurable: true, value: 1072 })
+  meta()
+  expect(document.querySelector('.player__quality')).toHaveTextContent('1080p')
+  Object.defineProperty(video, 'videoHeight', { configurable: true, value: 720 })
+  fireEvent(video, new Event('resize'))
+  expect(document.querySelector('.player__quality')).toHaveTextContent('720p')
+})
+it('says once that the asked quality was not available', () => {
+  vi.useFakeTimers()
+  try {
+    const { video, meta } = view(open({ qualityFallback: '720' }))
+    Object.defineProperty(video, 'videoHeight', { configurable: true, value: 1080 })
+    meta()
+    expect(screen.getByText('720p nije dostupan, pušta se 1080p')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(4000))
+    expect(screen.queryByText('720p nije dostupan, pušta se 1080p')).not.toBeInTheDocument()
+    fireEvent(video, new Event('resize'))
+    expect(screen.queryByText(/nije dostupan/)).not.toBeInTheDocument()
+  } finally { vi.useRealTimers() }
+})

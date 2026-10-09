@@ -8,11 +8,12 @@ import { SkipButton } from './SkipButton.jsx'
 import { NextEpisodeCard } from './NextEpisodeCard.jsx'
 import { ResumePrompt } from './ResumePrompt.jsx'
 import { usePlayerHealth } from '../player/usePlayerHealth.js'
-import { trackMax, segmentAt, isLastEpisode } from '../../shared/player.js'
+import { trackMax, segmentAt, isLastEpisode, qualityLabel, qualityName } from '../../shared/player.js'
 
 const HIDE_MS = 3000
 const PROGRESS_MS = 5000
 const VOLUME_SAVE_MS = 500
+const QUALITY_FLASH_MS = 4000
 const CLICK_DELAY_MS = 220
 const COUNTDOWN_S = 10
 const ENDING_FALLBACK_S = 30
@@ -53,6 +54,19 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const [flash, setFlash] = useState(null)
   const autoSkipped = useRef(new Set())
   const flashTimer = useRef(null)
+  const [quality, setQuality] = useState(null)
+  const fallbackShown = useRef(false)
+  const showFlash = (text, ms = 1500) => {
+    setFlash(text)
+    clearTimeout(flashTimer.current)
+    flashTimer.current = setTimeout(() => setFlash(null), ms)
+  }
+  const readQuality = () => setQuality(qualityLabel(video.current?.videoHeight))
+  useEffect(() => {
+    if (!open.qualityFallback || !quality || fallbackShown.current) return
+    fallbackShown.current = true
+    showFlash(t('player.qualityFallback', { requested: qualityName(open.qualityFallback), actual: quality }), QUALITY_FLASH_MS)
+  }, [quality])
 
   const snapshot = () => {
     const v = video.current
@@ -181,6 +195,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const onLoadedMetadata = () => {
     const v = video.current
     setDuration(v.duration)
+    readQuality()
     if (open.episode != null) {
       const request = Promise.resolve().then(() => api.skip.get(open.title, open.episode, v.duration))
       request.then(setSkips).catch(() => setSkips(null))
@@ -196,9 +211,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       autoSkipped.current.add(seg)
       if (seg === 'ed') { finishEpisode(); return }
       v.currentTime = skips[seg].end
-      setFlash(t(seg === 'op' ? 'player.skipped' : 'player.skippedRecap'))
-      clearTimeout(flashTimer.current)
-      flashTimer.current = setTimeout(() => setFlash(null), 1500)
+      showFlash(t(seg === 'op' ? 'player.skipped' : 'player.skippedRecap'))
     }
   }
   const segment = segmentAt(time, skips)
@@ -214,7 +227,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
         ref={video} className="player__video" crossOrigin="anonymous"
         onLoadedMetadata={onLoadedMetadata} onTimeUpdate={onTimeUpdate}
         onPlay={() => { setPlaying(true); setResume(null); poke() }} onPause={() => { health.onReady(); setPlaying(false); setIdle(false); api.player.progress(snapshot()) }}
-        onVolumeChange={onVolumeChange}
+        onVolumeChange={onVolumeChange} onResize={readQuality}
         onWaiting={health.onWaiting} onStalled={health.onWaiting} onPlaying={health.onReady} onCanPlay={health.onReady} onSeeked={health.onReady}
         onEnded={finishEpisode} onClick={onVideoClick} onDoubleClick={onVideoDoubleClick}
         // a downloaded file the browser cannot decode; hls streams report through hls.js (with recovery) instead
@@ -246,7 +259,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       {end && <NextEpisodeCard mode={end} seconds={left} onNext={() => close('next')} onCancel={() => setEnd('manual')} onBack={() => close('ended')} />}
       <PlayerControls
         segments={['op', 'ed', 'recap'].filter((k) => skips?.[k]).map((k) => ({ kind: k, ...skips[k] }))}
-        time={time} duration={duration} playing={playing} muted={muted} volume={volume} subsOn={subsOn}
+        time={time} duration={duration} quality={quality} playing={playing} muted={muted} volume={volume} subsOn={subsOn}
         subtitleSize={settings.subtitleSize} fullscreen={fullscreen} canPrev={Number(open.episode) > 1} canNext={!lastEpisode}
         onTogglePlay={togglePlay} onSeek={(s) => { video.current.currentTime = s }} onStep={step}
         onPrev={() => close('prev')} onNext={() => close('next')}
