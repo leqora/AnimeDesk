@@ -213,6 +213,21 @@ function retrySetup({ settings = {}, now = () => 1000 } = {}) {
   return { svc, aniCli, sessions, internalPlayer, library, positions, events, args }
 }
 
+describe('watchService player mode', () => {
+  it('passes the session mode to the in-app player, also for local files', async () => {
+    const internalPlayer = { play: vi.fn(async () => ({ exitCode: 0, maxPercent: 10, reason: 'back' })), stop: vi.fn() }
+    const seriesPrefs = { resolve: vi.fn(() => ({ quality: 'best', mode: 'dub' })) }
+    const { svc } = setup({ settings: { playerMode: 'internal' }, internalPlayer, seriesPrefs })
+    svc.watch({ query: 'fake' })
+    await flush()
+    expect(internalPlayer.play).toHaveBeenLastCalledWith(expect.objectContaining({ mode: 'dub' }))
+    await svc.playLocal({ file: 'D:\A\A Episode 1.mp4', title: 'A', episode: '1', mode: 'dub' })
+    expect(internalPlayer.play).toHaveBeenLastCalledWith(expect.objectContaining({ file: 'D:\A\A Episode 1.mp4', mode: 'dub' }))
+    await svc.playLocal({ file: 'D:\A\A Episode 2.mp4', title: 'A', episode: '2' })
+    expect(internalPlayer.play).toHaveBeenLastCalledWith(expect.objectContaining({ mode: 'sub' }))
+  })
+})
+
 describe('watchService recovery', () => {
   it('retry skips afterPlayback even at 95 % and restarts the same episode with the same quality and mode', async () => {
     const { svc, sessions, internalPlayer, library, positions, events, args } = retrySetup({ settings: { quality: '720', mode: 'dub' } })
@@ -229,6 +244,8 @@ describe('watchService recovery', () => {
     sessions[1].opts.onPlay({ args })
     await flush()
     expect(internalPlayer.play).toHaveBeenLastCalledWith(expect.objectContaining({ resume: { at: 1300, auto: true, title: 'Show', episode: '3' } }))
+    expect(internalPlayer.play.mock.calls[0][0].mode).toBe('dub')
+    expect(internalPlayer.play.mock.calls[1][0].mode).toBe('dub')
   })
   it('allows one automatic recovery per episode; manual ones always pass', async () => {
     const { svc, sessions, args } = retrySetup()

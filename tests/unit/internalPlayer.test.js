@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { createInternalPlayer } from '../../src/main/internalPlayer.js'
 import { EVENTS } from '../../src/shared/channels.js'
 
-function setup({ resume = null } = {}) {
+function setup({ resume = null, seriesPrefs } = {}) {
   const streams = {
     register: vi.fn(() => ({ id: 'p1', playlistUrl: 'http://127.0.0.1:9/s/t/p1/playlist', subtitleUrl: 'http://127.0.0.1:9/s/t/p1/sub' })),
     registerFile: vi.fn(() => ({ id: 'f1', fileUrl: 'http://127.0.0.1:9/s/t/f1/file' })),
@@ -10,17 +10,30 @@ function setup({ resume = null } = {}) {
   }
   const positions = { get: vi.fn(() => resume), save: vi.fn() }
   const events = []
-  const player = createInternalPlayer({ streams, notify: (c, p) => events.push([c, p]), positions, getTotalEpisodes: () => 12 })
+  const player = createInternalPlayer({ streams, notify: (c, p) => events.push([c, p]), positions, getTotalEpisodes: () => 12, seriesPrefs })
   return { streams, positions, events, player }
 }
 const info = { title: 'Show', episode: '3', url: 'https://cdn/x.m3u8', referrer: 'https://ref/', subUrl: 'https://cdn/a.vtt', mpvArgs: [] }
 
 describe('internalPlayer', () => {
+  it('sends the mode and the remembered offset of that mode', () => {
+    const seriesPrefs = { get: vi.fn(() => ({ quality: null, mode: null, subOffset: { sub: 0.5, dub: -1.2 } })) }
+    const { events, player } = setup({ seriesPrefs })
+    player.play({ ...info, mode: 'dub' })
+    expect(seriesPrefs.get).toHaveBeenCalledWith('Show')
+    expect(events[0][1]).toMatchObject({ mode: 'dub', subOffset: -1.2 })
+  })
+  it('treats an unknown mode as sub', () => {
+    const seriesPrefs = { get: () => ({ subOffset: { sub: 0.5, dub: 2 } }) }
+    const { events, player } = setup({ seriesPrefs })
+    player.play({ ...info, mode: undefined })
+    expect(events[0][1]).toMatchObject({ mode: 'sub', subOffset: 0.5 })
+  })
   it('opens the renderer player and resolves when it closes', async () => {
     const { streams, positions, events, player } = setup({ resume: { position: 600, duration: 1400 } })
     const done = player.play(info)
     expect(streams.register).toHaveBeenCalledWith({ url: 'https://cdn/x.m3u8', referrer: 'https://ref/', subUrl: 'https://cdn/a.vtt' })
-    expect(events[0]).toEqual([EVENTS.playerOpen, { playbackId: 'p1', title: 'Show', episode: '3', kind: 'hls', src: 'http://127.0.0.1:9/s/t/p1/playlist', subtitleUrl: 'http://127.0.0.1:9/s/t/p1/sub', resumeAt: 600, autoResume: false, qualityFallback: null, totalEpisodes: 12 }])
+    expect(events[0]).toEqual([EVENTS.playerOpen, { playbackId: 'p1', title: 'Show', episode: '3', kind: 'hls', src: 'http://127.0.0.1:9/s/t/p1/playlist', subtitleUrl: 'http://127.0.0.1:9/s/t/p1/sub', resumeAt: 600, autoResume: false, qualityFallback: null, totalEpisodes: 12, mode: 'sub', subOffset: 0 }])
     expect(player.isActive()).toBe(true)
     player.progress({ playbackId: 'p1', position: 300, duration: 1400, maxPercent: 21 })
     expect(positions.save).toHaveBeenCalledWith('Show', '3', { position: 300, duration: 1400 })
