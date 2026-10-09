@@ -79,7 +79,7 @@ export function createHandlers(s) {
     [INVOKE.downloadsRemove]: (id, deleteFile) => s.downloads.removeDownloaded(id, { deleteFile }),
     [INVOKE.downloadsPlay]: async (id) => {
       const d = s.downloads.getDownloaded(id)
-      return d ? s.watch.playLocal({ file: d.path, title: d.title, episode: d.episode }) : null
+      return d ? s.watch.playLocal({ file: d.path, title: d.title, episode: d.episode, mode: d.mode }) : null
     },
     [INVOKE.downloadsOpenFolder]: (id) => {
       const d = s.downloads.getDownloaded(id)

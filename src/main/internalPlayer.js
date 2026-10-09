@@ -1,7 +1,7 @@
 import { EVENTS } from '../shared/channels.js'
 
 // Bridges a watch session to the renderer's PlayerView; resolves like playerMonitor.play so tracking is identical.
-export function createInternalPlayer({ streams, notify, positions, getTotalEpisodes = () => null }) {
+export function createInternalPlayer({ streams, notify, positions, getTotalEpisodes = () => null, seriesPrefs = null }) {
   let active = null
 
   function finish(result) {
@@ -25,6 +25,9 @@ export function createInternalPlayer({ streams, notify, positions, getTotalEpiso
     // A recovery carries its own position (it may be under the 10 s that positions keeps) and must not ask again;
     // the quality notice was already shown for this episode, so it is not repeated.
     const saved = info.resume || info.episode == null ? null : positions.get(info.title, info.episode)
+    const mode = info.mode === 'dub' ? 'dub' : 'sub'
+    // same key as positions (the player title), so reading and saving the offset always meet
+    const subOffset = seriesPrefs?.get(info.title)?.subOffset?.[mode] ?? 0
     return new Promise((resolve) => {
       active = { playbackId: reg.id, resolve, title: info.title, episode: info.episode, maxPercent: 0, position: 0, duration: 0 }
       notify(EVENTS.playerOpen, {
@@ -32,6 +35,7 @@ export function createInternalPlayer({ streams, notify, positions, getTotalEpiso
         src: local ? reg.fileUrl : reg.playlistUrl, subtitleUrl: reg.subtitleUrl ?? null,
         resumeAt: info.resume ? info.resume.at : saved?.position ?? null, autoResume: Boolean(info.resume),
         qualityFallback: info.resume ? null : info.qualityFallback ?? null, totalEpisodes: getTotalEpisodes(info.title),
+        mode, subOffset,
       })
     })
   }

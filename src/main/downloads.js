@@ -48,6 +48,7 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
     try {
       fs.mkdirSync(targetDir, { recursive: true }) // ani-cli never creates it
       const prefs = resolvePrefs ? resolvePrefs(item.aniCliTitle) : {}
+      item.mode = prefs.mode ?? null
       session = aniCli.startSession({
         query: item.aniCliTitle,
         quality: prefs.quality,
@@ -81,7 +82,7 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
         if (r.ok) {
           const found = findEpisodeFile(targetDir, item.episode)
           if (found) {
-            db.items.push({ id: uuid(), title: item.title, episode: item.episode, path: found, size: fs.statSync(found).size, downloadedAt: now() })
+            db.items.push({ id: uuid(), title: item.title, episode: item.episode, path: found, size: fs.statSync(found).size, downloadedAt: now(), ...(item.mode ? { mode: item.mode } : {}) })
             save()
             item.status = 'done'
             item.percent = 100

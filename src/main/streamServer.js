@@ -3,9 +3,25 @@ import fs from 'node:fs'
 import crypto from 'node:crypto'
 import path from 'node:path'
 import { Readable, pipeline } from 'node:stream'
+import { toVtt } from '../shared/subtitles.js'
 
 export const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 const CORS = { 'Access-Control-Allow-Origin': '*' }
+const VTT_HEAD = { ...CORS, 'Content-Type': 'text/vtt; charset=utf-8', 'Cache-Control': 'no-store' }
+// Every subtitle reaches the player as WebVTT; formats it cannot show get 415 so the player can say so.
+function sendSubtitle(req, res, status, text) {
+  const { vtt } = toVtt(text)
+  if (vtt == null) return res.writeHead(415, { ...CORS, 'Cache-Control': 'no-store' }).end()
+  res.writeHead(status, VTT_HEAD)
+  return req.method === 'HEAD' ? res.end() : res.end(vtt)
+}
+// Local subtitle files: UTF-16 by BOM, else UTF-8, else Windows-1250 (Serbian/Central European legacy .srt).
+export function decodeSubtitleBytes(buf) {
+  if (buf[0] === 0xff && buf[1] === 0xfe) return new TextDecoder('utf-16le').decode(buf)
+  if (buf[0] === 0xfe && buf[1] === 0xff) return new TextDecoder('utf-16be').decode(buf)
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf) } catch { return new TextDecoder('windows-1250').decode(buf) }
+}
+const SUB_SUFFIXES = ['.vtt', '.srt', '.en.vtt', '.en.srt']
 
 // Every non-comment line and every URI="…" attribute becomes a local, allow-listed URL (toLocal returning null leaves the entry untouched).
 export function rewritePlaylist(text, baseUrl, toLocal) {
@@ -38,24 +54,27 @@ export function createStreamServer({ fetchImpl = fetch, userAgent = DEFAULT_USER
     return `${base(id)}/r/${n}`
   }
 
-  // ani-cli downloads soft subs next to the video as "<same name>.vtt" (mpv auto-loads them; the in-app player gets /sub).
-  function siblingVtt(filePath) {
-    const vtt = path.join(path.dirname(filePath), `${path.parse(filePath).name}.vtt`)
-    try { return fs.statSync(vtt).isFile() ? vtt : null } catch { return null }
+  // ani-cli downloads soft subs next to the video ("<same name>.vtt"); a hand-added .srt works too (the in-app player gets /sub).
+  function siblingSubtitle(filePath) {
+    const { dir, name } = path.parse(filePath)
+    for (const suffix of SUB_SUFFIXES) {
+      const f = path.join(dir, name + suffix)
+      try { if (fs.statSync(f).isFile()) return f } catch { /* not there */ }
+    }
+    return null
   }
 
   function registerFile(filePath) {
     const id = crypto.randomUUID()
-    const subFile = siblingVtt(filePath)
+    const subFile = siblingSubtitle(filePath)
     playbacks.set(id, { file: filePath, subFile, urls: [], index: new Map() })
     return { id, fileUrl: `${base(id)}/file`, subtitleUrl: subFile ? `${base(id)}/sub` : null }
   }
 
   function serveSubFile(req, res, file) {
-    fs.readFile(file, 'utf8', (err, text) => {
+    fs.readFile(file, (err, buf) => {
       if (err) return res.writeHead(404, CORS).end()
-      const head = { ...CORS, 'Content-Type': 'text/vtt; charset=utf-8', 'Cache-Control': 'no-store' }
-      return req.method === 'HEAD' ? res.writeHead(200, head).end() : res.writeHead(200, head).end(text)
+      return sendSubtitle(req, res, 200, decodeSubtitleBytes(buf))
     })
   }
 
@@ -118,8 +137,9 @@ export function createStreamServer({ fetchImpl = fetch, userAgent = DEFAULT_USER
     const type = up.headers.get('content-type') ?? ''
     try {
       if (kind === 'sub') {
-        const text = await up.text()
-        return res.writeHead(up.status, { ...CORS, 'Content-Type': 'text/vtt; charset=utf-8', 'Cache-Control': 'no-store' }).end(text)
+        // an error page from the source is not "unsupported format": pass its status through
+        if (up.status >= 400) { try { await up.body?.cancel() } catch { /* already closed */ } return res.writeHead(up.status, CORS).end() }
+        return sendSubtitle(req, res, up.status, await up.text())
       }
       if (kind === 'playlist' || looksLikePlaylist(type, url)) {
         const text = await up.text()

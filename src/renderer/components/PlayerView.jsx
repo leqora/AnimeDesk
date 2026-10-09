@@ -8,12 +8,17 @@ import { SkipButton } from './SkipButton.jsx'
 import { NextEpisodeCard } from './NextEpisodeCard.jsx'
 import { ResumePrompt } from './ResumePrompt.jsx'
 import { usePlayerHealth } from '../player/usePlayerHealth.js'
+import { SubtitleOverlay } from './SubtitleOverlay.jsx'
+import { useSubtitleCues } from '../player/useSubtitleCues.js'
+import { clampOffset, formatOffset } from '../../shared/subtitles.js'
 import { trackMax, segmentAt, isLastEpisode, qualityLabel, qualityName } from '../../shared/player.js'
 
 const HIDE_MS = 3000
 const PROGRESS_MS = 5000
 const VOLUME_SAVE_MS = 500
 const QUALITY_FLASH_MS = 4000
+const OFFSET_SAVE_MS = 500
+const SUBS_FLASH_MS = 6000
 const CLICK_DELAY_MS = 220
 const COUNTDOWN_S = 10
 const ENDING_FALLBACK_S = 30
@@ -21,11 +26,12 @@ const NET_RETRIES = 3
 // hls.js 1.x: startLoad() is a no-op until a manifest has been parsed, so these must reload the source
 const MANIFEST_ERRORS = new Set(['manifestLoadError', 'manifestLoadTimeOut', 'manifestParsingError'])
 // Physical keys, so letter shortcuts also work on non-Latin layouts (e.g. Serbian Cyrillic).
-const KEY_BY_CODE = { KeyF: 'f', KeyM: 'm', KeyS: 's', KeyN: 'n', Space: ' ' }
-const TEXT_FIELD = 'input:not([type=range]), textarea, [contenteditable="true"]'
+const KEY_BY_CODE = { KeyF: 'f', KeyM: 'm', KeyS: 's', KeyG: 'g', KeyH: 'h', KeyN: 'n', Space: ' ' }
+const TEXT_FIELD = 'input:not([type=range]):not([type=checkbox]), textarea, [contenteditable="true"]'
 const shortcutKey = (e) => KEY_BY_CODE[e.code] ?? (e.key.length === 1 ? e.key.toLowerCase() : e.key)
 
-export function PlayerView({ open, settings, fullscreen, onSettings, onClose, HlsImpl = Hls }) {
+const headStatus = (url) => fetch(url, { method: 'HEAD' }).then((r) => r.status)
+export function PlayerView({ open, settings, fullscreen, onSettings, onClose, HlsImpl = Hls, probeSub = headStatus }) {
   const api = useApi()
   // latest props/api for long-lived handlers (keydown, intervals) so they are never stale
   const live = useRef({})
@@ -42,7 +48,18 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const volumeTimer = useRef(null)
   const pendingVolume = useRef(null)
   const clickTimer = useRef(null)
-  const [subsOn, setSubsOn] = useState(true)
+  const mode = open.mode === 'dub' ? 'dub' : 'sub'
+  const trackEl = useRef(null)
+  const [subsOn, setSubsOn] = useState(settings.subtitles.enabled[mode])
+  const [offset, setOffset] = useState(clampOffset(open.subOffset ?? 0))
+  const [subsUnsupported, setSubsUnsupported] = useState(false)
+  const offsetTimer = useRef(null)
+  const pendingOffset = useRef(null)
+  const subs = useSubtitleCues(trackEl, video, offset, open.playbackId)
+  const subsAvailable = Boolean(open.subtitleUrl) && subs.status !== 'error' && !subsUnsupported
+  const subsHint = !open.subtitleUrl ? t('player.noSubs') : subsUnsupported ? t('player.subsUnsupported') : subs.status === 'error' ? t('player.subsFailed') : null
+  const [subsMenu, setSubsMenu] = useState(false)
+  Object.assign(live.current, { subsOn, offset, subsAvailable, mode, subsMenu, t })
   const [idle, setIdle] = useState(false)
   const [failed, setFailed] = useState(null) // null | 'retryable' | 'final'
   const failing = useRef(false)
@@ -80,6 +97,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     closed.current = true
     // leaving for the next episode during the ending counts as having watched it all
     if (reason === 'next' && live.current.inEnding) maxPercent.current = 100
+    flushOffset()
     live.current.api.player.closed({ ...snapshot(), reason })
     live.current.onClose(reason)
   }
@@ -114,11 +132,36 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     clearTimeout(volumeTimer.current)
     volumeTimer.current = setTimeout(flushVolume, VOLUME_SAVE_MS)
   }
+  // Written after the keys settle (holding H must not write the file 20 times); flushed on close.
+  const flushOffset = () => {
+    clearTimeout(offsetTimer.current)
+    const value = pendingOffset.current
+    pendingOffset.current = null
+    if (value != null) live.current.api.seriesPrefs.set(live.current.open.title, { subOffset: { [live.current.mode]: value } })
+  }
+  const shiftOffset = (delta) => {
+    if (!live.current.subsAvailable) return
+    const next = clampOffset(live.current.offset + delta)
+    live.current.offset = next
+    setOffset(next)
+    showFlash(live.current.t('player.subOffset', { value: formatOffset(next, live.current.settings.language) }))
+    pendingOffset.current = next
+    clearTimeout(offsetTimer.current)
+    offsetTimer.current = setTimeout(flushOffset, OFFSET_SAVE_MS)
+  }
+  const resetOffset = () => shiftOffset(-live.current.offset)
+  const toggleSubs = () => {
+    if (!live.current.subsAvailable) return
+    const next = !live.current.subsOn
+    live.current.subsOn = next
+    setSubsOn(next)
+    live.current.onSettings({ subtitles: { enabled: { [live.current.mode]: next } } })
+  }
   useEffect(() => {
     const v = video.current
     v.volume = settings.playerVolume
     v.muted = settings.playerMuted
-    return () => { flushVolume(); clearTimeout(clickTimer.current) }
+    return () => { flushVolume(); flushOffset(); clearTimeout(clickTimer.current) }
   }, [])
 
   useEffect(() => {
@@ -156,15 +199,23 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   }, [open.playbackId])
 
   useEffect(() => {
-    const track = video.current?.textTracks?.[0]
-    if (track) track.mode = subsOn ? 'showing' : 'hidden'
-  }, [subsOn])
+    setSubsUnsupported(false)
+    if (!open.subtitleUrl) return undefined
+    let cancelled = false
+    Promise.resolve().then(() => probeSub(open.subtitleUrl)).then((status) => {
+      if (cancelled || status !== 415) return
+      setSubsUnsupported(true)
+      if (live.current.subsOn) showFlash(t('player.subsUnsupported'), SUBS_FLASH_MS)
+    }, () => {})
+    return () => { cancelled = true }
+  }, [open.playbackId])
 
   const poke = () => {
     setIdle(false)
     clearTimeout(idleTimer.current)
-    idleTimer.current = setTimeout(() => { if (video.current && !video.current.paused) setIdle(true) }, HIDE_MS)
+    idleTimer.current = setTimeout(() => { if (video.current && !video.current.paused && !live.current.subsMenu) setIdle(true) }, HIDE_MS)
   }
+  useEffect(() => { if (!subsMenu) poke() }, [subsMenu])
   useEffect(() => { poke(); return () => { clearTimeout(idleTimer.current); clearTimeout(flashTimer.current) } }, [])
 
   // autoplay policy / aborted loads reject play(); that is never fatal
@@ -180,6 +231,8 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     const onKey = (e) => {
       // Only text entry keeps its keys; a focused slider or select must not swallow the player shortcuts.
       if (e.ctrlKey || e.altKey || e.metaKey || e.target?.closest?.(TEXT_FIELD)) return
+      // The subtitle menu's size slider owns its keys (arrows move the slider, they must not seek); other menu controls keep the shortcuts.
+      if (e.target?.closest?.('.player__subs-menu input[type="range"]')) return
       const v = video.current
       if (!v) return
       switch (shortcutKey(e)) {
@@ -190,7 +243,9 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
         case 'ArrowDown': v.volume = Math.max(0, v.volume - 0.1); break
         case 'f': toggleFullscreen(); break
         case 'm': v.muted = !v.muted; break
-        case 's': setSubsOn((x) => !x); break
+        case 's': toggleSubs(); break
+        case 'g': shiftOffset(e.shiftKey ? -1 : -0.1); break
+        case 'h': shiftOffset(e.shiftKey ? 1 : 0.1); break
         case 'n': e.preventDefault(); if (!live.current.lastEpisode) close('next'); return
         default: return
       }
@@ -250,7 +305,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const startAt = (sec) => { video.current.currentTime = sec; setResume(null); play() }
 
   return (
-    <div className={`player player--subs-${settings.subtitleSize}${idle ? ' player--idle' : ''}`} onMouseMove={poke}>
+    <div className={`player${idle ? ' player--idle' : ''}`} onMouseMove={poke}>
       <video
         ref={video} className="player__video" crossOrigin="anonymous"
         onLoadedMetadata={onLoadedMetadata} onTimeUpdate={onTimeUpdate}
@@ -261,8 +316,9 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
         // a downloaded file the browser cannot decode; hls streams report through hls.js (with recovery) instead
         onError={() => { if (open.kind === 'file') fail() }}
       >
-        {open.subtitleUrl && <track kind="subtitles" src={open.subtitleUrl} default />}
+        {open.subtitleUrl && <track ref={trackEl} kind="subtitles" src={open.subtitleUrl} />}
       </video>
+      {subsOn && subsAvailable && <SubtitleOverlay cues={subs.cues} subtitles={settings.subtitles} raised={!idle} />}
       <div className="player__top">
         <button type="button" onClick={() => close('back')}><Icon name="back" /> {t('search.back')}</button>
         <h2 className="player__title">{open.title} <span className="hud">{t('player.episode', { episode: open.episode ?? '?' })}</span></h2>
@@ -289,11 +345,14 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       <PlayerControls
         segments={['op', 'ed', 'recap'].filter((k) => skips?.[k]).map((k) => ({ kind: k, ...skips[k] }))}
         time={time} duration={duration} quality={quality} playing={playing} muted={muted} volume={volume} subsOn={subsOn}
-        subtitleSize={settings.subtitleSize} fullscreen={fullscreen} canPrev={Number(open.episode) > 1} canNext={!lastEpisode}
+        subsAvailable={subsAvailable} subsHint={subsHint} subOffsetLabel={formatOffset(offset, settings.language)} subSize={settings.subtitles.size}
+        subsMenuOpen={subsMenu} onSubsMenu={setSubsMenu} onSubOffset={shiftOffset} onSubOffsetReset={resetOffset}
+        onSubSize={(n) => onSettings({ subtitles: { size: n } })}
+        fullscreen={fullscreen} canPrev={Number(open.episode) > 1} canNext={!lastEpisode}
         onTogglePlay={togglePlay} onSeek={(s) => { video.current.currentTime = s }} onStep={step}
         onPrev={() => close('prev')} onNext={() => close('next')}
         onToggleMute={() => { video.current.muted = !video.current.muted }} onVolume={(x) => { video.current.volume = x; video.current.muted = false }}
-        onToggleSubs={() => setSubsOn((x) => !x)} onSubtitleSize={(s) => onSettings({ subtitleSize: s })} onToggleFullscreen={toggleFullscreen}
+        onToggleSubs={toggleSubs} onToggleFullscreen={toggleFullscreen}
       />
     </div>
   )

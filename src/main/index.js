@@ -118,7 +118,7 @@ async function main() {
   })
   const player = createPlayer({ getMpvPath: () => toolManager.toolPaths().mpv })
   const internalPlayer = createInternalPlayer({
-    streams, notify: send, positions,
+    streams, notify: send, positions, seriesPrefs,
     getTotalEpisodes: createTotalEpisodes({ library, anilist }),
   })
   const mpvConfigDir = path.join(paths.base, 'mpv-config')

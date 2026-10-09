@@ -75,7 +75,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
         })
       },
       onPlay: async ({ args }) => {
-        const info = { ...parsePlayerArgs(args), qualityFallback: entry.qualityFallback, resume }
+        const info = { ...parsePlayerArgs(args), qualityFallback: entry.qualityFallback, resume, mode: params.mode }
         entry.opened = true
         notify(EVENTS.playing, { title: info.title, episode: info.episode })
         entry.playing = true
@@ -164,9 +164,9 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     entry.session.kill()
   }
 
-  async function playLocal({ file, title, episode }) {
+  async function playLocal({ file, title, episode, mode = 'sub' }) {
     const mpvArgs = [`--force-media-title=${title} Episode ${episode}`, file]
-    const r = await runPlayer({ mpvArgs, file, title, episode: String(episode), url: file, referrer: null, subUrl: null })
+    const r = await runPlayer({ mpvArgs, file, title, episode: String(episode), url: file, referrer: null, subUrl: null, mode })
     return afterPlayback({ title, episode: String(episode), maxPercent: r.maxPercent })
   }
 

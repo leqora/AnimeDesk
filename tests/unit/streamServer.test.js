@@ -3,7 +3,7 @@ import http from 'node:http'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createStreamServer, rewritePlaylist, DEFAULT_USER_AGENT } from '../../src/main/streamServer.js'
+import { createStreamServer, rewritePlaylist, DEFAULT_USER_AGENT, decodeSubtitleBytes } from '../../src/main/streamServer.js'
 
 let upstream, upBase, seen, streams
 const routes = {}
@@ -80,6 +80,36 @@ describe('streamServer', () => {
     expect(sub.headers.get('content-type')).toBe('text/vtt; charset=utf-8')
     expect(await sub.text()).toBe('WEBVTT\n')
   })
+  it('converts SRT subtitles from the source to VTT', async () => {
+    routes['/p/index.m3u8'] = (req, res) => res.writeHead(200, { 'Content-Type': 'application/vnd.apple.mpegurl' }).end(media())
+    routes['/subs/a.srt'] = (req, res) => res.writeHead(200, { 'Content-Type': 'application/x-subrip' }).end('1\r\n00:00:01,000 --> 00:00:02,000\r\nHi\r\n')
+    const reg = streams.register({ url: `${upBase}/p/index.m3u8`, referrer: 'https://ref.example/', subUrl: `${upBase}/subs/a.srt` })
+    const sub = await fetch(reg.subtitleUrl)
+    expect(sub.status).toBe(200)
+    expect(sub.headers.get('content-type')).toBe('text/vtt; charset=utf-8')
+    expect(await sub.text()).toBe('WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000\nHi\n')
+  })
+  it('answers 415 for subtitle formats the player cannot show, also to HEAD', async () => {
+    routes['/subs/a.ass'] = (req, res) => res.writeHead(200).end('[Script Info]\nTitle: x\n')
+    const reg = streams.register({ url: `${upBase}/p/index.m3u8`, referrer: 'https://ref.example/', subUrl: `${upBase}/subs/a.ass` })
+    const get = await fetch(reg.subtitleUrl)
+    expect(get.status).toBe(415)
+    expect(get.headers.get('access-control-allow-origin')).toBe('*')
+    expect((await fetch(reg.subtitleUrl, { method: 'HEAD' })).status).toBe(415)
+  })
+  it('passes upstream subtitle errors through', async () => {
+    routes['/subs/gone.vtt'] = (req, res) => res.writeHead(404, { 'Content-Type': 'text/html' }).end('<html>not found</html>')
+    const reg = streams.register({ url: `${upBase}/p/index.m3u8`, referrer: 'https://ref.example/', subUrl: `${upBase}/subs/gone.vtt` })
+    expect((await fetch(reg.subtitleUrl)).status).toBe(404)
+  })
+  it('answers HEAD for a good subtitle without a body', async () => {
+    routes['/subs/a.vtt'] = (req, res) => res.writeHead(200).end('WEBVTT\n')
+    const reg = streams.register({ url: `${upBase}/p/index.m3u8`, referrer: 'https://ref.example/', subUrl: `${upBase}/subs/a.vtt` })
+    const head = await fetch(reg.subtitleUrl, { method: 'HEAD' })
+    expect(head.status).toBe(200)
+    expect(head.headers.get('content-type')).toBe('text/vtt; charset=utf-8')
+    expect(await head.text()).toBe('')
+  })
   it('answers 502 when the site is unreachable', async () => {
     const reg = streams.register({ url: 'http://127.0.0.1:1/nothing.m3u8', referrer: 'https://ref.example/', subUrl: null })
     expect((await fetch(reg.playlistUrl)).status).toBe(502)
@@ -145,6 +175,58 @@ describe('streamServer', () => {
     expect(reg.subtitleUrl).toBeNull()
     expect((await fetch(reg.fileUrl.replace(/file$/, 'sub'))).status).toBe(404)
     streams.unregister(reg.id)
+  })
+  it('finds a sibling .srt of a local file and converts it', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-srt-'))
+    const video = path.join(dir, 'Show Episode 1.mp4')
+    fs.writeFileSync(video, 'x')
+    fs.writeFileSync(path.join(dir, 'Show Episode 1.srt'), '1\n00:00:01,000 --> 00:00:02,000\nĆao\n')
+    const reg = streams.registerFile(video)
+    expect(reg.subtitleUrl).not.toBeNull()
+    expect(await (await fetch(reg.subtitleUrl)).text()).toBe('WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000\nĆao\n')
+  })
+  it('decodes a Windows-1250 local .srt (Serbian letters)', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-srt-'))
+    const video = path.join(dir, 'W 1.mp4')
+    fs.writeFileSync(video, 'x')
+    fs.writeFileSync(path.join(dir, 'W 1.srt'), Buffer.concat([Buffer.from('1\n00:00:01,000 --> 00:00:02,000\n'), Buffer.from([0x9a, 0xe8, 0xe6, 0x9e, 0xf0]), Buffer.from('\n')]))
+    const reg = streams.registerFile(video)
+    expect(await (await fetch(reg.subtitleUrl)).text()).toBe('WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000\nščćžđ\n')
+  })
+  it('decodes a UTF-16LE local .srt with a BOM', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-srt-'))
+    const video = path.join(dir, 'U 1.mp4')
+    fs.writeFileSync(video, 'x')
+    fs.writeFileSync(path.join(dir, 'U 1.srt'), Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from('1\n00:00:01,000 --> 00:00:02,000\nĆao\n', 'utf16le')]))
+    const res = await fetch(streams.registerFile(video).subtitleUrl)
+    expect(res.status).toBe(200)
+    expect(await res.text()).toBe('WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000\nĆao\n')
+  })
+  it('decodeSubtitleBytes handles UTF-8 (with BOM), UTF-16BE and Windows-1250', () => {
+    expect(decodeSubtitleBytes(Buffer.from('Ćao', 'utf8'))).toBe('Ćao')
+    expect(decodeSubtitleBytes(Buffer.from([0xef, 0xbb, 0xbf, 0x41]))).toBe('A')
+    expect(decodeSubtitleBytes(Buffer.from([0xfe, 0xff, 0x01, 0x06, 0x00, 0x61]))).toBe('Ća')
+    expect(decodeSubtitleBytes(Buffer.from([0x9a, 0xe8]))).toBe('šč')
+  })
+  it('prefers .vtt, then .srt, then .en.vtt, then .en.srt next to a local file', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-srt-'))
+    const video = path.join(dir, 'E 1.mp4')
+    fs.writeFileSync(video, 'x')
+    fs.writeFileSync(path.join(dir, 'E 1.en.srt'), '1\n00:00:01,000 --> 00:00:02,000\nen-srt\n')
+    expect(await (await fetch(streams.registerFile(video).subtitleUrl)).text()).toContain('en-srt')
+    fs.writeFileSync(path.join(dir, 'E 1.en.vtt'), 'WEBVTT\n\n00:01.000 --> 00:02.000\nen-vtt\n')
+    expect(await (await fetch(streams.registerFile(video).subtitleUrl)).text()).toContain('en-vtt')
+    fs.writeFileSync(path.join(dir, 'E 1.srt'), '1\n00:00:01,000 --> 00:00:02,000\nsrt\n')
+    expect(await (await fetch(streams.registerFile(video).subtitleUrl)).text()).toContain('\nsrt\n')
+    fs.writeFileSync(path.join(dir, 'E 1.vtt'), 'WEBVTT\n\n00:01.000 --> 00:02.000\nvtt\n')
+    expect(await (await fetch(streams.registerFile(video).subtitleUrl)).text()).toContain('\nvtt\n')
+  })
+  it('answers 415 for a local .srt that is really ASS', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-srt-'))
+    const video = path.join(dir, 'A 1.mp4')
+    fs.writeFileSync(video, 'x')
+    fs.writeFileSync(path.join(dir, 'A 1.srt'), '[Script Info]\n')
+    expect((await fetch(streams.registerFile(video).subtitleUrl)).status).toBe(415)
   })
   it('asks upstream for identity encoding', async () => {
     routes['/p/index.m3u8'] = (req, res) => res.writeHead(200, { 'Content-Type': 'application/vnd.apple.mpegurl' }).end('#EXTM3U\n')

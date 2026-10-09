@@ -9,7 +9,7 @@ describe('styles.css', () => {
     const root = css.slice(0, rootEnd)
     for (const t of ['--bg', '--bg-elev', '--glass', '--glass-strong', '--glass-border', '--blur', '--text', '--text-muted',
       '--accent', '--accent-2', '--cta', '--ok', '--warn', '--bad', '--poster-tint', '--radius', '--radius-sm', '--glow', '--ease',
-      '--font-display', '--font-body', '--font-hud']) {
+      '--font-display', '--font-body', '--font-hud', '--sub-text', '--sub-text-alt', '--sub-box-rgb', '--sub-outline']) {
       expect(root, t).toContain(`${t}:`)
     }
   })
@@ -26,6 +26,11 @@ describe('styles.css', () => {
     const player = z('.player')
     expect(Number.isFinite(player)).toBe(true)
     for (const sel of ['.modal', '.levelup', '.toast']) expect(player, sel).toBeLessThan(z(sel))
+  })
+  it('lets subtitles scale with the player', () => {
+    expect(css).toMatch(/.player {[^}]*container-type: size/)
+    expect(css).toMatch(/.subs-preview {[^}]*container-type: size/)
+    expect(css).not.toContain('::cue')
   })
   it('honours reduced motion', () => {
     expect(css).toContain('@media (prefers-reduced-motion: reduce)')
