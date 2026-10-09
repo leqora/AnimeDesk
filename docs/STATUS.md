@@ -15,6 +15,15 @@ Poslednje ažuriranje: 2026-10-09. Trenutna verzija: **0.6.0** — objavljena 20
 - v0.6.0 je objavljen kao Latest; `main` = `origin/main`, radno stablo čisto, nema otvorenih `feat/` grana.
 - Kako je rađeno v0.6: brainstorming (4 dela dizajna, odluke korisnika: v0.6 = koraci 1–3; oporavak „1 automatski po epizodi, pa dugme”; pristup B = oporavak vodi main proces, plejer ostaje „otvoren” uz ekran „Ponovno povezivanje…”; bedž u kontrolama + jednokratna poruka o kvalitetu) → spec → plan (11 zadataka) → podagenti (implementer + pregled po zadatku) → završni pregled cele grane → jedan krug ispravki → merge `--no-ff` → `npm run release`.
 - **Prvo u sledećoj sesiji (preporuka):** uživo proveriti oporavak strima na pravoj epizodi (zastoj → „Ponovno povezivanje…” → nastavak od iste sekunde bez pitanja „Nastavi od…”; drugi zastoj u istoj epizodi → ekran sa „Pokušaj ponovo” / mpv / „Nazad”) i poruke `no-sources` / „kvalitet nije dostupan” sa pravim ani-cli-jem. Rezultat upisati u „Šta je stvarno provereno”.
+- **Lista za uživo proveru 0.6.0 (korisnik radi naknadno; dogovoreno 2026-10-09):**
+  1. prava epizoda, posle ~1 min isključi Wi-Fi → kad se pojavi „Ponovno povezivanje…” (~12 s) uključi → nastavak od iste sekunde, bez „Nastavi od…”;
+  2. ponovi u istoj epizodi → ekran sa „Pokušaj ponovo” / mpv / „Nazad” (bez drugog automatskog oporavka);
+  3. „Pokušaj ponovo” sa tog ekrana → nastavak od iste pozicije;
+  4. „Nazad” tokom „Ponovno povezivanje…” → povratak, bez sesije u pozadini;
+  5. sledeća epizoda posle oporavka → normalan start (nov budžet, bez starog ekrana);
+  6. spora mreža (npr. hotspot) → „Sporo učitavanje…” posle ~8 s;
+  7. kvalitet koji izvor nema (npr. 1080 na starijem naslovu) → jednokratno obaveštenje + bedž stvarne rezolucije;
+  8. `no-sources` — samo ako se slučajno pojavi: radi li „Pokušaj ponovo”.
 - **Sledeći razvoj:** P0-B korak 4 — titlovi (SRT→VTT za strim i lokalni `.srt`, detekcija po sadržaju; offset titlova + prečice; stil preko `::cue` tokena). Zatim 5 (nastavak u spoljnom mpv-u, „odgledano” na pragu tokom gledanja, normalizacija AniSkip intervala), 6 (lazy `PlayerView`, brzina reprodukcije, buffered traka + tooltip, razbijanje `PlayerView` na hook-ove), 7 (prefetch linka sledeće epizode — poseban spec). Detalji i fajlovi: `docs/seanime-analysis/03-oblast-player.md` (tabela „Top preporuke”) i `04-plan.md` §3. Isti tok: brainstorming → spec → plan → podagenti, nova grana `feat/v0.7-…` ili `feat/v0.6.1-…` po obimu.
 
 Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, šta je otvoreno. Detalji dizajna su u `docs/superpowers/specs/`, planovi u `docs/superpowers/plans/`, beleške izdanja u `docs/releases/`.
