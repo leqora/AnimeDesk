@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react'
 import App from '../../../src/renderer/App.jsx'
 import { makeFakeApi } from './helpers.jsx'
 import { EMPTY_STATS } from '../../../src/shared/stats.js'
@@ -9,6 +9,32 @@ import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
 vi.mock('hls.js', async () => ({ default: (await import('./fakeHls.js')).FakeHls }))
 
 describe('App', () => {
+  it('shows reconnecting between the stalled player and the new one, and back cancels it', async () => {
+    let retry, openPlayer
+    const api = makeFakeApi({ player: { onRetry: vi.fn((cb) => { retry = cb; return () => {} }), onOpen: vi.fn((cb) => { openPlayer = cb; return () => {} }) } })
+    render(<App api={api} />)
+    await waitFor(() => expect(retry).toBeDefined())
+    act(() => retry({ title: 'Show', episode: '3', state: 'reconnecting', sessionId: 's2' }))
+    expect(screen.getByText('Ponovno povezivanje…')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Nazad' }))
+    expect(api.watch.cancel).toHaveBeenCalledWith('s2')
+    expect(screen.queryByText('Ponovno povezivanje…')).not.toBeInTheDocument()
+    act(() => retry({ title: 'Show', episode: '3', state: 'reconnecting', sessionId: 's3' }))
+    act(() => openPlayer({ playbackId: 'p2', title: 'Show', episode: '3', kind: 'hls', src: 'http://127.0.0.1:9/s/t/p2/playlist', subtitleUrl: null, resumeAt: 100, autoResume: true, totalEpisodes: 12 }))
+    expect(screen.queryByText('Ponovno povezivanje…')).not.toBeInTheDocument()
+    expect(document.querySelector('.player')).toBeInTheDocument()
+  })
+  it('shows a failed recovery with try again', async () => {
+    let retry
+    const api = makeFakeApi({ player: { onRetry: vi.fn((cb) => { retry = cb; return () => {} }) } })
+    render(<App api={api} />)
+    await waitFor(() => expect(retry).toBeDefined())
+    act(() => retry({ title: 'Show', episode: '3', state: 'failed', error: 'no-sources', sessionId: 's2' }))
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent('Epizoda je izašla, ali trenutno nema ispravnih izvora.')
+    fireEvent.click(within(alert).getByRole('button', { name: 'Pokušaj ponovo' }))
+    expect(api.player.retryAgain).toHaveBeenCalled()
+  })
   it('shows a bilingual error with a retry button instead of a blank window when settings fail to load', async () => {
     const api = makeFakeApi()
     api.settings.get.mockRejectedValueOnce(new Error('disk'))
