@@ -27,7 +27,7 @@ const NET_RETRIES = 3
 const MANIFEST_ERRORS = new Set(['manifestLoadError', 'manifestLoadTimeOut', 'manifestParsingError'])
 // Physical keys, so letter shortcuts also work on non-Latin layouts (e.g. Serbian Cyrillic).
 const KEY_BY_CODE = { KeyF: 'f', KeyM: 'm', KeyS: 's', KeyG: 'g', KeyH: 'h', KeyN: 'n', Space: ' ' }
-const TEXT_FIELD = 'input:not([type=range]), textarea, [contenteditable="true"]'
+const TEXT_FIELD = 'input:not([type=range]):not([type=checkbox]), textarea, [contenteditable="true"]'
 const shortcutKey = (e) => KEY_BY_CODE[e.code] ?? (e.key.length === 1 ? e.key.toLowerCase() : e.key)
 
 const headStatus = (url) => fetch(url, { method: 'HEAD' }).then((r) => r.status)

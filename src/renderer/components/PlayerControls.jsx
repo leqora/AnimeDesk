@@ -10,8 +10,10 @@ export function PlayerControls({ time, duration, quality = null, playing, muted,
   useEffect(() => {
     if (!subsMenuOpen) return undefined
     const onDown = (e) => { if (!menuRef.current?.contains(e.target) && !menuButton.current?.contains(e.target)) onSubsMenu(false) }
+    const onKey = (e) => { if (e.key === 'Escape') onSubsMenu(false) }
     document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
   }, [subsMenuOpen])
   return (
     <div className="player__bar">
@@ -36,7 +38,7 @@ export function PlayerControls({ time, duration, quality = null, playing, muted,
         <span className="player__subs-anchor">
           <button ref={menuButton} type="button" aria-label={t('player.subsMenu')} aria-haspopup="dialog" aria-expanded={subsMenuOpen} disabled={!subsAvailable} title={subsHint ?? undefined} onClick={() => onSubsMenu(!subsMenuOpen)}><Icon name="settings" /></button>
           {subsMenuOpen && (
-            <div ref={menuRef} className="player__subs-menu" role="dialog" aria-label={t('player.subsMenu')} onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); onSubsMenu(false) } }}>
+            <div ref={menuRef} className="player__subs-menu" role="dialog" aria-label={t('player.subsMenu')}>
               <label className="check"><input type="checkbox" aria-label={t('player.subs')} checked={subsOn} onChange={onToggleSubs} /> {t('player.subs')}</label>
               <div className="row">
                 <span>{t('player.subOffsetLabel')}</span>
