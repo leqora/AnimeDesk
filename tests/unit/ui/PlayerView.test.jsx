@@ -23,7 +23,7 @@ const fakeMediaState = (video) => {
 const view = (o = open(), extra = {}, apiOverrides = {}) => {
   const onClose = vi.fn()
   const api = makeFakeApi(apiOverrides)
-  const ui = (props = {}) => <PlayerView open={o} settings={{ ...DEFAULT_SETTINGS }} fullscreen={false} onSettings={vi.fn()} onClose={onClose} HlsImpl={FakeHls} {...extra} {...props} />
+  const ui = (props = {}) => <PlayerView open={o} settings={{ ...DEFAULT_SETTINGS }} fullscreen={false} onSettings={vi.fn()} onClose={onClose} HlsImpl={FakeHls} probeSub={async () => 200} {...extra} {...props} />
   const { rerender, unmount } = renderUi(ui(), { api })
   const video = document.querySelector('video')
   fakeMediaState(video)
@@ -158,10 +158,9 @@ describe('PlayerView', () => {
       expect(document.querySelector('.player')).not.toHaveClass('player--idle')
     } finally { vi.useRealTimers() }
   })
-  it('disables previous on episode 1 and applies the subtitle size', () => {
-    view(open({ episode: '1' }), { settings: { ...DEFAULT_SETTINGS, subtitleSize: 'L' } })
+  it('disables previous on episode 1', () => {
+    view(open({ episode: '1' }))
     expect(screen.getByRole('button', { name: 'Prethodna epizoda' })).toBeDisabled()
-    expect(document.querySelector('.player')).toHaveClass('player--subs-L')
   })
 })
 
@@ -525,4 +524,88 @@ it('says once that the asked quality was not available', () => {
     fireEvent(video, new Event('resize'))
     expect(screen.queryByText(/nije dostupan/)).not.toBeInTheDocument()
   } finally { vi.useRealTimers() }
+})
+
+describe('PlayerView subtitles', () => {
+  const loadTrack = (cues) => {
+    const el = document.querySelector('track')
+    el.track = { mode: 'disabled', cues }
+    act(() => { el.dispatchEvent(new Event('load')) })
+    return el
+  }
+  const at = (video, t) => act(() => { video.currentTime = t; video.dispatchEvent(new Event('timeupdate')) })
+
+  it('keeps the track hidden and draws the cue itself', () => {
+    const { video } = view()
+    const el = loadTrack([{ startTime: 1, endTime: 3, text: 'Hello' }])
+    expect(el.hasAttribute('default')).toBe(false)
+    at(video, 2)
+    expect(el.track.mode).toBe('hidden')
+    expect(document.querySelector('.subs__group--bottom')).toHaveTextContent('Hello')
+  })
+  it('starts dub episodes without subtitles and remembers the choice per mode', () => {
+    const onSettings = vi.fn()
+    const { video } = view(open({ mode: 'dub' }), { onSettings })
+    loadTrack([{ startTime: 1, endTime: 3, text: 'Hello' }])
+    at(video, 2)
+    expect(document.querySelector('.subs')).toBeNull()
+    fireEvent.keyDown(window, { key: 's', code: 'KeyS' })
+    expect(onSettings).toHaveBeenLastCalledWith({ subtitles: { enabled: { dub: true } } })
+    expect(document.querySelector('.subs')).toHaveTextContent('Hello')
+  })
+  it('shifts subtitles with G/H, shows the value and saves it per series and mode', async () => {
+    vi.useFakeTimers()
+    try {
+      const { video, api } = view(open({ mode: 'dub', subOffset: 0.5 }), { settings: { ...DEFAULT_SETTINGS, subtitles: { ...DEFAULT_SETTINGS.subtitles, enabled: { sub: true, dub: true } } } })
+      loadTrack([{ startTime: 1, endTime: 2, text: 'A' }, { startTime: 3, endTime: 4, text: 'B' }])
+      at(video, 3.5)
+      expect(document.querySelector('.subs')).toHaveTextContent('B') // 3.5 − 0.5 = 3
+      fireEvent.keyDown(window, { key: 'h', code: 'KeyH' })
+      expect(screen.getByText('Titl: +0,6 s')).toBeInTheDocument()
+      fireEvent.keyDown(window, { key: 'H', code: 'KeyH', shiftKey: true })
+      expect(screen.getByText('Titl: +1,6 s')).toBeInTheDocument()
+      expect(document.querySelector('.subs')).toHaveTextContent('A') // 3.5 − 1.6 = 1.9
+      fireEvent.keyDown(window, { key: 'g', code: 'KeyG' })
+      expect(screen.getByText('Titl: +1,5 s')).toBeInTheDocument()
+      expect(api.seriesPrefs.set).not.toHaveBeenCalled()
+      act(() => vi.advanceTimersByTime(500))
+      expect(api.seriesPrefs.set).toHaveBeenCalledTimes(1)
+      expect(api.seriesPrefs.set).toHaveBeenCalledWith('Show', { subOffset: { dub: 1.5 } })
+    } finally { vi.useRealTimers() }
+  })
+  it('debounces offset saves and flushes on close', () => {
+    vi.useFakeTimers()
+    try {
+      const { api } = view()
+      loadTrack([])
+      for (let i = 0; i < 20; i++) fireEvent.keyDown(window, { key: 'h', code: 'KeyH' })
+      fireEvent.click(screen.getByRole('button', { name: 'Nazad' }))
+      expect(api.seriesPrefs.set).toHaveBeenCalledTimes(1)
+      expect(api.seriesPrefs.set).toHaveBeenCalledWith('Show', { subOffset: { sub: 2 } })
+    } finally { vi.useRealTimers() }
+  })
+  it('ignores subtitle shortcuts when the episode has no subtitles', () => {
+    const onSettings = vi.fn()
+    const { api } = view(open({ subtitleUrl: null }), { onSettings })
+    fireEvent.keyDown(window, { key: 'h', code: 'KeyH' })
+    fireEvent.keyDown(window, { key: 's', code: 'KeyS' })
+    expect(screen.queryByText(/Titl:/)).toBeNull()
+    expect(onSettings).not.toHaveBeenCalled()
+    expect(api.seriesPrefs.set).not.toHaveBeenCalled()
+  })
+  it('says once when the subtitle format is not supported', async () => {
+    const probeSub = vi.fn(async () => 415)
+    view(open(), { probeSub })
+    expect(await screen.findByText('Format titla nije podržan u ugrađenom plejeru — probaj spoljni plejer (mpv)')).toBeInTheDocument()
+    expect(probeSub).toHaveBeenCalledTimes(1)
+    expect(probeSub).toHaveBeenCalledWith('http://127.0.0.1:9/s/t/p1/sub')
+    fireEvent.keyDown(window, { key: 'h', code: 'KeyH' })
+    expect(screen.queryByText(/Titl:/)).toBeNull()
+  })
+  it('raises the subtitles while the controls are visible', () => {
+    const { video } = view()
+    loadTrack([{ startTime: 1, endTime: 3, text: 'Hi' }])
+    at(video, 2)
+    expect(document.querySelector('.subs')).toHaveClass('subs--raised')
+  })
 })
