@@ -236,6 +236,8 @@
   "player.seriesDone": "You finished the series 🎉",
   "player.resumeFrom": "Resume from {time}",
   "player.fromStart": "From the start",
+  "player.loading": "Loading",
+  "player.slow": "Slow connection…",
   "error.title": "Something went wrong",
   "error.body": "This part of the app ran into an error. The rest of the app works normally.",
   "error.close": "Close",

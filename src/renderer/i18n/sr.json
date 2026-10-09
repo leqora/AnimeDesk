@@ -236,6 +236,8 @@
   "player.seriesDone": "Završio si seriju 🎉",
   "player.resumeFrom": "Nastavi od {time}",
   "player.fromStart": "Od početka",
+  "player.loading": "Učitavanje",
+  "player.slow": "Sporo učitavanje…",
   "error.title": "Nešto je pošlo naopako",
   "error.body": "Ovaj deo aplikacije je naišao na grešku. Ostatak aplikacije radi normalno.",
   "error.close": "Zatvori",

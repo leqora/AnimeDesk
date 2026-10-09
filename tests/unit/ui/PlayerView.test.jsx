@@ -24,11 +24,11 @@ const view = (o = open(), extra = {}, apiOverrides = {}) => {
   const onClose = vi.fn()
   const api = makeFakeApi(apiOverrides)
   const ui = (props = {}) => <PlayerView open={o} settings={{ ...DEFAULT_SETTINGS }} fullscreen={false} onSettings={vi.fn()} onClose={onClose} HlsImpl={FakeHls} {...extra} {...props} />
-  const { rerender } = renderUi(ui(), { api })
+  const { rerender, unmount } = renderUi(ui(), { api })
   const video = document.querySelector('video')
   fakeMediaState(video)
   const meta = (duration = 1400) => { Object.defineProperty(video, 'duration', { configurable: true, value: duration }); fireEvent(video, new Event('loadedmetadata')) }
-  return { api, onClose, video, meta, rerender: (props) => rerender(ui(props)) }
+  return { api, onClose, video, meta, unmount, rerender: (props) => rerender(ui(props)) }
 }
 
 describe('PlayerView', () => {
@@ -365,5 +365,63 @@ describe('PlayerView skip / next / resume', () => {
       expect(video.play).toHaveBeenCalled()
       expect(seen).not.toHaveBeenCalled()
     } finally { process.off('unhandledRejection', seen) }
+  })
+  it('shows a spinner until playback starts, and a slow note after 8 s', () => {
+    vi.useFakeTimers()
+    try {
+      const { video } = view()
+      expect(screen.getByRole('status', { name: 'Učitavanje' })).toBeInTheDocument()
+      act(() => vi.advanceTimersByTime(8000))
+      expect(screen.getByText('Sporo učitavanje…')).toBeInTheDocument()
+      fireEvent(video, new Event('playing'))
+      expect(screen.queryByRole('status', { name: 'Učitavanje' })).not.toBeInTheDocument()
+      video.paused = false
+      fireEvent(video, new Event('waiting'))
+      expect(screen.getByRole('status', { name: 'Učitavanje' })).toBeInTheDocument()
+    } finally { vi.useRealTimers() }
+  })
+  it('applies the remembered volume and mute', () => {
+    renderUi(<PlayerView open={open()} settings={{ ...DEFAULT_SETTINGS, playerVolume: 0.4, playerMuted: true }} fullscreen={false} onSettings={vi.fn()} onClose={vi.fn()} HlsImpl={FakeHls} />)
+    const video = document.querySelector('video')
+    expect(video.volume).toBeCloseTo(0.4)
+    expect(video.muted).toBe(true)
+  })
+  it('saves volume changes once, 500 ms after the last change, and on close', () => {
+    vi.useFakeTimers()
+    try {
+      const onSettings = vi.fn()
+      const { video, unmount } = view(open(), { onSettings })
+      video.volume = 0.3
+      fireEvent(video, new Event('volumechange'))
+      video.volume = 0.2
+      fireEvent(video, new Event('volumechange'))
+      act(() => vi.advanceTimersByTime(499))
+      expect(onSettings).not.toHaveBeenCalled()
+      act(() => vi.advanceTimersByTime(1))
+      expect(onSettings).toHaveBeenCalledTimes(1)
+      expect(onSettings).toHaveBeenCalledWith({ playerVolume: 0.2, playerMuted: false })
+      video.muted = true
+      fireEvent(video, new Event('volumechange'))
+      unmount()
+      expect(onSettings).toHaveBeenLastCalledWith({ playerVolume: 0.2, playerMuted: true })
+    } finally { vi.useRealTimers() }
+  })
+  it('double click toggles fullscreen without pausing; a single click pauses after 220 ms', () => {
+    vi.useFakeTimers()
+    try {
+      const { video, meta, api } = view()
+      meta()
+      fireEvent.click(video)
+      fireEvent.click(video)
+      fireEvent.doubleClick(video)
+      act(() => vi.advanceTimersByTime(300))
+      expect(api.window.setFullscreen).toHaveBeenCalledWith(true)
+      expect(video.pause).not.toHaveBeenCalled()
+      fireEvent.click(video)
+      act(() => vi.advanceTimersByTime(219))
+      expect(video.pause).not.toHaveBeenCalled()
+      act(() => vi.advanceTimersByTime(1))
+      expect(video.pause).toHaveBeenCalled()
+    } finally { vi.useRealTimers() }
   })
 })

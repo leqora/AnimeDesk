@@ -7,10 +7,13 @@ import { PlayerControls } from './PlayerControls.jsx'
 import { SkipButton } from './SkipButton.jsx'
 import { NextEpisodeCard } from './NextEpisodeCard.jsx'
 import { ResumePrompt } from './ResumePrompt.jsx'
+import { usePlayerHealth } from '../player/usePlayerHealth.js'
 import { trackMax, segmentAt, isLastEpisode } from '../../shared/player.js'
 
 const HIDE_MS = 3000
 const PROGRESS_MS = 5000
+const VOLUME_SAVE_MS = 500
+const CLICK_DELAY_MS = 220
 const COUNTDOWN_S = 10
 const ENDING_FALLBACK_S = 30
 const NET_RETRIES = 3
@@ -25,7 +28,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const api = useApi()
   // latest props/api for long-lived handlers (keydown, intervals) so they are never stale
   const live = useRef({})
-  live.current = { onClose, open, api }
+  live.current = { onClose, open, api, onSettings, settings }
   const t = useT()
   const video = useRef(null)
   const maxPercent = useRef(0)
@@ -33,11 +36,15 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const [time, setTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const [muted, setMuted] = useState(false)
-  const [volume, setVolume] = useState(1)
+  const [muted, setMuted] = useState(settings.playerMuted)
+  const [volume, setVolume] = useState(settings.playerVolume)
+  const volumeTimer = useRef(null)
+  const pendingVolume = useRef(null)
+  const clickTimer = useRef(null)
   const [subsOn, setSubsOn] = useState(true)
   const [idle, setIdle] = useState(false)
   const [failed, setFailed] = useState(false)
+  const health = usePlayerHealth({ video, active: false })
   const idleTimer = useRef(null)
   const [skips, setSkips] = useState(null)
   const [resume, setResume] = useState(open.resumeAt)
@@ -60,6 +67,28 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     live.current.api.player.closed({ ...snapshot(), reason })
     live.current.onClose(reason)
   }
+  // Saved after the slider settles; refs are gone by unmount, so the last values are kept here.
+  const flushVolume = () => {
+    clearTimeout(volumeTimer.current)
+    const p = pendingVolume.current
+    pendingVolume.current = null
+    const s = live.current.settings
+    if (p && (p.playerVolume !== s.playerVolume || p.playerMuted !== s.playerMuted)) live.current.onSettings(p)
+  }
+  const onVolumeChange = () => {
+    const v = video.current
+    setVolume(v.volume)
+    setMuted(v.muted)
+    pendingVolume.current = { playerVolume: v.volume, playerMuted: v.muted }
+    clearTimeout(volumeTimer.current)
+    volumeTimer.current = setTimeout(flushVolume, VOLUME_SAVE_MS)
+  }
+  useEffect(() => {
+    const v = video.current
+    v.volume = settings.playerVolume
+    v.muted = settings.playerMuted
+    return () => { flushVolume(); clearTimeout(clickTimer.current) }
+  }, [])
 
   useEffect(() => {
     const v = video.current
@@ -105,6 +134,9 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const togglePlay = () => { const v = video.current; if (v.paused) play(); else v.pause() }
   const step = (s) => { const v = video.current; v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + s)) }
   const toggleFullscreen = () => live.current.api.window.setFullscreen(!fullscreen)
+  // A click waits briefly so a double click can toggle fullscreen without also pausing.
+  const onVideoClick = () => { clearTimeout(clickTimer.current); clickTimer.current = setTimeout(togglePlay, CLICK_DELAY_MS) }
+  const onVideoDoubleClick = () => { clearTimeout(clickTimer.current); toggleFullscreen() }
 
   useEffect(() => {
     const onKey = (e) => {
@@ -119,7 +151,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
         case 'ArrowUp': v.volume = Math.min(1, v.volume + 0.1); break
         case 'ArrowDown': v.volume = Math.max(0, v.volume - 0.1); break
         case 'f': toggleFullscreen(); break
-        case 'm': v.muted = !v.muted; setMuted(v.muted); break
+        case 'm': v.muted = !v.muted; break
         case 's': setSubsOn((x) => !x); break
         case 'n': e.preventDefault(); if (!live.current.lastEpisode) close('next'); return
         default: return
@@ -181,9 +213,10 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       <video
         ref={video} className="player__video" crossOrigin="anonymous"
         onLoadedMetadata={onLoadedMetadata} onTimeUpdate={onTimeUpdate}
-        onPlay={() => { setPlaying(true); setResume(null); poke() }} onPause={() => { setPlaying(false); setIdle(false); api.player.progress(snapshot()) }}
-        onVolumeChange={() => { setVolume(video.current.volume); setMuted(video.current.muted) }}
-        onEnded={finishEpisode} onClick={togglePlay}
+        onPlay={() => { setPlaying(true); setResume(null); poke() }} onPause={() => { health.onReady(); setPlaying(false); setIdle(false); api.player.progress(snapshot()) }}
+        onVolumeChange={onVolumeChange}
+        onWaiting={health.onWaiting} onStalled={health.onWaiting} onPlaying={health.onReady} onCanPlay={health.onReady} onSeeked={health.onReady}
+        onEnded={finishEpisode} onClick={onVideoClick} onDoubleClick={onVideoDoubleClick}
         // a downloaded file the browser cannot decode; hls streams report through hls.js (with recovery) instead
         onError={() => { if (open.kind === 'file') setFailed(true) }}
       >
@@ -198,6 +231,12 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
           <span>{t('player.error')}</span>
           <button type="button" className="primary" onClick={() => close('external')}>{t('player.playExternal')}</button>
           <button type="button" onClick={() => close('back')}>{t('search.back')}</button>
+        </div>
+      )}
+      {health.buffering && !failed && resume == null && !end && (
+        <div className="player__loading" role="status" aria-label={t('player.loading')}>
+          <span className="player__spinner" aria-hidden="true" />
+          {health.slow && <span className="hud">{t('player.slow')}</span>}
         </div>
       )}
       {resume != null && <ResumePrompt at={resume} onResume={() => startAt(resume)} onRestart={() => startAt(0)} />}
