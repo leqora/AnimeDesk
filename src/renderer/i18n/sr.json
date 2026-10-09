@@ -226,6 +226,7 @@
   "player.subsSize": "Veličina titlova",
   "player.error": "Video ne može da se pusti u aplikaciji.",
   "player.playExternal": "Pusti u spoljnom plejeru (mpv)",
+  "player.retry": "Pokušaj ponovo",
   "player.skipIntro": "Preskoči uvod",
   "player.skipRecap": "Preskoči rezime",
   "player.skipped": "Preskočen uvod",

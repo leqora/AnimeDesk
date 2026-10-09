@@ -226,6 +226,7 @@
   "player.subsSize": "Subtitle size",
   "player.error": "This video can't be played in the app.",
   "player.playExternal": "Play in the external player (mpv)",
+  "player.retry": "Try again",
   "player.skipIntro": "Skip intro",
   "player.skipRecap": "Skip recap",
   "player.skipped": "Intro skipped",

@@ -44,12 +44,14 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const clickTimer = useRef(null)
   const [subsOn, setSubsOn] = useState(true)
   const [idle, setIdle] = useState(false)
-  const [failed, setFailed] = useState(false)
-  const health = usePlayerHealth({ video, active: false })
+  const [failed, setFailed] = useState(null) // null | 'retryable' | 'final'
+  const failing = useRef(false)
+  const lastTime = useRef(0)
   const idleTimer = useRef(null)
   const [skips, setSkips] = useState(null)
-  const [resume, setResume] = useState(open.resumeAt)
+  const [resume, setResume] = useState(open.autoResume ? null : open.resumeAt)
   const [end, setEnd] = useState(null)
+  const health = usePlayerHealth({ video, active: resume == null && !end && !failed, onStall: () => fail() })
   const [left, setLeft] = useState(COUNTDOWN_S)
   const [flash, setFlash] = useState(null)
   const autoSkipped = useRef(new Set())
@@ -81,6 +83,21 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     live.current.api.player.closed({ ...snapshot(), reason })
     live.current.onClose(reason)
   }
+  // Main owns the recovery budget: it either closes this player and reconnects, or says the automatic try is used up.
+  const fail = async () => {
+    if (failing.current || closed.current) return
+    failing.current = true
+    const { open, api } = live.current
+    if (open.kind === 'file') { setFailed('final'); return }
+    let r = null
+    try { r = await api.player.recover(snapshot()) } catch { /* treated as not recoverable */ }
+    if (r?.ok && r.auto !== false) return
+    setFailed(r?.ok ? 'retryable' : 'final')
+  }
+  const retryNow = () => {
+    Promise.resolve(live.current.api.player.recover(snapshot(), { manual: true }))
+      .then((r) => { if (!r?.ok) setFailed('final') }, () => setFailed('final'))
+  }
   // Saved after the slider settles; refs are gone by unmount, so the last values are kept here.
   const flushVolume = () => {
     clearTimeout(volumeTimer.current)
@@ -109,7 +126,9 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     if (open.kind === 'file') { v.src = open.src; return undefined }
     const hls = new HlsImpl({ enableWorker: true })
     let netRetries = 0
-    let mediaRecovered = false
+    let mediaErrors = 0
+    // progress means the earlier errors were transient; give later ones the full budget again
+    hls.on(HlsImpl.Events.FRAG_CHANGED, () => { netRetries = 0; mediaErrors = 0 })
     hls.on(HlsImpl.Events.ERROR, (_e, d) => {
       if (!d.fatal) return
       if (d.type === HlsImpl.ErrorTypes.NETWORK_ERROR && netRetries < NET_RETRIES) {
@@ -118,8 +137,13 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
         else hls.startLoad()
         return
       }
-      if (d.type === HlsImpl.ErrorTypes.MEDIA_ERROR && !mediaRecovered) { mediaRecovered = true; hls.recoverMediaError(); return }
-      setFailed(true)
+      if (d.type === HlsImpl.ErrorTypes.MEDIA_ERROR && mediaErrors < 2) {
+        mediaErrors++
+        if (mediaErrors === 2) hls.swapAudioCodec()
+        hls.recoverMediaError()
+        return
+      }
+      fail()
     })
     hls.loadSource(open.src)
     hls.attachMedia(v)
@@ -196,6 +220,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     const v = video.current
     setDuration(v.duration)
     readQuality()
+    if (open.autoResume && open.resumeAt > 0) v.currentTime = open.resumeAt
     if (open.episode != null) {
       const request = Promise.resolve().then(() => api.skip.get(open.title, open.episode, v.duration))
       request.then(setSkips).catch(() => setSkips(null))
@@ -205,6 +230,9 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const onTimeUpdate = () => {
     const v = video.current
     setTime(v.currentTime)
+    // a browser `stalled` can fire with enough data buffered; moving time proves playback is fine
+    if (!v.paused && v.currentTime > lastTime.current) health.onReady()
+    lastTime.current = v.currentTime
     maxPercent.current = trackMax(maxPercent.current, v.currentTime, v.duration)
     const seg = segmentAt(v.currentTime, skips)
     if (settings.autoSkip && seg && !autoSkipped.current.has(seg)) {
@@ -231,7 +259,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
         onWaiting={health.onWaiting} onStalled={health.onWaiting} onPlaying={health.onReady} onCanPlay={health.onReady} onSeeked={health.onReady}
         onEnded={finishEpisode} onClick={onVideoClick} onDoubleClick={onVideoDoubleClick}
         // a downloaded file the browser cannot decode; hls streams report through hls.js (with recovery) instead
-        onError={() => { if (open.kind === 'file') setFailed(true) }}
+        onError={() => { if (open.kind === 'file') fail() }}
       >
         {open.subtitleUrl && <track kind="subtitles" src={open.subtitleUrl} default />}
       </video>
@@ -242,7 +270,8 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       {failed && (
         <div className="player__error notice notice--error" role="alert">
           <span>{t('player.error')}</span>
-          <button type="button" className="primary" onClick={() => close('external')}>{t('player.playExternal')}</button>
+          {failed === 'retryable' && <button type="button" className="primary" onClick={retryNow}>{t('player.retry')}</button>}
+          <button type="button" className={failed === 'retryable' ? undefined : 'primary'} onClick={() => close('external')}>{t('player.playExternal')}</button>
           <button type="button" onClick={() => close('back')}>{t('search.back')}</button>
         </div>
       )}
