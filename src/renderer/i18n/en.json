@@ -234,5 +234,10 @@
   "player.cancel": "Cancel",
   "player.seriesDone": "You finished the series 🎉",
   "player.resumeFrom": "Resume from {time}",
-  "player.fromStart": "From the start"
+  "player.fromStart": "From the start",
+  "error.title": "Something went wrong",
+  "error.body": "This part of the app ran into an error. The rest of the app works normally.",
+  "error.close": "Close",
+  "boot.failed": "The app could not start",
+  "boot.retry": "Try again"
 }

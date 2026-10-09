@@ -156,4 +156,12 @@ async function main() {
   app.on('before-quit', () => { server.stop(); streams.stop() })
 }
 
-main()
+// A failed startup must not leave a silent background process; a stray rejection must not go unnoticed.
+process.on('unhandledRejection', (err) => console.error('Unhandled rejection', err))
+
+main().catch(async (err) => {
+  console.error('Startup failed', err)
+  await app.whenReady()
+  dialog.showErrorBox('AnimeDesk', `Aplikacija nije mogla da se pokrene / The app could not start.\n\n${err?.stack ?? err}`)
+  app.exit(1)
+})
