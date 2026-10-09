@@ -73,11 +73,13 @@ export default function App({ api, sound: injectedSound }) {
     return api.update.onState(setUpdateState)
   }, [api])
 
+  // Library changes are pushed; the profile also depends on AniList info and the date, so refresh on opening it.
+  const onProfile = page === 'profile'
   useEffect(() => {
     const refresh = () => api.stats.get().then(setStats)
     refresh()
     return api.onLibraryChanged(refresh)
-  }, [api, page])
+  }, [api, onProfile])
 
   useEffect(() => {
     const refresh = () => api.stats.get().then(setStats)
