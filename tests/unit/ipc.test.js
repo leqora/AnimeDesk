@@ -11,7 +11,7 @@ function services() {
     toolManager: { status: vi.fn(), installMissing: vi.fn(async (cb) => { cb({ id: 'mpv', phase: 'done' }); return {} }), updateAll: vi.fn(async () => []), installOptional: vi.fn(async () => {}) },
     health: { get: vi.fn(), run: vi.fn() },
     internalPlayer: { progress: vi.fn(), closed: vi.fn() },
-    watch: { watch: vi.fn(), cancel: vi.fn(), answerMenu: vi.fn(), playLocal: vi.fn(async () => 'watched') },
+    watch: { watch: vi.fn(), cancel: vi.fn(), answerMenu: vi.fn(), playLocal: vi.fn(async () => 'watched'), recover: vi.fn(() => ({ ok: true })), retryAgain: vi.fn() },
     downloads: { enqueue: vi.fn(), pause: vi.fn(), resume: vi.fn(), cancel: vi.fn(), queueItems: vi.fn(), listDownloaded: vi.fn(), removeDownloaded: vi.fn(), getDownloaded: vi.fn((id) => (id === 'd1' ? { path: 'D:\\A\\A Episode 1.mp4', title: 'A', episode: '1' } : null)) },
     electron: { pickFolder: vi.fn(async () => 'D:\\X'), showItemInFolder: vi.fn(), openRepo: vi.fn() },
     tracker: { update: vi.fn(), remove: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })) },
@@ -59,6 +59,14 @@ describe('ipc', () => {
     h[INVOKE.playerClosed]({ playbackId: 'p', reason: 'back' })
     expect(s.internalPlayer.progress).toHaveBeenCalledWith({ playbackId: 'p', position: 1 })
     expect(s.internalPlayer.closed).toHaveBeenCalledWith({ playbackId: 'p', reason: 'back' })
+  })
+  it('forwards player recovery to the watch service', () => {
+    const s = services()
+    const h = createHandlers(s)
+    expect(h[INVOKE.playerRecover]({ playbackId: 'p', position: 3 }, { manual: true })).toEqual({ ok: true })
+    expect(s.watch.recover).toHaveBeenCalledWith({ playbackId: 'p', position: 3 }, { manual: true })
+    h[INVOKE.playerRetryAgain]()
+    expect(s.watch.retryAgain).toHaveBeenCalled()
   })
   it('notifies the renderer after library update and remove', () => {
     const s = services()

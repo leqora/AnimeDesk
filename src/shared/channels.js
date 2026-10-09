@@ -44,6 +44,8 @@ export const INVOKE = {
   windowSetFullscreen: 'window:set-fullscreen',
   playerProgress: 'player:progress',
   playerClosed: 'player:closed',
+  playerRecover: 'player:recover',
+  playerRetryAgain: 'player:retry-again',
   skipGet: 'skip:get',
 }
 
