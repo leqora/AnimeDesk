@@ -1,6 +1,6 @@
 # Seanime analiza → unapređenje AnimeDesk-a — stanje rada (predaja smene)
 
-Poslednje ažuriranje: 2026-10-09 06:50.
+Poslednje ažuriranje: 2026-10-09 (kraj sesije v0.6).
 
 - Spec korisnika: `C:\Users\Nikola\Desktop\Claude\Anime\Aplikacija za gledanje Anime-a\Seanime\zadatak.txt`
 - Seanime klon (referenca, GPL-3.0 — samo inspiracija, ne kopirati kod): `C:\Users\Nikola\Desktop\Projekti\_ref\seanime` (commit 2da73d9; ne commitovati).
@@ -14,7 +14,8 @@ Poslednje ažuriranje: 2026-10-09 06:50.
   Ikone plejera, prečice (klizač, `e.code`, Ctrl/Alt), „Završeno” tek kad su sve epizode odgledane, AniList TTL za serije koje se emituju,
   ErrorBoundary + ekran „Pokušaj ponovo” + `main().catch`, red preuzimanja bez duplikata + „Ponovi neuspele”, minifikacija (2,07 → 0,91 MB),
   statistika samo na promenu biblioteke / otvaranje Profila. 508/508 testova, e2e prolazi, provereno u pravoj aplikaciji (Playwright `_electron`).
-- [ ] **SLEDEĆE: v0.6 = P0-B plejer.** Veći paket → po `CLAUDE.md` ide kroz superpowers tok: brainstorming → spec (`docs/superpowers/specs/`) → plan (`docs/superpowers/plans/`) → izvršavanje (korisnik je do sada birao podagente). Grana `feat/v0.6-player`.
+- [x] **v0.6 = P0-B koraci 1–3 urađeni** na grani `feat/v0.6-player` (spinner/baferovanje, jačina/mute, dvoklik, bedž rezolucije + upozorenje o kvalitetu, `no-sources` + „Pokušaj ponovo”, detekcija zastoja i automatski oporavak, retry/timeout u `streamServer.js`). 555/555 testova, e2e prolazi, provereno u pravoj aplikaciji (vidi `docs/STATUS.md`). **Čeka potvrdu korisnika za merge/objavu 0.6.0.**
+- [ ] **SLEDEĆE: P0-B koraci 4–7** (titlovi SRT/offset, nastavak u mpv-u + prag „odgledano”, lazy `PlayerView` + brzina + razbijanje na hook-ove, prefetch sledeće epizode) — ide kroz superpowers tok kao v0.6, nova grana.
 
 ## Odluke korisnika (važe za dalje)
 1. Serija je „Završeno” tek kad su **sve** epizode odgledane (urađeno u 0.5.1).
@@ -23,7 +24,7 @@ Poslednje ažuriranje: 2026-10-09 06:50.
 
 ## Preostalo po roadmap-u (detalji u `04-plan.md` §3)
 
-### P0-B — plejer (v0.6) — predloženi redosled iz `03-oblast-player.md`
+### P0-B — plejer — koraci 1–3 urađeni u v0.6, ostaju 4–7 (redosled iz `03-oblast-player.md`)
 1. Spinner učitavanja/baferovanja (`waiting`/`playing`/`canplay`), pamćenje jačine/mute, dvoklik = pun ekran.
 2. Transparentan kvalitet: bedž stvarne rezolucije (`videoHeight`, mpv `height`), upozorenje kad ani-cli spusti kvalitet na `best` (stderr `ani-cli:239`, `watchService` mora da prosledi `onLine`), nova greška `no-sources` + „Pokušaj ponovo”.
 3. Detekcija zastoja + „Pokušaj ponovo” = nova ani-cli sesija, nastavak od pozicije, max 1 automatski po epizodi; hls.js `recoverMediaError`/`swapAudioCodec`; retry + timeout segmenta u `streamServer.js`.
