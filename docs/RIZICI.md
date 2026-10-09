@@ -47,3 +47,11 @@ Rizici koji se posebno prate tokom razvoja. Svaki ima test koji ga „zakucava�
 |---|---|---|
 | Poruka ani-cli-ja o kvalitetu se promeni u upstream-u | nestaje samo upozorenje „traženi kvalitet nije dostupan”; bedž prave rezolucije i dalje radi | prihvaćeno; po potrebi ispraviti prepoznavanje poruke u `parseQualityFallback` u `aniCliBridge.js` |
 | Watchdog od 12 s može okinuti na veoma sporoj vezi | jedan tihi oporavak (nova ani-cli sesija), pa ekran sa izborom („Pokušaj ponovo” / mpv / Nazad) | oporavak je ograničen na jedan po epizodi; ne beleži epizodu kao odgledanu i ne dira sačuvanu poziciju |
+
+## Titlovi (v0.6.1)
+
+| Rizik | Šta bi se desilo | Kako je rešeno |
+|---|---|---|
+| Titl u nepodržanom formatu (ASS/SSA) | ugrađeni plejer ne može da ga prikaže | proxy vraća 415, plejer jednom po epizodi javlja poruku sa predlogom za mpv; JASSUB tek ako se pokaže potreba |
+| SRT u kodnoj strani koja nije UTF-8 | pogrešni znakovi (čita se kao UTF-8) | prihvaćeno; po potrebi dodati detekciju kodne strane |
+| Pomak titla je za seriju i režim, ne za pojedinačnu epizodu | epizoda sa drugačijim vremenom titla traži ručno podešavanje | `G`/`H` + „Resetuj” u meniju titla; pomak se ne prenosi u spoljni mpv |

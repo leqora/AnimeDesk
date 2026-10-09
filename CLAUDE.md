@@ -27,7 +27,7 @@ Windows desktop aplikacija (Electron + React) koja je grafički interfejs za ori
 
 ```bash
 npm run dev        # pokretanje u razvoju
-npm test           # vitest (unit + integration), ~486 testova
+npm test           # vitest (unit + integration), ~616 testova
 npm run test:e2e   # build + Playwright smoke (izolovan userData preko ANIMEDESK_USER_DATA)
 npm run test:live  # pravi ani-cli self-test (internet)
 npm run dist       # instaler u dist/ (bez objave)
