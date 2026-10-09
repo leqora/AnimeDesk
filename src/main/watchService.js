@@ -1,11 +1,18 @@
 import crypto from 'node:crypto'
 import { EVENTS } from '../shared/channels.js'
-import { autoAnswer, menuKind, parsePlayerArgs } from './aniCliBridge.js'
+import { animeLineTitle } from '../shared/domain.js'
+import { autoAnswer, menuKind, parsePlayerArgs, parseQualityFallback } from './aniCliBridge.js'
 import { decideWatched } from './playerMonitor.js'
 
-export function createWatchService({ aniCli, player, internalPlayer = null, library, settings, notify, seriesPrefs = null, positions = null, mpvExtraArgs = () => [], skipsFor = null }) {
+const RETRY_TTL_MS = 30 * 60 * 1000
+
+export function createWatchService({ aniCli, player, internalPlayer = null, library, settings, notify, seriesPrefs = null, positions = null, mpvExtraArgs = () => [], skipsFor = null, now = Date.now }) {
   const pending = new Map() // requestId -> { sessionId, resolve }
   const sessions = new Map() // sessionId -> session
+  const retryBudget = new Map() // "title|episode" -> time of the last recovery
+  let current = null // { entry, info } shown in the in-app player
+  let lastFailed = null // { params, resume } of the last recovery that never reached the player
+  const budgetKey = (info) => `${info.title}|${info.episode}`
 
   function afterPlayback({ title, episode, maxPercent }) {
     const s = settings.get()
@@ -44,47 +51,108 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     p.resolve(line ?? null)
   }
 
-  function watch({ query, anime = null, episode = null, mode = null }) {
+  // One ani-cli session. `resume` marks a recovery: it answers menus only automatically and reports its own failure.
+  function spawn(params, resume = null) {
     let sessionId = null
-    const s = settings.get()
-    const prefs = seriesPrefs ? seriesPrefs.resolve(anime ?? query, s) : { quality: s.quality, mode: s.mode }
-    const forced = mode === 'sub' || mode === 'dub' ? mode : null
-    const effectiveMode = forced ?? prefs.mode
+    const entry = { session: null, params, playing: false, cancelled: false, opened: false, animeLine: null, qualityFallback: null, failure: null }
+    const remember = (prompt, line) => { if (line != null && menuKind(prompt) === 'anime') entry.animeLine = line }
     const session = aniCli.startSession({
-      query,
+      query: params.query,
       player: 'play',
-      episodes: episode,
-      quality: prefs.quality,
-      mode: effectiveMode,
+      episodes: params.episode,
+      quality: params.quality,
+      mode: params.mode,
+      onLine: (line) => { entry.qualityFallback ??= parseQualityFallback(line) },
       onMenu: ({ prompt, lines }) => {
-        const auto = autoAnswer(prompt, lines, { anime, episode })
-        if (auto) return Promise.resolve(auto)
+        const auto = autoAnswer(prompt, lines, { anime: params.anime, episode: params.episode })
+        if (auto) { remember(prompt, auto); return Promise.resolve(auto) }
+        // Nobody is on the search page to answer for a recovery; give up instead of showing an orphan menu.
+        if (resume) { entry.failure = 'not-found'; return Promise.resolve(null) }
         return new Promise((resolve) => {
           const requestId = crypto.randomUUID()
-          pending.set(requestId, { sessionId, resolve })
+          pending.set(requestId, { sessionId, resolve: (line) => { remember(prompt, line); resolve(line) } })
           notify(EVENTS.menu, { requestId, sessionId, kind: menuKind(prompt), prompt, lines })
         })
       },
       onPlay: async ({ args }) => {
-        const info = parsePlayerArgs(args)
+        const info = { ...parsePlayerArgs(args), qualityFallback: entry.qualityFallback, resume }
+        entry.opened = true
         notify(EVENTS.playing, { title: info.title, episode: info.episode })
         entry.playing = true
+        current = { entry, info }
         const r = await runPlayer(info)
         entry.playing = false
+        if (current?.entry === entry) current = null
+        // A recovery is never "watching": no tracking, no XP, the saved position stays.
+        if (r.reason === 'retry') {
+          if (!entry.cancelled) startRetry(retryParams(entry, info), { at: r.position ?? 0, auto: true, title: info.title, episode: info.episode })
+          return r.exitCode
+        }
+        retryBudget.delete(budgetKey(info))
         // A cancelled session must not mark the episode as watched.
         if (!entry.cancelled) afterPlayback({ title: info.title, episode: info.episode, maxPercent: r.maxPercent })
         return r.exitCode
       },
     })
-    const entry = { session, playing: false, cancelled: false }
+    entry.session = session
     sessionId = session.sessionId
     sessions.set(sessionId, entry)
     session.done.then((result) => {
       sessions.delete(sessionId)
-      notify(EVENTS.sessionEnd, { sessionId, result: { ok: result.ok, error: result.error, stderr: result.stderr } })
+      notify(EVENTS.sessionEnd, { sessionId, retry: Boolean(resume), result: { ok: result.ok, error: result.error, stderr: result.stderr } })
+      if (resume && !entry.opened && !entry.cancelled) {
+        lastFailed = { params, resume }
+        notify(EVENTS.playerRetry, { title: resume.title, episode: resume.episode, state: 'failed', error: entry.failure ?? result.error ?? 'unknown', sessionId })
+      }
     })
+    return entry
+  }
+
+  // Same series, episode, quality and mode as the stalled playback; the anime picked in a menu is reused by name.
+  function retryParams(entry, info) {
+    const anime = entry.animeLine ? animeLineTitle(entry.animeLine) : entry.params.anime ?? info.title
+    return { ...entry.params, anime, episode: info.episode }
+  }
+
+  function startRetry(params, resume) {
+    let entry
+    try {
+      entry = spawn(params, resume)
+    } catch {
+      lastFailed = { params, resume }
+      notify(EVENTS.playerRetry, { title: resume.title, episode: resume.episode, state: 'failed', error: 'tools-missing', sessionId: null })
+      return
+    }
+    notify(EVENTS.playerRetry, { title: resume.title, episode: resume.episode, state: 'reconnecting', sessionId: entry.session.sessionId })
+  }
+
+  function watch({ query, anime = null, episode = null, mode = null }) {
+    const s = settings.get()
+    const prefs = seriesPrefs ? seriesPrefs.resolve(anime ?? query, s) : { quality: s.quality, mode: s.mode }
+    const forced = mode === 'sub' || mode === 'dub' ? mode : null
+    const params = { query, anime, episode, quality: prefs.quality, mode: forced ?? prefs.mode }
+    const entry = spawn(params)
     // ani-cli reads quality/mode only at start; the UI needs them to know when a sub/dub switch requires a restart.
-    return { sessionId, quality: prefs.quality, mode: effectiveMode }
+    return { sessionId: entry.session.sessionId, quality: params.quality, mode: params.mode }
+  }
+
+  // The renderer reports a stall or an unrecoverable stream; main decides whether this one is automatic.
+  function recover(snapshot, { manual = false } = {}) {
+    const active = internalPlayer?.current?.()
+    if (!active || !current || active.playbackId !== snapshot?.playbackId) return { ok: false }
+    const key = budgetKey(current.info)
+    const last = retryBudget.get(key)
+    if (!manual && last != null && now() - last < RETRY_TTL_MS) return { ok: true, auto: false }
+    retryBudget.set(key, now())
+    internalPlayer.closed({ ...snapshot, reason: 'retry' })
+    return { ok: true }
+  }
+
+  function retryAgain() {
+    if (!lastFailed) return
+    const { params, resume } = lastFailed
+    lastFailed = null
+    startRetry(params, resume)
   }
 
   function cancel(sessionId) {
@@ -102,5 +170,5 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     return afterPlayback({ title, episode: String(episode), maxPercent: r.maxPercent })
   }
 
-  return { watch, answerMenu, cancel, playLocal, afterPlayback }
+  return { watch, answerMenu, cancel, playLocal, afterPlayback, recover, retryAgain }
 }

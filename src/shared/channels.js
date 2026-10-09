@@ -62,4 +62,5 @@ export const EVENTS = {
   fullscreen: 'event:fullscreen',
   playerOpen: 'event:player-open',
   playerClose: 'event:player-close',
+  playerRetry: 'event:player-retry',
 }
