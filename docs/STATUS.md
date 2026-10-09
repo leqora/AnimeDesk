@@ -1,6 +1,6 @@
 # AnimeDesk — stanje projekta
 
-Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.1** — spremna na grani `feat/v0.6.1-subtitles` (nije spojena u `main`, nije objavljena; čeka potvrdu korisnika). Poslednja objavljena: **0.6.0** (2026-10-09).
+Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.1** — objavljena 2026-10-10 (GitHub Release `v0.6.1`, Latest), spojena u `main`.
 
 ## Dokle smo stigli (ukratko)
 
@@ -13,7 +13,7 @@ Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.1** — spremna na gr
 
 ## Gde smo stali (2026-10-10) i kako dalje
 
-- v0.6.0 je objavljen kao Latest. v0.6.1 (titlovi) je gotov na grani `feat/v0.6.1-subtitles` (621/621 testova, provereno u pravoj aplikaciji): nije spojen u `main`, nije push-ovan ni objavljen — čeka potvrdu korisnika (merge `--no-ff`, push, `npm run release`).
+- v0.6.1 (titlovi) je objavljen kao Latest 2026-10-10 (621/621 testova, provereno u pravoj aplikaciji); `main` = `origin/main`, grana `feat/v0.6.1-subtitles` obrisana posle spajanja (`--no-ff`).
 - Kako je rađeno v0.6: brainstorming (4 dela dizajna, odluke korisnika: v0.6 = koraci 1–3; oporavak „1 automatski po epizodi, pa dugme”; pristup B = oporavak vodi main proces, plejer ostaje „otvoren” uz ekran „Ponovno povezivanje…”; bedž u kontrolama + jednokratna poruka o kvalitetu) → spec → plan (11 zadataka) → podagenti (implementer + pregled po zadatku) → završni pregled cele grane → jedan krug ispravki → merge `--no-ff` → `npm run release`.
 - **Prvo u sledećoj sesiji (preporuka):** uživo proveriti oporavak strima na pravoj epizodi (zastoj → „Ponovno povezivanje…” → nastavak od iste sekunde bez pitanja „Nastavi od…”; drugi zastoj u istoj epizodi → ekran sa „Pokušaj ponovo” / mpv / „Nazad”) i poruke `no-sources` / „kvalitet nije dostupan” sa pravim ani-cli-jem. Rezultat upisati u „Šta je stvarno provereno”.
 - **Lista za uživo proveru 0.6.0 (korisnik radi naknadno; dogovoreno 2026-10-09):**
