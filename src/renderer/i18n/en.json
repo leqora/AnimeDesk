@@ -208,6 +208,7 @@
   "search.back": "Back",
   "search.playSub": "Play subtitled",
   "error.no-dub": "This episode has no dub.",
+  "error.no-sources": "The episode is out, but there are no working sources right now.",
   "window.fullscreen": "Full screen (F11)",
   "window.exitFullscreen": "Exit full screen (Esc)",
   "player.episode": "EP {episode}",

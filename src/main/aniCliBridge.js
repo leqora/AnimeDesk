@@ -14,7 +14,14 @@ export function mapError(stderr) {
   if (/Episode not released|Out of range/i.test(s)) return 'episode-not-released'
   if (/Blocked by cloudflare/i.test(s)) return 'blocked'
   if (/No sources found for dub/i.test(s)) return 'no-dub'
+  if (/no valid sources/i.test(s)) return 'no-sources'
   return 'unknown'
+}
+
+// ani-cli prints "<quality> not found, defaulting to best" (colored, after "\33[2K\r") when the asked quality is missing.
+export function parseQualityFallback(line) {
+  const m = /^(\S+) not found, defaulting to best/.exec(stripAnsi(line).trim())
+  return m ? m[1] : null
 }
 
 export function menuKind(prompt) {

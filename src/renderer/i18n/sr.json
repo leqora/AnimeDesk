@@ -208,6 +208,7 @@
   "search.back": "Nazad",
   "search.playSub": "Pusti sa titlom",
   "error.no-dub": "Ova epizoda nema dub.",
+  "error.no-sources": "Epizoda je izašla, ali trenutno nema ispravnih izvora.",
   "window.fullscreen": "Ceo ekran (F11)",
   "window.exitFullscreen": "Izađi iz celog ekrana (Esc)",
   "player.episode": "EP {episode}",

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mapError, menuKind, autoAnswer, parsePlayerArgs, buildEnv, stripAnsi } from '../../src/main/aniCliBridge.js'
+import { mapError, menuKind, autoAnswer, parsePlayerArgs, buildEnv, stripAnsi, parseQualityFallback } from '../../src/main/aniCliBridge.js'
 import { DEFAULT_SETTINGS } from '../../src/main/settings.js'
 
 describe('aniCliBridge helpers', () => {
@@ -66,5 +66,17 @@ describe('aniCliBridge helpers', () => {
     const dl = buildEnv({ baseEnv: {}, tools: { gitRoot: 'C:\\Git' }, bridges: { menu: 'm', player: 'p' }, server: { port: 1, token: 't' }, sessionId: 's', player: 'download', settings: DEFAULT_SETTINGS, historyDir: 'h' })
     expect(dl.ANI_CLI_PLAYER).toBe('download')
     expect(dl).not.toHaveProperty('ANI_CLI_DOWNLOAD_DIR')
+  })
+})
+
+describe('no sources and quality fallback', () => {
+  it('maps "no valid sources" to no-sources', () => {
+    expect(mapError('Episode is released, but no valid sources!')).toBe('no-sources')
+  })
+  it('reads the requested quality from ani-cli fallback lines, with or without colors', () => {
+    expect(parseQualityFallback('720 not found, defaulting to best')).toBe('720')
+    expect(parseQualityFallback('\x1b[1;33m1080 not found, defaulting to best\x1b[0m')).toBe('1080')
+    expect(parseQualityFallback('\x1b[2K')).toBeNull()
+    expect(parseQualityFallback('Checking dependencies...')).toBeNull()
   })
 })
