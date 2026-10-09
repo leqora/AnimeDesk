@@ -56,6 +56,7 @@ describe('watchService', () => {
     expect(player.play).toHaveBeenCalledWith(['--force-media-title=Fake Anime Episode 2', 'https://v'], expect.any(Object))
     expect(library.recordWatched).toHaveBeenCalledWith({ aniCliTitle: 'Fake Anime', episode: '2' })
     expect(events.map((e) => e[0])).toEqual([EVENTS.playing, EVENTS.libraryChanged, EVENTS.sessionEnd])
+    expect(events.at(-1)[1]).toMatchObject({ retry: false })
   })
   it('does not record below the threshold', async () => {
     const { svc, library } = setup({ maxPercent: 50 })

@@ -402,10 +402,11 @@ describe('PlayerView skip / next / resume', () => {
     expect(video.play).toHaveBeenCalled()
   })
   it('a broken local file only offers mpv and back', () => {
-    const { video } = view(open({ kind: 'file', src: 'http://127.0.0.1:9/s/t/f1/file', subtitleUrl: null }))
+    const { video, api } = view(open({ kind: 'file', src: 'http://127.0.0.1:9/s/t/f1/file', subtitleUrl: null }))
     fireEvent(video, new Event('error'))
     const alert = screen.getByRole('alert')
     expect(within(alert).queryByRole('button', { name: 'Pokušaj ponovo' })).not.toBeInTheDocument()
+    expect(api.player.recover).not.toHaveBeenCalled()
   })
   it('hides the spinner when time advances while playing, even if the browser reported a stall', () => {
     const { video, meta } = view()

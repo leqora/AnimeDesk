@@ -45,6 +45,8 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
       api.watch.onPlaying((p) => { setPlaying(p); setPhase('playing') }),
       api.watch.onSessionEnd(({ sessionId, result, retry }) => {
         if (live.current.ignore.delete(sessionId)) return
+        // A recovery session is started by main, never by this page; only undo the 'playing' phase its own onPlaying set.
+        if (retry && live.current.phase !== 'playing') return
         live.current.sessionId = null
         setMenu(null)
         setPlaying(null)

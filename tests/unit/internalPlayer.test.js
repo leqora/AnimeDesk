@@ -65,11 +65,16 @@ describe('internalPlayer', () => {
     player.closed({ playbackId: 'f2', maxPercent: 10, position: 100, duration: 1400, reason: 'back' })
     await done
   })
-  it('resumes a recovery at the given second without asking, and passes the quality fallback', () => {
+  it('resumes a recovery at the given second without asking', () => {
     const { positions, events, player } = setup({ resume: { position: 600, duration: 1400 } })
     player.play({ ...info, resume: { at: 5, auto: true, title: 'Show', episode: '3' }, qualityFallback: '720' })
     expect(positions.get).not.toHaveBeenCalled()
-    expect(events[0][1]).toMatchObject({ resumeAt: 5, autoResume: true, qualityFallback: '720' })
+    expect(events[0][1]).toMatchObject({ resumeAt: 5, autoResume: true, qualityFallback: null })
+  })
+  it('does not repeat the quality notice after a recovery', () => {
+    const { events, player } = setup()
+    player.play({ ...info, resume: { at: 5, auto: true, title: 'Show', episode: '3' }, qualityFallback: '720' })
+    expect(events[0][1]).toMatchObject({ qualityFallback: null })
   })
   it('reports the active playback', () => {
     const { player } = setup()

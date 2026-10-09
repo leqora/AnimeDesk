@@ -23,7 +23,9 @@ export function usePlayerHealth({ video, active, onStall, slowMs = SLOW_MS, stal
     const id = setInterval(() => {
       const v = video.current
       if (fired || !v) return
-      if (!live.current.active || v.paused || v.currentTime !== last) { last = v.currentTime; since = Date.now(); return }
+      // Some HLS streams stop just before the duration without firing "ended"; that is not a stall.
+      const nearEnd = Number.isFinite(v.duration) && v.duration - v.currentTime < 2
+      if (!live.current.active || v.paused || nearEnd || v.currentTime !== last) { last = v.currentTime; since = Date.now(); return }
       if (Date.now() - since >= stallMs) { fired = true; live.current.onStall?.() }
     }, 1000)
     return () => clearInterval(id)

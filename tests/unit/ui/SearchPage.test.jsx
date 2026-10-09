@@ -93,6 +93,24 @@ describe('SearchPage', () => {
     expect(screen.getByText('No results found!')).toBeInTheDocument()
   })
 
+  it('a late end of a recovery session does not reset a search for the next episode', async () => {
+    const { api, handlers } = withEvents()
+    renderUi(<SearchPage {...props({ pendingWatch: { query: 'Show', anime: 'Show', episode: '5' } })} />, { api })
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(1))
+    expect(screen.getByText('Pretraga…')).toBeInTheDocument()
+    act(() => handlers.end({ sessionId: 's9', retry: true, result: { ok: true } }))
+    expect(screen.getByText('Pretraga…')).toBeInTheDocument()
+  })
+  it('a recovery end while its own playing phase is shown returns to idle', async () => {
+    const { api, handlers } = withEvents()
+    renderUi(<SearchPage {...props()} />, { api })
+    await waitFor(() => expect(handlers.playing).toBeDefined())
+    act(() => handlers.playing({ title: 'Show', episode: '3' }))
+    act(() => handlers.end({ sessionId: 's9', retry: true, result: { ok: true } }))
+    expect(screen.queryByText('Pretraga…')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Traži' })).toBeEnabled()
+  })
+
   it('starts a pending "continue watching" request once ready', async () => {
     const p = props({ pendingWatch: { query: 'Show', anime: 'Show', episode: '4' } })
     const { api } = renderUi(<SearchPage {...p} />)

@@ -39,6 +39,12 @@ describe('usePlayerHealth', () => {
     act(() => vi.advanceTimersByTime(30000))
     expect(onStall).toHaveBeenCalledTimes(1)
   })
+  it('does not report a stall within 2 s of the end of the video', () => {
+    const onStall = vi.fn()
+    renderHook(() => usePlayerHealth({ video: fakeVideo({ currentTime: 1398.5, duration: 1400 }), active: true, onStall }))
+    act(() => vi.advanceTimersByTime(30000))
+    expect(onStall).not.toHaveBeenCalled()
+  })
   it('does not report a stall while paused, inactive, or advancing', () => {
     const onStall = vi.fn()
     const video = fakeVideo({ paused: true })
