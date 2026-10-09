@@ -10,6 +10,13 @@ Poslednje ažuriranje: 2026-10-09. Trenutna verzija: **0.6.0** — objavljena 20
 - **v0.6.0 (objavljeno 2026-10-09):** P0-B koraci 1–3 — spinner/baferovanje, pamćenje jačine, dvoklik = pun ekran, bedž rezolucije + upozorenje o kvalitetu, poruka „nema ispravnih izvora” + „Pokušaj ponovo”, automatski oporavak zaglavljenog strima, retry/timeout u proxy-ju. Spec: `docs/superpowers/specs/2026-10-09-v0.6-player-design.md`. Beleške: `docs/releases/v0.6.0.md`.
 - **Posle objave:** P0-B koraci 4–7 (titlovi SRT/offset, nastavak u mpv-u, lazy `PlayerView`, prefetch) iz `docs/seanime-analysis/04-plan.md`.
 
+## Gde smo stali (2026-10-09, kraj sesije) i kako dalje
+
+- v0.6.0 je objavljen kao Latest; `main` = `origin/main`, radno stablo čisto, nema otvorenih `feat/` grana.
+- Kako je rađeno v0.6: brainstorming (4 dela dizajna, odluke korisnika: v0.6 = koraci 1–3; oporavak „1 automatski po epizodi, pa dugme”; pristup B = oporavak vodi main proces, plejer ostaje „otvoren” uz ekran „Ponovno povezivanje…”; bedž u kontrolama + jednokratna poruka o kvalitetu) → spec → plan (11 zadataka) → podagenti (implementer + pregled po zadatku) → završni pregled cele grane → jedan krug ispravki → merge `--no-ff` → `npm run release`.
+- **Prvo u sledećoj sesiji (preporuka):** uživo proveriti oporavak strima na pravoj epizodi (zastoj → „Ponovno povezivanje…” → nastavak od iste sekunde bez pitanja „Nastavi od…”; drugi zastoj u istoj epizodi → ekran sa „Pokušaj ponovo” / mpv / „Nazad”) i poruke `no-sources` / „kvalitet nije dostupan” sa pravim ani-cli-jem. Rezultat upisati u „Šta je stvarno provereno”.
+- **Sledeći razvoj:** P0-B korak 4 — titlovi (SRT→VTT za strim i lokalni `.srt`, detekcija po sadržaju; offset titlova + prečice; stil preko `::cue` tokena). Zatim 5 (nastavak u spoljnom mpv-u, „odgledano” na pragu tokom gledanja, normalizacija AniSkip intervala), 6 (lazy `PlayerView`, brzina reprodukcije, buffered traka + tooltip, razbijanje `PlayerView` na hook-ove), 7 (prefetch linka sledeće epizode — poseban spec). Detalji i fajlovi: `docs/seanime-analysis/03-oblast-player.md` (tabela „Top preporuke”) i `04-plan.md` §3. Isti tok: brainstorming → spec → plan → podagenti, nova grana `feat/v0.7-…` ili `feat/v0.6.1-…` po obimu.
+
 Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, šta je otvoreno. Detalji dizajna su u `docs/superpowers/specs/`, planovi u `docs/superpowers/plans/`, beleške izdanja u `docs/releases/`.
 
 ## Istorija verzija
@@ -52,11 +59,12 @@ Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, �
 6. Windows može da prikazuje staru ikonicu prečice dok ne osveži keš ikonica (nova ikonica u 0.4.0).
 7. Ručno još neprovereno iz v0.2: zvuci i level-up animacija pri stvarnom gledanju, puno gledanje epizode do kraja sa automatskim praćenjem.
 8. Rizici v0.5: ako sajt promeni zaštitu (zaglavlja, maskirani segmenti), popravka ide u `streamServer.js` (do tada dugme „Pusti u spoljnom plejeru”); AniSkip nema podatke za sve serije/epizode (tada nema dugmadi za preskakanje).
+9. Sitnice iz pregleda v0.6 svesno ostavljene: „Nazad” pritisnut baš tokom IPC poziva za oporavak ipak pokrene ponovno povezivanje (prozor jednog poziva; „Nazad” na ekranu povezivanja vraća); „Pokušaj ponovo” u plejeru nema zaštitu od dvostrukog klika; ekran „Ponovno povezivanje…” ne pomera fokus na dugme; nema testova za prekid klijenta u proxy-ju i za mrežnu grešku pri ponovnom pokušaju segmenta (kod je pregledan i ispravan); budžet oporavka ne briše istekle unose (zanemarljivo).
 
 ## Mogući sledeći koraci (ideje, ništa nije dogovoreno)
 
-- v0.5 je implementirana, objavljena (2026-10-04) i proverena uživo; 0.5.1 hotfix objavljen 2026-10-09.
-- **Glavni izvor sledećih koraka:** `docs/seanime-analysis/04-plan.md` (P0-B plejer → v0.6, P1 spoiler model + kartice + epizode → v0.7, P2 obaveštenja/tray/AniList…).
+- v0.5 je implementirana, objavljena (2026-10-04) i proverena uživo; 0.5.1 hotfix i 0.6.0 (plejer, P0-B 1–3) objavljeni 2026-10-09.
+- **Glavni izvor sledećih koraka:** `docs/seanime-analysis/04-plan.md` (ostatak P0-B plejera: koraci 4–7, P1 spoiler model + kartice + epizode, P2 obaveštenja/tray/AniList…). Stanje roadmap-a: `docs/seanime-analysis/_STANJE.md`.
 - Dalji predlozi su u `Claude/Anime/Aplikacija za gledanje Anime-a/Istrazivanje.md`: obaveštenja o novim epizodama, raspored emitovanja, automatski nastavak na sledeću epizodu, AniList sinhronizacija, oznake filler epizoda…
 - Ručno povezivanje naslova iz pretrage sa AniList unosom (postoji za watchlist preko `aniListId`, ne i u mreži pretrage).
 - Preporuke na osnovu žanrova (iz `Claude/Anime/IDEJE.md`).
