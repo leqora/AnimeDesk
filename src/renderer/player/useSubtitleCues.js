@@ -19,10 +19,13 @@ export function useSubtitleCues(trackRef, videoRef, offset, playbackId) {
     if (!el || !v) { setStatus('none'); return undefined }
     setStatus('loading')
     if (el.track) el.track.mode = 'hidden'
+    // Until this playback's own track fires `load`, el.track.cues may still hold the previous playback's cues.
+    let ready = false
     refresh.current = () => {
       const track = el.track
       if (!track) return
       if (track.mode !== 'hidden') track.mode = 'hidden'
+      if (!ready) return
       const next = activeCues(track.cues ? Array.from(track.cues) : [], v.currentTime - offsetRef.current)
       if (next.length === shown.current.length && next.every((c, i) => c === shown.current[i])) return
       shown.current = next
@@ -42,7 +45,7 @@ export function useSubtitleCues(trackRef, videoRef, offset, playbackId) {
       else if (typeof requestAnimationFrame === 'function') frame = { kind: 'raf', id: requestAnimationFrame(loop) }
     }
     const start = () => { stop(); loop() }
-    const onLoad = () => { setStatus('ready'); tick() }
+    const onLoad = () => { ready = true; setStatus('ready'); tick() }
     const onError = () => setStatus('error')
     el.addEventListener('load', onLoad)
     el.addEventListener('error', onError)

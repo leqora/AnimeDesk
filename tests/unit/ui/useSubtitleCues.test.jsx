@@ -65,6 +65,17 @@ describe('useSubtitleCues', () => {
     expect(hook.result.current.cues).toEqual([])
     expect(hook.result.current.status).toBe('loading')
   })
+  it('does not resurrect the previous playback cues before the new track loads', () => {
+    const { hook, load, at } = setup({ cues: [cue(1, 5, 'A')] })
+    load()
+    at(2)
+    expect(hook.result.current.cues).toHaveLength(1)
+    hook.rerender({ offset: 0, id: 'p2' })
+    at(2)
+    expect(hook.result.current.cues).toEqual([])
+    load()
+    expect(hook.result.current.cues.map((c) => c.text)).toEqual(['A'])
+  })
   it('is "none" without a track element', () => {
     const video = Object.assign(new EventTarget(), { currentTime: 0, paused: true })
     const { result } = renderHook(() => useSubtitleCues({ current: null }, { current: video }, 0, 'p1'))
