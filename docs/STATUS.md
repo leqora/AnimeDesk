@@ -1,6 +1,14 @@
 # AnimeDesk — stanje projekta
 
-Poslednje ažuriranje: 2026-10-04. Trenutna verzija: **0.5.0** (na grani `feat/v0.5`, još neobjavljena; poslednji objavljeni release je 0.4.0).
+Poslednje ažuriranje: 2026-10-09. Trenutna verzija: **0.5.0** — objavljena 2026-10-04 (GitHub Release `v0.5.0`, Latest), spojena u `main`, `main` = `origin/main`, radno stablo čisto. Nema otvorenih `feat/` grana.
+
+## Dokle smo stigli (ukratko)
+
+- Objavljeno: 0.1.0 → 0.5.0 (9 izdanja za 4 dana, 2026-10-01 – 2026-10-04).
+- Testovi: 60 fajlova, **486/486 prolazi** (ponovo pokrenuto 2026-10-09).
+- Od 2026-10-04 nije bilo novog rada u kodu.
+- Uživo provere za 0.5.0 su potvrđene (2026-10-09).
+- **Sledeći korak:** izabrati sledeću funkcionalnost (v0.6) iz „Mogući sledeći koraci”.
 
 Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, šta je otvoreno. Detalji dizajna su u `docs/superpowers/specs/`, planovi u `docs/superpowers/plans/`, beleške izdanja u `docs/releases/`.
 
@@ -21,7 +29,7 @@ Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, �
 ## Šta je stvarno provereno (ne samo testovima)
 
 - 486 unit/integration testova prolazi (`npm test`, 0.5.0), e2e smoke (`npm run test:e2e`) prolazi.
-- **0.5.0 — uživo provere još NISU urađene (na čekanju):** (1) Frieren ep 1 u aplikaciji (slika, zvuk, titlovi, S/M/L); (2) „Preskoči uvod” i automatsko preskakanje; (3) kraj → odbrojavanje → sledeća epizoda; (4) zatvori pa „Nastavi od…”; (5) prečice + pun ekran; (6) preuzeta epizoda u aplikaciji; (7) spoljni režim sa uosc i automatskim preskakanjem; (8) dugme „Pusti u spoljnom plejeru”; (9) ažuriranje 0.4.0 → 0.5.0; (10) nameran kvar playliste (npr. bez interneta / pogrešan link) prikazuje ekran sa greškom i dugmetom za mpv, ne crn ekran; (11) preuzeta epizoda sa titlom (`.vtt` pored videa) prikazuje titlove u aplikaciji; (12) „Pitaj pri zatvaranju” + automatska sledeća epizoda: odgovor za prethodnu epizodu se ne gubi (dijalog vidljiv iznad plejera, pitanja u redu); (13) posle automatskog prelaska na sledeću epizodu sa pragom 95 % prethodna epizoda je označena kao odgledana.
+- **0.5.0 provereno uživo sa korisnikom (potvrđeno 2026-10-09), svih 13 stavki:** (1) Frieren ep 1 u aplikaciji (slika, zvuk, titlovi, S/M/L); (2) „Preskoči uvod” i automatsko preskakanje; (3) kraj → odbrojavanje → sledeća epizoda; (4) zatvori pa „Nastavi od…”; (5) prečice + pun ekran; (6) preuzeta epizoda u aplikaciji; (7) spoljni režim sa uosc i automatskim preskakanjem; (8) dugme „Pusti u spoljnom plejeru”; (9) ažuriranje 0.4.0 → 0.5.0; (10) nameran kvar playliste (npr. bez interneta / pogrešan link) prikazuje ekran sa greškom i dugmetom za mpv, ne crn ekran; (11) preuzeta epizoda sa titlom (`.vtt` pored videa) prikazuje titlove u aplikaciji; (12) „Pitaj pri zatvaranju” + automatska sledeća epizoda: odgovor za prethodnu epizodu se ne gubi (dijalog vidljiv iznad plejera, pitanja u redu); (13) posle automatskog prelaska na sledeću epizodu sa pragom 95 % prethodna epizoda je označena kao odgledana.
 - **0.4.0 provereno uživo sa korisnikom (2026-10-03):** One Piece grupe i „Idi na epizodu”, sub↔dub na stranici epizoda, „nema dub-a” + „Pusti sa titlom”, serija sa sačuvanim dub-om iz pretrage pušta dub, F11 / dugme / Esc i pamćenje punog ekrana posle ponovnog pokretanja, Esc u dijalogu ne izlazi iz punog ekrana, 5 favorita + poruka za šesti, „O aplikaciji” → GitHub, „by Leqora” i nova ikonica.
 - **Auto-update radi u praksi:**
   - lokalna proba (generic provider na `localhost`, 0.2.90 → 0.2.91): instalacija tek na klik, podaci netaknuti, bez SmartScreen-a;
@@ -43,7 +51,7 @@ Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, �
 
 ## Mogući sledeći koraci (ideje, ništa nije dogovoreno)
 
-- v0.5 je implementirana (čeka uživo provere i objavu).
+- v0.5 je implementirana, objavljena (2026-10-04) i proverena uživo.
 - Dalji predlozi su u `Claude/Anime/Aplikacija za gledanje Anime-a/Istrazivanje.md`: obaveštenja o novim epizodama, raspored emitovanja, automatski nastavak na sledeću epizodu, AniList sinhronizacija, oznake filler epizoda…
 - Ručno povezivanje naslova iz pretrage sa AniList unosom (postoji za watchlist preko `aniListId`, ne i u mreži pretrage).
 - Preporuke na osnovu žanrova (iz `Claude/Anime/IDEJE.md`).
