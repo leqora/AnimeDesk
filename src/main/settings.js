@@ -22,6 +22,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   autoNext: true,
   subtitleSize: 'M',
   mpvModernUi: true,
+  playerVolume: 1,
+  playerMuted: false,
 })
 
 export const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
@@ -54,6 +56,8 @@ export function sanitizeSettings(input = {}) {
   if (typeof input.autoNext === 'boolean') s.autoNext = input.autoNext
   if (SUBTITLE_SIZES.includes(input.subtitleSize)) s.subtitleSize = input.subtitleSize
   if (typeof input.mpvModernUi === 'boolean') s.mpvModernUi = input.mpvModernUi
+  if (Number.isFinite(input.playerVolume)) s.playerVolume = Math.min(1, Math.max(0, input.playerVolume))
+  if (typeof input.playerMuted === 'boolean') s.playerMuted = input.playerMuted
   return s
 }
 

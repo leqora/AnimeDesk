@@ -15,6 +15,7 @@ describe('settings', () => {
       profileName: null, soundKey: true, soundUi: false, soundVolume: 60, animations: true,
       autoDownloadUpdates: true, lastSeenVersion: null, fullscreen: false,
       playerMode: 'internal', autoSkip: false, autoNext: true, subtitleSize: 'M', mpvModernUi: true,
+      playerVolume: 1, playerMuted: false,
     })
   })
   it('clamps the threshold and ignores invalid values', () => {
@@ -72,5 +73,16 @@ describe('settings', () => {
     expect(DEFAULT_SETTINGS).toMatchObject({ playerMode: 'internal', autoSkip: false, autoNext: true, subtitleSize: 'M', mpvModernUi: true })
     expect(sanitizeSettings({ playerMode: 'external', autoSkip: true, autoNext: false, subtitleSize: 'L', mpvModernUi: false })).toMatchObject({ playerMode: 'external', autoSkip: true, autoNext: false, subtitleSize: 'L', mpvModernUi: false })
     expect(sanitizeSettings({ playerMode: 'vlc', autoSkip: 'yes', autoNext: 1, subtitleSize: 'XL', mpvModernUi: null })).toMatchObject({ playerMode: 'internal', autoSkip: false, autoNext: true, subtitleSize: 'M', mpvModernUi: true })
+  })
+  it('keeps the player volume in 0..1 and the mute flag boolean', () => {
+    expect(DEFAULT_SETTINGS.playerVolume).toBe(1)
+    expect(DEFAULT_SETTINGS.playerMuted).toBe(false)
+    expect(sanitizeSettings({ playerVolume: 0.42 }).playerVolume).toBe(0.42)
+    expect(sanitizeSettings({ playerVolume: 1.5 }).playerVolume).toBe(1)
+    expect(sanitizeSettings({ playerVolume: -1 }).playerVolume).toBe(0)
+    expect(sanitizeSettings({ playerVolume: Number.NaN }).playerVolume).toBe(1)
+    expect(sanitizeSettings({ playerVolume: '0.5' }).playerVolume).toBe(1)
+    expect(sanitizeSettings({ playerMuted: true }).playerMuted).toBe(true)
+    expect(sanitizeSettings({ playerMuted: 'yes' }).playerMuted).toBe(false)
   })
 })
