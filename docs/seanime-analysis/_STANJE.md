@@ -17,7 +17,7 @@ Poslednje ažuriranje: 2026-10-10 (v0.6.3, korak 5).
 - [x] **v0.6 = P0-B koraci 1–3 objavljeni kao v0.6.0** (2026-10-09, spojeno u `main`) (spinner/baferovanje, jačina/mute, dvoklik, bedž rezolucije + upozorenje o kvalitetu, `no-sources` + „Pokušaj ponovo”, detekcija zastoja i automatski oporavak, retry/timeout u `streamServer.js`). 559/559 testova, e2e prolazi, provereno u pravoj aplikaciji (vidi `docs/STATUS.md`).
 - [x] **P0-B korak 4 objavljen kao v0.6.1** (2026-10-10, Latest, spojeno u `main`) (titlovi: SRT→VTT, pomak `G`/`H` po seriji i režimu, sopstveni overlay, podešavanja sa pregledom, meni titlova; 621/621 testova, provereno u pravoj aplikaciji; vidi `docs/STATUS.md`).
 - [x] **v0.6.2** (2026-10-10, Latest): mini ispravke titlova (veličina 25, razmak bez preklapanja, neprovidni paneli).
-- [x] **P0-B korak 5 = v0.6.3** (nastavak u mpv-u, „odgledano” na pragu uz odloženo slavlje, normalizacija AniSkip intervala; grana `feat/v0.6.3-continuity`, nije objavljeno; 651 test).
+- [x] **P0-B korak 5 = v0.6.3** (nastavak u mpv-u, „odgledano” na pragu uz odloženo slavlje, normalizacija AniSkip intervala; objavljeno 2026-10-10 kao Latest, spojeno u `main`; 653 testa).
 - [ ] **SLEDEĆE: P0-B koraci 6–7** (lazy `PlayerView` + brzina + razbijanje na hook-ove, prefetch sledeće epizode) — ide kroz superpowers tok kao v0.6, nova grana.
 
 ## Odluke korisnika (važe za dalje)
