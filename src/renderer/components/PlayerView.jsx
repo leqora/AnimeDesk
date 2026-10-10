@@ -18,7 +18,7 @@ import { usePlaybackRate } from '../player/usePlaybackRate.js'
 import { useHlsSource } from '../player/useHlsSource.js'
 import { useEpisodeEnd } from '../player/useEpisodeEnd.js'
 import { usePlayerShortcuts, QUIET } from '../player/usePlayerShortcuts.js'
-import { trackMax, segmentAt, isLastEpisode, qualityLabel, qualityName } from '../../shared/player.js'
+import { trackMax, bufferedRanges, sameRanges, segmentAt, isLastEpisode, qualityLabel, qualityName } from '../../shared/player.js'
 
 const PROGRESS_MS = 5000
 const QUALITY_FLASH_MS = 4000
@@ -40,6 +40,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const fallbackShown = useRef(false)
   const [time, setTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [buffered, setBuffered] = useState([])
   const [playing, setPlaying] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [failed, setFailed] = useState(null) // null | 'retryable' | 'final'
@@ -148,8 +149,10 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     }
     if (resume == null) play()
   }
+  const readBuffered = () => { const next = bufferedRanges(video.current?.buffered); setBuffered((prev) => (sameRanges(prev, next) ? prev : next)) }
   const onTimeUpdate = () => {
     const v = video.current
+    readBuffered()
     setTime(v.currentTime)
     // a browser `stalled` can fire with enough data buffered; moving time proves playback is fine
     if (!v.paused && v.currentTime > lastTime.current) health.onReady()
@@ -169,7 +172,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     <div className={`player${idle ? ' player--idle' : ''}`} onMouseMove={poke}>
       <video
         ref={video} className="player__video" crossOrigin="anonymous"
-        onLoadedMetadata={onLoadedMetadata} onTimeUpdate={onTimeUpdate}
+        onLoadedMetadata={onLoadedMetadata} onTimeUpdate={onTimeUpdate} onProgress={readBuffered}
         onPlay={() => { setPlaying(true); setResume(null); poke() }} onPause={() => { health.onReady(); setPlaying(false); showControls(); api.player.progress(snapshot()) }}
         onVolumeChange={volume.onVolumeChange} onResize={readQuality}
         onWaiting={health.onWaiting} onStalled={health.onWaiting} onPlaying={health.onReady} onCanPlay={health.onReady} onSeeked={health.onReady}
@@ -205,7 +208,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       {end && <NextEpisodeCard mode={end} seconds={ending.left} onNext={() => close('next')} onCancel={ending.cancel} onBack={() => close('ended')} />}
       <PlayerControls
         segments={['op', 'ed', 'recap'].filter((k) => skips?.[k]).map((k) => ({ kind: k, ...skips[k] }))}
-        time={time} duration={duration} quality={quality} playing={playing} muted={volume.muted} volume={volume.volume} subsOn={subs.on}
+        time={time} duration={duration} buffered={buffered} quality={quality} playing={playing} muted={volume.muted} volume={volume.volume} subsOn={subs.on}
         subsAvailable={subs.available} subsHint={subs.hint}
         menu={{
           open: menuOpen, onOpen: setMenuOpen,

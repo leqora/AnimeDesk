@@ -162,6 +162,13 @@ describe('PlayerView', () => {
     view(open({ episode: '1' }))
     expect(screen.getByRole('button', { name: 'Prethodna epizoda' })).toBeDisabled()
   })
+  it('shows what the video has buffered on the timeline', () => {
+    const { video, meta } = view()
+    meta(1400)
+    Object.defineProperty(video, 'buffered', { configurable: true, value: { length: 1, start: () => 0, end: () => 350 } })
+    fireEvent(video, new Event('progress'))
+    expect(document.querySelector('.player__buffered').style.width).toBe('25%')
+  })
 })
 
 describe('PlayerView skip / next / resume', () => {
