@@ -1,25 +1,25 @@
 # AnimeDesk — stanje projekta
 
-Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.4** — čeka objavu (na grani `feat/v0.6.4-player`, nije spojena u `main`, `npm run release` nije pokretan). Poslednje objavljeno: 0.6.3 (GitHub Release `v0.6.3`, Latest).
+Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.4** — objavljena 2026-10-10 (GitHub Release `v0.6.4`, Latest), spojena u `main` (`--no-ff`), grana obrisana.
 
 ## Dokle smo stigli (ukratko)
 
-- Objavljeno: 0.1.0 → 0.6.3 (14 izdanja, 2026-10-01 – 2026-10-10); 0.6.4 čeka objavu.
+- Objavljeno: 0.1.0 → 0.6.4 (15 izdanja, 2026-10-01 – 2026-10-10).
 - Testovi: 70 fajlova, **709/709 prolazi** (0.6.4), e2e smoke prolazi.
 - 2026-10-09: komparativna analiza Seanime-a → plan unapređenja u `docs/seanime-analysis/` (`04-plan.md` = roadmap P0–P3 sa odlukama korisnika). Iz nje je urađen hotfix 0.5.1 (P0-A).
 - **v0.6.0 (objavljeno 2026-10-09):** P0-B koraci 1–3 — spinner/baferovanje, pamćenje jačine, dvoklik = pun ekran, bedž rezolucije + upozorenje o kvalitetu, poruka „nema ispravnih izvora” + „Pokušaj ponovo”, automatski oporavak zaglavljenog strima, retry/timeout u proxy-ju. Spec: `docs/superpowers/specs/2026-10-09-v0.6-player-design.md`. Beleške: `docs/releases/v0.6.0.md`.
 - **v0.6.1 (objavljeno 2026-10-10):** P0-B korak 4 — titlovi: SRT→VTT (strim i lokalni `.srt`, i Windows-1250/UTF-16), pomak `G`/`H` po seriji i režimu (`series-prefs.json`), sopstveni overlay (veći na punom ekranu, zbijeni redovi), podešavanja sa živim pregledom, meni titlova u plejeru, dub podrazumevano bez titla, poruka za nepodržan format (ASS). Spec: `docs/superpowers/specs/2026-10-09-v0.6.1-subtitles-design.md`, plan: `docs/superpowers/plans/2026-10-09-v0.6.1-subtitles.md`. Beleške: `docs/releases/v0.6.1.md`.
 - **v0.6.2 (objavljeno 2026-10-10):** mini ispravke titlova — podrazumevana veličina 25, razmak redova bez preklapanja (nova skala), tamni neprovidni paneli preko videa. Beleške: `docs/releases/v0.6.2.md`.
 - **v0.6.3 (objavljeno 2026-10-10, Latest):** P0-B korak 5 — nastavak u spoljnom mpv-u (`--start`, „Nastavljeno od mm:ss”), „odgledano” se beleži na pragu tokom gledanja (animacija nivoa i „serija završena” čekaju kraj reprodukcije, `celebrations.js`), normalizacija AniSkip intervala. Spec: `docs/superpowers/specs/2026-10-10-v0.6.3-continuity-design.md`. Beleške: `docs/releases/v0.6.3.md`.
-- **v0.6.4 (čeka objavu):** P0-B korak 6 — lazy `PlayerView` + hls.js (`src/renderer/player/loadPlayer.js`, priprema kad aplikacija miruje; `index-*.js` 928,35 kB → 316,76 kB + `PlayerView-*.js` 613,14 kB), `PlayerView.jsx` razbijen na hook-ove u `src/renderer/player/` (359 → 227 linija), brzina reprodukcije (meni 0,5–2× + prečice `[` `]` `\` po fizičkom tasteru, kreće od 1×, a posle ponovnog povezivanja iste epizode zadržava brzinu; poruka „Brzina: 1,25×”), zupčanik = „Podešavanja plejera” (`PlayerMenu.jsx`, uvek dostupan), traka vremena (`PlayerTimeline.jsx`: AniSkip segmenti, buffered, tooltip sa vremenom). Spec: `docs/superpowers/specs/2026-10-10-v0.6.4-player-design.md`. Beleške: `docs/releases/v0.6.4.md`.
+- **v0.6.4 (objavljeno 2026-10-10, Latest):** P0-B korak 6 — lazy `PlayerView` + hls.js (`src/renderer/player/loadPlayer.js`, priprema kad aplikacija miruje; `index-*.js` 928,35 kB → 316,76 kB + `PlayerView-*.js` 613,14 kB), `PlayerView.jsx` razbijen na hook-ove u `src/renderer/player/` (359 → 227 linija), brzina reprodukcije (meni 0,5–2× + prečice `[` `]` `\` po fizičkom tasteru, kreće od 1×, a posle ponovnog povezivanja iste epizode zadržava brzinu; poruka „Brzina: 1,25×”), zupčanik = „Podešavanja plejera” (`PlayerMenu.jsx`, uvek dostupan), traka vremena (`PlayerTimeline.jsx`: AniSkip segmenti, buffered, tooltip sa vremenom). Spec: `docs/superpowers/specs/2026-10-10-v0.6.4-player-design.md`. Beleške: `docs/releases/v0.6.4.md`.
 - **Sledeće:** P0-B korak 7 (prefetch linka sledeće epizode — poseban spec) iz `docs/seanime-analysis/04-plan.md`.
 
 ## Gde smo stali (2026-10-10, kraj sesije 3) i kako dalje
 
 ### Stanje repoa
-- **v0.6.4 je gotova na grani `feat/v0.6.4-player` i čeka odluku korisnika:** verzija u `package.json` je 0.6.4, beleške u `docs/releases/v0.6.4.md`, 709/709 testova, e2e i `npm run build` prolaze, ručna provera u pravoj aplikaciji urađena (vidi „Šta je stvarno provereno”). **Nije** spojena u `main`, nije pushovana, `npm run release` nije pokretan — merge/push/release samo uz dozvolu korisnika. Sledeći korak posle objave: P0-B korak 7 (prefetch, poseban spec).
+- **v0.6.4 je objavljena kao Latest** (GitHub Release `v0.6.4`: `.exe`, `.blockmap`, `latest.yml`, SHA-256 provereni; `main` = `origin/main`, grana `feat/v0.6.4-player` spojena sa `--no-ff` i obrisana). Pre objave: verzija u `package.json` je 0.6.4, beleške u `docs/releases/v0.6.4.md`, 709/709 testova, e2e i `npm run build` prolaze, ručna provera u pravoj aplikaciji urađena (vidi „Šta je stvarno provereno”). Sledeći korak: P0-B korak 7 (prefetch, poseban spec).
 - v0.6.3 je objavljen kao **Latest** (GitHub Release `v0.6.3`: `.exe`, `.blockmap`, `latest.yml`, SHA-256 provereni). Grane `feat/v0.6.2-subtitle-polish` i `feat/v0.6.3-continuity` su spojene sa `--no-ff` i obrisane.
-- Trenutno stanje: `feat/v0.6.4-player` nosi v0.6.4 (nije spojena, nije pushovana, nije objavljena — čeka korisnika); `main` je 1 commit ispred `origin/main` (dokumenti predaje smene, nije pushovan).
+- Trenutno stanje: `main` = `origin/main`, radno stablo čisto, nema otvorenih `feat/` grana; radni folder podagenata (`.superpowers/sdd/`) obrisan.
 
 ### Šta je urađeno u sesiji 3 (v0.6.4)
 - brainstorming → spec (`docs/superpowers/specs/2026-10-10-v0.6.4-player-design.md`) → plan od 11 zadataka → podagenti, svaki zadatak pregledan.
@@ -65,7 +65,7 @@ Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.4** — čeka objavu 
 - Rezultate upisati u „Šta je stvarno provereno”.
 
 ### Sledeći razvoj
-- **P0-B korak 5:** urađeno i objavljeno u 0.6.3. **Korak 6** (lazy `PlayerView`, brzina + meni, buffered traka + tooltip, razbijanje na hook-ove) urađen u 0.6.4 (čeka objavu). Sledi 7 (prefetch linka sledeće epizode — poseban spec). Detalji i fajlovi: `docs/seanime-analysis/03-oblast-player.md` (tabela „Top preporuke”) i `04-plan.md` §3.
+- **P0-B korak 5:** urađeno i objavljeno u 0.6.3. **Korak 6** (lazy `PlayerView`, brzina + meni, buffered traka + tooltip, razbijanje na hook-ove) urađen i objavljen u 0.6.4. Sledi 7 (prefetch linka sledeće epizode — poseban spec). Detalji i fajlovi: `docs/seanime-analysis/03-oblast-player.md` (tabela „Top preporuke”) i `04-plan.md` §3.
 - Isti tok: brainstorming → spec → plan → podagenti; za korak 7 (prefetch, poseban spec) nova grana (npr. `feat/v0.6.5-prefetch` ili po dogovoru); merge/push/release samo uz dozvolu korisnika. Pre koraka 7 pitati korisnika za rezultate uživo provera (gore, uključujući 0.6.4).
 
 Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, šta je otvoreno. Detalji dizajna su u `docs/superpowers/specs/`, planovi u `docs/superpowers/plans/`, beleške izdanja u `docs/releases/`.
@@ -88,7 +88,7 @@ Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, �
 | 0.6.1 | 2026-10-10 | Titlovi (P0-B 4): SRT→VTT za strim i lokalni `.srt`, sopstveni overlay (skalira sa plejerom, zbijeni redovi, gore/dole), podešavanja (veličina, razmak, font, boja, okvir) sa živim pregledom, meni titlova u plejeru, pomak `G`/`H` po seriji i režimu, dub bez titla podrazumevano, poruka za ASS/nepodržan format, lokalni `.srt` u Windows-1250/UTF-16 | `2026-10-09-v0.6.1-subtitles-design.md` |
 | 0.6.2 | 2026-10-10 | Podrazumevana veličina titla 25 (i stari `M`), razmak redova bez preklapanja (nova skala 1,40–1,60), tamni neprovidni paneli preko videa (meni titlova, kartica sledeće epizode, poruke) — token `--panel-solid` | — (mala izmena) |
 | 0.6.3 | 2026-10-10 | Kontinuitet (P0-B 5): nastavak u mpv-u (`--start` + „Nastavljeno od…”), „odgledano” na pragu tokom gledanja (`watchService` čuva pozicije i beleži za oba plejera), slavlje odloženo do kraja reprodukcije (`celebrations.js`), `normalizeSkips` za AniSkip | `2026-10-10-v0.6.3-continuity-design.md` |
-| 0.6.4 | čeka objavu | Plejer (P0-B 6): lazy `PlayerView` + hls.js (glavni bundle 928 → 316 kB), hook-ovi u `src/renderer/player/`, brzina reprodukcije (meni + `[` `]` `\`), „Podešavanja plejera” (zupčanik uvek dostupan), traka vremena sa buffered prikazom i tooltip-om | `2026-10-10-v0.6.4-player-design.md` |
+| 0.6.4 | 2026-10-10 | Plejer (P0-B 6): lazy `PlayerView` + hls.js (glavni bundle 928 → 316 kB), hook-ovi u `src/renderer/player/`, brzina reprodukcije (meni + `[` `]` `\`), „Podešavanja plejera” (zupčanik uvek dostupan), traka vremena sa buffered prikazom i tooltip-om | `2026-10-10-v0.6.4-player-design.md` |
 
 ## Šta je stvarno provereno (ne samo testovima)
 
