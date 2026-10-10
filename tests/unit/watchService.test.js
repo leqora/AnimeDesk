@@ -416,7 +416,8 @@ describe('watchService recovery', () => {
     internalPlayer.closed({ playbackId: 'p3', position: 1400, duration: 1400, maxPercent: 100, reason: 'ended' })
     await ending
     svc.watch({ query: 'show', anime: 'Show', episode: '3' })
-    sessions[3].opts.onPlay({ args })
+    const fresh = sessions.findLast((s) => s.opts.episodes === '3') // the newest session for episode 3 (a prefetch of episode 4 may sit in between)
+    fresh.opts.onPlay({ args })
     await flush()
     expect(svc.recover({ playbackId: 'p4', position: 5 })).toEqual({ ok: true })
   })

@@ -27,7 +27,7 @@ Windows desktop aplikacija (Electron + React) koja je grafički interfejs za ori
 
 ```bash
 npm run dev        # pokretanje u razvoju
-npm test           # vitest (unit + integration), ~651 testova
+npm test           # vitest (unit + integration), ~736 testova
 npm run test:e2e   # build + Playwright smoke (izolovan userData preko ANIMEDESK_USER_DATA)
 npm run test:live  # pravi ani-cli self-test (internet)
 npm run dist       # instaler u dist/ (bez objave)
@@ -38,7 +38,8 @@ npm run release    # objava (vidi gore)
 
 - `src/main/` — Electron glavni proces:
   - `index.js` povezuje sve; `ipc.js` handleri; `paths.js` putanje podataka (`%APPDATA%\AnimeDesk`);
-  - ani-cli: `aniCliBridge.js`, `bridgeServer.js`, `watchService.js` (čuva pozicije ≥ 10 s i beleži „odgledano” na pragu za oba plejera), `celebrations.js` (drži level-up i „serija završena” dok traje reprodukcija), `playerMonitor.js` (mpv IPC: auto-skip, nastavak sa `--start` + „Nastavljeno od…”, javlja napredak na 5 s), `run.js`;
+  - ani-cli: `aniCliBridge.js`, `bridgeServer.js`, `watchService.js` (čuva pozicije ≥ 10 s i beleži „odgledano” na pragu za oba plejera); `celebrations.js` (drži level-up i „serija završena” dok traje reprodukcija), `playerMonitor.js` (mpv IPC: auto-skip, nastavak sa `--start` + „Nastavljeno od…”, javlja napredak na 5 s), `run.js`;
+  - prefetch sledeće epizode (`watchService.js`): od 80 % u ugrađenom plejeru tiha ani-cli sesija za ep+1 parkirana u onPlay, watch() je usvaja (isti naslov plejera/epizoda/kvalitet/režim), rok 10 min od kraja epizode koja ga je pokrenula, dispose na before-quit;
   - alati: `toolManager.js`, `toolSources.js`, `healthCheck.js` (semafor);
   - `seriesPrefs.js` — kvalitet i sub/dub po seriji (`series-prefs.json`), koristi se za gledanje i preuzimanje; `fullscreen.js` — pun ekran (F11, Esc, dugme u meniju; pamti se u `settings.fullscreen`);
   - podaci: `library.js` (watchlist), `settings.js`, `downloads.js`, `watchLog.js`, `progress.js`, `tracker.js`, `jsonStore.js`;
