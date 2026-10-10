@@ -116,15 +116,18 @@ export const SUBTITLE_FONT_STACKS = Object.freeze({
 export const SUBTITLE_COLORS = ['white', 'yellow']
 export const DEFAULT_SUBTITLES = Object.freeze({
   enabled: Object.freeze({ sub: true, dub: false }),
-  size: 25, lineSpacing: 20, font: 'default', color: 'white', box: true, boxOpacity: 60,
+  size: 25, lineSpacing: 0, font: 'default', color: 'white', box: true, boxOpacity: 60,
 })
 
+// Below a line-height of 1.4 the boxes of a wrapped cue overlap, so 0 % is the tightest readable spacing.
+const MIN_LINE = 1.4
+
 export function subtitleStyleVars(s) {
-  const line = 1 + (s.lineSpacing / 100) * 0.6
+  const line = MIN_LINE + (s.lineSpacing / 100) * 0.2
   return {
     '--sub-size': `${(2.5 + (s.size / 100) * 5.5).toFixed(2)}cqh`,
     '--sub-line': line.toFixed(2),
-    '--sub-gap': `${(line - 1).toFixed(2)}em`,
+    '--sub-gap': `${(line - MIN_LINE).toFixed(2)}em`,
     '--sub-font': SUBTITLE_FONT_STACKS[s.font] ?? SUBTITLE_FONT_STACKS.default,
     '--sub-color': s.color === 'yellow' ? 'var(--sub-text-alt)' : 'var(--sub-text)',
     '--sub-box-alpha': String(s.boxOpacity / 100),

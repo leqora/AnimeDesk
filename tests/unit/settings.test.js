@@ -14,7 +14,7 @@ describe('settings', () => {
       downloadDir: null, quality: 'best', mode: 'sub', autoUpdateTools: true,
       profileName: null, soundKey: true, soundUi: false, soundVolume: 60, animations: true,
       autoDownloadUpdates: true, lastSeenVersion: null, fullscreen: false,
-      playerMode: 'internal', autoSkip: false, autoNext: true, subtitles: { enabled: { sub: true, dub: false }, size: 25, lineSpacing: 20, font: 'default', color: 'white', box: true, boxOpacity: 60 }, mpvModernUi: true,
+      playerMode: 'internal', autoSkip: false, autoNext: true, subtitles: { enabled: { sub: true, dub: false }, size: 25, lineSpacing: 0, font: 'default', color: 'white', box: true, boxOpacity: 60 }, mpvModernUi: true,
       playerVolume: 1, playerMuted: false,
     })
   })
