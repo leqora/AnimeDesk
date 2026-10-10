@@ -53,8 +53,8 @@ export function createInternalPlayer({ streams, notify, positions, getTotalEpiso
     if (!active || p?.playbackId !== active.playbackId) return
     // A recovery is decided in main, so main also takes the player off screen.
     if (p.reason === 'retry') notify(EVENTS.playerClose, { playbackId: active.playbackId })
-    remember(p)
-    finish(p)
+    // A throwing onProgress must never leave the playback unresolved (that would hold celebrations forever).
+    try { remember(p) } catch (err) { console.warn('internalPlayer: progress handler failed on close', err?.message) } finally { finish(p) }
   }
   const current = () => (active ? { playbackId: active.playbackId, title: active.title, episode: active.episode } : null)
   function stop() {

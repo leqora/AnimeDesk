@@ -64,6 +64,15 @@ describe('internalPlayer', () => {
     player.closed({ playbackId: 'p1', maxPercent: 40, position: 500, duration: 1400, reason: 'back' })
     expect((await done).maxPercent).toBe(92)
   })
+  it('still resolves play() when onProgress throws while closing', async () => {
+    const { player, streams } = setup()
+    const onProgress = vi.fn(() => { throw new Error('boom') })
+    const done = player.play(info, { onProgress })
+    expect(() => player.closed({ playbackId: 'p1', maxPercent: 50, position: 500, duration: 1400, reason: 'back' })).not.toThrow()
+    await expect(done).resolves.toMatchObject({ reason: 'back' })
+    expect(streams.unregister).toHaveBeenCalledWith('p1')
+    expect(player.isActive()).toBe(false)
+  })
   it('stop closes the renderer player and resolves as back', async () => {
     const { events, player, streams } = setup()
     const done = player.play(info)

@@ -138,6 +138,27 @@ describe('watchService', () => {
     expect(player.play).toHaveBeenCalledWith(['--force-media-title=Fake Anime Episode 2', 'https://v', '--start=421'], expect.any(Object))
     expect(library.recordWatched).toHaveBeenCalled()
   })
+  it('shares the recorded state across the in-app to mpv handover (records once, no position save after)', async () => {
+    const internalPlayer = {
+      play: vi.fn(async (_info, { onProgress }) => {
+        onProgress({ position: 1300.9, duration: 1400, maxPercent: 93 })
+        return { exitCode: 0, maxPercent: 93, position: 1300.9, duration: 1400, reason: 'external' }
+      }),
+      stop: vi.fn(),
+    }
+    const positions = { clear: vi.fn(), save: vi.fn(), get: vi.fn(() => null) }
+    const { svc, player, library } = setup({ settings: { playerMode: 'internal' }, internalPlayer, positions })
+    player.play.mockImplementation(async (_args, { onProgress }) => {
+      onProgress({ position: 1350, duration: 1400, maxPercent: 96 })
+      return { exitCode: 0, maxPercent: 96, position: 1380, duration: 1400 }
+    })
+    svc.watch({ query: 'fake' })
+    await flush()
+    expect(player.play).toHaveBeenCalledWith(['--force-media-title=Fake Anime Episode 2', 'https://v', '--start=1300'], expect.any(Object))
+    expect(library.recordWatched).toHaveBeenCalledTimes(1)
+    const savesAfterRecording = positions.save.mock.calls.filter(([, , p]) => p.position > 1300.9)
+    expect(savesAfterRecording).toEqual([])
+  })
   it('passes extra mpv args in external mode', async () => {
     const { svc, player } = setup({ settings: { playerMode: 'external' }, mpvExtraArgs: () => ['--config-dir=C:/cfg'] })
     svc.watch({ query: 'fake' })

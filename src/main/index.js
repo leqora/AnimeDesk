@@ -149,6 +149,11 @@ async function main() {
   }))
 
   createWindow(settings)
+  // A renderer reload or crash ends in-app playback without a playerClosed call, which would hold celebrations
+  // forever. stop() is a no-op when nothing is playing (e.g. the very first load).
+  const releasePlayback = () => { try { internalPlayer.stop() } catch (err) { console.warn('internalPlayer.stop failed', err?.message) } }
+  win.webContents.on('render-process-gone', releasePlayback)
+  win.webContents.on('did-start-loading', releasePlayback)
   updater.start()
   health.run().then(() => health.dailyUpdate({ enabled: settings.get().autoUpdateTools, now: new Date().toISOString() }))
     .then(() => { if (settings.get().mpvModernUi) return toolManager.installOptional() })
