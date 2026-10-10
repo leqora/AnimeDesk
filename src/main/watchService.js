@@ -96,7 +96,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
   // One ani-cli session. `resume` marks a recovery: it answers menus only automatically and reports its own failure.
   function spawn(params, resume = null, { quiet = false } = {}) {
     let sessionId = null
-    const entry = { session: null, params, playing: false, cancelled: false, retrying: false, opened: false, animeLine: null, qualityFallback: null, failure: null, quiet, gate: quiet ? makeGate() : null, prefetchKey: null, parked: false, adopted: false, freeRetryUsed: false, ended: false }
+    const entry = { session: null, params, playing: false, cancelled: false, retrying: false, opened: false, animeLine: null, qualityFallback: null, failure: null, quiet, gate: quiet ? makeGate() : null, prefetchKey: null, prefetchFor: null, parked: false, adopted: false, freeRetryUsed: false, ended: false }
     const remember = (prompt, line) => { if (line != null && menuKind(prompt) === 'anime') entry.animeLine = line }
     const session = aniCli.startSession({
       query: params.query,
@@ -136,7 +136,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
           if (prefetched) return
           try { prefetched = maybePrefetch(entry, info, p) } catch (err) { prefetched = true; console.warn('watch: prefetch failed to start', err?.message) }
         }
-        try { r = await runPlayer(info, () => entry.cancelled || entry.retrying, { onInternalProgress }) } finally { celebrations.release() }
+        try { r = await runPlayer(info, () => entry.cancelled || entry.retrying, { onInternalProgress }) } finally { celebrations.release(); armPrefetchTtl(entry) }
         entry.playing = false
         if (current?.entry === entry) current = null
         // A recovery is never "watching": no tracking, no XP, the saved position stays.
@@ -185,13 +185,20 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     if (isLastEpisode(info.episode, getTotalEpisodes(info.title))) return true
     const params = { ...retryParams(entry, info), episode: String(nextEpisodeNumber(info.episode, 1)) }
     const key = { forTitle: info.title, episode: params.episode, quality: params.quality, mode: params.mode }
-    if (prefetch && sameKey(prefetch.prefetchKey, key)) return true
+    if (prefetch && sameKey(prefetch.prefetchKey, key)) { prefetch.prefetchFor = entry; return true }
     discardPrefetch()
     const next = spawn(params, null, { quiet: true })
     next.prefetchKey = key
+    next.prefetchFor = entry
     prefetch = next
-    prefetchTimer = setTimer(discardPrefetch, PREFETCH_TTL_MS)
     return true
+  }
+
+  // The prepared link only has to live for a while after the episode that triggered it is over.
+  function armPrefetchTtl(entry) {
+    if (!prefetch || prefetch.prefetchFor !== entry) return
+    clearTimer(prefetchTimer)
+    prefetchTimer = setTimer(discardPrefetch, PREFETCH_TTL_MS)
   }
 
   function discardPrefetch() {
@@ -257,7 +264,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
       retryBudget.set(key, now())
     }
     // closed() reports the snapshot as progress; a recovery must not record it as watched (its position is still saved).
-    current.entry.retrying = true
+    entry.retrying = true
     internalPlayer.closed({ ...snapshot, reason: 'retry' })
     return { ok: true }
   }
