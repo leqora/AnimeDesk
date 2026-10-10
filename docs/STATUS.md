@@ -39,23 +39,7 @@ Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.4** — objavljena 20
 - Ranija sesija (2026-10-09/10, v0.6.1 titlovi): odluke i tok su u specu `2026-10-09-v0.6.1-subtitles-design.md` i u istoriji verzija ispod; svesno ostavljeno je u „Poznati problemi” 10–11.
 
 ### Uživo neprovereno — korisnik proverava i javlja rezultat
-- **0.6.4 plejer:**
-  1. brzina sa pravim strimom: 1,5× i 2× — zvuk ostaje prirodne visine (bez „cvrčanja”), nema zastoja; `[` `]` `\` na srpskom rasporedu (Š Đ Ž) i u punom ekranu; svaka nova epizoda kreće od 1×;
-  2. buffered traka tokom pravog strima raste ispred pozicije (a ne samo na lokalnom fajlu);
-  3. tooltip vremena iznad pravih AniSkip segmenata (uvod/odjava) prikazuje i naziv dela;
-  4. prvo otvaranje plejera odmah posle pokretanja aplikacije (lazy učitavanje, priprema kad miruje) — ima li primetnog kašnjenja;
-  5. zupčanik bez titla: meni se otvara, deo Titlovi je isključen sa razlogom;
-  6. posle automatskog ponovnog povezivanja brzina ostaje ista (npr. 1,5× pre zastoja → 1,5× posle; sledeća epizoda opet 1×).
-- **0.6.3 kontinuitet:**
-  1. mpv sa pravim ani-cli strimom: zatvori na ~30 %, pusti ponovo → mpv kreće od te pozicije i prikazuje „Nastavljeno od mm:ss” oko 3 s; isto u ugrađenom plejeru („Nastavi od…”);
-  2. level-up animacija i poruka „serija završena” pojavljuju se tek posle zatvaranja plejera (prag se prelazi tokom gledanja, XP se upisuje odmah i tiho);
-  3. „Pitaj pri zatvaranju” (`askOnClose`) radi kao ranije: pitanje pri zatvaranju, bez beleženja na pragu;
-  4. (opciono) serija bez AniSkip podataka ili sa čudnim intervalima: nema pogrešnih skokova.
-- **0.6.1 titlovi:**
-  1. **dub** epizoda sa pravim ani-cli-jem: titl na početku isključen; uključi (`S` ili dugme) → `G`/`H` poravnaju titl sa govorom; sledeća epizoda iste serije u dub-u zadrži pomak;
-  2. **sub** epizoda strima: titl uključen, nov izgled (veći na punom ekranu, zbijeni redovi), iznad kontrola dok su vidljive — proveriti i **u prozoru** (mereno samo na punom ekranu);
-  3. Podešavanja → Titlovi: veličina / razmak / font / boja / okvir menjaju i pravi plejer;
-  4. (opciono) srpski `.srt` pored preuzete epizode, isto ime kao video — slova č/ć/š/ž/đ ispravna.
+- 0.6.4, 0.6.3 i 0.6.1: korisnik potvrdio 2026-10-10 da rade (vidi „Šta je stvarno provereno”).
 - **0.6.0 oporavak strima** (dogovoreno 2026-10-09, i dalje neprovereno):
   1. prava epizoda, posle ~1 min isključi Wi-Fi → kad se pojavi „Ponovno povezivanje…” (~12 s) uključi → nastavak od iste sekunde, bez „Nastavi od…”;
   2. ponovi u istoj epizodi → ekran sa „Pokušaj ponovo” / mpv / „Nazad” (bez drugog automatskog oporavka);
@@ -69,7 +53,7 @@ Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.4** — objavljena 20
 
 ### Sledeći razvoj
 - **P0-B korak 5:** urađeno i objavljeno u 0.6.3. **Korak 6** (lazy `PlayerView`, brzina + meni, buffered traka + tooltip, razbijanje na hook-ove) urađen i objavljen u 0.6.4. Sledi 7 (prefetch linka sledeće epizode — poseban spec). Detalji i fajlovi: `docs/seanime-analysis/03-oblast-player.md` (tabela „Top preporuke”) i `04-plan.md` §3.
-- Isti tok: brainstorming → spec → plan → podagenti; za korak 7 (prefetch, poseban spec) nova grana (npr. `feat/v0.6.5-prefetch` ili po dogovoru); merge/push/release samo uz dozvolu korisnika. Pre koraka 7 pitati korisnika za rezultate uživo provera (gore, uključujući 0.6.4).
+- Isti tok: brainstorming → spec → plan → podagenti; za korak 7 (prefetch, poseban spec) nova grana (npr. `feat/v0.6.5-prefetch` ili po dogovoru); merge/push/release samo uz dozvolu korisnika. Rezultati za 0.6.1/0.6.3/0.6.4 dobijeni 2026-10-10; 0.6.0 korisnik javlja kasnije.
 
 Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, šta je otvoreno. Detalji dizajna su u `docs/superpowers/specs/`, planovi u `docs/superpowers/plans/`, beleške izdanja u `docs/releases/`.
 
