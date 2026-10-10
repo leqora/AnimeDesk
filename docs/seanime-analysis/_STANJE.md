@@ -1,6 +1,6 @@
 # Seanime analiza → unapređenje AnimeDesk-a — stanje rada (predaja smene)
 
-Poslednje ažuriranje: 2026-10-10 (v0.6.3 objavljen, korak 5; korak 6 objavljen kao v0.6.4).
+Poslednje ažuriranje: 2026-10-10 (v0.6.4 objavljen, korak 6; kraj sesije 3).
 
 - Spec korisnika: `C:\Users\Nikola\Desktop\Claude\Anime\Aplikacija za gledanje Anime-a\Seanime\zadatak.txt`
 - Seanime klon (referenca, GPL-3.0 — samo inspiracija, ne kopirati kod): `C:\Users\Nikola\Desktop\Projekti\_ref\seanime` (commit 2da73d9; ne commitovati).
