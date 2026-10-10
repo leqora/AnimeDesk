@@ -38,7 +38,7 @@ npm run release    # objava (vidi gore)
 
 - `src/main/` — Electron glavni proces:
   - `index.js` povezuje sve; `ipc.js` handleri; `paths.js` putanje podataka (`%APPDATA%\AnimeDesk`);
-  - ani-cli: `aniCliBridge.js`, `bridgeServer.js`, `watchService.js` (čuva pozicije ≥ 10 s i beleži „odgledano” na pragu za oba plejera), `celebrations.js` (drži level-up i „serija završena” dok traje reprodukcija), `playerMonitor.js` (mpv IPC: auto-skip, nastavak sa `--start` + „Nastavljeno od…”, javlja napredak na 5 s), `run.js`;
+  - ani-cli: `aniCliBridge.js`, `bridgeServer.js`, `watchService.js` (čuva pozicije ≥ 10 s i beleži „odgledano” na pragu za oba plejera); prefetch sledeće epizode: od 80 % u ugrađenom plejeru tiha ani-cli sesija za ep+1 parkirana u onPlay, watch() je usvaja (isti naslov plejera/epizoda/kvalitet/režim), rok 10 min, dispose na before-quit, `celebrations.js` (drži level-up i „serija završena” dok traje reprodukcija), `playerMonitor.js` (mpv IPC: auto-skip, nastavak sa `--start` + „Nastavljeno od…”, javlja napredak na 5 s), `run.js`;
   - alati: `toolManager.js`, `toolSources.js`, `healthCheck.js` (semafor);
   - `seriesPrefs.js` — kvalitet i sub/dub po seriji (`series-prefs.json`), koristi se za gledanje i preuzimanje; `fullscreen.js` — pun ekran (F11, Esc, dugme u meniju; pamti se u `settings.fullscreen`);
   - podaci: `library.js` (watchlist), `settings.js`, `downloads.js`, `watchLog.js`, `progress.js`, `tracker.js`, `jsonStore.js`;

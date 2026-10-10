@@ -19,7 +19,7 @@ Poslednje ažuriranje: 2026-10-10 (v0.6.4 objavljen, korak 6; kraj sesije 3).
 - [x] **v0.6.2** (2026-10-10, Latest): mini ispravke titlova (veličina 25, razmak bez preklapanja, neprovidni paneli).
 - [x] **P0-B korak 5 = v0.6.3** (nastavak u mpv-u, „odgledano” na pragu uz odloženo slavlje, normalizacija AniSkip intervala; objavljeno 2026-10-10 kao Latest, spojeno u `main`; 653 testa).
 - [x] **P0-B korak 6 = v0.6.4** (lazy `PlayerView` + hls.js, hook-ovi u `src/renderer/player/`, brzina reprodukcije + meni, buffered traka + tooltip; 709 testova; objavljeno 2026-10-10 kao Latest, spojeno u `main`).
-- [ ] **SLEDEĆE: P0-B korak 7** (prefetch linka sledeće epizode — poseban spec) — superpowers tok, nova grana.
+- [~] **P0-B korak 7 = v0.6.5** (prefetch linka sledeće epizode) — implementirano na grani `feat/v0.6.5-prefetch` (734 testa), NIJE objavljeno; preostaje ručna provera u pravoj aplikaciji (spec §5), završni pregled i odluka korisnika o merge/release.
 
 ## Odluke korisnika (važe za dalje)
 1. Serija je „Završeno” tek kad su **sve** epizode odgledane (urađeno u 0.5.1).

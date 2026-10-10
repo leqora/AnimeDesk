@@ -1,18 +1,19 @@
 # AnimeDesk — stanje projekta
 
-Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.4** — objavljena 2026-10-10 (GitHub Release `v0.6.4`, Latest), spojena u `main` (`--no-ff`), grana obrisana.
+Poslednje ažuriranje: 2026-10-10. Poslednja objavljena verzija: **0.6.4** (GitHub Release `v0.6.4`, Latest, spojena u `main` sa `--no-ff`). U radu: **0.6.5** na grani `feat/v0.6.5-prefetch` (NIJE objavljena, nije spojena).
 
 ## Dokle smo stigli (ukratko)
 
 - Objavljeno: 0.1.0 → 0.6.4 (15 izdanja, 2026-10-01 – 2026-10-10).
-- Testovi: 70 fajlova, **709/709 prolazi** (0.6.4), e2e smoke prolazi.
+- Testovi: 70 fajlova, **709/709 prolazi** (0.6.4), e2e smoke prolazi. Na grani 0.6.5: 71 fajl, **734/734 prolazi**.
 - 2026-10-09: komparativna analiza Seanime-a → plan unapređenja u `docs/seanime-analysis/` (`04-plan.md` = roadmap P0–P3 sa odlukama korisnika). Iz nje je urađen hotfix 0.5.1 (P0-A).
 - **v0.6.0 (objavljeno 2026-10-09):** P0-B koraci 1–3 — spinner/baferovanje, pamćenje jačine, dvoklik = pun ekran, bedž rezolucije + upozorenje o kvalitetu, poruka „nema ispravnih izvora” + „Pokušaj ponovo”, automatski oporavak zaglavljenog strima, retry/timeout u proxy-ju. Spec: `docs/superpowers/specs/2026-10-09-v0.6-player-design.md`. Beleške: `docs/releases/v0.6.0.md`.
 - **v0.6.1 (objavljeno 2026-10-10):** P0-B korak 4 — titlovi: SRT→VTT (strim i lokalni `.srt`, i Windows-1250/UTF-16), pomak `G`/`H` po seriji i režimu (`series-prefs.json`), sopstveni overlay (veći na punom ekranu, zbijeni redovi), podešavanja sa živim pregledom, meni titlova u plejeru, dub podrazumevano bez titla, poruka za nepodržan format (ASS). Spec: `docs/superpowers/specs/2026-10-09-v0.6.1-subtitles-design.md`, plan: `docs/superpowers/plans/2026-10-09-v0.6.1-subtitles.md`. Beleške: `docs/releases/v0.6.1.md`.
 - **v0.6.2 (objavljeno 2026-10-10):** mini ispravke titlova — podrazumevana veličina 25, razmak redova bez preklapanja (nova skala), tamni neprovidni paneli preko videa. Beleške: `docs/releases/v0.6.2.md`.
 - **v0.6.3 (objavljeno 2026-10-10, Latest):** P0-B korak 5 — nastavak u spoljnom mpv-u (`--start`, „Nastavljeno od mm:ss”), „odgledano” se beleži na pragu tokom gledanja (animacija nivoa i „serija završena” čekaju kraj reprodukcije, `celebrations.js`), normalizacija AniSkip intervala. Spec: `docs/superpowers/specs/2026-10-10-v0.6.3-continuity-design.md`. Beleške: `docs/releases/v0.6.3.md`.
 - **v0.6.4 (objavljeno 2026-10-10, Latest):** P0-B korak 6 — lazy `PlayerView` + hls.js (`src/renderer/player/loadPlayer.js`, priprema kad aplikacija miruje; `index-*.js` 928,35 kB → 316,76 kB + `PlayerView-*.js` 613,14 kB), `PlayerView.jsx` razbijen na hook-ove u `src/renderer/player/` (359 → 227 linija), brzina reprodukcije (meni 0,5–2× + prečice `[` `]` `\` po fizičkom tasteru, kreće od 1×, a posle ponovnog povezivanja iste epizode zadržava brzinu; poruka „Brzina: 1,25×”), zupčanik = „Podešavanja plejera” (`PlayerMenu.jsx`, uvek dostupan), traka vremena (`PlayerTimeline.jsx`: AniSkip segmenti, buffered, tooltip sa vremenom). Spec: `docs/superpowers/specs/2026-10-10-v0.6.4-player-design.md`. Beleške: `docs/releases/v0.6.4.md`.
-- **Sledeće:** P0-B korak 7 (prefetch linka sledeće epizode — poseban spec) iz `docs/seanime-analysis/04-plan.md`.
+- **v0.6.5 (U RADU na `feat/v0.6.5-prefetch`, NIJE objavljena):** P0-B korak 7 — prefetch sledeće epizode: od 80 % u ugrađenom plejeru `watchService.maybePrefetch` parkira tihu ani-cli sesiju za ep+1, „Sledeća” je usvaja (`adoptPrefetch`; isti naslov plejera/epizoda/kvalitet/režim), rok 10 min, `dispose` na before-quit, prvi oporavak usvojene sesije je besplatan. Spec: `docs/superpowers/specs/2026-10-10-v0.6.5-prefetch-design.md`, plan: `docs/superpowers/plans/2026-10-10-v0.6.5-prefetch.md`. Beleške: `docs/releases/v0.6.5.md`. Implementirano i pokriveno unit testovima (`tests/unit/watchPrefetch.test.js`); **još nije urađeno:** ručna provera u pravoj aplikaciji (spec §5) i završni pregled cele grane.
+- **Sledeće:** završiti 0.6.5 (ručna provera iz spec §5, završni pregled grane, odluka korisnika o merge/objavi); zatim dalje po `docs/seanime-analysis/04-plan.md`.
 
 ## Gde smo stali (2026-10-10, kraj sesije 3) i kako dalje
 
