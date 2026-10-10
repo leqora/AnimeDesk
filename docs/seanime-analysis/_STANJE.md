@@ -51,5 +51,7 @@ JASSUB/ASS, Anime4K za mpv, nedeljni raspored, command palette, Discord RPC (bez
 - Python na ovoj mašini ne pokretati preko heredoc-a (Windows alias visi) — koristiti `node -e`.
 - vitest ponekad prijavi „Timeout waiting for worker” pri prvom pokretanju — samo ponoviti.
 - Podagenti (iskustvo iz v0.6.3): u dispatch-u izričito navesti da je potpis commit-a tačno `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` (pravilo projekta je jače od podrazumevanog potpisa modela — Haiku je jednom stavio svoj); lažni plejeri u testovima moraju da prate stvarni ugovor (`closed` → `onProgress`), inače testovi kriju greške.
+- Iskustvo iz v0.6.4: ručna provera UI mora da uključi **snimak ekrana** koji se stvarno pogleda — merenje širine elementa nije uhvatilo buffered traku koju je prekrivao nativni klizač (uhvatio tek završni pregled na Opus-u). Završni pregled cele grane raditi na najjačem modelu; pregledi pojedinačnih zadataka ne vide interakcije između zadataka.
+- Podagenti: kad brief ne odgovara fajlu, podagent treba da pita (NEEDS_CONTEXT) — u 0.6.4 je to sprečilo tiho brisanje koda. Odluke kontrolora iz dnevnika `.superpowers/sdd/<plan>/progress.md` preneti u STATUS pre brisanja radnog foldera.
 - Dugačak tekst sa backtick-ovima ne upisivati preko `node -e "…"` u Bash-u (bash ih izvrši) — napisati `.mjs` skriptu u scratchpad ili koristiti Edit.
 - Uživo još neprovereno iz 0.5.1: duplikati u redu preuzimanja sa pravim ani-cli tokom; prečice na ćiriličnom rasporedu (pokriveno unit testom).
