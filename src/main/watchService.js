@@ -62,7 +62,9 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     let r
     if (!internalPlayer || s.playerMode !== 'internal') r = await mpvResumed()
     else {
-      try { r = await internalPlayer.play(info, { onProgress }) } catch { r = await mpvResumed() } // e.g. a malformed referrer: still play, in mpv
+      // e.g. a malformed referrer: still play, in mpv. The in-app player never started, so mpv resumes
+      // from the saved position itself (and shows "Resumed from") — intended.
+      try { r = await internalPlayer.play(info, { onProgress }) } catch { r = await mpvResumed() }
       if (r.reason === 'external') {
         const ext = await mpv([...info.mpvArgs, `--start=${Math.floor(r.position ?? 0)}`])
         r = { exitCode: ext.exitCode, maxPercent: Math.max(r.maxPercent ?? 0, ext.maxPercent ?? 0), position: ext.position, duration: ext.duration }
@@ -82,7 +84,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
   // One ani-cli session. `resume` marks a recovery: it answers menus only automatically and reports its own failure.
   function spawn(params, resume = null) {
     let sessionId = null
-    const entry = { session: null, params, playing: false, cancelled: false, opened: false, animeLine: null, qualityFallback: null, failure: null }
+    const entry = { session: null, params, playing: false, cancelled: false, retrying: false, opened: false, animeLine: null, qualityFallback: null, failure: null }
     const remember = (prompt, line) => { if (line != null && menuKind(prompt) === 'anime') entry.animeLine = line }
     const session = aniCli.startSession({
       query: params.query,
@@ -110,7 +112,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
         current = { entry, info }
         celebrations.hold()
         let r
-        try { r = await runPlayer(info, () => entry.cancelled) } finally { celebrations.release() }
+        try { r = await runPlayer(info, () => entry.cancelled || entry.retrying) } finally { celebrations.release() }
         entry.playing = false
         if (current?.entry === entry) current = null
         // A recovery is never "watching": no tracking, no XP, the saved position stays.
@@ -174,6 +176,8 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     const last = retryBudget.get(key)
     if (!manual && last != null && now() - last < RETRY_TTL_MS) return { ok: true, auto: false }
     retryBudget.set(key, now())
+    // closed() reports the snapshot as progress; a recovery must not record it as watched (its position is still saved).
+    current.entry.retrying = true
     internalPlayer.closed({ ...snapshot, reason: 'retry' })
     return { ok: true }
   }

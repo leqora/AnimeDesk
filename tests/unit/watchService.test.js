@@ -314,9 +314,10 @@ function retrySetup({ settings = {}, now = () => 1000 } = {}) {
   }
   let active = null
   const internalPlayer = {
-    play: vi.fn((info) => new Promise((resolve) => { active = { info, resolve, playbackId: `p${internalPlayer.play.mock.calls.length}` } })),
+    play: vi.fn((info, opts) => new Promise((resolve) => { active = { info, opts, resolve, playbackId: `p${internalPlayer.play.mock.calls.length}` } })),
     current: () => (active ? { playbackId: active.playbackId, title: active.info.title, episode: active.info.episode } : null),
-    closed: vi.fn((p) => { const a = active; active = null; a.resolve({ exitCode: 0, maxPercent: p.maxPercent, position: p.position, duration: p.duration, reason: p.reason }) }),
+    // Like the real one: the closing snapshot is reported as progress before the playback resolves.
+    closed: vi.fn((p) => { const a = active; active = null; a.opts?.onProgress?.({ position: p.position, duration: p.duration, maxPercent: p.maxPercent }); a.resolve({ exitCode: 0, maxPercent: p.maxPercent, position: p.position, duration: p.duration, reason: p.reason }) }),
     stop: vi.fn(),
   }
   const library = { recordWatched: vi.fn() }
