@@ -12,17 +12,15 @@ import { useFlash } from '../player/useFlash.js'
 import { useIdle } from '../player/useIdle.js'
 import { usePlayerVolume } from '../player/usePlayerVolume.js'
 import { usePlayerSubtitles } from '../player/usePlayerSubtitles.js'
+import { useHlsSource } from '../player/useHlsSource.js'
+import { useEpisodeEnd } from '../player/useEpisodeEnd.js'
 import { SubtitleOverlay } from './SubtitleOverlay.jsx'
 import { trackMax, segmentAt, isLastEpisode, qualityLabel, qualityName } from '../../shared/player.js'
 
 const PROGRESS_MS = 5000
 const QUALITY_FLASH_MS = 4000
 const CLICK_DELAY_MS = 220
-const COUNTDOWN_S = 10
 const ENDING_FALLBACK_S = 30
-const NET_RETRIES = 3
-// hls.js 1.x: startLoad() is a no-op until a manifest has been parsed, so these must reload the source
-const MANIFEST_ERRORS = new Set(['manifestLoadError', 'manifestLoadTimeOut', 'manifestParsingError'])
 // Physical keys, so letter shortcuts also work on non-Latin layouts (e.g. Serbian Cyrillic).
 const KEY_BY_CODE = { KeyF: 'f', KeyM: 'm', KeyS: 's', KeyG: 'g', KeyH: 'h', KeyN: 'n', Space: ' ' }
 const TEXT_FIELD = 'input:not([type=range]):not([type=checkbox]), textarea, [contenteditable="true"]'
@@ -48,15 +46,16 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const flash = useFlash()
   const volume = usePlayerVolume({ video, settings, onSettings })
   const subs = usePlayerSubtitles({ video, trackEl, open, mode, settings, onSettings, probeSub, flash: flash.show })
+  const lastEpisode = isLastEpisode(open.episode, open.totalEpisodes)
+  const ending = useEpisodeEnd({ autoNext: settings.autoNext, lastEpisode, onNext: () => close('next') })
+  const { end } = ending
   const { idle, poke, show: showControls } = useIdle({ video, hold: subsMenu })
   const [failed, setFailed] = useState(null) // null | 'retryable' | 'final'
   const failing = useRef(false)
   const lastTime = useRef(0)
   const [skips, setSkips] = useState(null)
   const [resume, setResume] = useState(open.autoResume ? null : open.resumeAt)
-  const [end, setEnd] = useState(null)
   const health = usePlayerHealth({ video, active: resume == null && !end && !failed, onStall: () => fail() })
-  const [left, setLeft] = useState(COUNTDOWN_S)
   const autoSkipped = useRef(new Set())
   const [quality, setQuality] = useState(null)
   const fallbackShown = useRef(false)
@@ -98,34 +97,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   }
   useEffect(() => () => clearTimeout(clickTimer.current), [])
 
-  useEffect(() => {
-    const v = video.current
-    if (open.kind === 'file') { v.src = open.src; return undefined }
-    const hls = new HlsImpl({ enableWorker: true })
-    let netRetries = 0
-    let mediaErrors = 0
-    // progress means the earlier errors were transient; give later ones the full budget again
-    hls.on(HlsImpl.Events.FRAG_CHANGED, () => { netRetries = 0; mediaErrors = 0 })
-    hls.on(HlsImpl.Events.ERROR, (_e, d) => {
-      if (!d.fatal) return
-      if (d.type === HlsImpl.ErrorTypes.NETWORK_ERROR && netRetries < NET_RETRIES) {
-        netRetries++
-        if (MANIFEST_ERRORS.has(d.details) || !hls.levels?.length) hls.loadSource(open.src)
-        else hls.startLoad()
-        return
-      }
-      if (d.type === HlsImpl.ErrorTypes.MEDIA_ERROR && mediaErrors < 2) {
-        mediaErrors++
-        if (mediaErrors === 2) hls.swapAudioCodec()
-        hls.recoverMediaError()
-        return
-      }
-      fail()
-    })
-    hls.loadSource(open.src)
-    hls.attachMedia(v)
-    return () => hls.destroy()
-  }, [open.playbackId])
+  useHlsSource({ video, open, HlsImpl, onFatal: fail })
 
   useEffect(() => {
     const id = setInterval(() => live.current.api.player.progress(snapshot()), PROGRESS_MS)
@@ -174,16 +146,8 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     video.current?.pause()
     // reached the ending (or its auto-skip): the episode is watched even if the ED itself was not
     maxPercent.current = 100
-    if (lastEpisode) setEnd('done')
-    else if (settings.autoNext) { setLeft(COUNTDOWN_S); setEnd('countdown') }
-    else setEnd('manual')
+    ending.finish()
   }
-  useEffect(() => {
-    if (end !== 'countdown') return undefined
-    const id = setInterval(() => setLeft((n) => n - 1), 1000)
-    return () => clearInterval(id)
-  }, [end])
-  useEffect(() => { if (end === 'countdown' && left <= 0) close('next') }, [left, end])
 
   const onLoadedMetadata = () => {
     const v = video.current
@@ -212,7 +176,6 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     }
   }
   const segment = segmentAt(time, skips)
-  const lastEpisode = isLastEpisode(open.episode, open.totalEpisodes)
   const inEnding = !end && !lastEpisode && (segment === 'ed' || (!skips?.ed && duration > 0 && time >= duration - ENDING_FALLBACK_S))
   live.current.inEnding = inEnding
   live.current.lastEpisode = lastEpisode
@@ -255,7 +218,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       {resume == null && <SkipButton segment={segment} onSkip={() => { video.current.currentTime = skips[segment].end }} />}
       {inEnding && resume == null && <button type="button" className="player__next primary" onClick={() => close('next')}>{t('player.next')}</button>}
       {flash.text && <div className="player__flash hud" role="status">{flash.text}</div>}
-      {end && <NextEpisodeCard mode={end} seconds={left} onNext={() => close('next')} onCancel={() => setEnd('manual')} onBack={() => close('ended')} />}
+      {end && <NextEpisodeCard mode={end} seconds={ending.left} onNext={() => close('next')} onCancel={ending.cancel} onBack={() => close('ended')} />}
       <PlayerControls
         segments={['op', 'ed', 'recap'].filter((k) => skips?.[k]).map((k) => ({ kind: k, ...skips[k] }))}
         time={time} duration={duration} quality={quality} playing={playing} muted={volume.muted} volume={volume.volume} subsOn={subs.on}

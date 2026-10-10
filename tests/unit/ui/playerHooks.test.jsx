@@ -6,6 +6,7 @@ import { useFlash } from '../../../src/renderer/player/useFlash.js'
 import { useIdle } from '../../../src/renderer/player/useIdle.js'
 import { usePlayerVolume } from '../../../src/renderer/player/usePlayerVolume.js'
 import { usePlayerSubtitles } from '../../../src/renderer/player/usePlayerSubtitles.js'
+import { useEpisodeEnd } from '../../../src/renderer/player/useEpisodeEnd.js'
 import { renderHookUi } from './helpers.jsx'
 import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
 
@@ -178,5 +179,37 @@ describe('usePlayerSubtitles', () => {
     renderHookUi(() => usePlayerSubtitles(off))
     await act(async () => { await Promise.resolve(); await Promise.resolve() })
     expect(off.flash).not.toHaveBeenCalled()
+  })
+})
+
+describe('useEpisodeEnd', () => {
+  it('counts down from 10 and then asks for the next episode', () => {
+    const onNext = vi.fn()
+    const { result } = renderHook(() => useEpisodeEnd({ autoNext: true, lastEpisode: false, onNext }))
+    expect(result.current.end).toBeNull()
+    act(() => result.current.finish())
+    expect(result.current.end).toBe('countdown')
+    expect(result.current.left).toBe(10)
+    act(() => vi.advanceTimersByTime(9000))
+    expect(onNext).not.toHaveBeenCalled()
+    act(() => vi.advanceTimersByTime(1000))
+    expect(onNext).toHaveBeenCalled()
+  })
+  it('waits for the user without autoNext and after cancel', () => {
+    const onNext = vi.fn()
+    const manual = renderHook(() => useEpisodeEnd({ autoNext: false, lastEpisode: false, onNext }))
+    act(() => manual.result.current.finish())
+    expect(manual.result.current.end).toBe('manual')
+    const auto = renderHook(() => useEpisodeEnd({ autoNext: true, lastEpisode: false, onNext }))
+    act(() => auto.result.current.finish())
+    act(() => auto.result.current.cancel())
+    expect(auto.result.current.end).toBe('manual')
+    act(() => vi.advanceTimersByTime(20000))
+    expect(onNext).not.toHaveBeenCalled()
+  })
+  it('ends the series on the last episode', () => {
+    const { result } = renderHook(() => useEpisodeEnd({ autoNext: true, lastEpisode: true, onNext: vi.fn() }))
+    act(() => result.current.finish())
+    expect(result.current.end).toBe('done')
   })
 })
