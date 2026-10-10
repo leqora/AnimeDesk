@@ -205,6 +205,19 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     entry.session.kill()
   }
 
+  // "Next" asks for exactly the episode we prepared: hand over the quiet session instead of starting ani-cli again.
+  function adoptPrefetch(key) {
+    const entry = prefetch
+    if (!entry || entry.ended || entry.failure || !sameKey(entry.prefetchKey, key)) return null
+    clearTimer(prefetchTimer)
+    prefetchTimer = null
+    prefetch = null
+    entry.quiet = false
+    entry.adopted = true
+    entry.gate.open(true)
+    return entry
+  }
+
   function startRetry(params, resume) {
     let entry
     try {
@@ -222,7 +235,9 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     const prefs = seriesPrefs ? seriesPrefs.resolve(anime ?? query, s) : { quality: s.quality, mode: s.mode }
     const forced = mode === 'sub' || mode === 'dub' ? mode : null
     const params = { query, anime, episode, quality: prefs.quality, mode: forced ?? prefs.mode }
-    discardPrefetch()
+    const adopted = adoptPrefetch({ forTitle: anime, episode: episode == null ? null : String(episode), quality: params.quality, mode: params.mode })
+    if (adopted) return { sessionId: adopted.session.sessionId, quality: params.quality, mode: params.mode }
+    discardPrefetch() // the user went elsewhere
     const entry = spawn(params)
     // ani-cli reads quality/mode only at start; the UI needs them to know when a sub/dub switch requires a restart.
     return { sessionId: entry.session.sessionId, quality: params.quality, mode: params.mode }
