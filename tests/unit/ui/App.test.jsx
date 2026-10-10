@@ -36,7 +36,8 @@ describe('App', () => {
       render(<App api={api} />)
       await waitFor(() => expect(openPlayer).toBeDefined())
       return {
-        open: async (p) => { act(() => openPlayer(p)); await screen.findByRole('button', { name: 'Podešavanja plejera' }) },
+        // PlayerView is lazy: under a loaded full-suite run its first import can take longer than the default 1 s
+        open: async (p) => { act(() => openPlayer(p)); await screen.findByRole('button', { name: 'Podešavanja plejera' }, { timeout: 5000 }) },
         close: () => act(() => closePlayer({})),
         retry: (episode) => act(() => retry({ title: 'Show', episode, state: 'reconnecting', sessionId: 's2' })),
       }
