@@ -178,7 +178,7 @@ describe('App', () => {
     render(<App api={api} />)
     await screen.findByLabelText('Naziv animea…')
     act(() => openPlayer({ playbackId: 'p1', title: 'Show', episode: '3', kind: 'hls', src: 'http://127.0.0.1:9/x', subtitleUrl: null, resumeAt: null, totalEpisodes: 12 }))
-    fireEvent.click(screen.getByRole('button', { name: 'Sledeća epizoda' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Sledeća epizoda' }))
     await waitFor(() => expect(api.watch.start).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '4' }))
   })
 })
