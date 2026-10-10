@@ -116,7 +116,7 @@ export const SUBTITLE_FONT_STACKS = Object.freeze({
 export const SUBTITLE_COLORS = ['white', 'yellow']
 export const DEFAULT_SUBTITLES = Object.freeze({
   enabled: Object.freeze({ sub: true, dub: false }),
-  size: 40, lineSpacing: 20, font: 'default', color: 'white', box: true, boxOpacity: 60,
+  size: 25, lineSpacing: 20, font: 'default', color: 'white', box: true, boxOpacity: 60,
 })
 
 export function subtitleStyleVars(s) {

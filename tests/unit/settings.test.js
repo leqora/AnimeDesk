@@ -14,7 +14,7 @@ describe('settings', () => {
       downloadDir: null, quality: 'best', mode: 'sub', autoUpdateTools: true,
       profileName: null, soundKey: true, soundUi: false, soundVolume: 60, animations: true,
       autoDownloadUpdates: true, lastSeenVersion: null, fullscreen: false,
-      playerMode: 'internal', autoSkip: false, autoNext: true, subtitles: { enabled: { sub: true, dub: false }, size: 40, lineSpacing: 20, font: 'default', color: 'white', box: true, boxOpacity: 60 }, mpvModernUi: true,
+      playerMode: 'internal', autoSkip: false, autoNext: true, subtitles: { enabled: { sub: true, dub: false }, size: 25, lineSpacing: 20, font: 'default', color: 'white', box: true, boxOpacity: 60 }, mpvModernUi: true,
       playerVolume: 1, playerMuted: false,
     })
   })
@@ -78,11 +78,11 @@ describe('settings', () => {
     const s = sanitizeSettings({ subtitles: { enabled: { sub: 'no', dub: true }, size: 140, lineSpacing: -5, font: 'comic', color: 'red', box: 0, boxOpacity: 33.4 } })
     expect(s.subtitles).toEqual({ enabled: { sub: true, dub: true }, size: 100, lineSpacing: 0, font: 'default', color: 'white', box: true, boxOpacity: 33 })
     expect(sanitizeSettings({ subtitles: 'big' }).subtitles).toEqual(DEFAULT_SETTINGS.subtitles)
-    expect(sanitizeSettings({ subtitles: { font: 'georgia', color: 'yellow', box: false } }).subtitles).toMatchObject({ font: 'georgia', color: 'yellow', box: false, size: 40 })
+    expect(sanitizeSettings({ subtitles: { font: 'georgia', color: 'yellow', box: false } }).subtitles).toMatchObject({ font: 'georgia', color: 'yellow', box: false, size: 25 })
   })
   it('migrates the old S/M/L subtitle size once and stops writing it', () => {
     expect(sanitizeSettings({ subtitleSize: 'S' }).subtitles.size).toBe(20)
-    expect(sanitizeSettings({ subtitleSize: 'M' }).subtitles.size).toBe(40)
+    expect(sanitizeSettings({ subtitleSize: 'M' }).subtitles.size).toBe(25)
     expect(sanitizeSettings({ subtitleSize: 'L' }).subtitles.size).toBe(65)
     expect(sanitizeSettings({ subtitleSize: 'L', subtitles: { size: 10 } }).subtitles.size).toBe(10)
     expect('subtitleSize' in sanitizeSettings({ subtitleSize: 'L' })).toBe(false)

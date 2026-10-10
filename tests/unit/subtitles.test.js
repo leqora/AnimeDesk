@@ -104,7 +104,7 @@ describe('offset helpers', () => {
 describe('subtitleStyleVars', () => {
   it('maps the settings to CSS variables', () => {
     expect(subtitleStyleVars(DEFAULT_SUBTITLES)).toEqual({
-      '--sub-size': '4.70cqh', '--sub-line': '1.12', '--sub-gap': '0.12em',
+      '--sub-size': '3.88cqh', '--sub-line': '1.12', '--sub-gap': '0.12em',
       '--sub-font': SUBTITLE_FONT_STACKS.default, '--sub-color': 'var(--sub-text)', '--sub-box-alpha': '0.6',
     })
     const v = subtitleStyleVars({ ...DEFAULT_SUBTITLES, size: 100, lineSpacing: 0, font: 'exo2', color: 'yellow', boxOpacity: 0 })
@@ -117,7 +117,7 @@ describe('subtitleStyleVars', () => {
     expect(subtitleStyleVars({ ...DEFAULT_SUBTITLES, size: 0 })['--sub-size']).toBe('2.50cqh')
   })
   it('has the agreed defaults, frozen', () => {
-    expect(DEFAULT_SUBTITLES).toEqual({ enabled: { sub: true, dub: false }, size: 40, lineSpacing: 20, font: 'default', color: 'white', box: true, boxOpacity: 60 })
+    expect(DEFAULT_SUBTITLES).toEqual({ enabled: { sub: true, dub: false }, size: 25, lineSpacing: 20, font: 'default', color: 'white', box: true, boxOpacity: 60 })
     expect(Object.isFrozen(DEFAULT_SUBTITLES) && Object.isFrozen(DEFAULT_SUBTITLES.enabled)).toBe(true)
   })
 })
