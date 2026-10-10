@@ -11,15 +11,12 @@ import { usePlayerHealth } from '../player/usePlayerHealth.js'
 import { useFlash } from '../player/useFlash.js'
 import { useIdle } from '../player/useIdle.js'
 import { usePlayerVolume } from '../player/usePlayerVolume.js'
+import { usePlayerSubtitles } from '../player/usePlayerSubtitles.js'
 import { SubtitleOverlay } from './SubtitleOverlay.jsx'
-import { useSubtitleCues } from '../player/useSubtitleCues.js'
-import { clampOffset, formatOffset } from '../../shared/subtitles.js'
 import { trackMax, segmentAt, isLastEpisode, qualityLabel, qualityName } from '../../shared/player.js'
 
 const PROGRESS_MS = 5000
 const QUALITY_FLASH_MS = 4000
-const OFFSET_SAVE_MS = 500
-const SUBS_FLASH_MS = 6000
 const CLICK_DELAY_MS = 220
 const COUNTDOWN_S = 10
 const ENDING_FALLBACK_S = 30
@@ -47,18 +44,10 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const clickTimer = useRef(null)
   const mode = open.mode === 'dub' ? 'dub' : 'sub'
   const trackEl = useRef(null)
-  const [subsOn, setSubsOn] = useState(settings.subtitles.enabled[mode])
-  const [offset, setOffset] = useState(clampOffset(open.subOffset ?? 0))
-  const [subsUnsupported, setSubsUnsupported] = useState(false)
-  const offsetTimer = useRef(null)
-  const pendingOffset = useRef(null)
-  const subs = useSubtitleCues(trackEl, video, offset, open.playbackId)
-  const subsAvailable = Boolean(open.subtitleUrl) && subs.status !== 'error' && !subsUnsupported
-  const subsHint = !open.subtitleUrl ? t('player.noSubs') : subsUnsupported ? t('player.subsUnsupported') : subs.status === 'error' ? t('player.subsFailed') : null
   const [subsMenu, setSubsMenu] = useState(false)
   const flash = useFlash()
   const volume = usePlayerVolume({ video, settings, onSettings })
-  Object.assign(live.current, { subsOn, offset, subsAvailable, mode, t })
+  const subs = usePlayerSubtitles({ video, trackEl, open, mode, settings, onSettings, probeSub, flash: flash.show })
   const { idle, poke, show: showControls } = useIdle({ video, hold: subsMenu })
   const [failed, setFailed] = useState(null) // null | 'retryable' | 'final'
   const failing = useRef(false)
@@ -88,7 +77,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     closed.current = true
     // leaving for the next episode during the ending counts as having watched it all
     if (reason === 'next' && live.current.inEnding) maxPercent.current = 100
-    flushOffset()
+    subs.flush()
     live.current.api.player.closed({ ...snapshot(), reason })
     live.current.onClose(reason)
   }
@@ -107,32 +96,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     Promise.resolve(live.current.api.player.recover(snapshot(), { manual: true }))
       .then((r) => { if (!r?.ok) setFailed('final') }, () => setFailed('final'))
   }
-  // Written after the keys settle (holding H must not write the file 20 times); flushed on close.
-  const flushOffset = () => {
-    clearTimeout(offsetTimer.current)
-    const value = pendingOffset.current
-    pendingOffset.current = null
-    if (value != null) live.current.api.seriesPrefs.set(live.current.open.title, { subOffset: { [live.current.mode]: value } })
-  }
-  const shiftOffset = (delta) => {
-    if (!live.current.subsAvailable) return
-    const next = clampOffset(live.current.offset + delta)
-    live.current.offset = next
-    setOffset(next)
-    flash.show(live.current.t('player.subOffset', { value: formatOffset(next, live.current.settings.language) }))
-    pendingOffset.current = next
-    clearTimeout(offsetTimer.current)
-    offsetTimer.current = setTimeout(flushOffset, OFFSET_SAVE_MS)
-  }
-  const resetOffset = () => shiftOffset(-live.current.offset)
-  const toggleSubs = () => {
-    if (!live.current.subsAvailable) return
-    const next = !live.current.subsOn
-    live.current.subsOn = next
-    setSubsOn(next)
-    live.current.onSettings({ subtitles: { enabled: { [live.current.mode]: next } } })
-  }
-  useEffect(() => () => { flushOffset(); clearTimeout(clickTimer.current) }, [])
+  useEffect(() => () => clearTimeout(clickTimer.current), [])
 
   useEffect(() => {
     const v = video.current
@@ -168,18 +132,6 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     return () => clearInterval(id)
   }, [open.playbackId])
 
-  useEffect(() => {
-    setSubsUnsupported(false)
-    if (!open.subtitleUrl) return undefined
-    let cancelled = false
-    Promise.resolve().then(() => probeSub(open.subtitleUrl)).then((status) => {
-      if (cancelled || status !== 415) return
-      setSubsUnsupported(true)
-      if (live.current.subsOn) flash.show(t('player.subsUnsupported'), SUBS_FLASH_MS)
-    }, () => {})
-    return () => { cancelled = true }
-  }, [open.playbackId])
-
   // autoplay policy / aborted loads reject play(); that is never fatal
   const play = () => { const p = video.current?.play(); if (p && typeof p.catch === 'function') p.catch(() => {}) }
   const togglePlay = () => { const v = video.current; if (v.paused) play(); else v.pause() }
@@ -205,9 +157,9 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
         case 'ArrowDown': volume.nudge(-0.1); break
         case 'f': toggleFullscreen(); break
         case 'm': volume.toggleMute(); break
-        case 's': toggleSubs(); break
-        case 'g': shiftOffset(e.shiftKey ? -1 : -0.1); break
-        case 'h': shiftOffset(e.shiftKey ? 1 : 0.1); break
+        case 's': subs.toggle(); break
+        case 'g': subs.shift(e.shiftKey ? -1 : -0.1); break
+        case 'h': subs.shift(e.shiftKey ? 1 : 0.1); break
         case 'n': e.preventDefault(); if (!live.current.lastEpisode) close('next'); return
         default: return
       }
@@ -280,7 +232,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       >
         {open.subtitleUrl && <track ref={trackEl} kind="subtitles" src={open.subtitleUrl} />}
       </video>
-      {subsOn && subsAvailable && <SubtitleOverlay cues={subs.cues} subtitles={settings.subtitles} raised={!idle} />}
+      {subs.on && subs.available && <SubtitleOverlay cues={subs.cues} subtitles={settings.subtitles} raised={!idle} />}
       <div className="player__top">
         <button type="button" onClick={() => close('back')}><Icon name="back" /> {t('search.back')}</button>
         <h2 className="player__title">{open.title} <span className="hud">{t('player.episode', { episode: open.episode ?? '?' })}</span></h2>
@@ -306,15 +258,15 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       {end && <NextEpisodeCard mode={end} seconds={left} onNext={() => close('next')} onCancel={() => setEnd('manual')} onBack={() => close('ended')} />}
       <PlayerControls
         segments={['op', 'ed', 'recap'].filter((k) => skips?.[k]).map((k) => ({ kind: k, ...skips[k] }))}
-        time={time} duration={duration} quality={quality} playing={playing} muted={volume.muted} volume={volume.volume} subsOn={subsOn}
-        subsAvailable={subsAvailable} subsHint={subsHint} subOffsetLabel={formatOffset(offset, settings.language)} subSize={settings.subtitles.size}
-        subsMenuOpen={subsMenu} onSubsMenu={setSubsMenu} onSubOffset={shiftOffset} onSubOffsetReset={resetOffset}
+        time={time} duration={duration} quality={quality} playing={playing} muted={volume.muted} volume={volume.volume} subsOn={subs.on}
+        subsAvailable={subs.available} subsHint={subs.hint} subOffsetLabel={subs.offsetLabel} subSize={settings.subtitles.size}
+        subsMenuOpen={subsMenu} onSubsMenu={setSubsMenu} onSubOffset={subs.shift} onSubOffsetReset={subs.reset}
         onSubSize={(n) => onSettings({ subtitles: { size: n } })}
         fullscreen={fullscreen} canPrev={Number(open.episode) > 1} canNext={!lastEpisode}
         onTogglePlay={togglePlay} onSeek={(s) => { video.current.currentTime = s }} onStep={step}
         onPrev={() => close('prev')} onNext={() => close('next')}
         onToggleMute={volume.toggleMute} onVolume={volume.setVolume}
-        onToggleSubs={toggleSubs} onToggleFullscreen={toggleFullscreen}
+        onToggleSubs={subs.toggle} onToggleFullscreen={toggleFullscreen}
       />
     </div>
   )
