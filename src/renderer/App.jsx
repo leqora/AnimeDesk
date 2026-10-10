@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiContext } from './api.js'
 import { I18nProvider, useT } from './i18n/I18nContext.jsx'
 import { Sidebar } from './components/Sidebar.jsx'
@@ -14,7 +14,7 @@ import { LevelUpOverlay } from './components/LevelUpOverlay.jsx'
 import { Toast } from './components/Toast.jsx'
 import { UpdateBanner } from './components/UpdateBanner.jsx'
 import { WhatsNewDialog } from './components/WhatsNewDialog.jsx'
-import { PlayerView } from './components/PlayerView.jsx'
+import { loadPlayer } from './player/loadPlayer.js'
 import { PlayerReconnecting } from './components/PlayerReconnecting.jsx'
 import { ErrorBoundary } from './components/ErrorBoundary.jsx'
 import { nextEpisodeNumber } from '../shared/player.js'
@@ -23,6 +23,19 @@ import { createSound } from './sound.js'
 function CorruptBanner() {
   const t = useT()
   return <div className="notice notice--warn" role="status">{t('library.corrupt')}</div>
+}
+
+const PRELOAD_FALLBACK_MS = 3000
+
+function PlayerFallback() {
+  const t = useT()
+  return (
+    <div className="player">
+      <div className="player__loading" role="status" aria-label={t('player.loading')}>
+        <span className="player__spinner" aria-hidden="true" />
+      </div>
+    </div>
+  )
 }
 
 function BootText({ k }) {
@@ -76,6 +89,19 @@ export default function App({ api, sound: injectedSound }) {
   const [whatsNew, setWhatsNew] = useState(null)
   const [fullscreen, setFullscreen] = useState(false)
   const [player, setPlayer] = useState(null)
+  // React.lazy remembers a failed load, so a new lazy component is made after the error screen is closed.
+  const [playerAttempt, setPlayerAttempt] = useState(0)
+  const PlayerView = useMemo(() => lazy(() => loadPlayer().then((m) => ({ default: m.PlayerView }))), [playerAttempt])
+  useEffect(() => {
+    // load the player while the app is idle, so the first episode does not wait for it
+    const preload = () => { loadPlayer().catch(() => {}) }
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(preload, { timeout: 5000 })
+      return () => window.cancelIdleCallback?.(id)
+    }
+    const id = setTimeout(preload, PRELOAD_FALLBACK_MS)
+    return () => clearTimeout(id)
+  }, [])
   const [reconnecting, setReconnecting] = useState(null)
   const [bootFailed, setBootFailed] = useState(false)
 
@@ -144,9 +170,24 @@ export default function App({ api, sound: injectedSound }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [api])
 
+  // A stall recovery reopens the same episode as a new playback; it keeps the speed, any other open starts at 1×.
+  const reconnectingRef = useRef(reconnecting)
+  reconnectingRef.current = reconnecting
+  const lastRate = useRef(null) // { title, episode, rate } of the current playback
+  const [playerRate, setPlayerRate] = useState(1)
   useEffect(() => {
+    const sameEpisode = (a, b) => a != null && b != null && a.title === b.title && String(a.episode) === String(b.episode)
+    const onOpen = (p) => {
+      const r = reconnectingRef.current
+      const recovered = r?.state === 'reconnecting' && sameEpisode(r, p) && sameEpisode(lastRate.current, p)
+      const rate = recovered ? lastRate.current.rate : 1
+      lastRate.current = { title: p.title, episode: p.episode, rate }
+      setPlayerRate(rate)
+      setReconnecting(null)
+      setPlayer(p)
+    }
     const offs = [
-      api.player.onOpen((p) => { setReconnecting(null); setPlayer(p) }),
+      api.player.onOpen(onOpen),
       api.player.onClose(() => setPlayer(null)),
       api.player.onRetry(setReconnecting),
     ]
@@ -199,10 +240,17 @@ export default function App({ api, sound: injectedSound }) {
           </main>
         </div>
         {player && (
-          <ErrorBoundary key={player.playbackId} className="error-fallback--overlay" actionLabelKey="error.close" onAction={() => setPlayer(null)}>
+          <ErrorBoundary key={player.playbackId} className="error-fallback--overlay" actionLabelKey="error.close" onAction={() => {
+            // main still waits for this playback to end (session, held celebrations); null keeps the last reported position
+            api.player.closed({ playbackId: player.playbackId, position: null, duration: null, maxPercent: 0, reason: 'back' })
+            setPlayer(null)
+            setPlayerAttempt((n) => n + 1)
+          }}>
+            <Suspense fallback={<PlayerFallback />}>
             <PlayerView
               key={player.playbackId} // PlayerView's per-playback refs/state rely on a remount per playback
               open={player} settings={settings} fullscreen={fullscreen} onSettings={updateSettings}
+              initialRate={playerRate} onRate={(rate) => { if (lastRate.current) lastRate.current.rate = rate }}
               onClose={(reason) => {
                 setPlayer(null)
                 if ((reason === 'next' || reason === 'prev') && player.episode != null) {
@@ -210,6 +258,7 @@ export default function App({ api, sound: injectedSound }) {
                 }
               }}
             />
+            </Suspense>
           </ErrorBoundary>
         )}
         {!player && reconnecting && (

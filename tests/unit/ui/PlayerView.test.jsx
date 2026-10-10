@@ -15,7 +15,7 @@ beforeEach(() => {
 })
 // jsdom does not implement media playback state; give the element plain writable properties.
 const fakeMediaState = (video) => {
-  const state = { currentTime: 0, paused: true, volume: 1, muted: false }
+  const state = { currentTime: 0, paused: true, volume: 1, muted: false, playbackRate: 1 }
   for (const key of Object.keys(state)) {
     Object.defineProperty(video, key, { configurable: true, get: () => state[key], set: (v) => { state[key] = v } })
   }
@@ -161,6 +161,13 @@ describe('PlayerView', () => {
   it('disables previous on episode 1', () => {
     view(open({ episode: '1' }))
     expect(screen.getByRole('button', { name: 'Prethodna epizoda' })).toBeDisabled()
+  })
+  it('shows what the video has buffered on the timeline', () => {
+    const { video, meta } = view()
+    meta(1400)
+    Object.defineProperty(video, 'buffered', { configurable: true, value: { length: 1, start: () => 0, end: () => 350 } })
+    fireEvent(video, new Event('progress'))
+    expect(document.querySelector('.player__buffered').style.width).toBe('25%')
   })
 })
 
@@ -614,7 +621,7 @@ describe('PlayerView subtitles', () => {
     video.currentTime = 100
     document.querySelector('track').track = { mode: 'disabled', cues: [] }
     act(() => { document.querySelector('track').dispatchEvent(new Event('load')) })
-    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja titla' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja plejera' }))
     fireEvent.keyDown(screen.getByLabelText('Veličina titlova'), { key: 'ArrowRight', code: 'ArrowRight' })
     expect(video.currentTime).toBe(100)
   })
@@ -629,8 +636,8 @@ describe('PlayerView subtitles', () => {
     view(open({ subOffset: 0 }), { onSettings })
     document.querySelector('track').track = { mode: 'disabled', cues: [] }
     act(() => { document.querySelector('track').dispatchEvent(new Event('load')) })
-    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja titla' }))
-    const menu = screen.getByRole('dialog', { name: 'Podešavanja titla' })
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja plejera' }))
+    const menu = screen.getByRole('dialog', { name: 'Podešavanja plejera' })
     fireEvent.click(within(menu).getByRole('button', { name: 'Titl kasnije' }))
     expect(within(menu).getByText('+0,1 s')).toBeInTheDocument()
     fireEvent.click(within(menu).getByRole('button', { name: 'Resetuj' }))
@@ -640,40 +647,89 @@ describe('PlayerView subtitles', () => {
     fireEvent.click(within(menu).getByLabelText('Titlovi'))
     expect(onSettings).toHaveBeenLastCalledWith({ subtitles: { enabled: { sub: false } } })
     fireEvent.keyDown(menu, { key: 'Escape' })
-    expect(screen.queryByRole('dialog', { name: 'Podešavanja titla' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: 'Podešavanja plejera' })).toBeNull()
   })
   it('closes the subtitle menu on an outside click and keeps controls visible while open', () => {
     vi.useFakeTimers()
     try {
       const { video } = view()
-      fireEvent.click(screen.getByRole('button', { name: 'Podešavanja titla' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Podešavanja plejera' }))
       act(() => { video.paused = false; vi.advanceTimersByTime(4000) })
       expect(document.querySelector('.player')).not.toHaveClass('player--idle')
       fireEvent.mouseDown(document.body)
-      expect(screen.queryByRole('dialog', { name: 'Podešavanja titla' })).toBeNull()
+      expect(screen.queryByRole('dialog', { name: 'Podešavanja plejera' })).toBeNull()
     } finally { vi.useRealTimers() }
   })
-  it('disables the subtitle buttons with a hint when there are no subtitles', () => {
+  it('keeps the gear enabled without subtitles and explains the disabled subtitle controls', () => {
     view(open({ subtitleUrl: null }))
     expect(screen.getByRole('button', { name: 'Titlovi' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Titlovi' })).toHaveAttribute('title', 'Nema titla za ovu epizodu')
-    expect(screen.getByRole('button', { name: 'Podešavanja titla' })).toBeDisabled()
+    const gear = screen.getByRole('button', { name: 'Podešavanja plejera' })
+    expect(gear).toBeEnabled()
+    fireEvent.click(gear)
+    const menu = screen.getByRole('dialog', { name: 'Podešavanja plejera' })
+    expect(within(menu).getByLabelText('Titlovi')).toBeDisabled()
+    expect(within(menu).getByLabelText('Titlovi')).not.toBeChecked()
+    expect(within(menu).getByRole('button', { name: 'Titl kasnije' })).toBeDisabled()
+    expect(within(menu).getByLabelText('Veličina titlova')).toBeDisabled()
+    expect(within(menu).getByText('Nema titla za ovu epizodu')).toBeInTheDocument()
   })
   it('closes the subtitle menu with Escape while focus is on the gear button', () => {
     view()
-    const gear = screen.getByRole('button', { name: 'Podešavanja titla' })
+    const gear = screen.getByRole('button', { name: 'Podešavanja plejera' })
     fireEvent.click(gear)
-    expect(screen.getByRole('dialog', { name: 'Podešavanja titla' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Podešavanja plejera' })).toBeInTheDocument()
     fireEvent.keyDown(gear, { key: 'Escape' })
-    expect(screen.queryByRole('dialog', { name: 'Podešavanja titla' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: 'Podešavanja plejera' })).toBeNull()
   })
   it('keeps player shortcuts working after clicking the menu checkbox', () => {
     const { api } = view()
-    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja titla' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja plejera' }))
     const box = within(screen.getByRole('dialog')).getByLabelText('Titlovi')
     fireEvent.click(box)
     box.focus()
     fireEvent.keyDown(box, { key: 'f', code: 'KeyF' })
     expect(api.window.setFullscreen).toHaveBeenCalledWith(true)
+  })
+  it('changes the speed from the gear menu', () => {
+    const { video } = view()
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja plejera' }))
+    const menu = screen.getByRole('dialog', { name: 'Podešavanja plejera' })
+    expect(within(menu).getByRole('button', { name: '1×' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(within(menu).getByRole('button', { name: '1,5×' }))
+    expect(video.playbackRate).toBe(1.5)
+    expect(within(menu).getByRole('button', { name: '1,5×' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Brzina: 1,5×')).toBeInTheDocument()
+  })
+  it('changes the speed with [ ] \\ by physical key and the open menu follows', () => {
+    const { video } = view()
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja plejera' }))
+    fireEvent.keyDown(window, { key: 'đ', code: 'BracketRight' })
+    expect(video.playbackRate).toBe(1.25)
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: '1,25×' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.keyDown(window, { key: 'š', code: 'BracketLeft' })
+    fireEvent.keyDown(window, { key: 'š', code: 'BracketLeft' })
+    expect(video.playbackRate).toBe(0.75)
+    fireEvent.keyDown(window, { key: 'ž', code: 'Backslash' })
+    expect(video.playbackRate).toBe(1)
+    expect(screen.getByText('Brzina: 1×')).toBeInTheDocument()
+  })
+  it('keeps the chosen speed when the stream reloads its metadata', () => {
+    const { video, meta } = view()
+    meta()
+    fireEvent.keyDown(window, { key: ']', code: 'BracketRight' })
+    video.playbackRate = 1
+    meta()
+    expect(video.playbackRate).toBe(1.25)
+  })
+  it('starts at the given speed and reports speed changes', () => {
+    const onRate = vi.fn()
+    const { video, meta } = view(open(), { initialRate: 1.5, onRate })
+    meta()
+    expect(video.playbackRate).toBe(1.5)
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja plejera' }))
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: '1,5×' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.keyDown(window, { key: ']', code: 'BracketRight' })
+    expect(onRate).toHaveBeenLastCalledWith(2)
   })
 })

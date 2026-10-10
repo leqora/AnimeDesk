@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { render } from '@testing-library/react'
+import { render, renderHook } from '@testing-library/react'
 import { ApiContext } from '../../../src/renderer/api.js'
 import { I18nProvider } from '../../../src/renderer/i18n/I18nContext.jsx'
 import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
@@ -56,4 +56,13 @@ export function renderUi(ui, { api = makeFakeApi(), lang = 'sr' } = {}) {
   )
   const result = render(ui, { wrapper })
   return { api, ...result }
+}
+
+export function renderHookUi(callback, { api = makeFakeApi(), lang = 'sr', initialProps } = {}) {
+  const wrapper = ({ children }) => (
+    <ApiContext.Provider value={api}>
+      <I18nProvider lang={lang}>{children}</I18nProvider>
+    </ApiContext.Provider>
+  )
+  return { api, ...renderHook(callback, { wrapper, initialProps }) }
 }

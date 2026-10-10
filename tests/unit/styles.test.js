@@ -33,7 +33,7 @@ describe('styles.css', () => {
     expect(css).not.toContain('::cue')
   })
   it('keeps player panels over video opaque so bright frames do not wash out their text', () => {
-    for (const sel of ['.player__subs-menu', '.player__card', '.player__flash']) {
+    for (const sel of ['.player__menu', '.player__card', '.player__flash']) {
       expect(new RegExp(`(^|\\n)\\${sel} \\{[^}]*background: var\\(--panel-solid\\)`).test(css), sel).toBe(true)
     }
   })
