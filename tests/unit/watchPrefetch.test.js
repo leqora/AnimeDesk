@@ -283,3 +283,52 @@ describe('watchService prefetch — adoption', () => {
     expect(t.sessions[1].kill).not.toHaveBeenCalled()
   })
 })
+
+describe('watchService prefetch — recovery and recording', () => {
+  async function adoptedEpisode4(t) {
+    await t.playEpisode3()
+    t.progress(85)
+    t.sessions[1].opts.onPlay({ args: argsFor(4) })
+    t.close(96)
+    await flush()
+    t.svc.watch({ query: 'Show', anime: 'Show', episode: '4' })
+    await flush()
+  }
+  it('the first recovery of an adopted session does not use up the automatic recovery', async () => {
+    const t = prefetchSetup()
+    await adoptedEpisode4(t)
+    expect(t.svc.recover({ playbackId: 'p2', position: 10, duration: 1400, maxPercent: 1 })).toEqual({ ok: true })
+    await flush()
+    expect(t.sessions.at(-1).opts.episodes).toBe('4')
+    t.sessions.at(-1).opts.onPlay({ args: argsFor(4) })
+    await flush()
+    // a real stall later in the episode still gets its automatic try ...
+    expect(t.svc.recover({ playbackId: 'p3', position: 600, duration: 1400, maxPercent: 43 })).toEqual({ ok: true })
+    await flush()
+    t.sessions.at(-1).opts.onPlay({ args: argsFor(4) })
+    await flush()
+    // ... and only then the budget applies, as in 0.6.0
+    expect(t.svc.recover({ playbackId: 'p4', position: 700, duration: 1400, maxPercent: 50 })).toEqual({ ok: true, auto: false })
+  })
+  it('records both episodes exactly once, as without prefetch', async () => {
+    const t = prefetchSetup()
+    await adoptedEpisode4(t)
+    t.progress(95)
+    t.close(97, 'ended')
+    await flush()
+    expect(t.library.recordWatched.mock.calls).toEqual([
+      [{ aniCliTitle: 'Show', episode: '3' }],
+      [{ aniCliTitle: 'Show', episode: '4' }],
+    ])
+    expect(t.celebrations.hold).toHaveBeenCalledTimes(2)
+    expect(t.celebrations.release).toHaveBeenCalledTimes(2)
+  })
+  it('askOnClose still asks on close for the adopted episode', async () => {
+    const t = prefetchSetup({ settings: { askOnClose: true } })
+    await adoptedEpisode4(t)
+    t.close(97, 'ended')
+    await flush()
+    expect(t.library.recordWatched).not.toHaveBeenCalled()
+    expect(t.events).toContainEqual([EVENTS.ask, { aniCliTitle: 'Show', episode: '4' }])
+  })
+})

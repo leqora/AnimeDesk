@@ -247,10 +247,15 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
   function recover(snapshot, { manual = false } = {}) {
     const active = internalPlayer?.current?.()
     if (!active || !current || active.playbackId !== snapshot?.playbackId) return { ok: false }
-    const key = budgetKey(current.info)
-    const last = retryBudget.get(key)
-    if (!manual && last != null && now() - last < RETRY_TTL_MS) return { ok: true, auto: false }
-    retryBudget.set(key, now())
+    const entry = current.entry
+    // A prepared link that went stale is a cost of the prefetch, not a stalled stream: it does not use up the automatic try.
+    if (!manual && entry.adopted && !entry.freeRetryUsed) entry.freeRetryUsed = true
+    else {
+      const key = budgetKey(current.info)
+      const last = retryBudget.get(key)
+      if (!manual && last != null && now() - last < RETRY_TTL_MS) return { ok: true, auto: false }
+      retryBudget.set(key, now())
+    }
     // closed() reports the snapshot as progress; a recovery must not record it as watched (its position is still saved).
     current.entry.retrying = true
     internalPlayer.closed({ ...snapshot, reason: 'retry' })

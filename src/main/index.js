@@ -119,9 +119,10 @@ async function main() {
     historyDir: paths.aniCliHistory,
   })
   const player = createPlayer({ getMpvPath: () => toolManager.toolPaths().mpv })
+  const totalEpisodes = createTotalEpisodes({ library, anilist })
   const internalPlayer = createInternalPlayer({
     streams, notify: send, positions, seriesPrefs,
-    getTotalEpisodes: createTotalEpisodes({ library, anilist }),
+    getTotalEpisodes: totalEpisodes,
   })
   const mpvConfigDir = path.join(paths.base, 'mpv-config')
   const mpvExtraArgs = () => {
@@ -131,7 +132,7 @@ async function main() {
       return dir ? [`--config-dir=${dir}`] : []
     } catch { return [] }
   }
-  const watch = createWatchService({ mpvExtraArgs, skipsFor: skipLookup, aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs, celebrations })
+  const watch = createWatchService({ mpvExtraArgs, skipsFor: skipLookup, aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs, celebrations, getTotalEpisodes: totalEpisodes })
   const downloads = createDownloads({ file: paths.downloads, aniCli, onChange: () => send(EVENTS.downloads, downloads.queueItems()), resolvePrefs: (title) => seriesPrefs.resolve(title, settings.get()) })
   const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
 
@@ -160,7 +161,7 @@ async function main() {
   setInterval(() => { if (health.get().reason === 'source-down') health.run() }, SIX_HOURS)
 
   app.on('window-all-closed', () => app.quit())
-  app.on('before-quit', () => { server.stop(); streams.stop() })
+  app.on('before-quit', () => { watch.dispose(); server.stop(); streams.stop() })
 }
 
 // A failed startup must not leave a silent background process; a stray rejection must not go unnoticed.
