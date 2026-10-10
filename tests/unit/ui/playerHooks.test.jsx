@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, fireEvent } from '@testing-library/react'
 import { useLatest } from '../../../src/renderer/player/useLatest.js'
 import { useFlash } from '../../../src/renderer/player/useFlash.js'
 import { useIdle } from '../../../src/renderer/player/useIdle.js'
 import { usePlayerVolume } from '../../../src/renderer/player/usePlayerVolume.js'
 import { usePlayerSubtitles } from '../../../src/renderer/player/usePlayerSubtitles.js'
 import { useEpisodeEnd } from '../../../src/renderer/player/useEpisodeEnd.js'
+import { usePlayerShortcuts, QUIET } from '../../../src/renderer/player/usePlayerShortcuts.js'
 import { renderHookUi } from './helpers.jsx'
 import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
 
@@ -211,5 +212,56 @@ describe('useEpisodeEnd', () => {
     const { result } = renderHook(() => useEpisodeEnd({ autoNext: true, lastEpisode: true, onNext: vi.fn() }))
     act(() => result.current.finish())
     expect(result.current.end).toBe('done')
+  })
+})
+
+describe('usePlayerShortcuts', () => {
+  const key = (init, target = window) => fireEvent.keyDown(target, init) // false when preventDefault was called
+  it('runs the action for the physical key, prevents the default and reports it', () => {
+    const faster = vi.fn()
+    const onHandled = vi.fn()
+    renderHook(() => usePlayerShortcuts({ ']': faster }, { onHandled }))
+    expect(key({ key: 'đ', code: 'BracketRight' })).toBe(false)
+    expect(faster).toHaveBeenCalledTimes(1)
+    expect(onHandled).toHaveBeenCalledTimes(1)
+  })
+  it('maps letters, Space and Backslash by code and falls back to the key', () => {
+    const actions = { f: vi.fn(), ' ': vi.fn(), '\\': vi.fn(), ArrowLeft: vi.fn() }
+    renderHook(() => usePlayerShortcuts(actions))
+    key({ key: 'ф', code: 'KeyF' })
+    key({ key: ' ', code: 'Space' })
+    key({ key: 'ž', code: 'Backslash' })
+    key({ key: 'ArrowLeft' })
+    for (const fn of Object.values(actions)) expect(fn).toHaveBeenCalledTimes(1)
+  })
+  it('ignores modifiers, text fields and the menu slider', () => {
+    const f = vi.fn()
+    renderHook(() => usePlayerShortcuts({ f, ArrowRight: f }))
+    key({ key: 'f', code: 'KeyF', ctrlKey: true })
+    const input = document.body.appendChild(document.createElement('input'))
+    key({ key: 'f', code: 'KeyF' }, input)
+    const menu = document.body.appendChild(document.createElement('div'))
+    menu.className = 'player__subs-menu'
+    const slider = menu.appendChild(document.createElement('input'))
+    slider.type = 'range'
+    key({ key: 'ArrowRight', code: 'ArrowRight' }, slider)
+    expect(f).not.toHaveBeenCalled()
+    input.remove(); menu.remove()
+  })
+  it('QUIET actions are handled without waking the controls; unknown keys pass through', () => {
+    const onHandled = vi.fn()
+    renderHook(() => usePlayerShortcuts({ n: () => QUIET }, { onHandled }))
+    expect(key({ key: 'n', code: 'KeyN' })).toBe(false)
+    expect(key({ key: 'x', code: 'KeyX' })).toBe(true)
+    expect(onHandled).not.toHaveBeenCalled()
+  })
+  it('uses the latest actions after a re-render', () => {
+    const first = vi.fn()
+    const second = vi.fn()
+    const { rerender } = renderHook(({ fn }) => usePlayerShortcuts({ m: fn }), { initialProps: { fn: first } })
+    rerender({ fn: second })
+    key({ key: 'm', code: 'KeyM' })
+    expect(first).not.toHaveBeenCalled()
+    expect(second).toHaveBeenCalledTimes(1)
   })
 })
