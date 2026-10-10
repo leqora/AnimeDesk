@@ -22,7 +22,7 @@ export function createInternalPlayer({ streams, notify, positions, getTotalEpiso
     if (active) stop()
     const local = Boolean(info.file)
     const reg = local ? streams.registerFile(info.file) : streams.register({ url: info.url, referrer: info.referrer, subUrl: info.subUrl })
-    // A recovery carries its own position (it may be under the 10 s that positions keeps) and must not ask again;
+    // A recovery carries its own position (it may be under the 10 s floor watchService applies when saving) and must not ask again;
     // the quality notice was already shown for this episode, so it is not repeated.
     const saved = info.resume || info.episode == null ? null : positions.get(info.title, info.episode)
     const mode = info.mode === 'dub' ? 'dub' : 'sub'

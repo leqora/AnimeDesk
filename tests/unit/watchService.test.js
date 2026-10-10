@@ -121,11 +121,11 @@ describe('watchService', () => {
   })
   it('uses the in-app player when playerMode is internal and tracks the same way', async () => {
     const internalPlayer = { play: vi.fn(async () => ({ exitCode: 0, maxPercent: 95, position: 1330, duration: 1400, reason: 'ended' })), stop: vi.fn() }
-    const positions = { clear: vi.fn() }
+    const positions = { clear: vi.fn(), save: vi.fn(), get: vi.fn(() => null) }
     const { svc, player, library } = setup({ settings: { playerMode: 'internal' }, internalPlayer, positions })
     svc.watch({ query: 'fake' })
     await flush()
-    expect(internalPlayer.play).toHaveBeenCalledWith(expect.objectContaining({ title: 'Fake Anime', episode: '2', url: 'https://v' }))
+    expect(internalPlayer.play).toHaveBeenCalledWith(expect.objectContaining({ title: 'Fake Anime', episode: '2', url: 'https://v' }), expect.objectContaining({ onProgress: expect.any(Function) }))
     expect(player.play).not.toHaveBeenCalled()
     expect(library.recordWatched).toHaveBeenCalledWith({ aniCliTitle: 'Fake Anime', episode: '2' })
     expect(positions.clear).toHaveBeenCalledWith('Fake Anime', '2')
@@ -178,8 +178,125 @@ describe('watchService', () => {
     const internalPlayer = { play: vi.fn(async () => ({ exitCode: 0, maxPercent: 95, reason: 'ended' })), stop: vi.fn() }
     const { svc, player } = setup({ settings: { playerMode: 'internal' }, internalPlayer })
     await svc.playLocal({ file: 'D:\A\A Episode 1.mp4', title: 'A', episode: 1 })
-    expect(internalPlayer.play).toHaveBeenCalledWith(expect.objectContaining({ file: 'D:\A\A Episode 1.mp4', title: 'A', episode: '1', url: 'D:\A\A Episode 1.mp4' }))
+    expect(internalPlayer.play).toHaveBeenCalledWith(expect.objectContaining({ file: 'D:\A\A Episode 1.mp4', title: 'A', episode: '1', url: 'D:\A\A Episode 1.mp4' }), expect.objectContaining({ onProgress: expect.any(Function) }))
     expect(player.play).not.toHaveBeenCalled()
+  })
+  it('never records a cancelled session, even past the threshold', async () => {
+    let ctl
+    const aniCli = {
+      startSession: vi.fn((opts) => {
+        const done = new Promise(() => {})
+        queueMicrotask(() => opts.onPlay({ args: ['--force-media-title=Fake Anime Episode 2', 'https://v'] }))
+        return { sessionId: 'sid', done, kill: vi.fn() }
+      }),
+    }
+    const player = { play: vi.fn((args, opts) => new Promise((resolve) => { ctl = { opts, resolve } })), stop: vi.fn(() => ctl.resolve({ exitCode: 1, maxPercent: 95, position: 1330, duration: 1400 })) }
+    const library = { recordWatched: vi.fn() }
+    const svc = createWatchService({ aniCli, player, library, positions: { get: () => null, save: vi.fn(), clear: vi.fn() }, settings: { get: () => ({ ...DEFAULT_SETTINGS, playerMode: 'external' }) }, notify: () => {} })
+    svc.watch({ query: 'fake' })
+    await flush()
+    svc.cancel('sid')
+    ctl.opts.onProgress({ position: 1330, duration: 1400, maxPercent: 95 })
+    await flush()
+    expect(library.recordWatched).not.toHaveBeenCalled()
+  })
+})
+
+describe('watchService — continuity', () => {
+  function progressSetup({ settings = {}, saved = null, mode = 'external', record } = {}) {
+    let ctl
+    const player = {
+      play: vi.fn((args, opts) => new Promise((resolve) => { ctl = { args, opts, resolve } })),
+      stop: vi.fn(() => ctl?.resolve({ exitCode: 1, maxPercent: 0, position: 0, duration: 0 })),
+    }
+    const positions = { get: vi.fn(() => saved), save: vi.fn(), clear: vi.fn() }
+    const library = { recordWatched: record ?? vi.fn() }
+    const celebrations = { hold: vi.fn(), release: vi.fn() }
+    const events = []
+    const svc = createWatchService({
+      aniCli: { startSession: vi.fn() }, player, library, positions, celebrations,
+      settings: { get: () => ({ ...DEFAULT_SETTINGS, playerMode: mode, ...settings }) },
+      notify: (ch, p) => events.push([ch, p]),
+    })
+    return { svc, player, positions, library, celebrations, events, ctl: () => ctl }
+  }
+  const local = { file: 'C:/v/ep3.mkv', title: 'Show', episode: 3 }
+
+  it('saves positions from 10 s on and resumes mpv from a saved one', async () => {
+    const { svc, positions, ctl } = progressSetup({ saved: { position: 754.6, duration: 1400 } })
+    const done = svc.playLocal(local)
+    await Promise.resolve()
+    expect(ctl().args).toEqual(['--force-media-title=Show Episode 3', 'C:/v/ep3.mkv', '--start=754'])
+    expect(ctl().opts).toMatchObject({ resumeAt: 754.6 })
+    ctl().opts.onProgress({ position: 9, duration: 1400, maxPercent: 1 })
+    expect(positions.save).not.toHaveBeenCalled()
+    ctl().opts.onProgress({ position: 800, duration: 1400, maxPercent: 57 })
+    expect(positions.save).toHaveBeenLastCalledWith('Show', '3', { position: 800, duration: 1400 })
+    ctl().resolve({ exitCode: 0, maxPercent: 60, position: 840, duration: 1400 })
+    expect(await done).toBe('none')
+    expect(positions.save).toHaveBeenLastCalledWith('Show', '3', { position: 840, duration: 1400 })
+  })
+  it('starts mpv from the beginning without a saved position', async () => {
+    const { svc, ctl } = progressSetup()
+    svc.playLocal(local)
+    await Promise.resolve()
+    expect(ctl().args).toEqual(['--force-media-title=Show Episode 3', 'C:/v/ep3.mkv'])
+    expect(ctl().opts.resumeAt ?? null).toBeNull()
+    ctl().resolve({ exitCode: 0, maxPercent: 5, position: 50, duration: 1400 })
+  })
+  it('records once at the threshold, then keeps no position and does not record again on close', async () => {
+    const { svc, positions, library, events, ctl } = progressSetup()
+    const done = svc.playLocal(local)
+    await Promise.resolve()
+    ctl().opts.onProgress({ position: 1200, duration: 1400, maxPercent: 86 })
+    expect(library.recordWatched).toHaveBeenCalledTimes(1)
+    expect(positions.clear).toHaveBeenCalledWith('Show', '3')
+    expect(events).toContainEqual([EVENTS.libraryChanged, undefined])
+    positions.save.mockClear()
+    ctl().opts.onProgress({ position: 30, duration: 1400, maxPercent: 86 }) // seeked back to the start
+    ctl().opts.onProgress({ position: 1300, duration: 1400, maxPercent: 93 })
+    expect(positions.save).not.toHaveBeenCalled()
+    ctl().resolve({ exitCode: 0, maxPercent: 93, position: 40, duration: 1400 })
+    expect(await done).toBe('watched')
+    expect(library.recordWatched).toHaveBeenCalledTimes(1)
+    expect(positions.save).not.toHaveBeenCalled()
+  })
+  it('waits for close when askOnClose is on', async () => {
+    const { svc, library, events, ctl } = progressSetup({ settings: { askOnClose: true } })
+    const done = svc.playLocal(local)
+    await Promise.resolve()
+    ctl().opts.onProgress({ position: 1300, duration: 1400, maxPercent: 95 })
+    expect(library.recordWatched).not.toHaveBeenCalled()
+    ctl().resolve({ exitCode: 0, maxPercent: 95, position: 1300, duration: 1400 })
+    expect(await done).toBe('ask')
+    expect(events).toContainEqual([EVENTS.ask, { aniCliTitle: 'Show', episode: '3' }])
+  })
+  it('retries recording at close when recording at the threshold failed', async () => {
+    const record = vi.fn().mockImplementationOnce(() => { throw new Error('disk full') })
+    const { svc, library, ctl } = progressSetup({ record })
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const done = svc.playLocal(local)
+    await Promise.resolve()
+    expect(() => ctl().opts.onProgress({ position: 1250, duration: 1400, maxPercent: 90 })).not.toThrow()
+    ctl().resolve({ exitCode: 0, maxPercent: 90, position: 1260, duration: 1400 })
+    expect(await done).toBe('watched')
+    expect(library.recordWatched).toHaveBeenCalledTimes(2)
+    warn.mockRestore()
+  })
+  it('holds celebrations for the whole playback and releases them even when the player fails', async () => {
+    const { svc, celebrations, ctl } = progressSetup()
+    const done = svc.playLocal(local)
+    await Promise.resolve()
+    expect(celebrations.hold).toHaveBeenCalledTimes(1)
+    expect(celebrations.release).not.toHaveBeenCalled()
+    ctl().resolve({ exitCode: 0, maxPercent: 10, position: 100, duration: 1400 })
+    await done
+    expect(celebrations.release).toHaveBeenCalledTimes(1)
+
+    const failing = progressSetup()
+    failing.player.play.mockRejectedValueOnce(new Error('mpv-missing'))
+    await expect(failing.svc.playLocal(local)).rejects.toThrow('mpv-missing')
+    expect(failing.celebrations.release).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -203,7 +320,7 @@ function retrySetup({ settings = {}, now = () => 1000 } = {}) {
     stop: vi.fn(),
   }
   const library = { recordWatched: vi.fn() }
-  const positions = { clear: vi.fn() }
+  const positions = { clear: vi.fn(), save: vi.fn(), get: vi.fn(() => null) }
   const svc = createWatchService({
     aniCli, player: { play: vi.fn(), stop: vi.fn() }, internalPlayer, library, positions, now,
     settings: { get: () => ({ ...DEFAULT_SETTINGS, ...settings }) },
@@ -220,11 +337,11 @@ describe('watchService player mode', () => {
     const { svc } = setup({ settings: { playerMode: 'internal' }, internalPlayer, seriesPrefs })
     svc.watch({ query: 'fake' })
     await flush()
-    expect(internalPlayer.play).toHaveBeenLastCalledWith(expect.objectContaining({ mode: 'dub' }))
+    expect(internalPlayer.play).toHaveBeenLastCalledWith(expect.objectContaining({ mode: 'dub' }), expect.objectContaining({ onProgress: expect.any(Function) }))
     await svc.playLocal({ file: 'D:\A\A Episode 1.mp4', title: 'A', episode: '1', mode: 'dub' })
-    expect(internalPlayer.play).toHaveBeenLastCalledWith(expect.objectContaining({ file: 'D:\A\A Episode 1.mp4', mode: 'dub' }))
+    expect(internalPlayer.play).toHaveBeenLastCalledWith(expect.objectContaining({ file: 'D:\A\A Episode 1.mp4', mode: 'dub' }), expect.objectContaining({ onProgress: expect.any(Function) }))
     await svc.playLocal({ file: 'D:\A\A Episode 2.mp4', title: 'A', episode: '2' })
-    expect(internalPlayer.play).toHaveBeenLastCalledWith(expect.objectContaining({ mode: 'sub' }))
+    expect(internalPlayer.play).toHaveBeenLastCalledWith(expect.objectContaining({ mode: 'sub' }), expect.objectContaining({ onProgress: expect.any(Function) }))
   })
 })
 
@@ -243,7 +360,7 @@ describe('watchService recovery', () => {
     expect(events).toContainEqual([EVENTS.playerRetry, { title: 'Show', episode: '3', state: 'reconnecting', sessionId: 's2' }])
     sessions[1].opts.onPlay({ args })
     await flush()
-    expect(internalPlayer.play).toHaveBeenLastCalledWith(expect.objectContaining({ resume: { at: 1300, auto: true, title: 'Show', episode: '3' } }))
+    expect(internalPlayer.play).toHaveBeenLastCalledWith(expect.objectContaining({ resume: { at: 1300, auto: true, title: 'Show', episode: '3' } }), expect.objectContaining({ onProgress: expect.any(Function) }))
     expect(internalPlayer.play.mock.calls[0][0].mode).toBe('dub')
     expect(internalPlayer.play.mock.calls[1][0].mode).toBe('dub')
   })
@@ -348,6 +465,6 @@ describe('watchService recovery', () => {
     sessions[0].opts.onLine('\x1b[1;33m720 not found, defaulting to best\x1b[0m')
     sessions[0].opts.onPlay({ args })
     await flush()
-    expect(internalPlayer.play).toHaveBeenCalledWith(expect.objectContaining({ qualityFallback: '720', resume: null }))
+    expect(internalPlayer.play).toHaveBeenCalledWith(expect.objectContaining({ qualityFallback: '720', resume: null }), expect.objectContaining({ onProgress: expect.any(Function) }))
   })
 })

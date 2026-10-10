@@ -5,8 +5,9 @@ import { autoAnswer, menuKind, parsePlayerArgs, parseQualityFallback } from './a
 import { decideWatched } from './playerMonitor.js'
 
 const RETRY_TTL_MS = 30 * 60 * 1000
+const MIN_SAVED_POSITION_S = 10 // same floor as before: backing out of the resume prompt reports 0
 
-export function createWatchService({ aniCli, player, internalPlayer = null, library, settings, notify, seriesPrefs = null, positions = null, mpvExtraArgs = () => [], skipsFor = null, now = Date.now }) {
+export function createWatchService({ aniCli, player, internalPlayer = null, library, settings, notify, seriesPrefs = null, positions = null, mpvExtraArgs = () => [], skipsFor = null, now = Date.now, celebrations = { hold() {}, release() {} } }) {
   const pending = new Map() // requestId -> { sessionId, resolve }
   const sessions = new Map() // sessionId -> session
   const retryBudget = new Map() // "title|episode" -> time of the last recovery
@@ -27,21 +28,48 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     return decision
   }
 
-  // Both players resolve to { exitCode, maxPercent, ... }, so tracking does not care which one ran.
-  async function runPlayer(info) {
+  // Both players report progress here; positions and the watched threshold are decided once, for either player.
+  async function runPlayer(info, isCancelled = () => false) {
     const s = settings.get()
-    const mpv = (args) => player.play(args, {
+    const state = { recorded: false }
+    const save = (p) => {
+      if (state.recorded || info.episode == null || !positions) return
+      if (Number.isFinite(p?.position) && p.position >= MIN_SAVED_POSITION_S) positions.save(info.title, info.episode, { position: p.position, duration: p.duration })
+    }
+    const onProgress = (p) => {
+      save(p)
+      if (state.recorded || isCancelled() || info.episode == null) return
+      const cur = settings.get()
+      if (decideWatched({ maxPercent: p?.maxPercent ?? 0, threshold: cur.watchedThreshold, autoTrack: cur.autoTrack, askOnClose: cur.askOnClose }) !== 'watched') return
+      try {
+        state.recorded = afterPlayback({ title: info.title, episode: info.episode, maxPercent: p.maxPercent }) === 'watched'
+      } catch (err) {
+        console.warn('watch: recording at the threshold failed, retrying on close', err?.message)
+      }
+    }
+    const mpv = (args, extra = {}) => player.play(args, {
       extraArgs: mpvExtraArgs(),
       autoSkip: s.autoSkip,
       language: s.language,
       skips: skipsFor && info.episode != null ? (duration) => skipsFor(info.title, info.episode, duration) : null,
+      onProgress,
+      ...extra,
     })
-    if (!internalPlayer || s.playerMode !== 'internal') return mpv(info.mpvArgs)
+    const mpvResumed = () => {
+      const saved = info.episode != null ? positions?.get(info.title, info.episode) ?? null : null
+      return saved ? mpv([...info.mpvArgs, `--start=${Math.floor(saved.position)}`], { resumeAt: saved.position }) : mpv(info.mpvArgs)
+    }
     let r
-    try { r = await internalPlayer.play(info) } catch { return mpv(info.mpvArgs) } // e.g. a malformed referrer: still play, in mpv
-    if (r.reason !== 'external') return r
-    const ext = await mpv([...info.mpvArgs, `--start=${Math.floor(r.position ?? 0)}`])
-    return { exitCode: ext.exitCode, maxPercent: Math.max(r.maxPercent ?? 0, ext.maxPercent ?? 0) }
+    if (!internalPlayer || s.playerMode !== 'internal') r = await mpvResumed()
+    else {
+      try { r = await internalPlayer.play(info, { onProgress }) } catch { r = await mpvResumed() } // e.g. a malformed referrer: still play, in mpv
+      if (r.reason === 'external') {
+        const ext = await mpv([...info.mpvArgs, `--start=${Math.floor(r.position ?? 0)}`])
+        r = { exitCode: ext.exitCode, maxPercent: Math.max(r.maxPercent ?? 0, ext.maxPercent ?? 0), position: ext.position, duration: ext.duration }
+      }
+    }
+    if (r.reason !== 'retry') save(r)
+    return { ...r, recorded: state.recorded }
   }
 
   function answerMenu(requestId, line) {
@@ -80,7 +108,9 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
         notify(EVENTS.playing, { title: info.title, episode: info.episode })
         entry.playing = true
         current = { entry, info }
-        const r = await runPlayer(info)
+        celebrations.hold()
+        let r
+        try { r = await runPlayer(info, () => entry.cancelled) } finally { celebrations.release() }
         entry.playing = false
         if (current?.entry === entry) current = null
         // A recovery is never "watching": no tracking, no XP, the saved position stays.
@@ -90,7 +120,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
         }
         retryBudget.delete(budgetKey(info))
         // A cancelled session must not mark the episode as watched.
-        if (!entry.cancelled) afterPlayback({ title: info.title, episode: info.episode, maxPercent: r.maxPercent })
+        if (!entry.cancelled && !r.recorded) afterPlayback({ title: info.title, episode: info.episode, maxPercent: r.maxPercent })
         return r.exitCode
       },
     })
@@ -166,8 +196,10 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
 
   async function playLocal({ file, title, episode, mode = 'sub' }) {
     const mpvArgs = [`--force-media-title=${title} Episode ${episode}`, file]
-    const r = await runPlayer({ mpvArgs, file, title, episode: String(episode), url: file, referrer: null, subUrl: null, mode })
-    return afterPlayback({ title, episode: String(episode), maxPercent: r.maxPercent })
+    celebrations.hold()
+    let r
+    try { r = await runPlayer({ mpvArgs, file, title, episode: String(episode), url: file, referrer: null, subUrl: null, mode }) } finally { celebrations.release() }
+    return r.recorded ? 'watched' : afterPlayback({ title, episode: String(episode), maxPercent: r.maxPercent })
   }
 
   return { watch, answerMenu, cancel, playLocal, afterPlayback, recover, retryAgain }

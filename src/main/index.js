@@ -23,6 +23,7 @@ import { createAniSkip } from './aniskip.js'
 import { createSkipLookup, createTotalEpisodes } from './skipLookup.js'
 import { createWatchLog } from './watchLog.js'
 import { createProgress } from './progress.js'
+import { createCelebrations } from './celebrations.js'
 import { createTracker } from './tracker.js'
 import { computeStats } from '../shared/stats.js'
 import { createHealthCheck } from './healthCheck.js'
@@ -97,7 +98,8 @@ async function main() {
     const now = new Date()
     return computeStats({ entries, log: watchLog.list(), infoById, now: now.toISOString(), tzOffsetAt: (iso) => new Date(iso).getTimezoneOffset() })
   }
-  const progress = createProgress({ file: paths.profile, computeSnapshot, notify: send })
+  const celebrations = createCelebrations(send)
+  const progress = createProgress({ file: paths.profile, computeSnapshot, notify: celebrations.notify })
   progress.init()
   const tracker = createTracker({ library, watchLog, progress })
   const toolManager = createToolManager({
@@ -129,7 +131,7 @@ async function main() {
       return dir ? [`--config-dir=${dir}`] : []
     } catch { return [] }
   }
-  const watch = createWatchService({ mpvExtraArgs, skipsFor: skipLookup, aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs })
+  const watch = createWatchService({ mpvExtraArgs, skipsFor: skipLookup, aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs, celebrations })
   const downloads = createDownloads({ file: paths.downloads, aniCli, onChange: () => send(EVENTS.downloads, downloads.queueItems()), resolvePrefs: (title) => seriesPrefs.resolve(title, settings.get()) })
   const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
 
