@@ -18,7 +18,7 @@ export function createInternalPlayer({ streams, notify, positions, getTotalEpiso
     })
   }
 
-  function play(info) {
+  function play(info, { onProgress = null } = {}) {
     if (active) stop()
     const local = Boolean(info.file)
     const reg = local ? streams.registerFile(info.file) : streams.register({ url: info.url, referrer: info.referrer, subUrl: info.subUrl })
@@ -29,7 +29,7 @@ export function createInternalPlayer({ streams, notify, positions, getTotalEpiso
     // same key as positions (the player title), so reading and saving the offset always meet
     const subOffset = seriesPrefs?.get(info.title)?.subOffset?.[mode] ?? 0
     return new Promise((resolve) => {
-      active = { playbackId: reg.id, resolve, title: info.title, episode: info.episode, maxPercent: 0, position: 0, duration: 0 }
+      active = { playbackId: reg.id, resolve, title: info.title, episode: info.episode, maxPercent: 0, position: 0, duration: 0, onProgress }
       notify(EVENTS.playerOpen, {
         playbackId: reg.id, title: info.title, episode: info.episode, kind: local ? 'file' : 'hls',
         src: local ? reg.fileUrl : reg.playlistUrl, subtitleUrl: reg.subtitleUrl ?? null,
@@ -44,8 +44,8 @@ export function createInternalPlayer({ streams, notify, positions, getTotalEpiso
     active.position = p.position ?? active.position
     active.duration = p.duration ?? active.duration
     active.maxPercent = Math.max(active.maxPercent, p.maxPercent ?? 0)
-    // Below 10 s (e.g. backing out of the resume prompt reports 0) must not overwrite a good resume point.
-    if (active.episode != null && Number.isFinite(p.position) && p.position >= 10) positions.save(active.title, active.episode, { position: p.position, duration: p.duration })
+    // watchService decides what to keep (positions, the watched threshold) for both players.
+    active.onProgress?.({ position: active.position, duration: active.duration, maxPercent: active.maxPercent })
   }
 
   function progress(p) { if (active && p?.playbackId === active.playbackId) remember(p) }
