@@ -45,7 +45,7 @@ describe('createPlayer', () => {
     expect(spawned.args[0]).toMatch(/^--input-ipc-server=\\\\\.\\pipe\\animedesk-mpv-/)
     expect(spawned.args.slice(1)).toEqual(['--force-media-title=A Episode 1', 'https://v'])
     expect(socket.written[0]).toBe('{"command":["observe_property",1,"percent-pos"]}\n')
-    expect(r).toEqual({ exitCode: 0, maxPercent: 88 })
+    expect(r).toEqual({ exitCode: 0, maxPercent: 88, position: 0, duration: 0 })
   })
   it('stop() closes a running mpv', async () => {
     const child = new EventEmitter()
@@ -108,6 +108,72 @@ describe('createPlayer', () => {
       expect(skips).not.toHaveBeenCalled()
       child.emit('exit', 0)
       await done
+    })
+  })
+  describe('progress and resume', () => {
+    function setupPlayer(clock) {
+      const child = new EventEmitter()
+      const socket = new EventEmitter()
+      socket.write = vi.fn()
+      socket.destroy = () => {}
+      const player = createPlayer({ getMpvPath: () => 'mpv.exe', spawnImpl: () => child, connect: () => { setTimeout(() => socket.emit('connect'), 1); return socket }, retryMs: 1, now: () => clock.t })
+      const connected = () => vi.waitFor(() => expect(socket.write).toHaveBeenCalled())
+      const prop = (name, data) => socket.emit('data', Buffer.from(`${JSON.stringify({ event: 'property-change', name, data })}\n`))
+      return { player, socket, child, connected, prop }
+    }
+    it('reports progress at most every 5 s and returns the last position', async () => {
+      const clock = { t: 0 }
+      const { player, child, connected, prop } = setupPlayer(clock)
+      const onProgress = vi.fn()
+      const done = player.play(['https://v'], { onProgress })
+      await connected()
+      prop('duration', 1400)
+      prop('percent-pos', 10)
+      prop('time-pos', 140)
+      expect(onProgress).toHaveBeenLastCalledWith({ position: 140, duration: 1400, maxPercent: 10 })
+      clock.t = 4999
+      prop('time-pos', 145)
+      expect(onProgress).toHaveBeenCalledTimes(1)
+      clock.t = 5000
+      prop('percent-pos', 11)
+      prop('time-pos', 150)
+      expect(onProgress).toHaveBeenCalledTimes(2)
+      expect(onProgress).toHaveBeenLastCalledWith({ position: 150, duration: 1400, maxPercent: 11 })
+      child.emit('exit', 0)
+      expect(await done).toEqual({ exitCode: 0, maxPercent: 11, position: 150, duration: 1400 })
+    })
+    it('shows the resume message in the app language after connecting', async () => {
+      const { player, socket, child, connected } = setupPlayer({ t: 0 })
+      const done = player.play(['https://v'], { resumeAt: 754.4, language: 'en' })
+      await connected()
+      expect(socket.write).toHaveBeenCalledWith('{"command":["show-text","Resumed from 12:34",3000]}\n')
+      child.emit('exit', 0)
+      await done
+    })
+    it('defaults the resume message to Serbian', async () => {
+      const { player, socket, child, connected } = setupPlayer({ t: 0 })
+      const done = player.play(['https://v'], { resumeAt: 65 })
+      await connected()
+      expect(socket.write).toHaveBeenCalledWith('{"command":["show-text","Nastavljeno od 1:05",3000]}\n')
+      child.emit('exit', 0)
+      await done
+    })
+    it('shows no resume message without a position', async () => {
+      const { player, socket, child, connected } = setupPlayer({ t: 0 })
+      const done = player.play(['https://v'], { resumeAt: null })
+      await connected()
+      expect(socket.write).not.toHaveBeenCalledWith(expect.stringContaining('show-text'))
+      child.emit('exit', 0)
+      await done
+    })
+    it('resolves with position 0 when mpv exits before the IPC pipe connects', async () => {
+      const child = new EventEmitter()
+      const player = createPlayer({ getMpvPath: () => 'mpv.exe', spawnImpl: () => child, connect: () => { const s = new EventEmitter(); s.write = () => {}; s.destroy = () => {}; return s }, retryMs: 50 })
+      const onProgress = vi.fn()
+      const done = player.play(['https://v'], { onProgress })
+      child.emit('exit', 2)
+      expect(await done).toEqual({ exitCode: 2, maxPercent: 0, position: 0, duration: 0 })
+      expect(onProgress).not.toHaveBeenCalled()
     })
   })
   it('rejects when mpv is missing', async () => {

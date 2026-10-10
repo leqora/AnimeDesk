@@ -27,7 +27,7 @@ Windows desktop aplikacija (Electron + React) koja je grafički interfejs za ori
 
 ```bash
 npm run dev        # pokretanje u razvoju
-npm test           # vitest (unit + integration), ~621 testova
+npm test           # vitest (unit + integration), ~651 testova
 npm run test:e2e   # build + Playwright smoke (izolovan userData preko ANIMEDESK_USER_DATA)
 npm run test:live  # pravi ani-cli self-test (internet)
 npm run dist       # instaler u dist/ (bez objave)
@@ -38,12 +38,12 @@ npm run release    # objava (vidi gore)
 
 - `src/main/` — Electron glavni proces:
   - `index.js` povezuje sve; `ipc.js` handleri; `paths.js` putanje podataka (`%APPDATA%\AnimeDesk`);
-  - ani-cli: `aniCliBridge.js`, `bridgeServer.js`, `watchService.js`, `playerMonitor.js`, `run.js`;
+  - ani-cli: `aniCliBridge.js`, `bridgeServer.js`, `watchService.js` (čuva pozicije ≥ 10 s i beleži „odgledano” na pragu za oba plejera), `celebrations.js` (drži level-up i „serija završena” dok traje reprodukcija), `playerMonitor.js` (mpv IPC: auto-skip, nastavak sa `--start` + „Nastavljeno od…”, javlja napredak na 5 s), `run.js`;
   - alati: `toolManager.js`, `toolSources.js`, `healthCheck.js` (semafor);
   - `seriesPrefs.js` — kvalitet i sub/dub po seriji (`series-prefs.json`), koristi se za gledanje i preuzimanje; `fullscreen.js` — pun ekran (F11, Esc, dugme u meniju; pamti se u `settings.fullscreen`);
   - podaci: `library.js` (watchlist), `settings.js`, `downloads.js`, `watchLog.js`, `progress.js`, `tracker.js`, `jsonStore.js`;
   - `anilist.js` — slike/opisi: red zahteva (jedan po jedan, 429/`Retry-After`), rezervne pretrage (`searchCandidates`), keš u `Cache\anilist` (+ „nije nađeno” 7 dana, sa `SEARCH_VERSION` — povećaj ga kad menjaš pretragu);
-  - plejer: `streamServer.js` (lokalni proxy na 127.0.0.1 sa tokenom, prepisuje HLS playliste, dodaje zaglavlja; `registerFile` za preuzete); `internalPlayer.js` (sesija ugrađenog plejera: open/closed/stop/progress, ista `afterPlayback` logika); `positions.js` (sačuvane pozicije za „Nastavi od…”); `aniskip.js` + `skipLookup.js` (AniSkip preko AniList MAL id, keš); `mpvConfig.js` (sopstveni config folder za spoljni mpv sa uosc temom); automatsko preskakanje u spoljnom mpv-u je u `playerMonitor.js` (mpv IPC: seek + show-text);
+  - plejer: `streamServer.js` (lokalni proxy na 127.0.0.1 sa tokenom, prepisuje HLS playliste, dodaje zaglavlja; `registerFile` za preuzete); `internalPlayer.js` (sesija ugrađenog plejera: open/closed/stop/progress; samo javlja napredak, `watchService` odlučuje); `positions.js` (sačuvane pozicije za „Nastavi od…”); `aniskip.js` (`normalizeSkips` odbacuje neispravne intervale) + `skipLookup.js` (AniSkip preko AniList MAL id, keš); `mpvConfig.js` (sopstveni config folder za spoljni mpv sa uosc temom); automatsko preskakanje u spoljnom mpv-u je u `playerMonitor.js` (mpv IPC: seek + show-text);
   - opcioni alati: `OPTIONAL_TOOL_IDS` u `shared/domain.js` (npr. `uosc`; nedostatak ne kvari semafor);
   - `updater.js` — omotač oko `electron-updater` (stanja: idle/checking/none/available/downloading/ready/error/disabled; instalacija samo na klik, `autoInstallOnAppQuit = false`); `whatsNew.js` — „Ažurirano na X” jednom po verziji.
 - `src/preload/index.js` — `window.animedesk.*` API; kanali u `src/shared/channels.js`.
