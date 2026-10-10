@@ -9,7 +9,7 @@ describe('styles.css', () => {
     const root = css.slice(0, rootEnd)
     for (const t of ['--bg', '--bg-elev', '--glass', '--glass-strong', '--glass-border', '--blur', '--text', '--text-muted',
       '--accent', '--accent-2', '--cta', '--ok', '--warn', '--bad', '--poster-tint', '--radius', '--radius-sm', '--glow', '--ease',
-      '--font-display', '--font-body', '--font-hud', '--sub-text', '--sub-text-alt', '--sub-box-rgb', '--sub-outline']) {
+      '--font-display', '--font-body', '--font-hud', '--sub-text', '--sub-text-alt', '--sub-box-rgb', '--sub-outline', '--panel-solid']) {
       expect(root, t).toContain(`${t}:`)
     }
   })
@@ -31,6 +31,11 @@ describe('styles.css', () => {
     expect(css).toMatch(/.player {[^}]*container-type: size/)
     expect(css).toMatch(/.subs-preview {[^}]*container-type: size/)
     expect(css).not.toContain('::cue')
+  })
+  it('keeps player panels over video opaque so bright frames do not wash out their text', () => {
+    for (const sel of ['.player__subs-menu', '.player__card', '.player__flash']) {
+      expect(new RegExp(`(^|\\n)\\${sel} \\{[^}]*background: var\\(--panel-solid\\)`).test(css), sel).toBe(true)
+    }
   })
   it('honours reduced motion', () => {
     expect(css).toContain('@media (prefers-reduced-motion: reduce)')

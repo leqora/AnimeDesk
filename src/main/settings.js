@@ -30,7 +30,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
 export const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 export const MODES = ['sub', 'dub']
 export const PLAYER_MODES = ['internal', 'external']
-const LEGACY_SUBTITLE_SIZE = { S: 20, M: 40, L: 65 }
+const LEGACY_SUBTITLE_SIZE = { S: 20, M: DEFAULT_SUBTITLES.size, L: 65 }
 const pct = (v, fallback) => (Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : fallback)
 
 // Each field on its own: one bad value must not reset the rest. An old S/M/L size seeds `size` once.

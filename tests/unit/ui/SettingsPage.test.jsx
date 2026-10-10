@@ -115,9 +115,9 @@ describe('SettingsPage', () => {
       act(() => vi.advanceTimersByTime(250))
       expect(onSettings).toHaveBeenCalledTimes(1)
       expect(onSettings).toHaveBeenLastCalledWith({ subtitles: { size: 90 } })
-      fireEvent.change(screen.getByLabelText('Razmak između redova'), { target: { value: '0' } })
+      fireEvent.change(screen.getByLabelText('Razmak između redova'), { target: { value: '50' } })
       act(() => vi.advanceTimersByTime(250))
-      expect(onSettings).toHaveBeenLastCalledWith({ subtitles: { lineSpacing: 0 } })
+      expect(onSettings).toHaveBeenLastCalledWith({ subtitles: { lineSpacing: 50 } })
       fireEvent.click(screen.getByRole('button', { name: 'Vrati podrazumevano' }))
       expect(onSettings).toHaveBeenLastCalledWith({ subtitles: DEFAULT_SETTINGS.subtitles })
     } finally { vi.useRealTimers() }

@@ -20,7 +20,7 @@ describe('SubtitleOverlay', () => {
   it('applies the style variables, the box switch and the raised state', () => {
     const { container, rerender } = render(<SubtitleOverlay subtitles={{ ...DEFAULT_SUBTITLES, box: false }} cues={[]} raised />)
     const root = container.querySelector('.subs')
-    expect(root.style.getPropertyValue('--sub-size')).toBe('4.70cqh')
+    expect(root.style.getPropertyValue('--sub-size')).toBe('3.88cqh')
     expect(root).toHaveClass('subs--no-box')
     expect(root).toHaveClass('subs--raised')
     rerender(<SubtitleOverlay subtitles={DEFAULT_SUBTITLES} cues={[]} />)
