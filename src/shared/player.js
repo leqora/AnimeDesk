@@ -35,3 +35,21 @@ export function qualityLabel(height) {
 }
 
 export const qualityName = (q) => (/^\d+$/.test(String(q)) ? `${q}p` : String(q))
+
+export const RATES = [0.5, 0.75, 1, 1.25, 1.5, 2]
+
+// Next/previous rate in RATES, clamped at the ends; a rate off the list goes to the nearest one in that direction.
+export function stepRate(rate, dir) {
+  if (dir > 0) return RATES.find((r) => r > rate + 1e-9) ?? RATES[RATES.length - 1]
+  return [...RATES].reverse().find((r) => r < rate - 1e-9) ?? RATES[0]
+}
+
+export const formatRate = (rate, lang) => (lang === 'sr' ? String(rate).replace('.', ',') : String(rate))
+
+export function bufferedRanges(tr) {
+  const out = []
+  for (let i = 0; i < (tr?.length ?? 0); i++) out.push({ start: tr.start(i), end: tr.end(i) })
+  return out
+}
+
+export const sameRanges = (a, b) => a.length === b.length && a.every((r, i) => r.start === b[i].start && r.end === b[i].end)
