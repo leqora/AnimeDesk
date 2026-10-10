@@ -1,6 +1,6 @@
 # Seanime analiza → unapređenje AnimeDesk-a — stanje rada (predaja smene)
 
-Poslednje ažuriranje: 2026-10-10 (v0.6.3 objavljen, korak 5; kraj sesije 2).
+Poslednje ažuriranje: 2026-10-10 (v0.6.3 objavljen, korak 5; korak 6 urađen u v0.6.4 — čeka objavu).
 
 - Spec korisnika: `C:\Users\Nikola\Desktop\Claude\Anime\Aplikacija za gledanje Anime-a\Seanime\zadatak.txt`
 - Seanime klon (referenca, GPL-3.0 — samo inspiracija, ne kopirati kod): `C:\Users\Nikola\Desktop\Projekti\_ref\seanime` (commit 2da73d9; ne commitovati).
@@ -18,7 +18,8 @@ Poslednje ažuriranje: 2026-10-10 (v0.6.3 objavljen, korak 5; kraj sesije 2).
 - [x] **P0-B korak 4 objavljen kao v0.6.1** (2026-10-10, Latest, spojeno u `main`) (titlovi: SRT→VTT, pomak `G`/`H` po seriji i režimu, sopstveni overlay, podešavanja sa pregledom, meni titlova; 621/621 testova, provereno u pravoj aplikaciji; vidi `docs/STATUS.md`).
 - [x] **v0.6.2** (2026-10-10, Latest): mini ispravke titlova (veličina 25, razmak bez preklapanja, neprovidni paneli).
 - [x] **P0-B korak 5 = v0.6.3** (nastavak u mpv-u, „odgledano” na pragu uz odloženo slavlje, normalizacija AniSkip intervala; objavljeno 2026-10-10 kao Latest, spojeno u `main`; 653 testa).
-- [ ] **SLEDEĆE: P0-B koraci 6–7** (lazy `PlayerView` + brzina + razbijanje na hook-ove, prefetch sledeće epizode) — ide kroz superpowers tok kao v0.6, nova grana.
+- [x] **P0-B korak 6 = v0.6.4** (lazy `PlayerView` + hls.js, hook-ovi u `src/renderer/player/`, brzina reprodukcije + meni, buffered traka + tooltip; 699 testova; na grani `feat/v0.6.4-player`, **čeka objavu**).
+- [ ] **SLEDEĆE: P0-B korak 7** (prefetch linka sledeće epizode — poseban spec) — superpowers tok, nova grana.
 
 ## Odluke korisnika (važe za dalje)
 1. Serija je „Završeno” tek kad su **sve** epizode odgledane (urađeno u 0.5.1).
@@ -27,13 +28,13 @@ Poslednje ažuriranje: 2026-10-10 (v0.6.3 objavljen, korak 5; kraj sesije 2).
 
 ## Preostalo po roadmap-u (detalji u `04-plan.md` §3)
 
-### P0-B — plejer — koraci 1–3 urađeni u v0.6, korak 4 u v0.6.1, ostaju 6–7 (redosled iz `03-oblast-player.md`)
+### P0-B — plejer — koraci 1–3 urađeni u v0.6, korak 4 u v0.6.1, korak 6 u v0.6.4 (čeka objavu), ostaje 7 (redosled iz `03-oblast-player.md`)
 1. Spinner učitavanja/baferovanja (`waiting`/`playing`/`canplay`), pamćenje jačine/mute, dvoklik = pun ekran.
 2. Transparentan kvalitet: bedž stvarne rezolucije (`videoHeight`, mpv `height`), upozorenje kad ani-cli spusti kvalitet na `best` (stderr `ani-cli:239`, `watchService` mora da prosledi `onLine`), nova greška `no-sources` + „Pokušaj ponovo”.
 3. Detekcija zastoja + „Pokušaj ponovo” = nova ani-cli sesija, nastavak od pozicije, max 1 automatski po epizodi; hls.js `recoverMediaError`/`swapAudioCodec`; retry + timeout segmenta u `streamServer.js`.
 4. (URAĐENO u v0.6.1) Titlovi: SRT→VTT (strim i lokalni `.srt`, detekcija po sadržaju), offset titlova + prečice, stil preko `::cue` tokena.
 5. (URAĐENO u v0.6.3) Nastavak sa pozicije u spoljnom mpv-u (`time-pos` već pratimo → `positions.js`, `--start=`); „odgledano” na pragu tokom gledanja (bez duplog XP-a); normalizacija AniSkip intervala.
-6. Lazy `PlayerView` (`React.lazy`, hls.js ≈62 % bundle-a), brzina reprodukcije + meni, tooltip vremena + buffered traka; razbiti `PlayerView` na hook-ove pre većih dodataka.
+6. (URAĐENO u v0.6.4, čeka objavu) Lazy `PlayerView` (`React.lazy`, hls.js ≈62 % bundle-a), brzina reprodukcije + meni, tooltip vremena + buffered traka; razbiti `PlayerView` na hook-ove pre većih dodataka.
 7. ★ Prefetch linka sledeće epizode (poseban spec; `debug` sesija od ~80 %, TTL).
 
 ### P1 — v0.7 (kartice i epizode)
