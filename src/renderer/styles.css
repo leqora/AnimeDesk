@@ -228,13 +228,20 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .player--idle .player__top, .player--idle .player__bar { opacity: 0; }
 .player--idle { cursor: none; }
 .player__title { margin: 0; font-size: 18px; }
-.player__timeline { position: relative; }
-.player__timeline input[type="range"] { width: 100%; position: relative; }
+/* Timeline layers, bottom to top: track, buffered, played, segments, then the slider (transparent track, thumb only). */
+.player__timeline { position: relative; height: 18px; }
+.player__track, .player__buffered, .player__played { position: absolute; top: 50%; height: 4px; transform: translateY(-50%); border-radius: 2px; pointer-events: none; }
+.player__track { left: 0; right: 0; background: color-mix(in srgb, var(--text) 14%, transparent); }
+.player__buffered { background: color-mix(in srgb, var(--text) 36%, transparent); }
+.player__played { left: 0; background: color-mix(in srgb, var(--text) 92%, transparent); }
+.player__seek { -webkit-appearance: none; appearance: none; position: relative; display: block; width: 100%; height: 18px; margin: 0; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; cursor: pointer; }
+.player__seek::-webkit-slider-runnable-track { height: 4px; background: transparent; border: 0; }
+.player__seek::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%; background: var(--text); border: 2px solid var(--accent); box-shadow: var(--glow); transition: transform 150ms var(--ease); }
+.player__seek:hover::-webkit-slider-thumb, .player__seek:focus-visible::-webkit-slider-thumb { transform: scale(1.2); }
 .player__segment { position: absolute; top: 50%; height: 6px; transform: translateY(-50%); border-radius: 3px; pointer-events: none; }
 .player__segment--op { background: color-mix(in srgb, var(--accent-2) 70%, transparent); }
 .player__segment--ed { background: color-mix(in srgb, var(--accent) 70%, transparent); }
 .player__segment--recap { background: color-mix(in srgb, var(--warn) 70%, transparent); }
-.player__buffered { position: absolute; top: 50%; height: 4px; transform: translateY(-50%); border-radius: 2px; background: color-mix(in srgb, var(--text) 28%, transparent); pointer-events: none; }
 .player__tooltip { position: absolute; bottom: calc(100% + 6px); transform: translateX(-50%); padding: 3px 8px; border-radius: var(--radius-sm); background: var(--panel-solid); border: 1px solid var(--glass-border); font-size: 12px; white-space: nowrap; pointer-events: none; }
 .player__buttons { display: flex; gap: 8px; align-items: center; }
 .player__spacer { flex: 1; }

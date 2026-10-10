@@ -5,6 +5,7 @@ import { formatTime, segmentAt } from '../../shared/player.js'
 const pct = (x, duration) => `${(x / duration) * 100}%`
 
 // Seek slider with the AniSkip segments, what is already buffered, and the time under the mouse.
+// The slider draws only its thumb; the track, buffered ranges, watched part and segments are layers under it.
 export function PlayerTimeline({ time, duration, buffered = [], segments = [], onSeek }) {
   const t = useT()
   const input = useRef(null)
@@ -18,15 +19,18 @@ export function PlayerTimeline({ time, duration, buffered = [], segments = [], o
     setHover({ frac, time: frac * duration })
   }
   const kind = hover && segmentAt(hover.time, Object.fromEntries(segments.map((s) => [s.kind, s])))
+  const value = Math.min(time, known ? duration : 0)
   return (
     <div className="player__timeline" onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+      <span className="player__track" aria-hidden="true" />
       {known && buffered.map((r) => (
         <span key={`${r.start}-${r.end}`} className="player__buffered" style={{ left: pct(r.start, duration), width: pct(r.end - r.start, duration) }} />
       ))}
+      {known && <span className="player__played" style={{ width: pct(Math.max(0, value), duration) }} />}
       {known && segments.map((s) => (
         <span key={s.kind} className={`player__segment player__segment--${s.kind}`} style={{ left: pct(s.start, duration), width: pct(s.end - s.start, duration) }} />
       ))}
-      <input ref={input} type="range" min="0" max={known ? duration : 0} step="0.1" value={Math.min(time, known ? duration : 0)} aria-label={t('player.seek')} onChange={(e) => onSeek(Number(e.target.value))} />
+      <input ref={input} className="player__seek" type="range" min="0" max={known ? duration : 0} step="0.1" value={value} aria-label={t('player.seek')} onChange={(e) => onSeek(Number(e.target.value))} />
       {known && hover && (
         <span className="player__tooltip hud" role="tooltip" style={{ left: `clamp(24px, ${hover.frac * 100}%, calc(100% - 24px))` }}>
           {formatTime(hover.time)}{kind ? ` · ${names[kind]}` : ''}

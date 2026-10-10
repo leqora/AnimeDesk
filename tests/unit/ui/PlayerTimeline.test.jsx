@@ -21,6 +21,13 @@ describe('PlayerTimeline', () => {
     expect(spans[1].style.left).toBe('50%')
     expect(spans[1].style.width).toBe('25%')
   })
+  it('draws the watched part at time / duration, under the buffered and segment layers', () => {
+    draw({ time: 350, buffered: [{ start: 0, end: 700 }], segments: [{ kind: 'op', start: 60, end: 150 }] })
+    const played = document.querySelector('.player__played')
+    expect(played.style.width).toBe('25%')
+    const layers = [...document.querySelector('.player__timeline').children].map((el) => el.className.split(' ')[0])
+    expect(layers.slice(0, 5)).toEqual(['player__track', 'player__buffered', 'player__played', 'player__segment', 'player__seek'])
+  })
   it('shows the time under the mouse, with the segment name over a segment', () => {
     const { timeline } = draw({ segments: [{ kind: 'op', start: 60, end: 150 }] })
     fireEvent.mouseMove(timeline, { clientX: 100 + 500 })
@@ -41,6 +48,7 @@ describe('PlayerTimeline', () => {
     const { timeline } = draw({ duration, buffered: [{ start: 0, end: 10 }] })
     fireEvent.mouseMove(timeline, { clientX: 600 })
     expect(document.querySelectorAll('.player__buffered')).toHaveLength(0)
+    expect(document.querySelector('.player__played')).toBeNull()
     expect(screen.queryByRole('tooltip')).toBeNull()
     expect(document.body.innerHTML).not.toContain('NaN')
   })
