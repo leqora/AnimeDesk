@@ -238,7 +238,7 @@
   "player.unmute": "Uključi zvuk",
   "player.subs": "Titlovi",
   "player.subsSize": "Veličina titlova",
-  "player.subsMenu": "Podešavanja titla",
+  "player.menu": "Podešavanja plejera",
   "player.subOffsetLabel": "Pomak titla",
   "player.subOffsetMinus": "Titl ranije",
   "player.subOffsetPlus": "Titl kasnije",

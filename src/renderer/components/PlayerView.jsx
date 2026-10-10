@@ -40,7 +40,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const [time, setTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const [subsMenu, setSubsMenu] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [failed, setFailed] = useState(null) // null | 'retryable' | 'final'
   const [skips, setSkips] = useState(null)
   const [resume, setResume] = useState(open.autoResume ? null : open.resumeAt)
@@ -51,7 +51,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const flash = useFlash()
   const volume = usePlayerVolume({ video, settings, onSettings })
   const subs = usePlayerSubtitles({ video, trackEl, open, mode, settings, onSettings, probeSub, flash: flash.show })
-  const { idle, poke, show: showControls } = useIdle({ video, hold: subsMenu })
+  const { idle, poke, show: showControls } = useIdle({ video, hold: menuOpen })
   const ending = useEpisodeEnd({ autoNext: settings.autoNext, lastEpisode, onNext: () => close('next') })
   const { end } = ending
   const health = usePlayerHealth({ video, active: resume == null && !end && !failed, onStall: () => fail() })
@@ -200,9 +200,12 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       <PlayerControls
         segments={['op', 'ed', 'recap'].filter((k) => skips?.[k]).map((k) => ({ kind: k, ...skips[k] }))}
         time={time} duration={duration} quality={quality} playing={playing} muted={volume.muted} volume={volume.volume} subsOn={subs.on}
-        subsAvailable={subs.available} subsHint={subs.hint} subOffsetLabel={subs.offsetLabel} subSize={settings.subtitles.size}
-        subsMenuOpen={subsMenu} onSubsMenu={setSubsMenu} onSubOffset={subs.shift} onSubOffsetReset={subs.reset}
-        onSubSize={(n) => onSettings({ subtitles: { size: n } })}
+        subsAvailable={subs.available} subsHint={subs.hint}
+        menu={{
+          open: menuOpen, onOpen: setMenuOpen,
+          subs: { on: subs.on, available: subs.available, hint: subs.hint, offsetLabel: subs.offsetLabel, size: settings.subtitles.size },
+          onToggleSubs: subs.toggle, onSubOffset: subs.shift, onSubOffsetReset: subs.reset, onSubSize: (n) => onSettings({ subtitles: { size: n } }),
+        }}
         fullscreen={fullscreen} canPrev={Number(open.episode) > 1} canNext={!lastEpisode}
         onTogglePlay={togglePlay} onSeek={(s) => { video.current.currentTime = s }} onStep={step}
         onPrev={() => close('prev')} onNext={() => close('next')}

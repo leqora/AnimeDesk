@@ -238,7 +238,7 @@
   "player.unmute": "Unmute",
   "player.subs": "Subtitles",
   "player.subsSize": "Subtitle size",
-  "player.subsMenu": "Subtitle settings",
+  "player.menu": "Player settings",
   "player.subOffsetLabel": "Subtitle delay",
   "player.subOffsetMinus": "Subtitles earlier",
   "player.subOffsetPlus": "Subtitles later",

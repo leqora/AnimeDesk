@@ -241,7 +241,7 @@ describe('usePlayerShortcuts', () => {
     const input = document.body.appendChild(document.createElement('input'))
     key({ key: 'f', code: 'KeyF' }, input)
     const menu = document.body.appendChild(document.createElement('div'))
-    menu.className = 'player__subs-menu'
+    menu.className = 'player__menu'
     const slider = menu.appendChild(document.createElement('input'))
     slider.type = 'range'
     key({ key: 'ArrowRight', code: 'ArrowRight' }, slider)

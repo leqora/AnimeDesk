@@ -5,7 +5,7 @@ import { useLatest } from './useLatest.js'
 const KEY_BY_CODE = { KeyF: 'f', KeyM: 'm', KeyS: 's', KeyG: 'g', KeyH: 'h', KeyN: 'n', Space: ' ', BracketLeft: '[', BracketRight: ']', Backslash: '\\' }
 const TEXT_FIELD = 'input:not([type=range]):not([type=checkbox]), textarea, [contenteditable="true"]'
 // The menu's size slider owns its keys (arrows move the slider, they must not seek); other menu controls keep the shortcuts.
-export const MENU_SLIDER = '.player__subs-menu input[type="range"]'
+export const MENU_SLIDER = '.player__menu input[type="range"]'
 export const QUIET = 'quiet'
 export const shortcutKey = (e) => KEY_BY_CODE[e.code] ?? (e.key.length === 1 ? e.key.toLowerCase() : e.key)
 
