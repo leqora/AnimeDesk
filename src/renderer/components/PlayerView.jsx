@@ -14,6 +14,7 @@ import { useFlash } from '../player/useFlash.js'
 import { useIdle } from '../player/useIdle.js'
 import { usePlayerVolume } from '../player/usePlayerVolume.js'
 import { usePlayerSubtitles } from '../player/usePlayerSubtitles.js'
+import { usePlaybackRate } from '../player/usePlaybackRate.js'
 import { useHlsSource } from '../player/useHlsSource.js'
 import { useEpisodeEnd } from '../player/useEpisodeEnd.js'
 import { usePlayerShortcuts, QUIET } from '../player/usePlayerShortcuts.js'
@@ -51,6 +52,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const flash = useFlash()
   const volume = usePlayerVolume({ video, settings, onSettings })
   const subs = usePlayerSubtitles({ video, trackEl, open, mode, settings, onSettings, probeSub, flash: flash.show })
+  const rate = usePlaybackRate({ video, flash: flash.show, language: settings.language })
   const { idle, poke, show: showControls } = useIdle({ video, hold: menuOpen })
   const ending = useEpisodeEnd({ autoNext: settings.autoNext, lastEpisode, onNext: () => close('next') })
   const { end } = ending
@@ -122,6 +124,9 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     s: subs.toggle,
     g: (e) => subs.shift(e.shiftKey ? -1 : -0.1),
     h: (e) => subs.shift(e.shiftKey ? 1 : 0.1),
+    '[': () => rate.step(-1),
+    ']': () => rate.step(1),
+    '\\': rate.reset,
     n: () => { if (!lastEpisode) close('next'); return QUIET },
   }, { onHandled: poke })
 
@@ -135,6 +140,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     const v = video.current
     setDuration(v.duration)
     readQuality()
+    rate.reapply()
     if (open.autoResume && open.resumeAt > 0) v.currentTime = open.resumeAt
     if (open.episode != null) {
       const request = Promise.resolve().then(() => api.skip.get(open.title, open.episode, v.duration))
@@ -203,6 +209,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
         subsAvailable={subs.available} subsHint={subs.hint}
         menu={{
           open: menuOpen, onOpen: setMenuOpen,
+          rate: rate.rate, language: settings.language, onRate: rate.setRate,
           subs: { on: subs.on, available: subs.available, hint: subs.hint, offsetLabel: subs.offsetLabel, size: settings.subtitles.size },
           onToggleSubs: subs.toggle, onSubOffset: subs.shift, onSubOffsetReset: subs.reset, onSubSize: (n) => onSettings({ subtitles: { size: n } }),
         }}

@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Icon } from './Icon.jsx'
+import { RATES, formatRate } from '../../shared/player.js'
 
 // The gear menu: always available; sections that do not apply to this episode are disabled with the reason.
-export function PlayerMenu({ open, onOpen, subs, onToggleSubs, onSubOffset, onSubOffsetReset, onSubSize }) {
+export function PlayerMenu({ rate, language, onRate, open, onOpen, subs, onToggleSubs, onSubOffset, onSubOffsetReset, onSubSize }) {
   const t = useT()
   const menuRef = useRef(null)
   const button = useRef(null)
@@ -21,6 +22,14 @@ export function PlayerMenu({ open, onOpen, subs, onToggleSubs, onSubOffset, onSu
       <button ref={button} type="button" aria-label={t('player.menu')} aria-haspopup="dialog" aria-expanded={open} onClick={() => onOpen(!open)}><Icon name="settings" /></button>
       {open && (
         <div ref={menuRef} className="player__menu" role="dialog" aria-label={t('player.menu')}>
+          <section className="player__menu-section">
+            <h3 className="player__menu-title">{t('player.speed')}</h3>
+            <div className="player__rates" role="group" aria-label={t('player.speed')}>
+              {RATES.map((r) => (
+                <button key={r} type="button" aria-pressed={r === rate} onClick={() => onRate(r)}>{formatRate(r, language)}×</button>
+              ))}
+            </div>
+          </section>
           <section className="player__menu-section">
             <h3 className="player__menu-title">{t('player.subs')}</h3>
             <label className="check"><input type="checkbox" aria-label={t('player.subs')} checked={subs.on} disabled={off} onChange={onToggleSubs} /> {t('player.subs')}</label>

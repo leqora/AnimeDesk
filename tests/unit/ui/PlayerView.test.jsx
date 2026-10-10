@@ -15,7 +15,7 @@ beforeEach(() => {
 })
 // jsdom does not implement media playback state; give the element plain writable properties.
 const fakeMediaState = (video) => {
-  const state = { currentTime: 0, paused: true, volume: 1, muted: false }
+  const state = { currentTime: 0, paused: true, volume: 1, muted: false, playbackRate: 1 }
   for (const key of Object.keys(state)) {
     Object.defineProperty(video, key, { configurable: true, get: () => state[key], set: (v) => { state[key] = v } })
   }
@@ -682,5 +682,36 @@ describe('PlayerView subtitles', () => {
     box.focus()
     fireEvent.keyDown(box, { key: 'f', code: 'KeyF' })
     expect(api.window.setFullscreen).toHaveBeenCalledWith(true)
+  })
+  it('changes the speed from the gear menu', () => {
+    const { video } = view()
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja plejera' }))
+    const menu = screen.getByRole('dialog', { name: 'Podešavanja plejera' })
+    expect(within(menu).getByRole('button', { name: '1×' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(within(menu).getByRole('button', { name: '1,5×' }))
+    expect(video.playbackRate).toBe(1.5)
+    expect(within(menu).getByRole('button', { name: '1,5×' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Brzina: 1,5×')).toBeInTheDocument()
+  })
+  it('changes the speed with [ ] \\ by physical key and the open menu follows', () => {
+    const { video } = view()
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja plejera' }))
+    fireEvent.keyDown(window, { key: 'đ', code: 'BracketRight' })
+    expect(video.playbackRate).toBe(1.25)
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: '1,25×' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.keyDown(window, { key: 'š', code: 'BracketLeft' })
+    fireEvent.keyDown(window, { key: 'š', code: 'BracketLeft' })
+    expect(video.playbackRate).toBe(0.75)
+    fireEvent.keyDown(window, { key: 'ž', code: 'Backslash' })
+    expect(video.playbackRate).toBe(1)
+    expect(screen.getByText('Brzina: 1×')).toBeInTheDocument()
+  })
+  it('keeps the chosen speed when the stream reloads its metadata', () => {
+    const { video, meta } = view()
+    meta()
+    fireEvent.keyDown(window, { key: ']', code: 'BracketRight' })
+    video.playbackRate = 1
+    meta()
+    expect(video.playbackRate).toBe(1.25)
   })
 })

@@ -8,6 +8,7 @@ import { usePlayerVolume } from '../../../src/renderer/player/usePlayerVolume.js
 import { usePlayerSubtitles } from '../../../src/renderer/player/usePlayerSubtitles.js'
 import { useEpisodeEnd } from '../../../src/renderer/player/useEpisodeEnd.js'
 import { usePlayerShortcuts, QUIET } from '../../../src/renderer/player/usePlayerShortcuts.js'
+import { usePlaybackRate } from '../../../src/renderer/player/usePlaybackRate.js'
 import { renderHookUi } from './helpers.jsx'
 import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
 
@@ -263,5 +264,50 @@ describe('usePlayerShortcuts', () => {
     key({ key: 'm', code: 'KeyM' })
     expect(first).not.toHaveBeenCalled()
     expect(second).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('usePlaybackRate', () => {
+  const setup = () => {
+    const video = { current: { playbackRate: 1 } }
+    const flash = vi.fn()
+    const hook = renderHookUi(() => usePlaybackRate({ video, flash, language: 'sr' }))
+    return { video, flash, ...hook }
+  }
+  it('starts at 1× and steps through the list with a flash', () => {
+    const { video, flash, result } = setup()
+    expect(result.current.rate).toBe(1)
+    act(() => result.current.step(1))
+    expect(result.current.rate).toBe(1.25)
+    expect(video.current.playbackRate).toBe(1.25)
+    expect(flash).toHaveBeenLastCalledWith('Brzina: 1,25×')
+    act(() => result.current.reset())
+    expect(video.current.playbackRate).toBe(1)
+    expect(flash).toHaveBeenLastCalledWith('Brzina: 1×')
+  })
+  it('stays at the ends when a key is held (repeat) and still flashes', () => {
+    const { video, flash, result } = setup()
+    for (let i = 0; i < 8; i++) act(() => result.current.step(1))
+    expect(result.current.rate).toBe(2)
+    expect(video.current.playbackRate).toBe(2)
+    expect(flash).toHaveBeenLastCalledWith('Brzina: 2×')
+    for (let i = 0; i < 8; i++) act(() => result.current.step(-1))
+    expect(result.current.rate).toBe(0.5)
+  })
+  it('re-applies the chosen rate after the source reloads', () => {
+    const { video, result } = setup()
+    act(() => result.current.setRate(1.5))
+    video.current.playbackRate = 1 // browsers reset to defaultPlaybackRate on a new source
+    act(() => result.current.reapply())
+    expect(video.current.playbackRate).toBe(1.5)
+  })
+  it('keeps the old rate when the element refuses the value', () => {
+    const video = { current: {} }
+    Object.defineProperty(video.current, 'playbackRate', { get: () => 1, set: () => { throw new Error('NotSupportedError') } })
+    const flash = vi.fn()
+    const { result } = renderHookUi(() => usePlaybackRate({ video, flash, language: 'sr' }))
+    act(() => result.current.setRate(2))
+    expect(result.current.rate).toBe(1)
+    expect(flash).not.toHaveBeenCalled()
   })
 })

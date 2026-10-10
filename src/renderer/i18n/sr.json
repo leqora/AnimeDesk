@@ -239,6 +239,8 @@
   "player.subs": "Titlovi",
   "player.subsSize": "Veličina titlova",
   "player.menu": "Podešavanja plejera",
+  "player.speed": "Brzina",
+  "player.speedFlash": "Brzina: {value}×",
   "player.subOffsetLabel": "Pomak titla",
   "player.subOffsetMinus": "Titl ranije",
   "player.subOffsetPlus": "Titl kasnije",

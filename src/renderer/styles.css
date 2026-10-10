@@ -262,3 +262,6 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .player__menu-section + .player__menu-section { padding-top: 10px; border-top: 1px solid var(--glass-border); }
 .player__menu-title { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
 .player__menu-hint { margin: 0; font-size: 12px; color: var(--text-muted); }
+.player__rates { display: flex; flex-wrap: wrap; gap: 6px; }
+.player__rates button { min-width: 48px; padding: 4px 8px; }
+.player__rates button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }

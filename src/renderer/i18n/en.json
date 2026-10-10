@@ -239,6 +239,8 @@
   "player.subs": "Subtitles",
   "player.subsSize": "Subtitle size",
   "player.menu": "Player settings",
+  "player.speed": "Speed",
+  "player.speedFlash": "Speed: {value}×",
   "player.subOffsetLabel": "Subtitle delay",
   "player.subOffsetMinus": "Subtitles earlier",
   "player.subOffsetPlus": "Subtitles later",
