@@ -8,12 +8,13 @@ import { SkipButton } from './SkipButton.jsx'
 import { NextEpisodeCard } from './NextEpisodeCard.jsx'
 import { ResumePrompt } from './ResumePrompt.jsx'
 import { usePlayerHealth } from '../player/usePlayerHealth.js'
+import { useFlash } from '../player/useFlash.js'
+import { useIdle } from '../player/useIdle.js'
 import { SubtitleOverlay } from './SubtitleOverlay.jsx'
 import { useSubtitleCues } from '../player/useSubtitleCues.js'
 import { clampOffset, formatOffset } from '../../shared/subtitles.js'
 import { trackMax, segmentAt, isLastEpisode, qualityLabel, qualityName } from '../../shared/player.js'
 
-const HIDE_MS = 3000
 const PROGRESS_MS = 5000
 const VOLUME_SAVE_MS = 500
 const QUALITY_FLASH_MS = 4000
@@ -59,32 +60,25 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const subsAvailable = Boolean(open.subtitleUrl) && subs.status !== 'error' && !subsUnsupported
   const subsHint = !open.subtitleUrl ? t('player.noSubs') : subsUnsupported ? t('player.subsUnsupported') : subs.status === 'error' ? t('player.subsFailed') : null
   const [subsMenu, setSubsMenu] = useState(false)
-  Object.assign(live.current, { subsOn, offset, subsAvailable, mode, subsMenu, t })
-  const [idle, setIdle] = useState(false)
+  const flash = useFlash()
+  Object.assign(live.current, { subsOn, offset, subsAvailable, mode, t })
+  const { idle, poke, show: showControls } = useIdle({ video, hold: subsMenu })
   const [failed, setFailed] = useState(null) // null | 'retryable' | 'final'
   const failing = useRef(false)
   const lastTime = useRef(0)
-  const idleTimer = useRef(null)
   const [skips, setSkips] = useState(null)
   const [resume, setResume] = useState(open.autoResume ? null : open.resumeAt)
   const [end, setEnd] = useState(null)
   const health = usePlayerHealth({ video, active: resume == null && !end && !failed, onStall: () => fail() })
   const [left, setLeft] = useState(COUNTDOWN_S)
-  const [flash, setFlash] = useState(null)
   const autoSkipped = useRef(new Set())
-  const flashTimer = useRef(null)
   const [quality, setQuality] = useState(null)
   const fallbackShown = useRef(false)
-  const showFlash = (text, ms = 1500) => {
-    setFlash(text)
-    clearTimeout(flashTimer.current)
-    flashTimer.current = setTimeout(() => setFlash(null), ms)
-  }
   const readQuality = () => setQuality(qualityLabel(video.current?.videoHeight))
   useEffect(() => {
     if (!open.qualityFallback || !quality || fallbackShown.current) return
     fallbackShown.current = true
-    showFlash(t('player.qualityFallback', { requested: qualityName(open.qualityFallback), actual: quality }), QUALITY_FLASH_MS)
+    flash.show(t('player.qualityFallback', { requested: qualityName(open.qualityFallback), actual: quality }), QUALITY_FLASH_MS)
   }, [quality])
 
   const snapshot = () => {
@@ -144,7 +138,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     const next = clampOffset(live.current.offset + delta)
     live.current.offset = next
     setOffset(next)
-    showFlash(live.current.t('player.subOffset', { value: formatOffset(next, live.current.settings.language) }))
+    flash.show(live.current.t('player.subOffset', { value: formatOffset(next, live.current.settings.language) }))
     pendingOffset.current = next
     clearTimeout(offsetTimer.current)
     offsetTimer.current = setTimeout(flushOffset, OFFSET_SAVE_MS)
@@ -205,18 +199,10 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
     Promise.resolve().then(() => probeSub(open.subtitleUrl)).then((status) => {
       if (cancelled || status !== 415) return
       setSubsUnsupported(true)
-      if (live.current.subsOn) showFlash(t('player.subsUnsupported'), SUBS_FLASH_MS)
+      if (live.current.subsOn) flash.show(t('player.subsUnsupported'), SUBS_FLASH_MS)
     }, () => {})
     return () => { cancelled = true }
   }, [open.playbackId])
-
-  const poke = () => {
-    setIdle(false)
-    clearTimeout(idleTimer.current)
-    idleTimer.current = setTimeout(() => { if (video.current && !video.current.paused && !live.current.subsMenu) setIdle(true) }, HIDE_MS)
-  }
-  useEffect(() => { if (!subsMenu) poke() }, [subsMenu])
-  useEffect(() => { poke(); return () => { clearTimeout(idleTimer.current); clearTimeout(flashTimer.current) } }, [])
 
   // autoplay policy / aborted loads reject play(); that is never fatal
   const play = () => { const p = video.current?.play(); if (p && typeof p.catch === 'function') p.catch(() => {}) }
@@ -294,7 +280,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       autoSkipped.current.add(seg)
       if (seg === 'ed') { finishEpisode(); return }
       v.currentTime = skips[seg].end
-      showFlash(t(seg === 'op' ? 'player.skipped' : 'player.skippedRecap'))
+      flash.show(t(seg === 'op' ? 'player.skipped' : 'player.skippedRecap'))
     }
   }
   const segment = segmentAt(time, skips)
@@ -309,7 +295,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       <video
         ref={video} className="player__video" crossOrigin="anonymous"
         onLoadedMetadata={onLoadedMetadata} onTimeUpdate={onTimeUpdate}
-        onPlay={() => { setPlaying(true); setResume(null); poke() }} onPause={() => { health.onReady(); setPlaying(false); setIdle(false); api.player.progress(snapshot()) }}
+        onPlay={() => { setPlaying(true); setResume(null); poke() }} onPause={() => { health.onReady(); setPlaying(false); showControls(); api.player.progress(snapshot()) }}
         onVolumeChange={onVolumeChange} onResize={readQuality}
         onWaiting={health.onWaiting} onStalled={health.onWaiting} onPlaying={health.onReady} onCanPlay={health.onReady} onSeeked={health.onReady}
         onEnded={finishEpisode} onClick={onVideoClick} onDoubleClick={onVideoDoubleClick}
@@ -340,7 +326,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
       {resume != null && <ResumePrompt at={resume} onResume={() => startAt(resume)} onRestart={() => startAt(0)} />}
       {resume == null && <SkipButton segment={segment} onSkip={() => { video.current.currentTime = skips[segment].end }} />}
       {inEnding && resume == null && <button type="button" className="player__next primary" onClick={() => close('next')}>{t('player.next')}</button>}
-      {flash && <div className="player__flash hud" role="status">{flash}</div>}
+      {flash.text && <div className="player__flash hud" role="status">{flash.text}</div>}
       {end && <NextEpisodeCard mode={end} seconds={left} onNext={() => close('next')} onCancel={() => setEnd('manual')} onBack={() => close('ended')} />}
       <PlayerControls
         segments={['op', 'ed', 'recap'].filter((k) => skips?.[k]).map((k) => ({ kind: k, ...skips[k] }))}
