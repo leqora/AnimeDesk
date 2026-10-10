@@ -52,4 +52,13 @@ describe('App lazy player', () => {
     expect(await screen.findByTestId('fake-player')).toBeInTheDocument()
     console.error.mockRestore()
   })
+  it('tells main the player closed when its error screen is closed', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    loader.fn = vi.fn().mockRejectedValue(new Error('chunk'))
+    const { api, open } = await start()
+    open(episode('p1'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Zatvori' }))
+    expect(api.player.closed).toHaveBeenCalledWith({ playbackId: 'p1', position: null, duration: null, maxPercent: 0, reason: 'back' })
+    console.error.mockRestore()
+  })
 })

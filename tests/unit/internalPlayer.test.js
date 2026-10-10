@@ -49,6 +49,13 @@ describe('internalPlayer', () => {
     expect(streams.unregister).toHaveBeenCalledWith('p1')
     expect(player.isActive()).toBe(false)
   })
+  it('keeps the last reported position when a close carries none (player error screen)', async () => {
+    const { player } = setup()
+    const done = player.play(info, { onProgress: vi.fn() })
+    player.progress({ playbackId: 'p1', position: 500, duration: 1400, maxPercent: 36 })
+    player.closed({ playbackId: 'p1', position: null, duration: null, maxPercent: 0, reason: 'back' })
+    await expect(done).resolves.toMatchObject({ position: 500, duration: 1400, maxPercent: 36, reason: 'back' })
+  })
   it('reports the highest percent reached so far', () => {
     const { player } = setup()
     const onProgress = vi.fn()

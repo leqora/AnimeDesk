@@ -240,7 +240,12 @@ export default function App({ api, sound: injectedSound }) {
           </main>
         </div>
         {player && (
-          <ErrorBoundary key={player.playbackId} className="error-fallback--overlay" actionLabelKey="error.close" onAction={() => { setPlayer(null); setPlayerAttempt((n) => n + 1) }}>
+          <ErrorBoundary key={player.playbackId} className="error-fallback--overlay" actionLabelKey="error.close" onAction={() => {
+            // main still waits for this playback to end (session, held celebrations); null keeps the last reported position
+            api.player.closed({ playbackId: player.playbackId, position: null, duration: null, maxPercent: 0, reason: 'back' })
+            setPlayer(null)
+            setPlayerAttempt((n) => n + 1)
+          }}>
             <Suspense fallback={<PlayerFallback />}>
             <PlayerView
               key={player.playbackId} // PlayerView's per-playback refs/state rely on a remount per playback

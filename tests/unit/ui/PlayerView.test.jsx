@@ -669,6 +669,7 @@ describe('PlayerView subtitles', () => {
     fireEvent.click(gear)
     const menu = screen.getByRole('dialog', { name: 'Podešavanja plejera' })
     expect(within(menu).getByLabelText('Titlovi')).toBeDisabled()
+    expect(within(menu).getByLabelText('Titlovi')).not.toBeChecked()
     expect(within(menu).getByRole('button', { name: 'Titl kasnije' })).toBeDisabled()
     expect(within(menu).getByLabelText('Veličina titlova')).toBeDisabled()
     expect(within(menu).getByText('Nema titla za ovu epizodu')).toBeInTheDocument()

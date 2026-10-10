@@ -32,7 +32,7 @@ export function PlayerMenu({ rate, language, onRate, open, onOpen, subs, onToggl
           </section>
           <section className="player__menu-section">
             <h3 className="player__menu-title">{t('player.subs')}</h3>
-            <label className="check"><input type="checkbox" aria-label={t('player.subs')} checked={subs.on} disabled={off} onChange={onToggleSubs} /> {t('player.subs')}</label>
+            <label className="check"><input type="checkbox" aria-label={t('player.subs')} checked={subs.on && subs.available} disabled={off} onChange={onToggleSubs} /> {t('player.subs')}</label>
             <div className="row">
               <span>{t('player.subOffsetLabel')}</span>
               <button type="button" aria-label={t('player.subOffsetMinus')} disabled={off} onClick={() => onSubOffset(-0.1)}>−</button>
