@@ -1,6 +1,6 @@
 # Seanime analiza → unapređenje AnimeDesk-a — stanje rada (predaja smene)
 
-Poslednje ažuriranje: 2026-10-10 (v0.6.3, korak 5).
+Poslednje ažuriranje: 2026-10-10 (v0.6.3 objavljen, korak 5; kraj sesije 2).
 
 - Spec korisnika: `C:\Users\Nikola\Desktop\Claude\Anime\Aplikacija za gledanje Anime-a\Seanime\zadatak.txt`
 - Seanime klon (referenca, GPL-3.0 — samo inspiracija, ne kopirati kod): `C:\Users\Nikola\Desktop\Projekti\_ref\seanime` (commit 2da73d9; ne commitovati).
@@ -49,4 +49,6 @@ JASSUB/ASS, Anime4K za mpv, nedeljni raspored, command palette, Discord RPC (bez
 - Ručna provera aplikacije: Playwright `_electron` skripta sa izolovanim `ANIMEDESK_USER_DATA` i probnim videom ubačenim u `downloads.json` (ffmpeg `testsrc`). Chrome-devtools MCP ne radi za ovo (nema preload-a).
 - Python na ovoj mašini ne pokretati preko heredoc-a (Windows alias visi) — koristiti `node -e`.
 - vitest ponekad prijavi „Timeout waiting for worker” pri prvom pokretanju — samo ponoviti.
+- Podagenti (iskustvo iz v0.6.3): u dispatch-u izričito navesti da je potpis commit-a tačno `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` (pravilo projekta je jače od podrazumevanog potpisa modela — Haiku je jednom stavio svoj); lažni plejeri u testovima moraju da prate stvarni ugovor (`closed` → `onProgress`), inače testovi kriju greške.
+- Dugačak tekst sa backtick-ovima ne upisivati preko `node -e "…"` u Bash-u (bash ih izvrši) — napisati `.mjs` skriptu u scratchpad ili koristiti Edit.
 - Uživo još neprovereno iz 0.5.1: duplikati u redu preuzimanja sa pravim ani-cli tokom; prečice na ćiriličnom rasporedu (pokriveno unit testom).

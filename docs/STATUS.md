@@ -4,30 +4,28 @@ Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.3** — objavljena 20
 
 ## Dokle smo stigli (ukratko)
 
-- Objavljeno: 0.1.0 → 0.6.2 (13 izdanja, 2026-10-01 – 2026-10-10).
+- Objavljeno: 0.1.0 → 0.6.3 (14 izdanja, 2026-10-01 – 2026-10-10).
 - Testovi: 66 fajlova, **653/653 prolazi** (0.6.3), e2e smoke prolazi.
 - 2026-10-09: komparativna analiza Seanime-a → plan unapređenja u `docs/seanime-analysis/` (`04-plan.md` = roadmap P0–P3 sa odlukama korisnika). Iz nje je urađen hotfix 0.5.1 (P0-A).
 - **v0.6.0 (objavljeno 2026-10-09):** P0-B koraci 1–3 — spinner/baferovanje, pamćenje jačine, dvoklik = pun ekran, bedž rezolucije + upozorenje o kvalitetu, poruka „nema ispravnih izvora” + „Pokušaj ponovo”, automatski oporavak zaglavljenog strima, retry/timeout u proxy-ju. Spec: `docs/superpowers/specs/2026-10-09-v0.6-player-design.md`. Beleške: `docs/releases/v0.6.0.md`.
-- **v0.6.1 (objavljeno 2026-10-10, Latest):** P0-B korak 4 — titlovi: SRT→VTT (strim i lokalni `.srt`, i Windows-1250/UTF-16), pomak `G`/`H` po seriji i režimu (`series-prefs.json`), sopstveni overlay (veći na punom ekranu, zbijeni redovi), podešavanja sa živim pregledom, meni titlova u plejeru, dub podrazumevano bez titla, poruka za nepodržan format (ASS). Spec: `docs/superpowers/specs/2026-10-09-v0.6.1-subtitles-design.md`, plan: `docs/superpowers/plans/2026-10-09-v0.6.1-subtitles.md`. Beleške: `docs/releases/v0.6.1.md`.
-- **v0.6.2 (objavljeno 2026-10-10, Latest):** mini ispravke titlova — podrazumevana veličina 25, razmak redova bez preklapanja (nova skala), tamni neprovidni paneli preko videa. Beleške: `docs/releases/v0.6.2.md`.
+- **v0.6.1 (objavljeno 2026-10-10):** P0-B korak 4 — titlovi: SRT→VTT (strim i lokalni `.srt`, i Windows-1250/UTF-16), pomak `G`/`H` po seriji i režimu (`series-prefs.json`), sopstveni overlay (veći na punom ekranu, zbijeni redovi), podešavanja sa živim pregledom, meni titlova u plejeru, dub podrazumevano bez titla, poruka za nepodržan format (ASS). Spec: `docs/superpowers/specs/2026-10-09-v0.6.1-subtitles-design.md`, plan: `docs/superpowers/plans/2026-10-09-v0.6.1-subtitles.md`. Beleške: `docs/releases/v0.6.1.md`.
+- **v0.6.2 (objavljeno 2026-10-10):** mini ispravke titlova — podrazumevana veličina 25, razmak redova bez preklapanja (nova skala), tamni neprovidni paneli preko videa. Beleške: `docs/releases/v0.6.2.md`.
 - **v0.6.3 (objavljeno 2026-10-10, Latest):** P0-B korak 5 — nastavak u spoljnom mpv-u (`--start`, „Nastavljeno od mm:ss”), „odgledano” se beleži na pragu tokom gledanja (animacija nivoa i „serija završena” čekaju kraj reprodukcije, `celebrations.js`), normalizacija AniSkip intervala. Spec: `docs/superpowers/specs/2026-10-10-v0.6.3-continuity-design.md`. Beleške: `docs/releases/v0.6.3.md`.
 - **Sledeće:** P0-B koraci 6–7 (lazy `PlayerView` + brzina + buffered traka; prefetch) iz `docs/seanime-analysis/04-plan.md`.
 
-## Gde smo stali (2026-10-10, kraj sesije) i kako dalje
+## Gde smo stali (2026-10-10, kraj sesije 2) i kako dalje
 
 ### Stanje repoa
-- v0.6.1 je objavljen kao **Latest** (GitHub Release `v0.6.1`: `.exe`, `.blockmap`, `latest.yml`, SHA-256 provereni). `main` = `origin/main`, radno stablo čisto, nema otvorenih `feat/` grana (`feat/v0.6.1-subtitles` spojena sa `--no-ff` i obrisana). Radni folder podagenata (`.superpowers/sdd/`, ignorisan u git-u) je obrisan; istorija je u `git log`.
+- v0.6.3 je objavljen kao **Latest** (GitHub Release `v0.6.3`: `.exe`, `.blockmap`, `latest.yml`, SHA-256 provereni). `main` = `origin/main`, radno stablo čisto, nema otvorenih `feat/` grana (`feat/v0.6.2-subtitle-polish` i `feat/v0.6.3-continuity` spojene sa `--no-ff` i obrisane). Radni folder podagenata (`.superpowers/sdd/`) obrisan; istorija je u `git log`.
 
-### Šta je urađeno u sesiji 2026-10-09/10 (v0.6.1 titlovi)
-- **Brainstorming — odluke korisnika:**
-  1. cilj: zaštita (SRT) + offset i stil kao poboljšanje; izgled je smetao (titl premali na punom ekranu, veliki razmak između redova — zahtev iz `Claude/Anime/Aplikacija za gledanje Anime-a/Dodaci2.txt`: veličina 0–100 %, razmak redova, font, tamni okvir podrazumevano uključen);
-  2. na **dub** epizodama titl podrazumevano **isključen**; uključeno/isključeno se pamti odvojeno za sub i dub (korisnik je primetio da na engleskom dub-u titlovi kasne ili ne odgovaraju);
-  3. pomak titla se pamti **po seriji i režimu**;
-  4. prikaz: **sopstveni overlay** (ne nativni `::cue`, ne JASSUB);
-  5. izdanje **v0.6.1**.
-- **Tok:** spec → plan (11 zadataka) → podagenti (implementer + pregled po zadatku; ispravke u zadacima 7, 9 i 11) → završni pregled cele grane (Opus) → jedan krug ispravki (dekodiranje lokalnog `.srt` Windows-1250/UTF-16, poruka 415 samo kad je titl uključen, strelice na klizaču u meniju ne premotavaju, dokumentacija) → merge `--no-ff` → push → `npm run release`.
-- **Važne tehničke odluke (iz pregleda):** titl nove epizode se prikazuje tek kad se njen `<track>` učita (ne prikazuju se cue-ovi prethodne epizode); `Esc` zatvara meni titlova odakle god; prečice plejera rade i kad je fokus na prekidaču u meniju; nepodržan format se prepoznaje `HEAD` zahtevom na `/sub` (415); greška izvora titla (404/500) se prosleđuje, ne pretvara u 415.
-- **Svesno ostavljeno (vidi „Poznati problemi” 10–11):** klizač veličine u meniju plejera upisuje na svaki korak; pomak je vezan za naziv u plejeru (strim i preuzeta epizoda iste serije mogu imati različit ključ). Takođe: HTML stranica sa statusom 200 umesto titla daje poruku „format nije podržan”; nema upravljanja fokusom u meniju titlova (a11y); Windows-1251 (ćirilični) `.srt` može imati pogrešna slova.
+### Šta je urađeno u sesiji 2026-10-10 (v0.6.2 + v0.6.3)
+- **v0.6.2 (mala izmena: dizajn u chatu → odobrenje → TDD):** podrazumevana veličina titla 25 (i stari `M` = 25); razmak redova — nova skala 0–100 % = `line-height` 1,40–1,60, podrazumevano 0 % (korisnik javio: ispod 66 % stare skale se okviri prelomljenih redova preklapaju), sačuvane vrednosti se ne migriraju (korisnikovih 82 % sada = 1,56); tamni neprovidni paneli preko videa (token `--panel-solid`: meni titlova, kartica sledeće epizode, `.player__flash`). 623 testa.
+- **v0.6.3 = P0-B korak 5** (brainstorming → spec → plan 6 zadataka → podagenti → završni pregled Opus → jedan krug ispravki). Spec: `docs/superpowers/specs/2026-10-10-v0.6.3-continuity-design.md`, plan: `docs/superpowers/plans/2026-10-10-v0.6.3-continuity.md`.
+  - **Odluke korisnika:** (1) nastavak u mpv-u **automatski** + poruka „Nastavljeno od mm:ss” (bez pitanja), pragovi 10 s – 90 %; (2) na pragu se epizoda/XP upisuju **odmah i tiho**, animacija nivoa i „serija završena” čekaju kraj reprodukcije; (3) pristup A — sve odluke u `watchService`; (4) izdanje v0.6.3.
+  - **Arhitektura:** oba plejera javljaju `onProgress({ position, duration, maxPercent })` (`internalPlayer` na svaki `player:progress`, `playerMonitor` najviše na 5 s); `watchService.runPlayer` čuva pozicije (≥ 10 s), beleži jednom na pragu (`state.recorded`) i posle toga ne čuva poziciju; oporavak (`entry.retrying`) i otkazana sesija nikad ne beleže; mpv pokrenut direktno dobija `--start` + `resumeAt` iz `positions.get`; `celebrations.js` (`hold`/`release` u `try/finally` oko svake reprodukcije) zadržava `levelUp`/`seriesCompleted`; `index.js` zatvara ugrađeni plejer na `render-process-gone`/`did-start-loading` (inače bi slavlje ostalo zaključano); `aniskip.normalizeSkips` na svako čitanje (keš čuva sirova vremena).
+  - **Greška nađena u pregledu:** snimak oporavka je kroz `closed → onProgress` mogao da zabeleži epizodu; lažni `closed` u testu je to krio. Ispravljeno (`entry.retrying`), test sada ide pravim putem.
+  - **Svesno ostavljeno:** kad se epizoda zabeleži na pragu pa strim zastane, animacija nivoa može da se pojavi preko „Ponovno povezivanje…” (spec: oslobađanje i pri oporavku); pozicija se čuva i za otkazanu sesiju; rezervni mpv kad ugrađeni plejer baci grešku prikazuje „Nastavljeno od”; `closed()` beleži samo poruku greške (bez stack-a); ključ AniSkip keša je bez trajanja; upis pozicija nije prigušen.
+- Ranija sesija (2026-10-09/10, v0.6.1 titlovi): odluke i tok su u specu `2026-10-09-v0.6.1-subtitles-design.md` i u istoriji verzija ispod; svesno ostavljeno je u „Poznati problemi” 10–11.
 
 ### Uživo neprovereno — korisnik proverava i javlja rezultat
 - **0.6.3 kontinuitet:**
@@ -51,13 +49,9 @@ Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.3** — objavljena 20
   8. `no-sources` — samo ako se slučajno pojavi: radi li „Pokušaj ponovo”.
 - Rezultate upisati u „Šta je stvarno provereno”.
 
-### Mini ispravke v0.6.2 — OBJAVLJENO 2026-10-10 kao Latest (grana `feat/v0.6.2-subtitle-polish` spojena sa `--no-ff` i obrisana; odluke: razmak redova — nova skala: 0 % = line-height 1,40 (ispod toga se okviri prelomljenih redova preklapaju, javio korisnik), 100 % = 1,60, podrazumevano 0 %, `--sub-gap` = line − 1,4; sačuvane vrednosti se ne migriraju (korisnikovih 82 % sada daje 1,56 umesto 1,49), stari `M` prati novu podrazumevanu = 25, objava odmah kao v0.6.2)
-1. **Podrazumevana veličina titla = 25** (umesto 40). Korisnik je u svojoj aplikaciji podesio veličinu na 25 i to želi kao podrazumevano (u njegovom `settings.json`: `size: 25`; tamo je i `lineSpacing: 82` — pitati korisnika da li i razmak redova treba da postane podrazumevan). Izmena: `DEFAULT_SUBTITLES.size` u `src/shared/subtitles.js` + testovi (`subtitles.test.js`, `settings.test.js`, očekivane vrednosti CSS varijable `--sub-size` u testovima; 25 → `2.5 + 0.25 × 5.5 = 3,88 cqh`). Postojeći korisnici zadržavaju svoju sačuvanu vrednost; prelazak sa starog `subtitleSize` (S/M/L → 20/40/65) ostaje kakav jeste ili se `M` usklađuje sa novom podrazumevanom — odlučiti u dizajnu.
-2. **Meni titlova u plejeru je previše providan** — preko svetlog kadra se tekst u meniju („Resetuj”, „Veličina titlova”, vrednost pomaka) slabo vidi (snimak ekrana korisnika, Naruto kadar sa peskom). Uzrok: `.player__subs-menu` koristi `background: var(--glass-strong)` (= `rgba(255,255,255,0.10)`) + blur, pa svetla slika prolazi kroz meni. Izmena: tamna, skoro neprovidna pozadina (npr. `color-mix(in srgb, var(--bg) 92%, transparent)` ili novi token u `:root`), uz zadržan okvir; proveriti kontrast i za dugmad u meniju. Isto proveriti za ostale „staklene” panele preko videa (`.player__card`, `.player__flash`).
-
 ### Sledeći razvoj
 - **P0-B korak 5:** urađeno i objavljeno u 0.6.3. Sledi 6 (lazy `PlayerView` — hls.js ≈62 % bundle-a; brzina reprodukcije + meni; buffered traka + tooltip vremena; razbijanje `PlayerView` na hook-ove) i 7 (prefetch linka sledeće epizode — poseban spec). Detalji i fajlovi: `docs/seanime-analysis/03-oblast-player.md` (tabela „Top preporuke”) i `04-plan.md` §3.
-- Isti tok: brainstorming → spec → plan → podagenti; nova grana `feat/v0.7-…` (ili `feat/v0.6.2-…` ako je obim mali); merge/push/release samo uz dozvolu korisnika.
+- Isti tok: brainstorming → spec → plan → podagenti; nova grana (npr. `feat/v0.6.4-player-perf` ili `feat/v0.7-…` po obimu); merge/push/release samo uz dozvolu korisnika. Pre koraka 6 pitati korisnika za rezultate uživo provera (gore).
 
 Ovaj fajl je „predaja smene”: šta je urađeno, šta je stvarno provereno, šta je otvoreno. Detalji dizajna su u `docs/superpowers/specs/`, planovi u `docs/superpowers/plans/`, beleške izdanja u `docs/releases/`.
 
