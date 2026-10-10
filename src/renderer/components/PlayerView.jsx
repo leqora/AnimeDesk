@@ -26,7 +26,7 @@ const CLICK_DELAY_MS = 220
 const ENDING_FALLBACK_S = 30
 
 const headStatus = (url) => fetch(url, { method: 'HEAD' }).then((r) => r.status)
-export function PlayerView({ open, settings, fullscreen, onSettings, onClose, HlsImpl = Hls, probeSub = headStatus }) {
+export function PlayerView({ open, settings, fullscreen, onSettings, onClose, initialRate = 1, onRate, HlsImpl = Hls, probeSub = headStatus }) {
   const api = useApi()
   const t = useT()
   const video = useRef(null)
@@ -53,7 +53,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, Hl
   const flash = useFlash()
   const volume = usePlayerVolume({ video, settings, onSettings })
   const subs = usePlayerSubtitles({ video, trackEl, open, mode, settings, onSettings, probeSub, flash: flash.show })
-  const rate = usePlaybackRate({ video, flash: flash.show, language: settings.language })
+  const rate = usePlaybackRate({ video, flash: flash.show, language: settings.language, initial: initialRate, onChange: onRate })
   const { idle, poke, show: showControls } = useIdle({ video, hold: menuOpen })
   const ending = useEpisodeEnd({ autoNext: settings.autoNext, lastEpisode, onNext: () => close('next') })
   const { end } = ending

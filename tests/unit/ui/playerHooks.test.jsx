@@ -301,6 +301,34 @@ describe('usePlaybackRate', () => {
     act(() => result.current.reapply())
     expect(video.current.playbackRate).toBe(1.5)
   })
+  it('also sets the default rate, so a media reload keeps the speed', () => {
+    const { video, result } = setup()
+    act(() => result.current.setRate(1.5))
+    expect(video.current.defaultPlaybackRate).toBe(1.5)
+    video.current.playbackRate = 1
+    video.current.defaultPlaybackRate = 1
+    act(() => result.current.reapply())
+    expect(video.current.defaultPlaybackRate).toBe(1.5)
+  })
+  it('starts from the initial rate and applies it on reapply without a flash', () => {
+    const video = { current: { playbackRate: 1 } }
+    const flash = vi.fn()
+    const onChange = vi.fn()
+    const { result } = renderHookUi(() => usePlaybackRate({ video, flash, language: 'sr', initial: 1.5, onChange }))
+    expect(result.current.rate).toBe(1.5)
+    act(() => result.current.reapply())
+    expect(video.current.playbackRate).toBe(1.5)
+    expect(video.current.defaultPlaybackRate).toBe(1.5)
+    expect(flash).not.toHaveBeenCalled()
+    act(() => result.current.step(1))
+    expect(onChange).toHaveBeenLastCalledWith(2)
+  })
+  it('does not throw when the element refuses the rate on reapply', () => {
+    const video = { current: {} }
+    Object.defineProperty(video.current, 'playbackRate', { get: () => 1, set: () => { throw new Error('NotSupportedError') } })
+    const { result } = renderHookUi(() => usePlaybackRate({ video, flash: vi.fn(), language: 'sr', initial: 2 }))
+    expect(() => act(() => result.current.reapply())).not.toThrow()
+  })
   it('keeps the old rate when the element refuses the value', () => {
     const video = { current: {} }
     Object.defineProperty(video.current, 'playbackRate', { get: () => 1, set: () => { throw new Error('NotSupportedError') } })

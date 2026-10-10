@@ -24,6 +24,62 @@ describe('App', () => {
     expect(screen.queryByText('Ponovno povezivanje…')).not.toBeInTheDocument()
     expect(document.querySelector('.player')).toBeInTheDocument()
   })
+  describe('playback speed across playbacks', () => {
+    const ep = (id, episode) => ({ playbackId: id, title: 'Show', episode, kind: 'hls', src: `http://127.0.0.1:9/s/t/${id}/playlist`, subtitleUrl: null, resumeAt: null, totalEpisodes: 12 })
+    const start = async () => {
+      let retry, openPlayer, closePlayer
+      const api = makeFakeApi({ player: {
+        onRetry: vi.fn((cb) => { retry = cb; return () => {} }),
+        onOpen: vi.fn((cb) => { openPlayer = cb; return () => {} }),
+        onClose: vi.fn((cb) => { closePlayer = cb; return () => {} }),
+      } })
+      render(<App api={api} />)
+      await waitFor(() => expect(openPlayer).toBeDefined())
+      return {
+        open: async (p) => { act(() => openPlayer(p)); await screen.findByRole('button', { name: 'Podešavanja plejera' }) },
+        close: () => act(() => closePlayer({})),
+        retry: (episode) => act(() => retry({ title: 'Show', episode, state: 'reconnecting', sessionId: 's2' })),
+      }
+    }
+    const pressedRate = () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Podešavanja plejera' }))
+      const pressed = within(screen.getByRole('dialog')).getAllByRole('button').find((b) => b.getAttribute('aria-pressed') === 'true')
+      return pressed.textContent
+    }
+    it('keeps the speed when the same episode reconnects after a stall', async () => {
+      const s = await start()
+      await s.open(ep('p1', '3'))
+      fireEvent.keyDown(window, { key: ']', code: 'BracketRight' })
+      s.close()
+      s.retry('3')
+      await s.open(ep('p2', '3'))
+      expect(pressedRate()).toBe('1,25×')
+    })
+    it('starts a different episode, or the same one opened again normally, at 1×', async () => {
+      const s = await start()
+      await s.open(ep('p1', '3'))
+      fireEvent.keyDown(window, { key: ']', code: 'BracketRight' })
+      s.close()
+      await s.open(ep('p2', '4'))
+      expect(pressedRate()).toBe('1×')
+      s.close()
+      await s.open(ep('p3', '3'))
+      expect(pressedRate()).toBe('1×')
+      s.close()
+      s.retry('3')
+      await s.open(ep('p4', '3'))
+      expect(pressedRate()).toBe('1×')
+    })
+    it('does not carry the speed into a reconnect of another episode', async () => {
+      const s = await start()
+      await s.open(ep('p1', '3'))
+      fireEvent.keyDown(window, { key: ']', code: 'BracketRight' })
+      s.close()
+      s.retry('4')
+      await s.open(ep('p2', '4'))
+      expect(pressedRate()).toBe('1×')
+    })
+  })
   it('shows a failed recovery with try again', async () => {
     let retry
     const api = makeFakeApi({ player: { onRetry: vi.fn((cb) => { retry = cb; return () => {} }) } })

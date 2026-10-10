@@ -170,9 +170,24 @@ export default function App({ api, sound: injectedSound }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [api])
 
+  // A stall recovery reopens the same episode as a new playback; it keeps the speed, any other open starts at 1×.
+  const reconnectingRef = useRef(reconnecting)
+  reconnectingRef.current = reconnecting
+  const lastRate = useRef(null) // { title, episode, rate } of the current playback
+  const [playerRate, setPlayerRate] = useState(1)
   useEffect(() => {
+    const sameEpisode = (a, b) => a != null && b != null && a.title === b.title && String(a.episode) === String(b.episode)
+    const onOpen = (p) => {
+      const r = reconnectingRef.current
+      const recovered = r?.state === 'reconnecting' && sameEpisode(r, p) && sameEpisode(lastRate.current, p)
+      const rate = recovered ? lastRate.current.rate : 1
+      lastRate.current = { title: p.title, episode: p.episode, rate }
+      setPlayerRate(rate)
+      setReconnecting(null)
+      setPlayer(p)
+    }
     const offs = [
-      api.player.onOpen((p) => { setReconnecting(null); setPlayer(p) }),
+      api.player.onOpen(onOpen),
       api.player.onClose(() => setPlayer(null)),
       api.player.onRetry(setReconnecting),
     ]
@@ -230,6 +245,7 @@ export default function App({ api, sound: injectedSound }) {
             <PlayerView
               key={player.playbackId} // PlayerView's per-playback refs/state rely on a remount per playback
               open={player} settings={settings} fullscreen={fullscreen} onSettings={updateSettings}
+              initialRate={playerRate} onRate={(rate) => { if (lastRate.current) lastRate.current.rate = rate }}
               onClose={(reason) => {
                 setPlayer(null)
                 if ((reason === 'next' || reason === 'prev') && player.episode != null) {
