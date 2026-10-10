@@ -1,14 +1,15 @@
 # AnimeDesk — stanje projekta
 
-Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.1** — objavljena 2026-10-10 (GitHub Release `v0.6.1`, Latest), spojena u `main`.
+Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.2** — objavljena 2026-10-10 (GitHub Release `v0.6.2`, Latest), spojena u `main`.
 
 ## Dokle smo stigli (ukratko)
 
-- Objavljeno: 0.1.0 → 0.6.1 (12 izdanja, 2026-10-01 – 2026-10-10).
-- Testovi: 65 fajlova, **621/621 prolazi** (0.6.1), e2e smoke prolazi.
+- Objavljeno: 0.1.0 → 0.6.2 (13 izdanja, 2026-10-01 – 2026-10-10).
+- Testovi: 65 fajlova, **623/623 prolazi** (0.6.2), e2e smoke prolazi.
 - 2026-10-09: komparativna analiza Seanime-a → plan unapređenja u `docs/seanime-analysis/` (`04-plan.md` = roadmap P0–P3 sa odlukama korisnika). Iz nje je urađen hotfix 0.5.1 (P0-A).
 - **v0.6.0 (objavljeno 2026-10-09):** P0-B koraci 1–3 — spinner/baferovanje, pamćenje jačine, dvoklik = pun ekran, bedž rezolucije + upozorenje o kvalitetu, poruka „nema ispravnih izvora” + „Pokušaj ponovo”, automatski oporavak zaglavljenog strima, retry/timeout u proxy-ju. Spec: `docs/superpowers/specs/2026-10-09-v0.6-player-design.md`. Beleške: `docs/releases/v0.6.0.md`.
 - **v0.6.1 (objavljeno 2026-10-10, Latest):** P0-B korak 4 — titlovi: SRT→VTT (strim i lokalni `.srt`, i Windows-1250/UTF-16), pomak `G`/`H` po seriji i režimu (`series-prefs.json`), sopstveni overlay (veći na punom ekranu, zbijeni redovi), podešavanja sa živim pregledom, meni titlova u plejeru, dub podrazumevano bez titla, poruka za nepodržan format (ASS). Spec: `docs/superpowers/specs/2026-10-09-v0.6.1-subtitles-design.md`, plan: `docs/superpowers/plans/2026-10-09-v0.6.1-subtitles.md`. Beleške: `docs/releases/v0.6.1.md`.
+- **v0.6.2 (objavljeno 2026-10-10, Latest):** mini ispravke titlova — podrazumevana veličina 25, razmak redova bez preklapanja (nova skala), tamni neprovidni paneli preko videa. Beleške: `docs/releases/v0.6.2.md`.
 - **Sledeće:** P0-B koraci 5–7 (nastavak u mpv-u + „odgledano” na pragu + AniSkip normalizacija; lazy `PlayerView` + brzina + buffered traka; prefetch) iz `docs/seanime-analysis/04-plan.md`.
 
 ## Gde smo stali (2026-10-10, kraj sesije) i kako dalje
@@ -44,7 +45,7 @@ Poslednje ažuriranje: 2026-10-10. Trenutna verzija: **0.6.1** — objavljena 20
   8. `no-sources` — samo ako se slučajno pojavi: radi li „Pokušaj ponovo”.
 - Rezultate upisati u „Šta je stvarno provereno”.
 
-### Mini ispravke v0.6.2 — URAĐENO 2026-10-10 (grana `feat/v0.6.2-subtitle-polish`; odluke: razmak redova — nova skala: 0 % = line-height 1,40 (ispod toga se okviri prelomljenih redova preklapaju, javio korisnik), 100 % = 1,60, podrazumevano 0 %, `--sub-gap` = line − 1,4; sačuvane vrednosti se ne migriraju (korisnikovih 82 % sada daje 1,56 umesto 1,49), stari `M` prati novu podrazumevanu = 25, objava odmah kao v0.6.2)
+### Mini ispravke v0.6.2 — OBJAVLJENO 2026-10-10 kao Latest (grana `feat/v0.6.2-subtitle-polish` spojena sa `--no-ff` i obrisana; odluke: razmak redova — nova skala: 0 % = line-height 1,40 (ispod toga se okviri prelomljenih redova preklapaju, javio korisnik), 100 % = 1,60, podrazumevano 0 %, `--sub-gap` = line − 1,4; sačuvane vrednosti se ne migriraju (korisnikovih 82 % sada daje 1,56 umesto 1,49), stari `M` prati novu podrazumevanu = 25, objava odmah kao v0.6.2)
 1. **Podrazumevana veličina titla = 25** (umesto 40). Korisnik je u svojoj aplikaciji podesio veličinu na 25 i to želi kao podrazumevano (u njegovom `settings.json`: `size: 25`; tamo je i `lineSpacing: 82` — pitati korisnika da li i razmak redova treba da postane podrazumevan). Izmena: `DEFAULT_SUBTITLES.size` u `src/shared/subtitles.js` + testovi (`subtitles.test.js`, `settings.test.js`, očekivane vrednosti CSS varijable `--sub-size` u testovima; 25 → `2.5 + 0.25 × 5.5 = 3,88 cqh`). Postojeći korisnici zadržavaju svoju sačuvanu vrednost; prelazak sa starog `subtitleSize` (S/M/L → 20/40/65) ostaje kakav jeste ili se `M` usklađuje sa novom podrazumevanom — odlučiti u dizajnu.
 2. **Meni titlova u plejeru je previše providan** — preko svetlog kadra se tekst u meniju („Resetuj”, „Veličina titlova”, vrednost pomaka) slabo vidi (snimak ekrana korisnika, Naruto kadar sa peskom). Uzrok: `.player__subs-menu` koristi `background: var(--glass-strong)` (= `rgba(255,255,255,0.10)`) + blur, pa svetla slika prolazi kroz meni. Izmena: tamna, skoro neprovidna pozadina (npr. `color-mix(in srgb, var(--bg) 92%, transparent)` ili novi token u `:root`), uz zadržan okvir; proveriti kontrast i za dugmad u meniju. Isto proveriti za ostale „staklene” panele preko videa (`.player__card`, `.player__flash`).
 
