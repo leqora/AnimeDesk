@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import path from 'node:path'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 
@@ -7,6 +8,7 @@ export const AIRING_TTL_MS = 12 * HOUR
 export const TTL_MS = 7 * 24 * HOUR
 export const MISSING_TTL_MS = 7 * 24 * HOUR
 export const TIMEOUT_MS = 15000
+export const MAX_THUMB_BYTES = 2 * 1024 * 1024
 
 const MAIN_KEY = /^[1-9]\d*$/
 const text = (v) => (typeof v === 'string' && v.trim() ? v.trim() : null)
@@ -88,5 +90,31 @@ export function createEpisodeMeta({ cacheDir, fetchImpl = fetch, now = Date.now 
     return inflight.get(aniListId)
   }
 
-  return { get, readCache }
+  const thumbFile = (id, key) => path.join(cacheDir, 'thumbs', `${id}-${key}.txt`)
+
+  // The caller has already decided the episode may be shown; this only fetches and caches the picture.
+  async function thumb(aniListId, key) {
+    if (!validId(aniListId) || !MAIN_KEY.test(String(key))) return null
+    const f = thumbFile(aniListId, key)
+    try { return fs.readFileSync(f, 'utf8') } catch { /* not cached yet */ }
+    const url = readCache(aniListId)?.episodes?.[key]?.image
+    if (typeof url !== 'string' || !url.startsWith('https://')) return null
+    try {
+      const got = await fetchWithTimeout(url, async (res) => {
+        const type = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
+        if (!res.ok || !type.startsWith('image/')) return null
+        return { type, buf: Buffer.from(await res.arrayBuffer()) }
+      })
+      if (!got || got.buf.length === 0 || got.buf.length > MAX_THUMB_BYTES) return null
+      const dataUrl = `data:${got.type};base64,${got.buf.toString('base64')}`
+      fs.mkdirSync(path.dirname(f), { recursive: true })
+      fs.writeFileSync(f, dataUrl)
+      return dataUrl
+    } catch (err) {
+      console.warn('episodeMeta: thumbnail failed', err?.message)
+      return null
+    }
+  }
+
+  return { get, readCache, thumb }
 }

@@ -130,3 +130,40 @@ describe('episodeMeta.get', () => {
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 })
+
+const image = (bytes = 10, type = 'image/jpeg', status = 200) => ({
+  ok: status === 200, status, headers: new Headers({ 'content-type': type }), arrayBuffer: async () => new Uint8Array(bytes).fill(7).buffer,
+})
+
+describe('episodeMeta.thumb', () => {
+  it('downloads a cached episode image once and returns a data URL', async () => {
+    await meta.get(5)
+    fetchImpl.mockResolvedValue(image(4))
+    const url = await meta.thumb(5, '1')
+    expect(url).toBe(`data:image/jpeg;base64,${Buffer.from([7, 7, 7, 7]).toString('base64')}`)
+    expect(fetchImpl).toHaveBeenLastCalledWith('https://img.example/1.jpg', expect.anything())
+    expect(fs.existsSync(path.join(dir, 'thumbs', '5-1.txt'))).toBe(true)
+    const calls = fetchImpl.mock.calls.length
+    expect(await createEpisodeMeta({ cacheDir: dir, fetchImpl, now: () => clock }).thumb(5, '1')).toBe(url)
+    expect(fetchImpl.mock.calls.length).toBe(calls)
+  })
+  it('returns null without a request for unknown, insecure or malformed episodes', async () => {
+    await meta.get(5)
+    const calls = fetchImpl.mock.calls.length
+    for (const [id, key] of [[5, '2'], [5, '9'], [5, '../x'], [5, 'S1'], [6, '1'], ['5', '1']]) expect(await meta.thumb(id, key)).toBeNull()
+    expect(fetchImpl.mock.calls.length).toBe(calls)
+    expect(fs.existsSync(path.join(dir, 'thumbs'))).toBe(false)
+  })
+  it('refuses non-images, errors and images over 2 MB', async () => {
+    await meta.get(5)
+    fetchImpl.mockResolvedValueOnce(image(4, 'text/html'))
+    expect(await meta.thumb(5, '1')).toBeNull()
+    fetchImpl.mockResolvedValueOnce(image(4, 'image/jpeg', 403))
+    expect(await meta.thumb(5, '1')).toBeNull()
+    fetchImpl.mockResolvedValueOnce(image(2 * 1024 * 1024 + 1))
+    expect(await meta.thumb(5, '1')).toBeNull()
+    fetchImpl.mockRejectedValueOnce(new Error('offline'))
+    expect(await meta.thumb(5, '1')).toBeNull()
+    expect(fs.existsSync(path.join(dir, 'thumbs', '5-1.txt'))).toBe(false)
+  })
+})
