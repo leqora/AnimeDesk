@@ -8,6 +8,7 @@ function services() {
     library: { list: vi.fn(() => []), add: vi.fn(), update: vi.fn(), remove: vi.fn(), setEpisodeNote: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })), setPinned: vi.fn(), wasCorrupt: true },
     seriesPrefs: { get: vi.fn(() => ({ quality: null, mode: null })), set: vi.fn((t, p) => p) },
     anilist: { getForTitle: vi.fn(), search: vi.fn() },
+    seriesEpisodes: { forSeries: vi.fn(async () => ({ episodes: [], source: 'menu', meta: 'none' })), thumb: vi.fn(async () => null), spoilers: vi.fn(async () => ({ episodes: [] })) },
     toolManager: { status: vi.fn(), installMissing: vi.fn(async (cb) => { cb({ id: 'mpv', phase: 'done' }); return {} }), updateAll: vi.fn(async () => []), installOptional: vi.fn(async () => {}) },
     health: { get: vi.fn(), run: vi.fn() },
     internalPlayer: { progress: vi.fn(), closed: vi.fn() },
@@ -26,6 +27,18 @@ function services() {
 }
 
 describe('ipc', () => {
+  it('routes the episode list, thumbnails and spoiler actions to seriesEpisodes', async () => {
+    const s = services()
+    const h = createHandlers(s)
+    const args = { title: 'Show', list: ['1'] }
+    await h[INVOKE.episodesForSeries](args)
+    expect(s.seriesEpisodes.forSeries).toHaveBeenCalledWith(args)
+    await h[INVOKE.episodesThumb]({ ...args, episode: '1' })
+    expect(s.seriesEpisodes.thumb).toHaveBeenCalledWith({ ...args, episode: '1' })
+    await h[INVOKE.episodesSpoilers](args, { all: true })
+    expect(s.seriesEpisodes.spoilers).toHaveBeenCalledWith(args, { all: true })
+    expect(INVOKE.episodesForSeries).toBe('episodes:for-series')
+  })
   it('retries all failed downloads', () => {
     const s = services()
     s.downloads.retryFailed = vi.fn()

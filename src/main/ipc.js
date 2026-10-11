@@ -53,6 +53,9 @@ export function createHandlers(s) {
     [INVOKE.seriesPrefsSet]: (title, patch) => s.seriesPrefs.set(title, patch),
     [INVOKE.anilistForTitle]: (title, aniListId = null) => s.anilist.getForTitle(title, { aniListId }),
     [INVOKE.anilistSearch]: (query) => s.anilist.search(query),
+    [INVOKE.episodesForSeries]: (args) => s.seriesEpisodes.forSeries(args),
+    [INVOKE.episodesThumb]: (args) => s.seriesEpisodes.thumb(args),
+    [INVOKE.episodesSpoilers]: (args, action) => s.seriesEpisodes.spoilers(args, action),
     [INVOKE.toolsStatus]: () => s.toolManager.status(),
     [INVOKE.toolsInstallMissing]: async () => {
       const errors = await s.toolManager.installMissing(progress)
