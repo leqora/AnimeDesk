@@ -5,7 +5,7 @@ Poslednje ažuriranje: 2026-10-11 (grana `feat/v0.7.0-spoilers-meta` u izradi, v
 ## Dokle smo stigli (ukratko)
 
 - Objavljeno: 0.1.0 → 0.6.4 (15 izdanja, 2026-10-01 – 2026-10-10).
-- Testovi: 70 fajlova, **709/709 prolazi** (0.6.4), e2e smoke prolazi. Na grani 0.6.5: 71 fajl, **736/736 prolazi** (posle ispravki iz završnog pregleda).
+- Testovi: 70 fajlova, **709/709 prolazi** (0.6.4), e2e smoke prolazi. Na grani 0.6.5: 71 fajl, **736/736 prolazi** (posle ispravki iz završnog pregleda). Na grani v0.7.0 (neobjavljeno): 77 fajlova, **815/815 prolazi**, e2e smoke prolazi.
 - 2026-10-09: komparativna analiza Seanime-a → plan unapređenja u `docs/seanime-analysis/` (`04-plan.md` = roadmap P0–P3 sa odlukama korisnika). Iz nje je urađen hotfix 0.5.1 (P0-A).
 - **v0.6.0 (objavljeno 2026-10-09):** P0-B koraci 1–3 — spinner/baferovanje, pamćenje jačine, dvoklik = pun ekran, bedž rezolucije + upozorenje o kvalitetu, poruka „nema ispravnih izvora” + „Pokušaj ponovo”, automatski oporavak zaglavljenog strima, retry/timeout u proxy-ju. Spec: `docs/superpowers/specs/2026-10-09-v0.6-player-design.md`. Beleške: `docs/releases/v0.6.0.md`.
 - **v0.6.1 (objavljeno 2026-10-10):** P0-B korak 4 — titlovi: SRT→VTT (strim i lokalni `.srt`, i Windows-1250/UTF-16), pomak `G`/`H` po seriji i režimu (`series-prefs.json`), sopstveni overlay (veći na punom ekranu, zbijeni redovi), podešavanja sa živim pregledom, meni titlova u plejeru, dub podrazumevano bez titla, poruka za nepodržan format (ASS). Spec: `docs/superpowers/specs/2026-10-09-v0.6.1-subtitles-design.md`, plan: `docs/superpowers/plans/2026-10-09-v0.6.1-subtitles.md`. Beleške: `docs/releases/v0.6.1.md`.
@@ -14,7 +14,7 @@ Poslednje ažuriranje: 2026-10-11 (grana `feat/v0.7.0-spoilers-meta` u izradi, v
 - **v0.6.4 (objavljeno 2026-10-10, Latest):** P0-B korak 6 — lazy `PlayerView` + hls.js (`src/renderer/player/loadPlayer.js`, priprema kad aplikacija miruje; `index-*.js` 928,35 kB → 316,76 kB + `PlayerView-*.js` 613,14 kB), `PlayerView.jsx` razbijen na hook-ove u `src/renderer/player/` (359 → 227 linija), brzina reprodukcije (meni 0,5–2× + prečice `[` `]` `\` po fizičkom tasteru, kreće od 1×, a posle ponovnog povezivanja iste epizode zadržava brzinu; poruka „Brzina: 1,25×”), zupčanik = „Podešavanja plejera” (`PlayerMenu.jsx`, uvek dostupan), traka vremena (`PlayerTimeline.jsx`: AniSkip segmenti, buffered, tooltip sa vremenom). Spec: `docs/superpowers/specs/2026-10-10-v0.6.4-player-design.md`. Beleške: `docs/releases/v0.6.4.md`.
 - **v0.6.5 (objavljeno 2026-10-10, Latest):** P0-B korak 7 — prefetch sledeće epizode: od 80 % u ugrađenom plejeru `watchService.maybePrefetch` parkira tihu ani-cli sesiju za ep+1, „Sledeća” je usvaja (`adoptPrefetch`; isti naslov plejera/epizoda/kvalitet/režim), rok 10 min od kraja epizode koja ga je pokrenula, `dispose` na before-quit, prvi oporavak usvojene sesije je besplatan. Spec: `docs/superpowers/specs/2026-10-10-v0.6.5-prefetch-design.md`, plan: `docs/superpowers/plans/2026-10-10-v0.6.5-prefetch.md`. Beleške: `docs/releases/v0.6.5.md`. Implementirano i pokriveno unit testovima (`tests/unit/watchPrefetch.test.js`); završni pregled cele grane (Opus) bez kritičnih/važnih nalaza, jedan talas sitnih ispravki (rok od kraja epizode umesto od pokretanja — kod epizoda od 45+ min bi inače istekao pre „Sledeća”); ručna provera urađena (vidi „Šta je stvarno provereno”). Spojeno (`--no-ff`), push, `npm run release` uz dozvolu korisnika; posle spajanja ispravljen i nestabilan test u `App.test.jsx` (grana `fix/app-test-lazy-timeout`).
 - **v0.7.0 (grana `feat/v0.7.0-spoilers-meta`, NIJE objavljeno — čeka završni pregled i dozvolu korisnika za spajanje/izdanje):** P1 korak 1 — metapodaci epizoda iz ani.zip iza modela zaštite od spojlera. Lista epizoda „Lista” (sličica, naslov, trajanje, opis odgledanih iza klika) pored „Brojevi”; podrazumevano uključena zaštita (posle sledeće epizode glavni proces ne šalje ni naslov, ni opis, ni sličicu); „Prikaži” po epizodi i „Prikaži sve epizode ove serije” (pamti se u `series-prefs.json`) + „Ponovo sakrij otkrivene”; prekidač „Skrivaj spojlere” u Podešavanjima; „Isključi metapodatke za ovu seriju”; detalj serije prikazuje stvarnu listu epizoda sa izvora (keš ani-cli liste posle prvog gledanja kroz aplikaciju). Spec: `docs/superpowers/specs/2026-10-11-v0.7.0-spoilers-meta-design.md`, plan: `docs/superpowers/plans/2026-10-11-v0.7.0-spoilers-meta.md`. Beleške: `docs/releases/v0.7.0.md`. Zadatke 1–10 je pregledao kontrolor (svaki bez otvorenih nalaza); preostaje završni pregled cele grane. Verzija u `package.json` je već 0.7.0. Testovi: 77 fajlova, **815/815 prolazi**, e2e smoke prolazi.
-- **Sledeće:** P0-B je završen (koraci 1–7). Dalje po `docs/seanime-analysis/04-plan.md` — P1 (v0.7: spoiler model, kartice, epizode); uživo još neprovereno 0.6.0 (oporavak strima).
+- **Sledeće:** završni pregled grane `feat/v0.7.0-spoilers-meta`, pa spajanje/izdanje v0.7.0 samo uz dozvolu korisnika; korisnikova uživo provera 0.6.0 (oporavak strima) je i dalje na čekanju. P0-B je završen (koraci 1–7). Dalje po `docs/seanime-analysis/04-plan.md` — P1 (v0.7: spoiler model, kartice, epizode); uživo još neprovereno 0.6.0 (oporavak strima).
 
 ## Gde smo stali (2026-10-10, kraj sesije 3) i kako dalje
 
@@ -22,6 +22,43 @@ Poslednje ažuriranje: 2026-10-11 (grana `feat/v0.7.0-spoilers-meta` u izradi, v
 - **v0.6.4 je objavljena kao Latest** (GitHub Release `v0.6.4`: `.exe`, `.blockmap`, `latest.yml`, SHA-256 provereni; `main` = `origin/main`, grana `feat/v0.6.4-player` spojena sa `--no-ff` i obrisana). Pre objave: verzija u `package.json` je 0.6.4, beleške u `docs/releases/v0.6.4.md`, 709/709 testova, e2e i `npm run build` prolaze, ručna provera u pravoj aplikaciji urađena (vidi „Šta je stvarno provereno”). Sledeći korak: P0-B korak 7 (prefetch, poseban spec).
 - v0.6.3 je objavljen kao **Latest** (GitHub Release `v0.6.3`: `.exe`, `.blockmap`, `latest.yml`, SHA-256 provereni). Grane `feat/v0.6.2-subtitle-polish` i `feat/v0.6.3-continuity` su spojene sa `--no-ff` i obrisane.
 - Trenutno stanje: `main` = `origin/main`, radno stablo čisto, nema otvorenih `feat/` grana; radni folder podagenata (`.superpowers/sdd/`) obrisan.
+
+### v0.7.0 na grani (2026-10-11) — odluke i svesno ostavljeno (NEPOTPUNO: završni pregled cele grane tek sledi i može promeniti ovu listu)
+
+**Odluke korisnika (brainstorming 2026-10-11, spec §1):**
+1. Spoiler model ide zajedno sa metapodacima epizoda (iz P2 prebačeni u v0.7.0).
+2. Pravilo: M = najveća odgledana; epizode ≤ M vidljive, sledeća (M+1) ima naslov i sličicu, sve posle skriveno.
+3. Opis epizode samo za odgledane/otkrivene, iza klika; sledeća epizoda nema opis.
+4. Prekidač Brojevi / Lista, pamti se globalno; pilule ostaju gust prikaz.
+5. Otkrivanje po seriji i po epizodi, pamti se trajno (`series-prefs.json`), uz „Ponovo sakrij otkrivene”.
+6. Površine: detalj serije + Pretraga (obe kroz `EpisodePicker`); plejer i Početna se ne menjaju.
+7. Obim: spoiler model + metapodaci + keš stvarne ani-cli liste; ostatak P1 (kartice, progres po epizodi, „N novih”, istorija navigacije, `Modal.jsx`, toastovi, keš postera) ide u v0.7.1+.
+8. Pravilo se primenjuje u main procesu; renderer dobija već očišćene podatke.
+9. Globalni prekidač „Skrivaj spojlere” u Podešavanjima, podrazumevano uključen; isključen → sve epizode `full` (opis i dalje iza klika).
+10. Režim „ne renderuj” (ne CSS blur).
+
+**Odluke kontrolora (SDD dnevnik, `.superpowers/sdd/.../progress.md`) i odstupanja od speca (plan):**
+- Zadatak 4: prazan 200 odgovor ani.zip ne prepisuje dobar keš (zadrži stari, bez upisa). Cena ako je pogrešno: serija kojoj je ani.zip zaista ispraznio podatke zadržava stare naslove dok ne stigne neprazan odgovor.
+- Zadatak 4: timeout pokriva i čitanje tela odgovora (zaglavljeno telo bi blokiralo sve kasnije `get(id)`). Cena: nešto veći diff.
+- Zadatak 5: slike samo sa hosta `artworks.thetvdb.com` (u `slimAniZip` i `thumb`), bez preusmeravanja za sličice (SSRF). Cena: ako ani.zip prebaci slike na drugi host, sličice se vraćaju na poster serije (bezbedan pad) dok se lista ne ažurira.
+- Zadatak 5: odbacivanje po `content-length` > 2 MB i čitanje toka sa ograničenjem bajtova (iscrpljivanje resursa). Cena: malo više koda.
+- Zadatak 5: keš sličice mora početi sa `data:image/` (inače ponovno preuzimanje); atomski upis keša (tmp + rename).
+- Zadatak 7: sintetička lista 1..max takođe prolazi kroz `metaReliability` (spec 3.2 je to izuzimao). Cena: serija čiji AniList ukupan broj premašuje ani.zip `episodeCount` (npr. podeljeni kurevi) nema naslove na detalju dok se ne kešira prava ani-cli lista.
+- Zadatak 9: skrol „idi na epizodu” u prikazu Lista (redovi imaju refove) — regresija koju je plan nametnuo. Cena: nema.
+- Zadatak 9: `useSeriesEpisodes` briše seriju pri promeni naslova/aniListId/režima/liste i pri grešci; neuspelo ažuriranje spojlera ponovo učitava. Cena: kratak prazan prikaz pri promeni ključa.
+- Zadatak 9: `EpisodeRow` nikad ne iscrtava naslov/opis/sličicu za `hidden` (opis samo za `full`) kao dodatna odbrana. Cena: nema.
+- Odstupanja od speca (ponašanje isto): `seriesPrefs.get/set` nepromenjeni, otkrivanja idu kroz `getSpoilers`/`setSpoilers`; jedan IPC kanal `episodes:spoilers(args, action)`; `pickTitle` bez parametra jezika; renderer ne osluškuje promenu `hideSpoilers` (Podešavanja su posebna stranica, pa se prikazi ponovo montiraju); red „Spojleri” se prikazuje i za `meta === 'off'` da bi se isključenje moglo poništiti.
+
+**Svesno ostavljeno (sitni nalazi pregleda, odloženo):**
+- Zadatak 1: `redactEpisode` propušta naslov za nepoznatu vidljivost (predložen fail-closed); `toNumber` prihvata `'0x10'`/`'1e2'`/`'-3'`, `revealed=null` baca grešku.
+- Zadatak 2: `metaReliability` baca za `null` listu (poziva se uvek sa nizom); `mapEpisode` propušta ne-string vrednosti iz keša (slim ih normalizuje).
+- Zadatak 3: `setSpoilers` reset uvek prepisuje fajl; ID-evi otkrivenih epizoda se ne proveravaju/ne ograničavaju (poređenje je numeričko, bezopasno); test loše akcije ne proverava da nema upisa.
+- Zadatak 4: greška upisa keša unutar fetch-a odbacuje sveže podatke; `readCache` ne proverava oblik; prazno telo uz stari keš ponovo traži pri svakom pozivu posle roka (bez backoff-a); `SetupWizard.test.jsx` jednom nestabilan u punom paketu (prošao pri ponovnom pokretanju).
+- Zadatak 5: nepročitano telo se ne otkazuje pri ranim izlazima; `thumb()` nema dedupe istovremenih zahteva (moguć `.tmp` rename sudar, sledeći poziv radi); moguć zalutali `.tmp`.
+- Zadatak 6: `downloads` čuva pod `item.aniCliTitle` (u praksi isto); nema testa za preskakanje kad je režim null / upise tihih sesija; spread ne-objekta kao unosa serije; testovi `episodeLists` nisu pokrenuti prvo kao RED.
+- Zadatak 7: sintetička formula dupla 3× (`domain.js`, `AnimeDetail.jsx`, `seriesEpisodes.js`); svaki `thumb()` ponovo radi ceo `resolve` (keširano, za sada u redu).
+- Zadatak 9: putanja sa `IntersectionObserver` nije pokrivena testom (jsdom ga nema); slab test brisanja pri grešci učitavanja; greška `forSeries` pri ponovnom učitavanju posle `libraryChanged` prazni listu; `useEpisodeView` radi `settings.get` pri svakom montiranju pickera; `loadThumb` mora biti stabilan (nigde nije dokumentovano).
+- Zadatak 10: nema testa klika na epizodu „0”/„12.5” (beleška/odgledano); nema testa klika „Prikaži” na redu u `AnimeDetail`; nema negativnog testa da Pretraga ne zove `forSeries` van faze epizoda; prvo otvaranje unosa bez `aniListId` kratko prikaže sintetičku listu (patch `aniListId` resetuje seriju).
 
 ### Šta je urađeno u sesiji 3 (2026-10-10, v0.6.4 = P0-B korak 6)
 - **Tok:** brainstorming → spec (`docs/superpowers/specs/2026-10-10-v0.6.4-player-design.md`) → plan od 11 zadataka (`docs/superpowers/plans/2026-10-10-v0.6.4-player.md`) → podagenti (Sonnet implementacija, pregled posle svakog zadatka) → završni pregled cele grane (Opus) → jedan talas ispravki (Opus) + ponovni pregled → merge `--no-ff`, push, `npm run release` (Latest) uz dozvolu korisnika. Ručne provere iz 0.6.3/0.6.1/0.6.0 korisnik još nije javio (ostaju na listi ispod).
