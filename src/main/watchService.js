@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 import { EVENTS } from '../shared/channels.js'
-import { animeLineTitle } from '../shared/domain.js'
+import { animeLineTitle, normalizeTitle } from '../shared/domain.js'
 import { autoAnswer, menuKind, parsePlayerArgs, parseQualityFallback } from './aniCliBridge.js'
 import { decideWatched } from './playerMonitor.js'
 import { isLastEpisode, nextEpisodeNumber } from '../shared/player.js'
@@ -16,7 +16,7 @@ function makeGate() {
   return { promise, open }
 }
 
-export function createWatchService({ aniCli, player, internalPlayer = null, library, settings, notify, seriesPrefs = null, positions = null, mpvExtraArgs = () => [], skipsFor = null, now = Date.now, celebrations = { hold() {}, release() {} }, getTotalEpisodes = () => null, setTimer = setTimeout, clearTimer = clearTimeout }) {
+export function createWatchService({ aniCli, player, internalPlayer = null, library, settings, notify, seriesPrefs = null, positions = null, episodeLists = null, mpvExtraArgs = () => [], skipsFor = null, now = Date.now, celebrations = { hold() {}, release() {} }, getTotalEpisodes = () => null, setTimer = setTimeout, clearTimer = clearTimeout }) {
   const pending = new Map() // requestId -> { sessionId, resolve }
   const sessions = new Map() // sessionId -> session
   const retryBudget = new Map() // "title|episode" -> time of the last recovery
@@ -98,6 +98,12 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     let sessionId = null
     const entry = { session: null, params, playing: false, cancelled: false, retrying: false, opened: false, animeLine: null, qualityFallback: null, failure: null, quiet, gate: quiet ? makeGate() : null, prefetchKey: null, prefetchFor: null, parked: false, adopted: false, freeRetryUsed: false, ended: false }
     const remember = (prompt, line) => { if (line != null && menuKind(prompt) === 'anime') entry.animeLine = line }
+    // Remember the real episode list for the series page; a failed write must never stop ani-cli.
+    const saveList = (lines) => {
+      const title = entry.animeLine != null ? normalizeTitle(animeLineTitle(entry.animeLine)) : params.anime
+      if (!episodeLists || !title) return
+      try { episodeLists.set(title, params.mode ?? settings.get().mode, lines) } catch (err) { console.warn('watch: saving the episode list failed', err?.message) }
+    }
     const session = aniCli.startSession({
       query: params.query,
       player: 'play',
@@ -106,6 +112,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
       mode: params.mode,
       onLine: (line) => { entry.qualityFallback ??= parseQualityFallback(line) },
       onMenu: ({ prompt, lines }) => {
+        if (menuKind(prompt) === 'episode') saveList(lines)
         const auto = autoAnswer(prompt, lines, { anime: params.anime, episode: params.episode })
         if (auto) { remember(prompt, auto); return Promise.resolve(auto) }
         // Nobody is on the search page to answer for a recovery; give up instead of showing an orphan menu.

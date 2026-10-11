@@ -196,3 +196,15 @@ describe('downloads', () => {
     expect(again.listDownloaded()).toEqual([])
   })
 })
+
+describe('downloads episode lists', () => {
+  it('remembers the episode list seen while downloading', async () => {
+    const episodeLists = { set: vi.fn() }
+    const d = createDownloads({ file: path.join(base, 'dl2.json'), aniCli, episodeLists, resolvePrefs: () => ({ quality: 'best', mode: 'sub' }), uuid: () => 'x1' })
+    d.enqueue({ title: 'Show', aniCliTitle: 'Show', episodes: ['2'], dir: base })
+    await flush()
+    const s = sessions.at(-1)
+    await s.opts.onMenu({ prompt: 'Select episode: ', lines: ['1', '2'] })
+    expect(episodeLists.set).toHaveBeenCalledWith('Show', 'sub', ['1', '2'])
+  })
+})
