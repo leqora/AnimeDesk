@@ -38,7 +38,7 @@ export function createSeriesEpisodes({ library, seriesPrefs, settings, anilist, 
       const info = await anilist.getForTitle(t, { aniListId: knownId }).catch(() => null)
       id = knownId ?? info?.id ?? null
       anizip = id ? await episodeMeta.get(id, { airing: AIRING.has(info?.status) }) : null
-      if (anizip && Object.keys(anizip.episodes ?? {}).length) meta = source === 'synthetic' ? 'ok' : metaReliability(episodes, anizip)
+      if (anizip && Object.keys(anizip.episodes ?? {}).length) meta = metaReliability(episodes, anizip)
     }
     return { episodes, source, meta, anizip, id, rule }
   }

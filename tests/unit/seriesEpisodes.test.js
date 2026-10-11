@@ -65,6 +65,12 @@ describe('seriesEpisodes.forSeries', () => {
     expect(JSON.stringify(r)).not.toContain('Tajna')
     expect(r.episodes[0]).toEqual({ number: '1', runtime: null, visibility: 'full' })
   })
+  it('a synthetic list that outgrows ani.zip (cross-season numbering) is unreliable', async () => {
+    const r = await createSeriesEpisodes(deps({ total: 6, watched: [7, 8] })).forSeries({ title: 'Show' })
+    expect(r.source).toBe('synthetic')
+    expect(r.meta).toBe('unreliable')
+    expect(JSON.stringify(r)).not.toContain('Tajna')
+  })
   it('respects metaOff, missing ani.zip data and an unknown series', async () => {
     const off = deps({ spoilers: { reveal: { all: false, episodes: [] }, metaOff: true } })
     expect((await createSeriesEpisodes(off).forSeries({ title: 'Show' })).meta).toBe('off')
@@ -107,6 +113,22 @@ describe('seriesEpisodes.thumb', () => {
     const d = deps()
     expect(await createSeriesEpisodes(d).thumb({ title: 'Show', list: ['1', '2', '3', '4', '5', '6', '7'], episode: '1' })).toBeNull()
     expect(d.episodeMeta.thumb).not.toHaveBeenCalled()
+    const off = deps({ spoilers: { reveal: { all: false, episodes: [] }, metaOff: true } })
+    expect(await createSeriesEpisodes(off).thumb({ title: 'Show', episode: '1' })).toBeNull()
+    expect(off.episodeMeta.thumb).not.toHaveBeenCalled()
+    const none = deps({ anizip: null })
+    expect(await createSeriesEpisodes(none).thumb({ title: 'Show', episode: '1' })).toBeNull()
+    expect(none.episodeMeta.thumb).not.toHaveBeenCalled()
+  })
+})
+
+describe('seriesEpisodes.resilience', () => {
+  it('survives an AniList failure when no id is known', async () => {
+    const d = deps({ inLibrary: false })
+    d.anilist.getForTitle.mockRejectedValue(new Error('down'))
+    const r = await createSeriesEpisodes(d).forSeries({ title: 'Show', list: ['1', '2'] })
+    expect(r.meta).toBe('none')
+    expect(d.episodeMeta.get).not.toHaveBeenCalled()
   })
 })
 
