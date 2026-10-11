@@ -25,7 +25,7 @@ function findEpisodeFile(dir, episode) {
   return null
 }
 
-export function createDownloads({ file, aniCli, onChange = () => {}, now = () => new Date().toISOString(), uuid = () => crypto.randomUUID(), resolvePrefs = null }) {
+export function createDownloads({ file, aniCli, onChange = () => {}, now = () => new Date().toISOString(), uuid = () => crypto.randomUUID(), resolvePrefs = null, episodeLists = null }) {
   const db = readJson(file, { version: 1, items: [] }).data
   const save = () => writeJsonAtomic(file, db)
   // Unfinished items survive an app restart; whatever was running or waiting comes back paused.
@@ -57,6 +57,9 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
         episodes: item.episode,
         downloadDir: targetDir,
         onMenu: async ({ prompt, lines }) => {
+          if (menuKind(prompt) === 'episode' && item.mode) {
+            try { episodeLists?.set(item.aniCliTitle, item.mode, lines) } catch (err) { console.warn('downloads: saving the episode list failed', err?.message) }
+          }
           const answer = autoAnswer(prompt, lines, { anime: item.aniCliTitle, episode: item.episode })
           if (answer == null && menuKind(prompt) === 'anime') notFound = true
           return answer

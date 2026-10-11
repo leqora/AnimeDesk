@@ -17,6 +17,7 @@ export function makeFakeApi(overrides = {}) {
     },
     seriesPrefs: { get: vi.fn(async () => ({ quality: null, mode: null, subOffset: { sub: 0, dub: 0 } })), set: vi.fn(async (title, patch) => ({ quality: null, mode: null, subOffset: { sub: 0, dub: 0 }, ...patch })) },
     anilist: { forTitle: vi.fn(async () => null), search: vi.fn(async () => []) },
+    episodes: { forSeries: vi.fn(async () => null), thumb: vi.fn(async () => null), spoilers: vi.fn(async () => null) },
     tools: { status: vi.fn(async () => ({})), installMissing: vi.fn(async () => ({})), checkUpdates: vi.fn(async () => []), onProgress: sub() },
     health: { get: vi.fn(async () => ({ light: 'green', reason: 'ok' })), recheck: vi.fn(async () => ({})), onChange: sub() },
     watch: {

@@ -19,6 +19,9 @@ import { createPositions } from './positions.js'
 import { createWatchService } from './watchService.js'
 import { createDownloads } from './downloads.js'
 import { createAniList } from './anilist.js'
+import { createEpisodeMeta } from './episodeMeta.js'
+import { createEpisodeLists } from './episodeLists.js'
+import { createSeriesEpisodes } from './seriesEpisodes.js'
 import { createAniSkip } from './aniskip.js'
 import { createSkipLookup, createTotalEpisodes } from './skipLookup.js'
 import { createWatchLog } from './watchLog.js'
@@ -81,6 +84,9 @@ async function main() {
   const library = createLibrary(paths.library)
   const seriesPrefs = createSeriesPrefs(paths.seriesPrefs)
   const anilist = createAniList({ cacheDir: paths.cache })
+  const episodeMeta = createEpisodeMeta({ cacheDir: paths.anizipCache })
+  const episodeLists = createEpisodeLists(paths.episodeLists)
+  const seriesEpisodes = createSeriesEpisodes({ library, seriesPrefs, settings, anilist, episodeMeta, episodeLists })
   const aniskip = createAniSkip({ cacheDir: path.join(paths.base, 'cache', 'aniskip') })
   const skipLookup = createSkipLookup({ anilist, aniskip, findAniListId: (title) => library.findByAniCliTitle(title)?.aniListId })
   const positions = createPositions(paths.positions)
@@ -132,12 +138,12 @@ async function main() {
       return dir ? [`--config-dir=${dir}`] : []
     } catch { return [] }
   }
-  const watch = createWatchService({ mpvExtraArgs, skipsFor: skipLookup, aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs, celebrations, getTotalEpisodes: totalEpisodes })
-  const downloads = createDownloads({ file: paths.downloads, aniCli, onChange: () => send(EVENTS.downloads, downloads.queueItems()), resolvePrefs: (title) => seriesPrefs.resolve(title, settings.get()) })
+  const watch = createWatchService({ mpvExtraArgs, skipsFor: skipLookup, aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs, celebrations, getTotalEpisodes: totalEpisodes, episodeLists })
+  const downloads = createDownloads({ file: paths.downloads, aniCli, onChange: () => send(EVENTS.downloads, downloads.queueItems()), resolvePrefs: (title) => seriesPrefs.resolve(title, settings.get()), episodeLists })
   const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
 
   registerIpc(ipcMain, createHandlers({
-    settings, library, seriesPrefs, tracker, progress, anilist, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, updater, whatsNew, send,
+    settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, updater, whatsNew, send,
     window: { get: () => fullscreen?.get() ?? false, set: (v) => fullscreen?.set(v) },
     electron: {
       pickFolder: async () => {

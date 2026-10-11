@@ -14,6 +14,8 @@ export function createPaths(baseDir) {
     profile: path.join(baseDir, 'profile.json'),
     seriesPrefs: path.join(baseDir, 'series-prefs.json'),
     positions: path.join(baseDir, 'positions.json'),
+    anizipCache: path.join(baseDir, 'cache', 'anizip'),
+    episodeLists: path.join(baseDir, 'episode-lists.json'),
   }
 }
 

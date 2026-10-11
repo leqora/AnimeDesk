@@ -136,6 +136,21 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .ep-group[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .episode-bar { position: sticky; bottom: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; background: var(--glass-strong); backdrop-filter: blur(var(--blur)); border: 1px solid var(--glass-border); border-radius: var(--radius); }
 .ep--note::after { content: "•"; margin-left: 2px; color: var(--warn); }
+.ep-view { display: inline-flex; gap: 4px; margin-bottom: 8px; }
+.ep-view button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.ep-list { display: flex; flex-direction: column; gap: 6px; }
+.ep-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ep-row__main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; padding: 8px; text-align: left; }
+.ep-row__thumb { width: 160px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--radius-sm); flex: none; background: var(--glass); transition: opacity .2s var(--ease); }
+.ep-row--watched .ep-row__thumb { opacity: .45; }
+.ep-row--watched:hover .ep-row__thumb { opacity: 1; }
+.ep-row--selected .ep-row__main { border-color: var(--accent); box-shadow: var(--glow); }
+.ep-row--note .ep-row__title::after { content: "•"; margin-left: 4px; color: var(--warn); }
+.ep-row__text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ep-row__title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ep-row__meta { display: flex; gap: 10px; font-family: var(--font-hud); font-size: 13px; }
+.ep-row__done { color: var(--accent-2); }
+.ep-row__overview { flex-basis: 100%; margin: 0; padding: 10px 12px; background: var(--glass); border-radius: var(--radius-sm); white-space: pre-wrap; }
 
 /* detail banner */
 .banner { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--glass-border); }
@@ -274,3 +289,5 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .player__rates { display: flex; flex-wrap: wrap; gap: 6px; }
 .player__rates button { min-width: 48px; padding: 4px 8px; }
 .player__rates button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
+.spoiler-row { align-items: center; gap: 10px; margin-top: 8px; }

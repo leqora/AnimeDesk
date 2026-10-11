@@ -8,8 +8,14 @@ const readOffsets = (raw) => {
   const o = raw !== null && typeof raw === 'object' ? raw : {}
   return { sub: clampOffset(o.sub), dub: clampOffset(o.dub) }
 }
+const readReveal = (raw) => {
+  const r = raw !== null && typeof raw === 'object' ? raw : {}
+  const episodes = Array.isArray(r.episodes) ? [...new Set(r.episodes.map((e) => String(e ?? '').trim()).filter(Boolean))] : []
+  return { all: r.all === true, episodes }
+}
 
-// Quality, sub/dub and the subtitle offset per mode, remembered per series (also for series not in the watchlist).
+// Quality, sub/dub, the subtitle offset per mode and the spoiler reveals, remembered per series
+// (also for series not in the watchlist).
 export function createSeriesPrefs(file) {
   const loaded = readJson(file, { version: 1, series: {} }).data
   const db = loaded && typeof loaded.series === 'object' && loaded.series !== null ? loaded : { version: 1, series: {} }
@@ -21,6 +27,26 @@ export function createSeriesPrefs(file) {
       mode: MODES.includes(raw.mode) ? raw.mode : null,
       subOffset: readOffsets(raw.subOffset),
     }
+  }
+
+  function getSpoilers(title) {
+    const raw = db.series[key(title)] ?? {}
+    return { reveal: readReveal(raw.reveal), metaOff: raw.metaOff === true }
+  }
+
+  // One writer for both halves, so changing one never drops the other.
+  function persist(k, prefs, spoilers) {
+    const stored = {}
+    if (prefs.quality !== null) stored.quality = prefs.quality
+    if (prefs.mode !== null) stored.mode = prefs.mode
+    const offsets = Object.fromEntries(MODES.filter((m) => prefs.subOffset[m] !== 0).map((m) => [m, prefs.subOffset[m]]))
+    if (Object.keys(offsets).length) stored.subOffset = offsets
+    const { all, episodes } = spoilers.reveal
+    if (all || episodes.length) stored.reveal = { ...(all ? { all: true } : {}), ...(episodes.length ? { episodes } : {}) }
+    if (spoilers.metaOff) stored.metaOff = true
+    if (Object.keys(stored).length) db.series[k] = stored
+    else delete db.series[k]
+    writeJsonAtomic(file, db)
   }
 
   function set(title, patch = {}) {
@@ -37,15 +63,24 @@ export function createSeriesPrefs(file) {
         else if (typeof v === 'number' && Number.isFinite(v)) next.subOffset[m] = clampOffset(v)
       }
     }
-    const stored = {}
-    if (next.quality !== null) stored.quality = next.quality
-    if (next.mode !== null) stored.mode = next.mode
-    const offsets = Object.fromEntries(MODES.filter((m) => next.subOffset[m] !== 0).map((m) => [m, next.subOffset[m]]))
-    if (Object.keys(offsets).length) stored.subOffset = offsets
-    if (Object.keys(stored).length) db.series[k] = stored
-    else delete db.series[k]
-    writeJsonAtomic(file, db)
+    persist(k, next, getSpoilers(title))
     return get(title)
+  }
+
+  function setSpoilers(title, action = {}) {
+    const k = key(title)
+    if (!k || action === null || typeof action !== 'object') return getSpoilers(title)
+    const next = getSpoilers(title)
+    let changed = false
+    if ('episode' in action) {
+      const ep = String(action.episode ?? '').trim()
+      if (ep && !next.reveal.episodes.includes(ep)) { next.reveal.episodes.push(ep); changed = true }
+    }
+    if (action.all === true && !next.reveal.all) { next.reveal.all = true; changed = true }
+    if (action.reset === true) { next.reveal = { all: false, episodes: [] }; changed = true }
+    if (typeof action.metaOff === 'boolean' && action.metaOff !== next.metaOff) { next.metaOff = action.metaOff; changed = true }
+    if (changed) persist(k, get(title), next)
+    return getSpoilers(title)
   }
 
   function resolve(title, settings) {
@@ -53,5 +88,5 @@ export function createSeriesPrefs(file) {
     return { quality: p.quality ?? settings.quality, mode: p.mode ?? settings.mode }
   }
 
-  return { get, set, resolve }
+  return { get, set, resolve, getSpoilers, setSpoilers }
 }

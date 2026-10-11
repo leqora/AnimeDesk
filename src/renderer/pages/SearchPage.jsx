@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { ReadyNotice } from '../components/ReadyNotice.jsx'
-import { Poster } from '../components/Poster.jsx'
+import { Poster, usePosterInfo } from '../components/Poster.jsx'
+import { useSeriesEpisodes } from '../episodes/useSeriesEpisodes.js'
 import { EpisodePicker } from '../components/EpisodePicker.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { animeLineTitle, normalizeTitle } from '../../shared/domain.js'
@@ -23,6 +24,9 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const [showDetails, setShowDetails] = useState(false)
   const [remember, setRemember] = useState(false)
   const [notice, setNotice] = useState(null)
+  const episodeMenu = phase === 'episode' && menu ? menu.lines.map((l) => l.trim()) : null
+  const { series, update: updateSpoilers, thumb } = useSeriesEpisodes({ title: episodeMenu ? anime : null, list: episodeMenu })
+  const posterInfo = usePosterInfo(episodeMenu ? anime : null)
 
   // The session id and phase are mirrored in a ref so the unmount cleanup sees the latest values.
   const [prefs, setPrefs] = useState({ quality: null, mode: null })
@@ -66,7 +70,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     if (!anime) return
     api.seriesPrefs.get(anime).then(setPrefs)
     api.library.list().then((list) => {
-      const key = anime.toLowerCase()
+      const key = normalizeTitle(anime).toLowerCase()
       const e = list.find((x) => normalizeTitle(x.aniCliTitle ?? x.title).toLowerCase() === key)
       setWatched(e?.watchedEpisodes ?? [])
     })
@@ -157,7 +161,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
   const addToWatchlist = async () => {
     const list = await api.library.list()
-    const key = anime.toLowerCase()
+    const key = normalizeTitle(anime).toLowerCase()
     if (list.some((x) => normalizeTitle(x.aniCliTitle ?? x.title).toLowerCase() === key)) {
       setNotice(t('search.alreadyInList'))
       return
@@ -212,7 +216,8 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
         <div className="page">
           <div className="row"><button type="button" onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button></div>
           <h2>{anime} — {t('search.selectEpisode')}</h2>
-          <EpisodePicker episodes={menu.lines.map((l) => l.trim())} selected={selected} watched={watched} onToggle={toggle} prefs={prefs} onPrefs={changePrefs}>
+          <EpisodePicker episodes={episodeMenu} selected={selected} watched={watched} onToggle={toggle} prefs={prefs} onPrefs={changePrefs}
+            series={series} poster={posterInfo?.poster ?? null} onReveal={(ep) => updateSpoilers({ episode: ep })} loadThumb={thumb}>
             <button type="button" className="primary" disabled={!ready || selected.length === 0} onClick={watchSelected}>{t('search.watch')}</button>
             <button type="button" disabled={!ready || selected.length === 0} onClick={downloadSelected}>{t('search.download')}</button>
             {!settings.downloadDir && (

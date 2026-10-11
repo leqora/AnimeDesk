@@ -218,6 +218,15 @@
   "episodes.quality": "Kvalitet",
   "episodes.mode": "Režim",
   "episodes.default": "Podrazumevano",
+  "episodes.view": "Prikaz epizoda",
+  "episodes.viewNumbers": "Brojevi",
+  "episodes.viewList": "Lista",
+  "episodes.number": "Epizoda {n}",
+  "episodes.titled": "Epizoda {n} · {title}",
+  "episodes.minutes": "{n} min",
+  "episodes.watchedMark": "✓ odgledano",
+  "episodes.reveal": "Prikaži",
+  "episodes.summary": "Opis",
   "search.back": "Nazad",
   "search.playSub": "Pusti sa titlom",
   "search.retry": "Pokušaj ponovo",
@@ -274,5 +283,11 @@
   "error.close": "Zatvori",
   "boot.failed": "Aplikacija nije mogla da se pokrene",
   "boot.retry": "Pokušaj ponovo",
-  "downloads.retryFailed": "Ponovi neuspele ({count})"
+  "downloads.retryFailed": "Ponovi neuspele ({count})",
+  "episodes.revealAll": "Prikaži sve epizode ove serije",
+  "episodes.hideAgain": "Ponovo sakrij otkrivene",
+  "episodes.metaOff": "Isključi metapodatke za ovu seriju",
+  "episodes.unreliable": "Naslovi epizoda nisu prikazani: brojevi epizoda kod izvora se ne poklapaju.",
+  "settings.spoilersSection": "Spojleri",
+  "settings.hideSpoilers": "Skrivaj spojlere (naslove, sličice i opise epizoda posle sledeće)"
 }

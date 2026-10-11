@@ -3,7 +3,7 @@ import { createWatchService } from '../../src/main/watchService.js'
 import { EVENTS } from '../../src/shared/channels.js'
 import { DEFAULT_SETTINGS } from '../../src/main/settings.js'
 
-function setup({ settings = {}, maxPercent = 90, menus = [], seriesPrefs, internalPlayer = null, positions = null, mpvExtraArgs, skipsFor } = {}) {
+function setup({ settings = {}, maxPercent = 90, menus = [], seriesPrefs, internalPlayer = null, positions = null, mpvExtraArgs, skipsFor, episodeLists = null } = {}) {
   const events = []
   let resolveDone
   const aniCli = {
@@ -20,7 +20,7 @@ function setup({ settings = {}, maxPercent = 90, menus = [], seriesPrefs, intern
   const player = { play: vi.fn(async () => ({ exitCode: 0, maxPercent })), stop: vi.fn() }
   const library = { recordWatched: vi.fn() }
   const svc = createWatchService({
-    aniCli, player, library, internalPlayer, positions, ...(mpvExtraArgs ? { mpvExtraArgs } : {}), ...(skipsFor ? { skipsFor } : {}),
+    aniCli, player, library, internalPlayer, positions, episodeLists, ...(mpvExtraArgs ? { mpvExtraArgs } : {}), ...(skipsFor ? { skipsFor } : {}),
     settings: { get: () => ({ ...DEFAULT_SETTINGS, ...settings }) },
     notify: (ch, p) => events.push([ch, p]),
     seriesPrefs,
@@ -30,6 +30,25 @@ function setup({ settings = {}, maxPercent = 90, menus = [], seriesPrefs, intern
 const flush = () => new Promise((r) => setTimeout(r, 20))
 
 describe('watchService', () => {
+  it('remembers the episode list ani-cli shows, also when the menu is answered automatically', async () => {
+    const episodeLists = { set: vi.fn() }
+    const menus = [
+      { prompt: 'Select anime: ', lines: ['1 Show (3 episodes)'] },
+      { prompt: 'Select episode: ', lines: ['1', '2', '3'] },
+    ]
+    const { svc } = setup({ menus, episodeLists, settings: { mode: 'dub' } })
+    svc.watch({ query: 'show', anime: 'Show (3 episodes)', episode: '2' })
+    await flush()
+    expect(episodeLists.set).toHaveBeenCalledWith('Show', 'dub', ['1', '2', '3'])
+  })
+  it('keeps playing when saving the episode list fails', async () => {
+    const episodeLists = { set: vi.fn(() => { throw new Error('disk full') }) }
+    const menus = [{ prompt: 'Select anime: ', lines: ['1 Show'] }, { prompt: 'Select episode: ', lines: ['1', '2'] }]
+    const { svc, player } = setup({ menus, episodeLists })
+    svc.watch({ query: 'show', anime: 'Show', episode: '2' })
+    await flush()
+    expect(player.play).toHaveBeenCalled()
+  })
   it('starts ani-cli with the series quality and mode, and a one-off mode wins', async () => {
     const seriesPrefs = { resolve: vi.fn(() => ({ quality: '720', mode: 'dub' })) }
     const { svc, aniCli } = setup({ seriesPrefs })

@@ -218,6 +218,15 @@
   "episodes.quality": "Quality",
   "episodes.mode": "Audio",
   "episodes.default": "Default",
+  "episodes.view": "Episode view",
+  "episodes.viewNumbers": "Numbers",
+  "episodes.viewList": "List",
+  "episodes.number": "Episode {n}",
+  "episodes.titled": "Episode {n} · {title}",
+  "episodes.minutes": "{n} min",
+  "episodes.watchedMark": "✓ watched",
+  "episodes.reveal": "Show",
+  "episodes.summary": "Summary",
   "search.back": "Back",
   "search.playSub": "Play subtitled",
   "search.retry": "Try again",
@@ -274,5 +283,11 @@
   "error.close": "Close",
   "boot.failed": "The app could not start",
   "boot.retry": "Try again",
-  "downloads.retryFailed": "Retry failed ({count})"
+  "downloads.retryFailed": "Retry failed ({count})",
+  "episodes.revealAll": "Show all episodes of this series",
+  "episodes.hideAgain": "Hide revealed again",
+  "episodes.metaOff": "Turn off episode details for this series",
+  "episodes.unreliable": "Episode titles are not shown: the source's episode numbers do not match.",
+  "settings.spoilersSection": "Spoilers",
+  "settings.hideSpoilers": "Hide spoilers (titles, thumbnails and summaries of episodes after the next one)"
 }

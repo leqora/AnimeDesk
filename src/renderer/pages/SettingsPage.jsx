@@ -101,6 +101,11 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
           <option value="dub">{t('settings.mode.dub')}</option>
         </select>
       </label>
+      <h3>{t('settings.spoilersSection')}</h3>
+      <label className="check">
+        <input type="checkbox" checked={settings.hideSpoilers} onChange={(e) => onSettings({ hideSpoilers: e.target.checked })} />
+        {t('settings.hideSpoilers')}
+      </label>
       <h3>{t('settings.playerSection')}</h3>
       <label className="field">
         <span>{t('settings.playerMode')}</span>
