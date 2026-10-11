@@ -9,6 +9,15 @@ export const TTL_MS = 7 * 24 * HOUR
 export const MISSING_TTL_MS = 7 * 24 * HOUR
 export const TIMEOUT_MS = 15000
 export const MAX_THUMB_BYTES = 2 * 1024 * 1024
+// Image URLs come from a third-party API, so only these hosts are ever fetched by the main process.
+export const THUMB_HOSTS = ['artworks.thetvdb.com']
+
+export function isAllowedImage(url) {
+  try {
+    const u = new URL(url)
+    return u.protocol === 'https:' && THUMB_HOSTS.includes(u.hostname) && !u.username && !u.password && u.port === ''
+  } catch { return false }
+}
 
 const MAIN_KEY = /^[1-9]\d*$/
 const text = (v) => (typeof v === 'string' && v.trim() ? v.trim() : null)
@@ -27,7 +36,7 @@ export function slimAniZip(raw) {
     const runtime = Number(e.runtime ?? e.length)
     episodes[k] = {
       titles,
-      image: typeof e.image === 'string' && e.image.startsWith('https://') ? e.image : null,
+      image: isAllowedImage(e.image) ? e.image : null,
       overview: text(e.overview) ?? text(e.summary),
       runtime: Number.isFinite(runtime) && runtime > 0 ? Math.round(runtime) : null,
     }
@@ -41,10 +50,10 @@ export function createEpisodeMeta({ cacheDir, fetchImpl = fetch, now = Date.now 
   const inflight = new Map()
 
   // The abort timer also covers reading the body (read), so a stalled body cannot hang callers.
-  async function fetchWithTimeout(url, read = (res) => res) {
+  async function fetchWithTimeout(url, read = (res) => res, options = {}) {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
-    try { return await read(await fetchImpl(url, { signal: ctrl.signal })) } finally { clearTimeout(timer) }
+    try { return await read(await fetchImpl(url, { ...options, signal: ctrl.signal })) } finally { clearTimeout(timer) }
   }
 
   function readCache(id) {
@@ -96,19 +105,35 @@ export function createEpisodeMeta({ cacheDir, fetchImpl = fetch, now = Date.now 
   async function thumb(aniListId, key) {
     if (!validId(aniListId) || !MAIN_KEY.test(String(key))) return null
     const f = thumbFile(aniListId, key)
-    try { return fs.readFileSync(f, 'utf8') } catch { /* not cached yet */ }
+    try {
+      const cached = fs.readFileSync(f, 'utf8')
+      if (cached.startsWith('data:image/')) return cached
+    } catch { /* not cached yet */ }
     const url = readCache(aniListId)?.episodes?.[key]?.image
-    if (typeof url !== 'string' || !url.startsWith('https://')) return null
+    if (!isAllowedImage(url)) return null
     try {
       const got = await fetchWithTimeout(url, async (res) => {
         const type = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
         if (!res.ok || !type.startsWith('image/')) return null
-        return { type, buf: Buffer.from(await res.arrayBuffer()) }
-      })
+        if (Number(res.headers.get('content-length')) > MAX_THUMB_BYTES) return null
+        if (!res.body?.getReader) return { type, buf: Buffer.from(await res.arrayBuffer()) }
+        const reader = res.body.getReader()
+        const chunks = []
+        let size = 0
+        for (;;) {
+          const { done, value } = await reader.read()
+          if (done) break
+          size += value.length
+          if (size > MAX_THUMB_BYTES) { await reader.cancel(); return null }
+          chunks.push(value)
+        }
+        return { type, buf: Buffer.concat(chunks) }
+      }, { redirect: 'error' })
       if (!got || got.buf.length === 0 || got.buf.length > MAX_THUMB_BYTES) return null
       const dataUrl = `data:${got.type};base64,${got.buf.toString('base64')}`
       fs.mkdirSync(path.dirname(f), { recursive: true })
-      fs.writeFileSync(f, dataUrl)
+      fs.writeFileSync(`${f}.tmp`, dataUrl)
+      fs.renameSync(`${f}.tmp`, f)
       return dataUrl
     } catch (err) {
       console.warn('episodeMeta: thumbnail failed', err?.message)

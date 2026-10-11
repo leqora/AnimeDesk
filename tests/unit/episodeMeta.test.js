@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createEpisodeMeta, slimAniZip, AIRING_TTL_MS, TTL_MS, TIMEOUT_MS } from '../../src/main/episodeMeta.js'
+import { createEpisodeMeta, slimAniZip, MAX_THUMB_BYTES, AIRING_TTL_MS, TTL_MS, TIMEOUT_MS } from '../../src/main/episodeMeta.js'
 
 const RAW = {
   titles: { en: 'Serija' },
@@ -11,7 +11,7 @@ const RAW = {
   images: [],
   mappings: { anilist_id: 1 },
   episodes: {
-    1: { title: { en: 'Naslov 1', ja: 'J1' }, image: 'https://img.example/1.jpg', overview: 'Opis 1', runtime: 24, airdate: '2030-01-01', rating: '9' },
+    1: { title: { en: 'Naslov 1', ja: 'J1' }, image: 'https://artworks.thetvdb.com/1.jpg', overview: 'Opis 1', runtime: 24, airdate: '2030-01-01', rating: '9' },
     2: { title: { en: 'Naslov 2' }, image: 'http://insecure.example/2.jpg', summary: 'Sažetak 2', length: 23 },
     S1: { title: { en: 'Specijal' } },
   },
@@ -31,7 +31,7 @@ describe('slimAniZip', () => {
     expect(slimAniZip(RAW)).toEqual({
       episodeCount: 2,
       episodes: {
-        1: { titles: { en: 'Naslov 1', ja: 'J1' }, image: 'https://img.example/1.jpg', overview: 'Opis 1', runtime: 24 },
+        1: { titles: { en: 'Naslov 1', ja: 'J1' }, image: 'https://artworks.thetvdb.com/1.jpg', overview: 'Opis 1', runtime: 24 },
         2: { titles: { en: 'Naslov 2' }, image: null, overview: 'Sažetak 2', runtime: 23 },
       },
     })
@@ -141,7 +141,7 @@ describe('episodeMeta.thumb', () => {
     fetchImpl.mockResolvedValue(image(4))
     const url = await meta.thumb(5, '1')
     expect(url).toBe(`data:image/jpeg;base64,${Buffer.from([7, 7, 7, 7]).toString('base64')}`)
-    expect(fetchImpl).toHaveBeenLastCalledWith('https://img.example/1.jpg', expect.anything())
+    expect(fetchImpl).toHaveBeenLastCalledWith('https://artworks.thetvdb.com/1.jpg', expect.anything())
     expect(fs.existsSync(path.join(dir, 'thumbs', '5-1.txt'))).toBe(true)
     const calls = fetchImpl.mock.calls.length
     expect(await createEpisodeMeta({ cacheDir: dir, fetchImpl, now: () => clock }).thumb(5, '1')).toBe(url)
@@ -165,5 +165,58 @@ describe('episodeMeta.thumb', () => {
     fetchImpl.mockRejectedValueOnce(new Error('offline'))
     expect(await meta.thumb(5, '1')).toBeNull()
     expect(fs.existsSync(path.join(dir, 'thumbs', '5-1.txt'))).toBe(false)
+  })
+  it('drops image hosts outside the allowlist from the slim data', () => {
+    const mk = (image) => slimAniZip({ episodes: { 1: { image } } }).episodes['1'].image
+    expect(mk('https://evil.example/x.jpg')).toBeNull()
+    expect(mk('https://user:pw@artworks.thetvdb.com/x.jpg')).toBeNull()
+    expect(mk('https://artworks.thetvdb.com:8443/x.jpg')).toBeNull()
+    expect(mk('https://artworks.thetvdb.com/x.jpg')).toBe('https://artworks.thetvdb.com/x.jpg')
+  })
+  it('does not fetch a hand-edited cache entry with a disallowed host', async () => {
+    await meta.get(5)
+    const f = path.join(dir, '5.json')
+    const d = JSON.parse(fs.readFileSync(f, 'utf8'))
+    d.episodes['1'].image = 'https://evil.example/x.jpg'
+    fs.writeFileSync(f, JSON.stringify(d))
+    const calls = fetchImpl.mock.calls.length
+    expect(await meta.thumb(5, '1')).toBeNull()
+    expect(fetchImpl.mock.calls.length).toBe(calls)
+  })
+  it('fetches thumbnails without following redirects', async () => {
+    await meta.get(5)
+    fetchImpl.mockResolvedValue(image(4))
+    await meta.thumb(5, '1')
+    expect(fetchImpl).toHaveBeenLastCalledWith('https://artworks.thetvdb.com/1.jpg', expect.objectContaining({ redirect: 'error' }))
+  })
+  it('rejects a too large content-length without reading the body', async () => {
+    await meta.get(5)
+    const arrayBuffer = vi.fn(async () => new ArrayBuffer(4))
+    fetchImpl.mockResolvedValueOnce({ ...image(4), headers: new Headers({ 'content-type': 'image/jpeg', 'content-length': String(3 * 1024 * 1024) }), arrayBuffer })
+    expect(await meta.thumb(5, '1')).toBeNull()
+    expect(arrayBuffer).not.toHaveBeenCalled()
+  })
+  it('reads a streamed body, cancelling it once it exceeds the cap', async () => {
+    await meta.get(5)
+    const stream = (chunks) => {
+      const cancel = vi.fn(async () => {})
+      let i = 0
+      return { cancel, body: { getReader: () => ({ read: async () => (i < chunks.length ? { done: false, value: chunks[i++] } : { done: true }), cancel }) } }
+    }
+    const big = stream([new Uint8Array(MAX_THUMB_BYTES), new Uint8Array(1)])
+    fetchImpl.mockResolvedValueOnce({ ...image(4), body: big.body })
+    expect(await meta.thumb(5, '1')).toBeNull()
+    expect(big.cancel).toHaveBeenCalled()
+    const ok = stream([new Uint8Array([7, 7]), new Uint8Array([7, 7])])
+    fetchImpl.mockResolvedValueOnce({ ...image(4), body: ok.body })
+    expect(await meta.thumb(5, '1')).toBe(`data:image/jpeg;base64,${Buffer.from([7, 7, 7, 7]).toString('base64')}`)
+  })
+  it('refetches when the cached thumbnail file is corrupted', async () => {
+    await meta.get(5)
+    fs.mkdirSync(path.join(dir, 'thumbs'), { recursive: true })
+    fs.writeFileSync(path.join(dir, 'thumbs', '5-1.txt'), 'garbage')
+    fetchImpl.mockResolvedValue(image(4))
+    expect(await meta.thumb(5, '1')).toMatch(/^data:image\/jpeg;base64,/)
+    expect(fs.readFileSync(path.join(dir, 'thumbs', '5-1.txt'), 'utf8')).toMatch(/^data:image\//)
   })
 })
