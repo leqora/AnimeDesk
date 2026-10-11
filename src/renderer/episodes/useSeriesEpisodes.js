@@ -14,8 +14,11 @@ export function useSeriesEpisodes({ title, aniListId = null, mode = null, list =
   const load = useCallback(() => {
     const n = ++seq.current
     if (!title) { setSeries(null); return }
-    api.episodes.forSeries(args.current).then((r) => { if (n === seq.current) setSeries(r ?? null) }).catch(() => {})
+    api.episodes.forSeries(args.current).then((r) => { if (n === seq.current) setSeries(r ?? null) }).catch(() => { if (n === seq.current) setSeries(null) })
   }, [api, title, aniListId, mode, listKey])
+
+  // Another series (or list): never keep showing the previous one's rows while the new answer is on its way.
+  useEffect(() => { setSeries(null) }, [title, aniListId, mode, listKey])
 
   useEffect(() => {
     load()
@@ -25,8 +28,9 @@ export function useSeriesEpisodes({ title, aniListId = null, mode = null, list =
   const update = useCallback(async (action) => {
     const n = ++seq.current
     const r = await api.episodes.spoilers(args.current, action).catch(() => null)
-    if (r && n === seq.current) setSeries(r)
-  }, [api])
+    if (!r) load() // the bump above dropped any in-flight load: fetch again so the list is not left stale
+    else if (n === seq.current) setSeries(r)
+  }, [api, load])
 
   const thumb = useCallback((episode) => api.episodes.thumb({ ...args.current, episode }).catch(() => null), [api])
 

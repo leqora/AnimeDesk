@@ -71,6 +71,7 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
               onToggle={onToggle}
               onReveal={onReveal}
               loadThumb={loadThumb}
+              rowRef={(el) => { buttons.current[ep] = el }}
             />
           ))}
         </div>

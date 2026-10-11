@@ -25,6 +25,28 @@ describe('useSeriesEpisodes', () => {
     expect(await result.current.thumb('1')).toBe('data:x')
     expect(api.episodes.thumb).toHaveBeenCalledWith({ title: 'Show', aniListId: null, mode: null, list: ['1'], episode: '1' })
   })
+  it('clears the series when the title changes and on a load error', async () => {
+    let calls = 0
+    const forSeries = vi.fn(() => (++calls === 1 ? Promise.resolve(LIST) : new Promise(() => {})))
+    const api = makeFakeApi({ episodes: { forSeries } })
+    const { result, rerender } = renderHookUi(({ title }) => useSeriesEpisodes({ title }), { api, initialProps: { title: 'A' } })
+    await waitFor(() => expect(result.current.series).toEqual(LIST))
+    rerender({ title: 'B' })
+    await waitFor(() => expect(result.current.series).toBeNull())
+    const bad = makeFakeApi({ episodes: { forSeries: vi.fn(async () => { throw new Error('x') }) } })
+    const r2 = renderHookUi(() => useSeriesEpisodes({ title: 'C' }), { api: bad })
+    await waitFor(() => expect(bad.episodes.forSeries).toHaveBeenCalled())
+    expect(r2.result.current.series).toBeNull()
+  })
+  it('reloads when a spoiler update fails', async () => {
+    const forSeries = vi.fn(async () => LIST)
+    const api = makeFakeApi({ episodes: { forSeries, spoilers: vi.fn(async () => { throw new Error('x') }) } })
+    const { result } = renderHookUi(() => useSeriesEpisodes({ title: 'Show' }), { api })
+    await waitFor(() => expect(result.current.series).toEqual(LIST))
+    await act(() => result.current.update({ episode: '1' }))
+    await waitFor(() => expect(forSeries).toHaveBeenCalledTimes(2))
+    expect(result.current.series).toEqual(LIST)
+  })
   it('asks nothing without a title', async () => {
     const api = makeFakeApi()
     const { result } = renderHookUi(() => useSeriesEpisodes({ title: null }), { api })

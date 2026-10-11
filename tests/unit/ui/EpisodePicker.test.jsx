@@ -128,6 +128,38 @@ describe('EpisodePicker list view', () => {
     expect(onToggle).toHaveBeenCalledWith('2')
     expect(container.innerHTML).not.toMatch(/Naslov 3|Opis 2/)
   })
+  it('never renders hidden or non-full fields even if the row carries them', async () => {
+    const loadThumb = vi.fn(async () => 'data:x')
+    const leaky = { ...SERIES, episodes: [
+      { number: '1', runtime: 24, visibility: 'hidden', title: 'Tajna 5', overview: 'Skriveno', hasThumb: true },
+      { number: '2', runtime: 24, visibility: 'preview', title: 'Naslov 2', overview: 'Skriveno 2', hasThumb: false },
+    ] }
+    const { container } = renderUi(<EpisodePicker {...base({ episodes: ['1', '2'] })} series={leaky} poster="data:poster" onReveal={vi.fn()} loadThumb={loadThumb} />, { api: listApi() })
+    await waitFor(() => expect(screen.getByText('Epizoda 2 · Naslov 2')).toBeInTheDocument())
+    expect(screen.getByText('Epizoda 1')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Prikaži' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Opis' })).not.toBeInTheDocument()
+    expect(loadThumb).not.toHaveBeenCalled()
+    expect(container.innerHTML).not.toMatch(/Tajna 5|Skriveno/)
+  })
+  it('scrolls to the go-to row in list view', async () => {
+    const orig = Element.prototype.scrollIntoView
+    const scroll = vi.fn()
+    Element.prototype.scrollIntoView = scroll
+    try {
+      const eps = range(1, 150)
+      const series = { source: 'menu', meta: 'ok', episodes: eps.map((n) => ({ number: n, runtime: 24, visibility: 'preview', title: `Naslov ${n}` })) }
+      renderUi(<EpisodePicker {...base({ episodes: eps })} series={series} />, { api: listApi() })
+      await waitFor(() => expect(screen.getByText('Epizoda 1 · Naslov 1')).toBeInTheDocument())
+      const input = screen.getByLabelText('Idi na epizodu')
+      fireEvent.change(input, { target: { value: '120' } })
+      fireEvent.submit(input)
+      expect(scroll).toHaveBeenCalledTimes(1)
+      expect(scroll.mock.contexts[0]).toBe(screen.getByText('Epizoda 120 · Naslov 120').closest('.ep-row'))
+    } finally {
+      Element.prototype.scrollIntoView = orig
+    }
+  })
   it('keeps pills free of titles', () => {
     renderUi(<EpisodePicker {...base({ episodes: ['1', '2', '3'] })} series={SERIES} />)
     for (const b of screen.getAllByRole('button', { name: /^\d$/ })) expect(b).not.toHaveAttribute('title')
