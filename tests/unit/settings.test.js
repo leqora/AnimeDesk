@@ -15,7 +15,7 @@ describe('settings', () => {
       profileName: null, soundKey: true, soundUi: false, soundVolume: 60, animations: true,
       autoDownloadUpdates: true, lastSeenVersion: null, fullscreen: false,
       playerMode: 'internal', autoSkip: false, autoNext: true, subtitles: { enabled: { sub: true, dub: false }, size: 25, lineSpacing: 0, font: 'default', color: 'white', box: true, boxOpacity: 60 }, mpvModernUi: true,
-      playerVolume: 1, playerMuted: false,
+      playerVolume: 1, playerMuted: false, hideSpoilers: true, episodeView: 'numbers',
     })
   })
   it('clamps the threshold and ignores invalid values', () => {
@@ -106,5 +106,12 @@ describe('settings', () => {
     expect(sanitizeSettings({ playerVolume: '0.5' }).playerVolume).toBe(1)
     expect(sanitizeSettings({ playerMuted: true }).playerMuted).toBe(true)
     expect(sanitizeSettings({ playerMuted: 'yes' }).playerMuted).toBe(false)
+  })
+  it('sanitizes the spoiler switch and the episode view', () => {
+    expect(sanitizeSettings({}).hideSpoilers).toBe(true)
+    expect(sanitizeSettings({ hideSpoilers: false }).hideSpoilers).toBe(false)
+    expect(sanitizeSettings({ hideSpoilers: 'no' }).hideSpoilers).toBe(true)
+    expect(sanitizeSettings({ episodeView: 'list' }).episodeView).toBe('list')
+    expect(sanitizeSettings({ episodeView: 'grid' }).episodeView).toBe('numbers')
   })
 })

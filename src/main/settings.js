@@ -25,11 +25,14 @@ export const DEFAULT_SETTINGS = Object.freeze({
   mpvModernUi: true,
   playerVolume: 1,
   playerMuted: false,
+  hideSpoilers: true,
+  episodeView: 'numbers',
 })
 
 export const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 export const MODES = ['sub', 'dub']
 export const PLAYER_MODES = ['internal', 'external']
+export const EPISODE_VIEWS = ['numbers', 'list']
 const LEGACY_SUBTITLE_SIZE = { S: 20, M: DEFAULT_SUBTITLES.size, L: 65 }
 const pct = (v, fallback) => (Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : fallback)
 
@@ -78,6 +81,8 @@ export function sanitizeSettings(input = {}) {
   if (typeof input.mpvModernUi === 'boolean') s.mpvModernUi = input.mpvModernUi
   if (Number.isFinite(input.playerVolume)) s.playerVolume = Math.min(1, Math.max(0, input.playerVolume))
   if (typeof input.playerMuted === 'boolean') s.playerMuted = input.playerMuted
+  if (typeof input.hideSpoilers === 'boolean') s.hideSpoilers = input.hideSpoilers
+  if (EPISODE_VIEWS.includes(input.episodeView)) s.episodeView = input.episodeView
   return s
 }
 

@@ -68,3 +68,43 @@ describe('seriesPrefs', () => {
     expect(createSeriesPrefs(file).get('Show').subOffset).toEqual({ sub: 0, dub: 60 })
   })
 })
+
+describe('seriesPrefs spoilers', () => {
+  const none = { reveal: { all: false, episodes: [] }, metaOff: false }
+  it('starts with nothing revealed', () => {
+    expect(createSeriesPrefs(file).getSpoilers('Frieren')).toEqual(none)
+  })
+  it('remembers revealed episodes, the whole series and metaOff, and persists them', () => {
+    const p = createSeriesPrefs(file)
+    p.setSpoilers('Show (12 episodes)', { episode: 7 })
+    p.setSpoilers('show', { episode: '7' }) // no duplicate
+    p.setSpoilers('SHOW', { episode: ' 9 ' })
+    expect(p.setSpoilers('Show', { all: true })).toEqual({ reveal: { all: true, episodes: ['7', '9'] }, metaOff: false })
+    p.setSpoilers('Show', { metaOff: true })
+    expect(createSeriesPrefs(file).getSpoilers('show')).toEqual({ reveal: { all: true, episodes: ['7', '9'] }, metaOff: true })
+  })
+  it('reset hides everything again but keeps metaOff', () => {
+    const p = createSeriesPrefs(file)
+    p.setSpoilers('Show', { episode: '3' })
+    p.setSpoilers('Show', { metaOff: true })
+    expect(p.setSpoilers('Show', { reset: true })).toEqual({ reveal: { all: false, episodes: [] }, metaOff: true })
+    p.setSpoilers('Show', { metaOff: false })
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).series).toEqual({})
+  })
+  it('keeps reveals when quality, mode or the subtitle offset change, and the other way round', () => {
+    const p = createSeriesPrefs(file)
+    p.set('Show', { quality: '720' })
+    p.setSpoilers('Show', { episode: '5' })
+    p.set('Show', { mode: 'dub', subOffset: { sub: 0.5 } })
+    expect(p.getSpoilers('Show').reveal.episodes).toEqual(['5'])
+    expect(p.get('Show')).toEqual({ quality: '720', mode: 'dub', subOffset: { sub: 0.5, dub: 0 } })
+  })
+  it('ignores bad actions and hand-edited values', () => {
+    const p = createSeriesPrefs(file)
+    expect(p.setSpoilers('Show', { episode: '' })).toEqual(none)
+    expect(p.setSpoilers('Show', { all: 'yes' })).toEqual(none)
+    expect(p.setSpoilers('', { all: true })).toEqual(none)
+    fs.writeFileSync(file, JSON.stringify({ version: 1, series: { show: { reveal: { all: 1, episodes: 'x' }, metaOff: 'y' } } }))
+    expect(createSeriesPrefs(file).getSpoilers('Show')).toEqual(none)
+  })
+})
