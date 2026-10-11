@@ -70,7 +70,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     if (!anime) return
     api.seriesPrefs.get(anime).then(setPrefs)
     api.library.list().then((list) => {
-      const key = anime.toLowerCase()
+      const key = normalizeTitle(anime).toLowerCase()
       const e = list.find((x) => normalizeTitle(x.aniCliTitle ?? x.title).toLowerCase() === key)
       setWatched(e?.watchedEpisodes ?? [])
     })
@@ -161,7 +161,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
   const addToWatchlist = async () => {
     const list = await api.library.list()
-    const key = anime.toLowerCase()
+    const key = normalizeTitle(anime).toLowerCase()
     if (list.some((x) => normalizeTitle(x.aniCliTitle ?? x.title).toLowerCase() === key)) {
       setNotice(t('search.alreadyInList'))
       return

@@ -31,7 +31,8 @@ export function episodeVisibility(n, { enabled = true, watchedMax: max = 0, reve
 export function redactEpisode(number, meta, visibility) {
   const runtime = Number.isFinite(meta?.runtime) && meta.runtime > 0 ? meta.runtime : null
   const out = { number: String(number), runtime, visibility }
-  if (visibility === 'hidden' || !meta) return out
+  // Fail closed: anything but an explicit preview or full carries no metadata.
+  if ((visibility !== 'preview' && visibility !== 'full') || !meta) return out
   if (typeof meta.title === 'string' && meta.title) out.title = meta.title
   out.hasThumb = typeof meta.image === 'string' && meta.image.length > 0
   if (visibility === 'full' && typeof meta.overview === 'string' && meta.overview) out.overview = meta.overview

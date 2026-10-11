@@ -8,7 +8,11 @@ export const AIRING_TTL_MS = 12 * HOUR
 export const TTL_MS = 7 * 24 * HOUR
 export const MISSING_TTL_MS = 7 * 24 * HOUR
 export const TIMEOUT_MS = 15000
+// After a failed refresh the stale cache is served for this long before ani.zip is asked again.
+export const RETRY_AFTER_MS = 15 * 60 * 1000
 export const MAX_THUMB_BYTES = 2 * 1024 * 1024
+// Raster formats only: an SVG data URL could carry markup.
+const THUMB_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 // Image URLs come from a third-party API, so only these hosts are ever fetched by the main process.
 export const THUMB_HOSTS = ['artworks.thetvdb.com']
 
@@ -48,6 +52,9 @@ export function slimAniZip(raw) {
 export function createEpisodeMeta({ cacheDir, fetchImpl = fetch, now = Date.now }) {
   const file = (id) => path.join(cacheDir, `${id}.json`)
   const inflight = new Map()
+  const thumbInflight = new Map()
+  const failedAt = new Map()
+  const parsed = new Map() // id -> { sig, data }: the cache file is parsed again only when it changed on disk
 
   // The abort timer also covers reading the body (read), so a stalled body cannot hang callers.
   async function fetchWithTimeout(url, read = (res) => res, options = {}) {
@@ -58,9 +65,18 @@ export function createEpisodeMeta({ cacheDir, fetchImpl = fetch, now = Date.now 
 
   function readCache(id) {
     try {
+      const st = fs.statSync(file(id))
+      const sig = `${st.mtimeMs}:${st.size}`
+      const hit = parsed.get(id)
+      if (hit?.sig === sig) return hit.data
       const d = readJson(file(id), null).data
-      return d && Number.isFinite(d.fetchedAt) ? d : null
-    } catch { return null }
+      const data = d && Number.isFinite(d.fetchedAt) ? d : null
+      parsed.set(id, { sig, data })
+      return data
+    } catch {
+      parsed.delete(id)
+      return null
+    }
   }
 
   async function load(id, airing) {
@@ -68,6 +84,7 @@ export function createEpisodeMeta({ cacheDir, fetchImpl = fetch, now = Date.now 
     const ttl = cached?.missing ? MISSING_TTL_MS : airing ? AIRING_TTL_MS : TTL_MS
     if (cached && now() - cached.fetchedAt < ttl) return cached.missing ? null : cached
     const stale = cached && !cached.missing ? cached : null
+    if (now() - (failedAt.get(id) ?? -Infinity) < RETRY_AFTER_MS) return stale
     try {
       const res = await fetchWithTimeout(`${ANIZIP_URL}?anilist_id=${id}`, async (r) => ({
         status: r.status,
@@ -76,17 +93,20 @@ export function createEpisodeMeta({ cacheDir, fetchImpl = fetch, now = Date.now 
       }))
       if (res.status === 404) {
         writeJsonAtomic(file(id), { missing: true, fetchedAt: now() })
+        failedAt.delete(id)
         return null
       }
       if (!res.ok) throw new Error(`ani.zip HTTP ${res.status}`)
       const slim = slimAniZip(res.body)
       // An empty answer must not replace a good cache.
-      if (stale && Object.keys(slim.episodes).length === 0) return stale
+      if (stale && Object.keys(slim.episodes).length === 0) { failedAt.set(id, now()); return stale }
       const data = { ...slim, fetchedAt: now() }
       writeJsonAtomic(file(id), data)
+      failedAt.delete(id)
       return data
     } catch (err) {
       console.warn('episodeMeta: ani.zip request failed', err?.message)
+      failedAt.set(id, now())
       return stale
     }
   }
@@ -102,8 +122,14 @@ export function createEpisodeMeta({ cacheDir, fetchImpl = fetch, now = Date.now 
   const thumbFile = (id, key) => path.join(cacheDir, 'thumbs', `${id}-${key}.txt`)
 
   // The caller has already decided the episode may be shown; this only fetches and caches the picture.
-  async function thumb(aniListId, key) {
-    if (!validId(aniListId) || !MAIN_KEY.test(String(key))) return null
+  function thumb(aniListId, key) {
+    if (!validId(aniListId) || !MAIN_KEY.test(String(key))) return Promise.resolve(null)
+    const k = thumbFile(aniListId, key)
+    if (!thumbInflight.has(k)) thumbInflight.set(k, loadThumb(aniListId, key).finally(() => thumbInflight.delete(k)))
+    return thumbInflight.get(k)
+  }
+
+  async function loadThumb(aniListId, key) {
     const f = thumbFile(aniListId, key)
     try {
       const cached = fs.readFileSync(f, 'utf8')
@@ -114,7 +140,7 @@ export function createEpisodeMeta({ cacheDir, fetchImpl = fetch, now = Date.now 
     try {
       const got = await fetchWithTimeout(url, async (res) => {
         const type = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
-        if (!res.ok || !type.startsWith('image/')) return null
+        if (!res.ok || !THUMB_TYPES.has(type)) return null
         if (Number(res.headers.get('content-length')) > MAX_THUMB_BYTES) return null
         if (!res.body?.getReader) return { type, buf: Buffer.from(await res.arrayBuffer()) }
         const reader = res.body.getReader()

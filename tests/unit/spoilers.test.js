@@ -73,4 +73,9 @@ describe('redactEpisode', () => {
     expect(redactEpisode('2', { title: null, image: null, overview: null, runtime: -3 }, 'full'))
       .toEqual({ number: '2', runtime: null, visibility: 'full', hasThumb: false })
   })
+  it('fails closed for any visibility other than preview or full', () => {
+    for (const v of [undefined, 'bogus', null]) {
+      expect(redactEpisode('5', META, v)).toEqual({ number: '5', runtime: 24, visibility: v })
+    }
+  })
 })

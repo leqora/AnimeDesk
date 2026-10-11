@@ -1,4 +1,5 @@
 import { watchedMax, episodeVisibility, redactEpisode } from '../shared/spoilers.js'
+import { normalizeTitle } from '../shared/domain.js'
 import { metaKey, metaReliability, mapEpisode } from '../shared/episodeMap.js'
 
 const AIRING = new Set(['RELEASING', 'NOT_YET_RELEASED'])
@@ -35,7 +36,12 @@ export function createSeriesEpisodes({ library, seriesPrefs, settings, anilist, 
     if (spoilers.metaOff) meta = 'off'
     else if (t || aniListId) {
       const knownId = aniListId ?? entry?.aniListId ?? null
-      const info = await anilist.getForTitle(t, { aniListId: knownId }).catch(() => null)
+      const at = normalizeTitle(t)
+      // With a known id only the cached AniList record is read (for the airing status): per-row thumbnail
+      // requests must never queue network calls behind AniList's rate limit.
+      const info = knownId
+        ? (anilist.getCached(at, { aniListId: knownId }) ?? null)
+        : await anilist.getForTitle(at, { aniListId: null }).catch(() => null)
       id = knownId ?? info?.id ?? null
       anizip = id ? await episodeMeta.get(id, { airing: AIRING.has(info?.status) }) : null
       if (anizip && Object.keys(anizip.episodes ?? {}).length) meta = metaReliability(episodes, anizip)

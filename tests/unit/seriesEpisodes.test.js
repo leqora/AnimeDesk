@@ -17,7 +17,7 @@ function deps({ watched = [1, 2, 3], total = 6, inLibrary = true, spoilers = { r
       setSpoilers: vi.fn(() => spoilers),
     },
     settings: { get: () => ({ ...DEFAULT_SETTINGS, ...settings }) },
-    anilist: { getForTitle: vi.fn(async () => ({ id: 77, status: 'FINISHED' })) },
+    anilist: { getForTitle: vi.fn(async () => ({ id: 77, status: 'FINISHED' })), getCached: vi.fn(() => ({ id: 77, status: 'FINISHED' })) },
     episodeMeta: { get: vi.fn(async () => anizip), thumb: vi.fn(async () => 'data:image/jpeg;base64,AAA') },
     episodeLists: { get: vi.fn(() => cachedList) },
   }
@@ -91,9 +91,34 @@ describe('seriesEpisodes.forSeries', () => {
   })
   it('asks ani.zip as airing for a series that is still airing', async () => {
     const d = deps()
-    d.anilist.getForTitle.mockResolvedValue({ id: 77, status: 'RELEASING' })
+    d.anilist.getCached.mockReturnValue({ id: 77, status: 'RELEASING' })
     await createSeriesEpisodes(d).forSeries({ title: 'Show' })
     expect(d.episodeMeta.get).toHaveBeenCalledWith(77, { airing: true })
+  })
+  it('never asks AniList over the network when the id is already known', async () => {
+    const d = deps()
+    d.anilist.getCached.mockReturnValue({ id: 77, status: 'RELEASING' })
+    const svc = createSeriesEpisodes(d)
+    await svc.forSeries({ title: 'Show' })
+    await svc.thumb({ title: 'Show', episode: '1' })
+    await svc.forSeries({ title: 'Other', aniListId: 5 })
+    expect(d.anilist.getForTitle).not.toHaveBeenCalled()
+    expect(d.episodeMeta.get).toHaveBeenCalledWith(77, { airing: true })
+    expect(d.anilist.getCached).toHaveBeenCalledWith('Other', { aniListId: 5 })
+  })
+  it('still asks AniList by title when no id is known', async () => {
+    const d = deps({ inLibrary: false })
+    await createSeriesEpisodes(d).forSeries({ title: 'Show', list: ['1'] })
+    expect(d.anilist.getForTitle).toHaveBeenCalledWith('Show', { aniListId: null })
+    expect(d.anilist.getCached).not.toHaveBeenCalled()
+  })
+  it('asks AniList with the title without the "(N episodes)" suffix', async () => {
+    const d = deps({ inLibrary: false })
+    await createSeriesEpisodes(d).forSeries({ title: 'Show (3 episodes)', list: ['1'] })
+    expect(d.anilist.getForTitle).toHaveBeenCalledWith('Show', { aniListId: null })
+    const k = deps()
+    await createSeriesEpisodes(k).forSeries({ title: 'Show (3 episodes)', aniListId: 9 })
+    expect(k.anilist.getCached).toHaveBeenCalledWith('Show', { aniListId: 9 })
   })
 })
 

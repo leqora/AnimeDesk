@@ -152,6 +152,20 @@ describe('SearchPage', () => {
     expect(api.watch.cancel).not.toHaveBeenCalled()
   })
 
+  it('marks watched episodes when the picked title carries the "(N episodes)" suffix', async () => {
+    const { api, handlers } = withEvents()
+    api.library.list.mockResolvedValue([{ id: 'a', title: 'Show', aniCliTitle: 'Show', watchedEpisodes: [1] }])
+    renderUi(<SearchPage {...props()} />, { api })
+    fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: 'show' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show (3 episodes)'] }))
+    fireEvent.click(screen.getByRole('button', { name: /Show/ }))
+    await waitFor(() => expect(api.watch.answerMenu).toHaveBeenCalledWith('r1', '1 Show (3 episodes)'))
+    act(() => handlers.menu({ requestId: 'r2', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
+    await waitFor(() => expect(screen.getByRole('button', { name: '1' })).toHaveClass('ep--watched'))
+    expect(screen.getByRole('button', { name: '2' })).not.toHaveClass('ep--watched')
+  })
+
   it('marks already watched episodes', async () => {
     const { api, handlers } = withEvents()
     api.library.list.mockResolvedValue([{ id: 'a', title: 'Show', aniCliTitle: 'Show', watchedEpisodes: [1] }])

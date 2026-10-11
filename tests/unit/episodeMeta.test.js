@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createEpisodeMeta, slimAniZip, MAX_THUMB_BYTES, AIRING_TTL_MS, TTL_MS, TIMEOUT_MS } from '../../src/main/episodeMeta.js'
+import { createEpisodeMeta, slimAniZip, MAX_THUMB_BYTES, AIRING_TTL_MS, TTL_MS, TIMEOUT_MS, RETRY_AFTER_MS } from '../../src/main/episodeMeta.js'
 
 const RAW = {
   titles: { en: 'Serija' },
@@ -125,6 +125,59 @@ describe('episodeMeta.get', () => {
       expect(await p2).toBeNull()
     } finally { vi.useRealTimers() }
   })
+  it('backs off for 15 minutes after a failed refresh and serves the stale cache meanwhile', async () => {
+    await meta.get(5)
+    clock += TTL_MS + 1
+    fetchImpl.mockRejectedValue(new Error('offline'))
+    expect((await meta.get(5)).episodes['1'].titles.en).toBe('Naslov 1')
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    clock += RETRY_AFTER_MS - 1
+    expect((await meta.get(5)).episodes['1'].titles.en).toBe('Naslov 1')
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    clock += 2
+    await meta.get(5)
+    expect(fetchImpl).toHaveBeenCalledTimes(3)
+    fetchImpl.mockResolvedValue(json(RAW))
+    clock += RETRY_AFTER_MS + 1
+    await meta.get(5)
+    await meta.get(5)
+    expect(fetchImpl).toHaveBeenCalledTimes(4) // a success clears the backoff and refreshes the cache
+  })
+  it('backs off after an empty answer that kept the stale cache', async () => {
+    await meta.get(5)
+    clock += TTL_MS + 1
+    fetchImpl.mockResolvedValue(json({}))
+    await meta.get(5)
+    await meta.get(5)
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    clock += RETRY_AFTER_MS + 1
+    await meta.get(5)
+    expect(fetchImpl).toHaveBeenCalledTimes(3)
+  })
+  it('backs off without any cache too, returning null', async () => {
+    fetchImpl.mockResolvedValue(json({}, 500))
+    expect(await meta.get(8)).toBeNull()
+    expect(await meta.get(8)).toBeNull()
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+    clock += RETRY_AFTER_MS + 1
+    await meta.get(8)
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
+  it('reads the cache file only once for repeated reads, and notices a changed file', async () => {
+    await meta.get(5)
+    const spy = vi.spyOn(fs, 'readFileSync')
+    try {
+      meta.readCache(5)
+      meta.readCache(5)
+      meta.readCache(5)
+      expect(spy.mock.calls.filter(([f]) => String(f).endsWith('5.json')).length).toBeLessThanOrEqual(1)
+    } finally { spy.mockRestore() }
+    const f = path.join(dir, '5.json')
+    const d = JSON.parse(fs.readFileSync(f, 'utf8'))
+    d.episodes['1'].titles.en = 'Izmenjeno 1 duze'
+    fs.writeFileSync(f, JSON.stringify(d))
+    expect(meta.readCache(5).episodes['1'].titles.en).toBe('Izmenjeno 1 duze')
+  })
   it('rejects ids that are not positive integers without a request', async () => {
     for (const id of [null, 0, -1, 1.5, '12', '../x']) expect(await meta.get(id)).toBeNull()
     expect(fetchImpl).not.toHaveBeenCalled()
@@ -165,6 +218,28 @@ describe('episodeMeta.thumb', () => {
     fetchImpl.mockRejectedValueOnce(new Error('offline'))
     expect(await meta.thumb(5, '1')).toBeNull()
     expect(fs.existsSync(path.join(dir, 'thumbs', '5-1.txt'))).toBe(false)
+  })
+  it('refuses SVG and other non-raster image types', async () => {
+    await meta.get(5)
+    fetchImpl.mockResolvedValueOnce(image(4, 'image/svg+xml'))
+    expect(await meta.thumb(5, '1')).toBeNull()
+    fetchImpl.mockResolvedValueOnce(image(4, 'image/x-icon'))
+    expect(await meta.thumb(5, '1')).toBeNull()
+    for (const type of ['image/png', 'image/webp', 'image/gif']) {
+      fetchImpl.mockResolvedValueOnce(image(4, type))
+      expect(await meta.thumb(5, '1')).toMatch(new RegExp(`^data:${type};base64,`))
+      fs.rmSync(path.join(dir, 'thumbs', '5-1.txt'))
+    }
+  })
+  it('shares one download between concurrent requests for the same thumbnail', async () => {
+    await meta.get(5)
+    fetchImpl.mockClear()
+    fetchImpl.mockResolvedValue(image(4))
+    const [a, b] = await Promise.all([meta.thumb(5, '1'), meta.thumb(5, '1')])
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+    expect(a).toMatch(/^data:image\/jpeg;base64,/)
+    expect(b).toBe(a)
+    expect(fs.readdirSync(path.join(dir, 'thumbs'))).toEqual(['5-1.txt'])
   })
   it('drops image hosts outside the allowlist from the slim data', () => {
     const mk = (image) => slimAniZip({ episodes: { 1: { image } } }).episodes['1'].image
