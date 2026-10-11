@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { screen, fireEvent } from '@testing-library/react'
-import { renderUi } from './helpers.jsx'
+import { screen, fireEvent, waitFor } from '@testing-library/react'
+import { renderUi, makeFakeApi } from './helpers.jsx'
 import { EpisodePicker } from '../../../src/renderer/components/EpisodePicker.jsx'
 
 const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => String(a + i))
@@ -81,5 +81,56 @@ describe('EpisodePicker', () => {
     } finally {
       Element.prototype.scrollIntoView = orig
     }
+  })
+})
+
+const SERIES = {
+  source: 'menu',
+  meta: 'ok',
+  episodes: [
+    { number: '1', runtime: 24, visibility: 'full', title: 'Naslov 1', hasThumb: true, overview: 'Opis 1' },
+    { number: '2', runtime: 24, visibility: 'preview', title: 'Naslov 2', hasThumb: true },
+    { number: '3', runtime: 24, visibility: 'hidden' },
+  ],
+}
+const listApi = () => makeFakeApi({ settings: { get: vi.fn(async () => ({ episodeView: 'list' })), update: vi.fn(async (p) => p) } })
+
+describe('EpisodePicker list view', () => {
+  it('offers the view switch only when metadata is available', () => {
+    renderUi(<EpisodePicker {...base({ episodes: ['1', '2', '3'] })} series={{ ...SERIES, meta: 'none' }} />)
+    expect(screen.queryByRole('group', { name: 'Prikaz epizoda' })).not.toBeInTheDocument()
+  })
+  it('switches to the list and remembers it', async () => {
+    const { api } = renderUi(<EpisodePicker {...base({ episodes: ['1', '2', '3'] })} series={SERIES} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Lista' }))
+    expect(api.settings.update).toHaveBeenCalledWith({ episodeView: 'list' })
+    expect(screen.getByText('Epizoda 1 · Naslov 1')).toBeInTheDocument()
+  })
+  it('renders full, preview and hidden rows without leaking the hidden one', async () => {
+    const onReveal = vi.fn()
+    const onToggle = vi.fn()
+    const loadThumb = vi.fn(async (n) => `data:image/png;base64,${n}`)
+    const { container } = renderUi(
+      <EpisodePicker {...base({ episodes: ['1', '2', '3'], watched: [1], onToggle })} series={SERIES} poster="data:poster" onReveal={onReveal} loadThumb={loadThumb} />,
+      { api: listApi() },
+    )
+    await waitFor(() => expect(screen.getByText('Epizoda 2 · Naslov 2')).toBeInTheDocument())
+    expect(screen.getAllByRole('button', { name: 'Opis' })).toHaveLength(1) // only the full row
+    fireEvent.click(screen.getByRole('button', { name: 'Opis' }))
+    expect(screen.getByText('Opis 1')).toBeInTheDocument()
+    const hidden = screen.getByText('Epizoda 3').closest('.ep-row')
+    expect(hidden.querySelector('img').getAttribute('src')).toBe('data:poster')
+    await waitFor(() => expect(loadThumb).toHaveBeenCalledTimes(2))
+    expect(loadThumb).not.toHaveBeenCalledWith('3')
+    fireEvent.click(screen.getByRole('button', { name: 'Prikaži' }))
+    expect(onReveal).toHaveBeenCalledWith('3')
+    fireEvent.click(screen.getByText('Epizoda 2 · Naslov 2'))
+    expect(onToggle).toHaveBeenCalledWith('2')
+    expect(container.innerHTML).not.toMatch(/Naslov 3|Opis 2/)
+  })
+  it('keeps pills free of titles', () => {
+    renderUi(<EpisodePicker {...base({ episodes: ['1', '2', '3'] })} series={SERIES} />)
+    for (const b of screen.getAllByRole('button', { name: /^\d$/ })) expect(b).not.toHaveAttribute('title')
+    expect(screen.queryByText(/Naslov/)).not.toBeInTheDocument()
   })
 })

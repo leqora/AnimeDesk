@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
+import { EpisodeRow } from './EpisodeRow.jsx'
+import { useEpisodeView } from '../episodes/useEpisodeView.js'
 import { GROUP_SIZE, episodeGroups, findEpisodeIndex, firstUnwatchedIndex } from '../../shared/episodes.js'
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 
-export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, children }) {
+export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, series = null, poster = null, onReveal = null, loadThumb = null, children }) {
   const t = useT()
   const groups = episodeGroups(episodes)
   const [group, setGroup] = useState(() => Math.floor(firstUnwatchedIndex(episodes, watched) / GROUP_SIZE))
@@ -12,6 +14,10 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
   const [missing, setMissing] = useState(false)
   const [focus, setFocus] = useState(null)
   const buttons = useRef({})
+  const [view, setView] = useEpisodeView()
+  const hasMeta = series?.meta === 'ok'
+  const asList = hasMeta && view === 'list'
+  const rows = new Map((series?.episodes ?? []).map((r) => [r.number, r]))
 
   useEffect(() => {
     if (focus) buttons.current[focus.ep]?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
@@ -46,14 +52,38 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
           </form>
         </>
       )}
-      <div className="ep-grid">
-        {visible.map((ep) => {
-          const cls = ['ep', selected.includes(ep) && 'ep--selected', watched.includes(Number(ep)) && 'ep--watched', noted.includes(ep) && 'ep--note'].filter(Boolean).join(' ')
-          return (
-            <button type="button" key={ep} ref={(el) => { buttons.current[ep] = el }} className={cls} aria-pressed={selected.includes(ep)} onClick={() => onToggle(ep)}>{ep}</button>
-          )
-        })}
-      </div>
+      {hasMeta && (
+        <div className="ep-view" role="group" aria-label={t('episodes.view')}>
+          <button type="button" aria-pressed={view === 'numbers'} onClick={() => setView('numbers')}>{t('episodes.viewNumbers')}</button>
+          <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>{t('episodes.viewList')}</button>
+        </div>
+      )}
+      {asList ? (
+        <div className="ep-list">
+          {visible.map((ep) => (
+            <EpisodeRow
+              key={ep}
+              row={rows.get(ep) ?? { number: ep, runtime: null, visibility: 'hidden' }}
+              poster={poster}
+              watched={watched.includes(Number(ep))}
+              selected={selected.includes(ep)}
+              noted={noted.includes(ep)}
+              onToggle={onToggle}
+              onReveal={onReveal}
+              loadThumb={loadThumb}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="ep-grid">
+          {visible.map((ep) => {
+            const cls = ['ep', selected.includes(ep) && 'ep--selected', watched.includes(Number(ep)) && 'ep--watched', noted.includes(ep) && 'ep--note'].filter(Boolean).join(' ')
+            return (
+              <button type="button" key={ep} ref={(el) => { buttons.current[ep] = el }} className={cls} aria-pressed={selected.includes(ep)} onClick={() => onToggle(ep)}>{ep}</button>
+            )
+          })}
+        </div>
+      )}
       <div className="episode-bar">
         {prefs && onPrefs && (
           <>
