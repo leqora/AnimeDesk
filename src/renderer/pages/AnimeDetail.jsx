@@ -5,6 +5,7 @@ import { Poster } from '../components/Poster.jsx'
 import { ConfirmButton } from '../components/ConfirmButton.jsx'
 import { EpisodePicker } from '../components/EpisodePicker.jsx'
 import { Icon } from '../components/Icon.jsx'
+import { useSeriesEpisodes } from '../episodes/useSeriesEpisodes.js'
 import { usePosterTint } from '../theme/usePosterTint.js'
 import { STATUSES, nextEpisode } from '../../shared/domain.js'
 
@@ -34,15 +35,17 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
 
   const save = async (patch) => { await api.library.update(entry.id, patch); onChanged() }
   const watched = entry.watchedEpisodes
+  const animeKey = entry.aniCliTitle ?? entry.title
+  const { series, update, thumb } = useSeriesEpisodes({ title: animeKey, aniListId: entry.aniListId ?? null })
   const maxEp = Math.max(entry.totalEpisodes ?? 0, ...watched.map(Math.ceil), 1)
-  const episodes = Array.from({ length: maxEp }, (_, i) => i + 1)
+  // The real ani-cli list (or 1..max) comes from main; until it answers, 1..max as before.
+  const episodes = series?.episodes?.length ? series.episodes.map((e) => e.number) : Array.from({ length: maxEp }, (_, i) => String(i + 1))
   const nextEp = nextEpisode(entry)
 
   const openNote = (ep) => { setNoteEp(ep); setNoteText(entry.episodeNotes[String(ep)] ?? '') }
   const saveNote = async () => { await api.library.setEpisodeNote(entry.id, noteEp, noteText); onChanged() }
   const toggleWatched = (ep) => save({ watchedEpisodes: watched.includes(ep) ? watched.filter((x) => x !== ep) : [...watched, ep] })
   const remove = async () => { await api.library.remove(entry.id); onBack(); onChanged() }
-  const animeKey = entry.aniCliTitle ?? entry.title
   const togglePin = async () => {
     const r = await api.library.setPinned(entry.id, !entry.pinnedAt)
     if (!r.ok) { setPinNotice(t('pin.limit')); return }
@@ -101,16 +104,31 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
           <h3>{t('detail.episodes')}</h3>
           <EpisodePicker
             key={episodes.length}
-            episodes={episodes.map(String)}
+            episodes={episodes}
             selected={noteEp != null ? [String(noteEp)] : []}
             watched={watched}
             noted={Object.keys(entry.episodeNotes)}
             onToggle={(ep) => openNote(Number(ep))}
+            series={series}
+            poster={info?.poster ?? null}
+            onReveal={(ep) => update({ episode: ep })}
+            loadThumb={thumb}
           >
             <button type="button" className="primary" disabled={!ready} onClick={() => onContinue({ query: animeKey, anime: animeKey, episode: String(nextEp) })}>
               {t('detail.continue')}
             </button>
           </EpisodePicker>
+          {series && series.meta !== 'none' && (
+            <div className="row spoiler-row">
+              {series.meta === 'unreliable' && <span className="muted">{t('episodes.unreliable')}</span>}
+              {series.meta === 'ok' && <button type="button" onClick={() => update({ all: true })}>{t('episodes.revealAll')}</button>}
+              {series.meta === 'ok' && <button type="button" onClick={() => update({ reset: true })}>{t('episodes.hideAgain')}</button>}
+              <label className="check">
+                <input type="checkbox" checked={series.meta === 'off'} onChange={(e) => update({ metaOff: e.target.checked })} />
+                {t('episodes.metaOff')}
+              </label>
+            </div>
+          )}
           {noteEp != null && (
             <div className="page">
               <label className="field">

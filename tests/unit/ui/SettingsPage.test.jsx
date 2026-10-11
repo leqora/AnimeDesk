@@ -24,6 +24,14 @@ describe('SettingsPage', () => {
     fireEvent.click(screen.getByLabelText('Automatsko ažuriranje ani-cli i yt-dlp'))
     expect(onSettings).toHaveBeenLastCalledWith({ autoUpdateTools: false })
   })
+  it('toggles spoiler protection', () => {
+    const onSettings = vi.fn()
+    renderUi(<SettingsPage settings={{ ...DEFAULT_SETTINGS }} onSettings={onSettings} />)
+    const box = screen.getByRole('checkbox', { name: 'Skrivaj spojlere (naslove, sličice i opise epizoda posle sledeće)' })
+    expect(box).toBeChecked()
+    fireEvent.click(box)
+    expect(onSettings).toHaveBeenCalledWith({ hideSpoilers: false })
+  })
   it('has an About section that opens the repo', async () => {
     const api = makeFakeApi()
     renderUi(<SettingsPage settings={{ ...DEFAULT_SETTINGS }} onSettings={() => {}} updateState={{ status: 'disabled', currentVersion: '0.4.0' }} />, { api })

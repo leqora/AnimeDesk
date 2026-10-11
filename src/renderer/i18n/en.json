@@ -283,5 +283,11 @@
   "error.close": "Close",
   "boot.failed": "The app could not start",
   "boot.retry": "Try again",
-  "downloads.retryFailed": "Retry failed ({count})"
+  "downloads.retryFailed": "Retry failed ({count})",
+  "episodes.revealAll": "Show all episodes of this series",
+  "episodes.hideAgain": "Hide revealed again",
+  "episodes.metaOff": "Turn off episode details for this series",
+  "episodes.unreliable": "Episode titles are not shown: the source's episode numbers do not match.",
+  "settings.spoilersSection": "Spoilers",
+  "settings.hideSpoilers": "Hide spoilers (titles, thumbnails and summaries of episodes after the next one)"
 }

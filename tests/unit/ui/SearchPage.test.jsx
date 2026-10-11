@@ -63,6 +63,18 @@ describe('SearchPage', () => {
     expect(screen.getByRole('button', { name: 'Traži' })).toBeEnabled()
   })
 
+  it('asks main for the episode details of the listed episodes', async () => {
+    const { api, handlers } = withEvents()
+    renderUi(<SearchPage {...props()} />, { api })
+    fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: 'show' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show (3 episodes)'] }))
+    fireEvent.click(screen.getByRole('button', { name: /Show/ }))
+    await waitFor(() => expect(api.watch.answerMenu).toHaveBeenCalledWith('r1', '1 Show (3 episodes)'))
+    act(() => handlers.menu({ requestId: 'r2', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
+    await waitFor(() => expect(api.episodes.forSeries).toHaveBeenCalledWith({ title: 'Show (3 episodes)', aniListId: null, mode: null, list: ['1', '2', '3'] }))
+  })
+
   it('downloads selected episodes, asking for a folder and remembering it', async () => {
     const { api, handlers } = withEvents()
     api.dialog.pickFolder.mockResolvedValue('D:\\Anime')

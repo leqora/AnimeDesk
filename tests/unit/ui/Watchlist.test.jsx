@@ -68,6 +68,27 @@ describe('WatchlistPage', () => {
 describe('AnimeDetail', () => {
   const info = { id: 154587, genres: ['Adventure'], year: 2023, episodes: 28, description: 'Tajna radnja', poster: null }
 
+  it('uses the episode list from main and offers the spoiler actions', async () => {
+    const series = { source: 'ani-cli', meta: 'ok', episodes: ['0', '1', '2', '3'].map((n) => ({ number: n, runtime: null, visibility: n === '3' ? 'hidden' : 'full' })) }
+    const api = makeFakeApi({ episodes: { forSeries: vi.fn(async () => series), spoilers: vi.fn(async () => series), thumb: vi.fn(async () => null) } })
+    renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />, { api })
+    await waitFor(() => expect(screen.getByRole('button', { name: '0' })).toBeInTheDocument())
+    expect(api.episodes.forSeries).toHaveBeenCalledWith({ title: entry().aniCliTitle ?? entry().title, aniListId: entry().aniListId ?? null, mode: null, list: null })
+    fireEvent.click(screen.getByRole('button', { name: 'Prikaži sve epizode ove serije' }))
+    expect(api.episodes.spoilers).toHaveBeenLastCalledWith(expect.objectContaining({ list: null }), { all: true })
+    fireEvent.click(screen.getByRole('button', { name: 'Ponovo sakrij otkrivene' }))
+    expect(api.episodes.spoilers).toHaveBeenLastCalledWith(expect.anything(), { reset: true })
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Isključi metapodatke za ovu seriju' }))
+    expect(api.episodes.spoilers).toHaveBeenLastCalledWith(expect.anything(), { metaOff: true })
+  })
+  it('explains unreliable metadata and keeps the synthetic list without main', async () => {
+    const api = makeFakeApi({ episodes: { forSeries: vi.fn(async () => ({ source: 'synthetic', meta: 'unreliable', episodes: [] })), spoilers: vi.fn(), thumb: vi.fn() } })
+    renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />, { api })
+    expect(await screen.findByText('Naslovi epizoda nisu prikazani: brojevi epizoda kod izvora se ne poklapaju.')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /^\d+$/ })).toHaveLength(4) // totalEpisodes 4 from entry()
+    expect(screen.queryByRole('button', { name: 'Prikaži sve epizode ove serije' })).not.toBeInTheDocument()
+  })
+
   it('hides the description until the user asks for it', async () => {
     const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => info) } })
     renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />, { api })

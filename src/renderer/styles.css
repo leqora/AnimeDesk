@@ -289,3 +289,5 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .player__rates { display: flex; flex-wrap: wrap; gap: 6px; }
 .player__rates button { min-width: 48px; padding: 4px 8px; }
 .player__rates button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
+.spoiler-row { align-items: center; gap: 10px; margin-top: 8px; }
