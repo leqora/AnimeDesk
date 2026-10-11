@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createEpisodeMeta, slimAniZip, AIRING_TTL_MS, TTL_MS } from '../../src/main/episodeMeta.js'
+import { createEpisodeMeta, slimAniZip, AIRING_TTL_MS, TTL_MS, TIMEOUT_MS } from '../../src/main/episodeMeta.js'
 
 const RAW = {
   titles: { en: 'Serija' },
@@ -95,6 +95,35 @@ describe('episodeMeta.get', () => {
     clock += TTL_MS + 1
     fetchImpl.mockResolvedValue({ ok: true, status: 200, json: async () => { throw new SyntaxError('html') }, headers: new Headers() })
     expect((await meta.get(5)).episodes['1'].titles.en).toBe('Naslov 1')
+  })
+  it('an empty but parseable body does not overwrite a good cache', async () => {
+    await meta.get(5)
+    for (const body of [{}, { episodes: null }]) {
+      clock += TTL_MS + 1
+      fetchImpl.mockResolvedValue(json(body))
+      expect((await meta.get(5)).episodes['1'].titles.en).toBe('Naslov 1')
+      expect(meta.readCache(5).episodes['1'].titles.en).toBe('Naslov 1')
+    }
+  })
+  it('times out a stalled body and falls back to the stale cache or null', async () => {
+    await meta.get(5)
+    clock += TTL_MS + 1
+    const stalled = () => ({
+      ok: true,
+      status: 200,
+      json: () => new Promise((_, reject) => opts.signal.addEventListener('abort', () => reject(new Error('aborted')))),
+    })
+    let opts
+    fetchImpl.mockImplementation(async (_url, o) => { opts = o; return stalled() })
+    vi.useFakeTimers()
+    try {
+      const p1 = meta.get(5)
+      await vi.advanceTimersByTimeAsync(TIMEOUT_MS)
+      expect((await p1).episodes['1'].titles.en).toBe('Naslov 1')
+      const p2 = meta.get(6)
+      await vi.advanceTimersByTimeAsync(TIMEOUT_MS)
+      expect(await p2).toBeNull()
+    } finally { vi.useRealTimers() }
   })
   it('rejects ids that are not positive integers without a request', async () => {
     for (const id of [null, 0, -1, 1.5, '12', '../x']) expect(await meta.get(id)).toBeNull()

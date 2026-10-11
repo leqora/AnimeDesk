@@ -38,10 +38,11 @@ export function createEpisodeMeta({ cacheDir, fetchImpl = fetch, now = Date.now 
   const file = (id) => path.join(cacheDir, `${id}.json`)
   const inflight = new Map()
 
-  async function fetchWithTimeout(url) {
+  // The abort timer also covers reading the body (read), so a stalled body cannot hang callers.
+  async function fetchWithTimeout(url, read = (res) => res) {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
-    try { return await fetchImpl(url, { signal: ctrl.signal }) } finally { clearTimeout(timer) }
+    try { return await read(await fetchImpl(url, { signal: ctrl.signal })) } finally { clearTimeout(timer) }
   }
 
   function readCache(id) {
@@ -57,13 +58,20 @@ export function createEpisodeMeta({ cacheDir, fetchImpl = fetch, now = Date.now 
     if (cached && now() - cached.fetchedAt < ttl) return cached.missing ? null : cached
     const stale = cached && !cached.missing ? cached : null
     try {
-      const res = await fetchWithTimeout(`${ANIZIP_URL}?anilist_id=${id}`)
+      const res = await fetchWithTimeout(`${ANIZIP_URL}?anilist_id=${id}`, async (r) => ({
+        status: r.status,
+        ok: r.ok,
+        body: r.ok ? await r.json() : null,
+      }))
       if (res.status === 404) {
         writeJsonAtomic(file(id), { missing: true, fetchedAt: now() })
         return null
       }
       if (!res.ok) throw new Error(`ani.zip HTTP ${res.status}`)
-      const data = { ...slimAniZip(await res.json()), fetchedAt: now() }
+      const slim = slimAniZip(res.body)
+      // An empty answer must not replace a good cache.
+      if (stale && Object.keys(slim.episodes).length === 0) return stale
+      const data = { ...slim, fetchedAt: now() }
       writeJsonAtomic(file(id), data)
       return data
     } catch (err) {
