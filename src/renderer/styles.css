@@ -131,11 +131,6 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .rail { display: flex; flex-direction: column; gap: 10px; }
 .rail__track { display: grid; grid-auto-flow: column; grid-auto-columns: var(--rail-card-w); gap: 14px; overflow-x: auto; padding-bottom: 6px; scroll-behavior: smooth; }
 .rail__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.series-card { position: relative; }
-.series-card__open { display: flex; flex-direction: column; gap: 6px; padding: 0; background: none; border: 0; text-align: left; }
-.series-card__progress { display: flex; align-items: center; gap: 8px; }
-.series-card__progress .xp-bar { flex: 1; }
-.series-card__play { position: absolute; top: 14px; right: 14px; padding: 6px; border-radius: 50%; }
 .search-bar { display: flex; gap: 8px; }
 .search-bar input { flex: 1; }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr)); gap: 14px; }
@@ -290,9 +285,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 }
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation: none !important; transition: none !important; }
 
-.watch-card { position: relative; }
-.watch-card__pin { position: absolute; top: 14px; right: 14px; padding: 6px; border-radius: 50%; }
-.watch-card__pin[aria-pressed="true"], button[aria-pressed="true"] > svg { color: var(--accent-2); }
+button[aria-pressed="true"] > svg { color: var(--accent-2); }
 
 /* player */
 .player { container-type: size; position: fixed; inset: 0; z-index: 15; background: var(--bg); display: flex; flex-direction: column; }

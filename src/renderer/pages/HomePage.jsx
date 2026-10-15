@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Hero } from '../components/Hero.jsx'
-import { SeriesCard } from '../components/SeriesCard.jsx'
+import { MediaCard } from '../components/MediaCard.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { SearchPage } from './SearchPage.jsx'
 
@@ -55,7 +55,7 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
 
   const pinned = pinnedEntries(entries)
   const rail = watchingNow(entries)
-  const card = (e) => <SeriesCard key={e.id} entry={e} ready={ready} onOpen={onOpenAnime} onContinue={onContinue} />
+  const card = (e) => <MediaCard key={e.id} entry={e} ready={ready} onOpen={onOpenAnime} onContinue={onContinue} />
   return (
     <div className="page">
       {!focused && (

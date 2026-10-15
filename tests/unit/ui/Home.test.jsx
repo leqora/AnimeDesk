@@ -3,7 +3,6 @@ import { describe, it, expect, vi } from 'vitest'
 import { screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { renderUi, makeFakeApi } from './helpers.jsx'
 import { Hero } from '../../../src/renderer/components/Hero.jsx'
-import { SeriesCard } from '../../../src/renderer/components/SeriesCard.jsx'
 import { HomePage, pickHeroEntry, watchingNow, pinnedEntries } from '../../../src/renderer/pages/HomePage.jsx'
 import { WatchlistPage } from '../../../src/renderer/pages/WatchlistPage.jsx'
 import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
@@ -50,7 +49,7 @@ describe('HomePage', () => {
     renderUi(<HomePage ready settings={{ ...DEFAULT_SETTINGS }} onSettings={() => {}} onOpenWizard={() => {}} pendingWatch={null} onPendingHandled={() => {}} onContinue={() => {}} onOpenAnime={onOpenAnime} />, { api })
     expect(await screen.findByRole('heading', { name: 'Show' })).toBeInTheDocument()
     const rail = screen.getByRole('region', { name: 'Nastavi gledanje' })
-    fireEvent.click(rail.querySelectorAll('button.series-card__open')[1])
+    fireEvent.click(rail.querySelectorAll('button.media-card__open')[1])
     expect(onOpenAnime).toHaveBeenCalledWith('b')
     expect(screen.getByRole('button', { name: 'Traži' })).toBeInTheDocument()
   })
@@ -69,23 +68,15 @@ describe('pinned + cards', () => {
     const list = [entry({ id: 'a', pinnedAt: '2026-10-03T02:00:00Z' }), entry({ id: 'b', pinnedAt: null }), entry({ id: 'c', pinnedAt: '2026-10-03T01:00:00Z' }), entry({ id: 'd' })]
     expect(pinnedEntries(list).map((e) => e.id)).toEqual(['c', 'a'])
   })
-  it('shows progress and continues without opening details', () => {
-    const onOpen = vi.fn()
+  it('uses media cards in the rails with play but no pin', async () => {
     const onContinue = vi.fn()
-    renderUi(<SeriesCard entry={entry({ watchedEpisodes: [1, 2, 3, 4, 5, 6, 7] })} ready onOpen={onOpen} onContinue={onContinue} />)
-    expect(screen.getByText('EP 7 / 12')).toBeInTheDocument()
-    expect(screen.getByText('58%')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Nastavi EP 8' }))
-    expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '8' })
-    expect(onOpen).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: /Show/ }))
-    expect(onOpen).toHaveBeenCalledWith('a')
-  })
-  it('hides percent when the total is unknown and disables play until ready', () => {
-    renderUi(<SeriesCard entry={entry({ totalEpisodes: null })} ready={false} onOpen={() => {}} onContinue={() => {}} />)
-    expect(screen.getByText('EP 2 / ?')).toBeInTheDocument()
-    expect(screen.queryByText(/%$/)).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Nastavi EP 3' })).toBeDisabled()
+    const api = makeFakeApi({ library: { list: vi.fn(async () => [entry()]) } })
+    renderUi(<HomePage ready settings={{ ...DEFAULT_SETTINGS }} onSettings={() => {}} onOpenWizard={() => {}} pendingWatch={null} onPendingHandled={() => {}} onContinue={onContinue} onOpenAnime={() => {}} />, { api })
+    const rail = await screen.findByRole('region', { name: 'Nastavi gledanje' })
+    expect(rail.querySelector('.media-card')).not.toBeNull()
+    expect(rail.querySelector('.media-card__pin')).toBeNull()
+    fireEvent.click(rail.querySelector('.media-card__play'))
+    expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '3' })
   })
 })
 

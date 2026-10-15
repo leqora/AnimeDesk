@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
-import { Poster } from '../components/Poster.jsx'
-import { Icon } from '../components/Icon.jsx'
+import { MediaCard } from '../components/MediaCard.jsx'
 import { AnimeDetail } from './AnimeDetail.jsx'
 import { STATUSES } from '../../shared/domain.js'
 
@@ -42,6 +41,12 @@ export function WatchlistPage({ ready, onContinue, initialOpenId = null }) {
     load()
   }
 
+  const togglePin = async (entry) => {
+    const r = await api.library.setPinned(entry.id, !entry.pinnedAt)
+    setNotice(r.ok ? null : t('pin.limit'))
+    load()
+  }
+
   return (
     <section className="page">
       <div className="row">
@@ -67,22 +72,7 @@ export function WatchlistPage({ ready, onContinue, initialOpenId = null }) {
       {notice && <div className="notice" role="status">{notice}</div>}
       <div className="card-grid">
         {visible.map((i) => (
-          <div key={i.id} className="card watch-card">
-            <button type="button" className="series-card__open" onClick={() => setOpenId(i.id)}>
-              <Poster title={i.title} aniListId={i.aniListId} />
-              <span className="card__title">{i.title}</span>
-              <span className="card__meta">
-                {t(`status.${i.status}`)} · {i.watchedEpisodes.length}/{i.totalEpisodes ?? '?'}{i.rating ? ` · ★ ${i.rating}` : ''}
-              </span>
-            </button>
-            <button
-              type="button" className="watch-card__pin" aria-pressed={Boolean(i.pinnedAt)}
-              aria-label={`${i.pinnedAt ? t('pin.remove') : t('pin.add')}: ${i.title}`}
-              onClick={async () => { const r = await api.library.setPinned(i.id, !i.pinnedAt); setNotice(r.ok ? null : t('pin.limit')); load() }}
-            >
-              <Icon name="star" />
-            </button>
-          </div>
+          <MediaCard key={i.id} entry={i} ready={ready} onOpen={setOpenId} onContinue={onContinue} onTogglePin={togglePin} showScore />
         ))}
       </div>
     </section>
