@@ -10,6 +10,7 @@ import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
 import { usePosterTint } from '../theme/usePosterTint.js'
 import { STATUSES, nextEpisode } from '../../shared/domain.js'
 import { useNow } from '../useNow.js'
+import { isSeriesComplete } from '../components/MediaCard.jsx'
 import { AiringLine, NewBadge } from '../components/AiringLine.jsx'
 import { newEpisodeCount, upcoming, ANILIST_STATUSES } from '../../shared/airing.js'
 import { formatTime } from '../../shared/player.js'
@@ -47,6 +48,7 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
   // The real ani-cli list (or 1..max) comes from main; until it answers, 1..max as before.
   const episodes = series?.episodes?.length ? series.episodes.map((e) => e.number) : Array.from({ length: maxEp }, (_, i) => String(i + 1))
   const nextEp = nextEpisode(entry)
+  const finished = entry.status === 'completed' || isSeriesComplete(entry) // nextEp wraps to 1 here
   const now = useNow()
   const fresh = newEpisodeCount(entry, info, now)
   const saved = progress[String(nextEp)]
@@ -96,7 +98,7 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
             )}
             <div className="row banner__actions">
               <button type="button" className="primary" disabled={!ready} onClick={() => onContinue({ query: animeKey, anime: animeKey, episode: String(nextEp) })}>
-                <Icon name="play" /> {saved ? t('home.continueEpFrom', { episode: nextEp, time: formatTime(saved.position) }) : t('home.continueEp', { episode: nextEp })}
+                <Icon name="play" /> {finished ? t('detail.rewatch') : saved ? t('home.continueEpFrom', { episode: nextEp, time: formatTime(saved.position) }) : t('home.continueEp', { episode: nextEp })}
               </button>
               <button type="button" aria-pressed={Boolean(entry.pinnedAt)} onClick={togglePin}><Icon name="star" /> {entry.pinnedAt ? t('pin.remove') : t('pin.add')}</button>
             </div>

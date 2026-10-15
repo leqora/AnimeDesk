@@ -82,6 +82,7 @@
   "pin.remove": "Remove from favorites",
   "pin.limit": "You can pin up to 5 series. Unpin one and try again.",
   "detail.genres": "Genres",
+  "detail.rewatch": "Watch again",
   "ask.markWatched": "Mark episode {episode} ({title}) as watched?",
   "ask.yes": "Yes",
   "ask.no": "No",

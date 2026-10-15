@@ -106,6 +106,15 @@ describe('AnimeDetail', () => {
     expect(screen.getAllByRole('button', { name: /Nastavi/ })).toHaveLength(1) // moved, not duplicated
     expect(screen.queryByText(/Godina:/)).not.toBeInTheDocument()
   })
+  it('offers to watch again instead of continue for a completed series', async () => {
+    const onContinue = vi.fn()
+    const done = entry({ status: 'completed', totalEpisodes: 4, watchedEpisodes: [1, 2, 3, 4] })
+    const { container } = renderUi(<AnimeDetail entry={done} ready onBack={() => {}} onChanged={() => {}} onContinue={onContinue} />)
+    const banner = container.querySelector('.banner')
+    fireEvent.click(within(banner).getByRole('button', { name: /Gledaj ponovo/ }))
+    expect(onContinue).toHaveBeenCalledWith({ query: 'Frieren', anime: 'Frieren', episode: '1' })
+    expect(screen.queryByRole('button', { name: /Nastavi EP/ })).not.toBeInTheDocument()
+  })
   it('continues from the saved position in the banner', async () => {
     const api = makeFakeApi({ positions: { forSeries: vi.fn(async () => ({ 3: { position: 495, duration: 1440 } })) } })
     const { container } = renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />, { api })

@@ -166,11 +166,13 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .badge--progress { left: 0; bottom: 0; border-radius: 0 var(--radius-sm) 0 var(--card-radius); }
 .media-card[data-complete] .badge--progress { color: var(--status-completed); }
 .badge--score { right: 0; bottom: 0; border-radius: var(--radius-sm) 0 var(--card-radius) 0; color: var(--warn); }
-.badge--new { top: 3px; right: 0; border-radius: var(--radius-sm) 0 0 var(--radius-sm); color: var(--accent-2); border-color: color-mix(in srgb, var(--accent-2) 45%, transparent); }
+.badge--new { text-transform: none; transition: opacity var(--dur) var(--ease); top: 3px; right: 0; border-radius: var(--radius-sm) 0 0 var(--radius-sm); color: var(--accent-2); border-color: color-mix(in srgb, var(--accent-2) 45%, transparent); }
 .badge--inline { position: static; display: inline-block; vertical-align: middle; border-radius: var(--radius-sm); }
 .airing-line { margin: 0; color: var(--accent-2); font-size: 13px; }
 .media-card__actions { position: absolute; top: 14px; right: 14px; z-index: var(--z-card-actions); display: flex; gap: 6px; opacity: 0; transform: translateY(-4px); transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
 .media-card:hover .media-card__actions, .media-card:focus-within .media-card__actions { opacity: 1; transform: none; }
+/* The hover actions land on the poster badge; hide it while they are shown. */
+.media-card:hover .badge--new:not(.badge--inline), .media-card:focus-within .badge--new:not(.badge--inline) { opacity: 0; }
 .media-card__actions button { padding: 6px; border-radius: 50%; }
 .media-card__pin[aria-pressed="true"] { color: var(--accent-2); }
 .reduce-motion .media-card:hover, .reduce-motion .card.media-card:active, .reduce-motion .media-card:focus-within, .reduce-motion .media-card:hover .poster--in, .reduce-motion .media-card:focus-within .poster--in { transform: none; }

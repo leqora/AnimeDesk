@@ -413,4 +413,27 @@ describe('airing schedule (nextAiring)', () => {
     expect((await al.getForTitle('Flaky Show')).nextAiring.episode).toBe(5)
     expect(f.mock.calls.length).toBe(calls)
   })
+  it('retries a failed refresh after an hour', async () => {
+    let clock = T - HOUR
+    const ok = mkFetch([media(11, 'Retry Show', 'Retry Show', airing(5, T))])
+    let failing = false
+    const f = vi.fn(async (url, init) => { if (failing) throw new Error('offline'); return ok(url, init) })
+    const al = createAniList({ cacheDir, fetchImpl: f, now: () => clock })
+    await al.getForTitle('Retry Show')
+    clock = T + HOUR
+    failing = true
+    await al.getForTitle('Retry Show')
+    const calls = f.mock.calls.length
+    await al.getForTitle('Retry Show')
+    expect(f.mock.calls.length).toBe(calls) // still inside the retry window
+
+    clock += HOUR // exactly one hour after the failure
+    await al.getForTitle('Retry Show')
+    expect(f.mock.calls.length).toBeGreaterThan(calls)
+
+    failing = false
+    clock += HOUR
+    expect((await al.getForTitle('Retry Show')).nextAiring.episode).toBe(5)
+    expect(f.mock.calls.length).toBeGreaterThan(calls + 1)
+  })
 })

@@ -82,6 +82,7 @@
   "pin.remove": "Ukloni iz omiljenih",
   "pin.limit": "Možeš zakačiti najviše 5 serija. Otkači neku pa pokušaj ponovo.",
   "detail.genres": "Žanrovi",
+  "detail.rewatch": "Gledaj ponovo",
   "ask.markWatched": "Označi epizodu {episode} ({title}) kao odgledanu?",
   "ask.yes": "Da",
   "ask.no": "Ne",
