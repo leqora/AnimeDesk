@@ -348,10 +348,28 @@ describe('airing schedule (nextAiring)', () => {
     expect(isFresh(base, T - 1)).toBe(true)
     expect(isFresh(base, T + HOUR - 1)).toBe(true) // inside the grace hour
     expect(isFresh(base, T + HOUR)).toBe(false) // AniList has moved on by now
-    const { nextAiring, ...old } = base // cache written by 0.7.1
+    const old = { ...base } // cache written by 0.7.1
+    delete old.nextAiring
     expect(isFresh(old, T - 1)).toBe(false)
     expect(isFresh({ ...base, nextAiring: null }, T)).toBe(true)
     expect(isFresh({ ...base, nextAiring: null }, base.fetchedAt + 24 * HOUR)).toBe(false)
+  })
+
+  it('does not expire an entry fetched after its episode already aired (lagging schedule)', () => {
+    const lagging = { malId: 1, fetchedAt: T + 2 * HOUR, status: 'RELEASING', nextAiring: { episode: 5, airingAt: T } }
+    expect(isFresh(lagging, T + 2 * HOUR + 1000)).toBe(true)
+    expect(isFresh(lagging, lagging.fetchedAt + 24 * HOUR)).toBe(false) // the TTL still applies
+  })
+
+  it('does not refetch every call when AniList returns an already-past airingAt', async () => {
+    const f = mkFetch([media(11, 'Lagging Show', 'Lagging Show', airing(5, T))])
+    const al = createAniList({ cacheDir, fetchImpl: f, now: () => T + 5 * HOUR })
+    const queries = () => f.mock.calls.filter(([url]) => !url.startsWith('https://img/')).length
+    await al.getForTitle('Lagging Show')
+    const first = queries()
+    await al.getForTitle('Lagging Show')
+    await al.getForTitle('Lagging Show')
+    expect(queries()).toBe(first)
   })
 
   it('keeps finished shows fresh forever, even without the new key', () => {

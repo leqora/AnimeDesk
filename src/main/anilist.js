@@ -76,12 +76,14 @@ function toInfo(m) {
 // Airing shows gain episodes (and a final count), so their cache entry expires; finished ones never change.
 const AIRING_TTL_MS = 24 * 3600 * 1000
 const AIRING = new Set(['RELEASING', 'NOT_YET_RELEASED'])
-// Airing shows expire after a day, once their next episode has aired, or when the entry predates nextAiring.
+// Airing shows expire after a day, when their next episode aired after the entry was fetched, or when the entry predates
+// nextAiring. An airingAt already past at fetch time (lagging schedule) falls back to the TTL, so it cannot refetch in a loop.
 export function isFresh(info, nowMs) {
   if (!('malId' in info) || info.fetchedAt == null) return false
   if (!AIRING.has(info.status)) return true
   if (!('nextAiring' in info)) return false
-  if (info.nextAiring && nowMs >= info.nextAiring.airingAt + AIRED_GRACE_MS) return false
+  const airedBy = info.nextAiring ? info.nextAiring.airingAt + AIRED_GRACE_MS : null
+  if (airedBy != null && info.fetchedAt < airedBy && nowMs >= airedBy) return false
   return nowMs - info.fetchedAt < AIRING_TTL_MS
 }
 
