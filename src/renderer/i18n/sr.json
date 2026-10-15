@@ -289,5 +289,9 @@
   "episodes.metaOff": "Isključi metapodatke za ovu seriju",
   "episodes.unreliable": "Naslovi epizoda nisu prikazani: brojevi epizoda kod izvora se ne poklapaju.",
   "settings.spoilersSection": "Spojleri",
-  "settings.hideSpoilers": "Skrivaj spojlere (naslove, sličice i opise epizoda posle sledeće)"
+  "settings.hideSpoilers": "Skrivaj spojlere (naslove, sličice i opise epizoda posle sledeće)",
+  "card.label": "{title} — {watched}/{total}, {status}",
+  "card.remaining": "EP {episode} · ostalo {min} min",
+  "card.next": "Sledeća: EP {episode}",
+  "card.completed": "✓ Završeno"
 }

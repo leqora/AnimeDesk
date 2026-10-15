@@ -289,5 +289,9 @@
   "episodes.metaOff": "Turn off episode details for this series",
   "episodes.unreliable": "Episode titles are not shown: the source's episode numbers do not match.",
   "settings.spoilersSection": "Spoilers",
-  "settings.hideSpoilers": "Hide spoilers (titles, thumbnails and summaries of episodes after the next one)"
+  "settings.hideSpoilers": "Hide spoilers (titles, thumbnails and summaries of episodes after the next one)",
+  "card.label": "{title} — {watched}/{total}, {status}",
+  "card.remaining": "EP {episode} · {min} min left",
+  "card.next": "Next: EP {episode}",
+  "card.completed": "✓ Completed"
 }
