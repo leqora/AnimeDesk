@@ -16,6 +16,7 @@ import { createPlayer } from './playerMonitor.js'
 import { createStreamServer } from './streamServer.js'
 import { createInternalPlayer } from './internalPlayer.js'
 import { createPositions } from './positions.js'
+import { connectPositionEvents } from './positionEvents.js'
 import { createWatchService } from './watchService.js'
 import { createDownloads } from './downloads.js'
 import { createAniList } from './anilist.js'
@@ -91,6 +92,7 @@ async function main() {
   const skipLookup = createSkipLookup({ anilist, aniskip, findAniListId: (title) => library.findByAniCliTitle(title)?.aniListId })
   const positions = createPositions(paths.positions)
   positions.prune(60)
+  const stopPositionEvents = connectPositionEvents({ positions, send })
   const streams = createStreamServer()
   await streams.start()
   const watchLog = createWatchLog(paths.watchLog)
@@ -167,7 +169,7 @@ async function main() {
   setInterval(() => { if (health.get().reason === 'source-down') health.run() }, SIX_HOURS)
 
   app.on('window-all-closed', () => app.quit())
-  app.on('before-quit', () => { watch.dispose(); server.stop(); streams.stop() })
+  app.on('before-quit', () => { stopPositionEvents(); watch.dispose(); server.stop(); streams.stop() })
 }
 
 // A failed startup must not leave a silent background process; a stray rejection must not go unnoticed.
