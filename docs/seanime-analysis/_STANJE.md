@@ -1,6 +1,6 @@
 # Seanime analiza → unapređenje AnimeDesk-a — stanje rada (predaja smene)
 
-Poslednje ažuriranje: 2026-10-16 (v0.7.1 na grani `feat/v0.7.1-cards-progress`: redizajn kartice + progres po epizodi; nije objavljeno, čeka dozvolu).
+Poslednje ažuriranje: 2026-10-16 (v0.7.1 objavljen kao Latest: redizajn kartice + progres po epizodi).
 
 - Spec korisnika: `C:\Users\Nikola\Desktop\Claude\Anime\Aplikacija za gledanje Anime-a\Seanime\zadatak.txt`
 - Seanime klon (referenca, GPL-3.0 — samo inspiracija, ne kopirati kod): `C:\Users\Nikola\Desktop\Projekti\_ref\seanime` (commit 2da73d9; ne commitovati).
@@ -21,7 +21,7 @@ Poslednje ažuriranje: 2026-10-16 (v0.7.1 na grani `feat/v0.7.1-cards-progress`:
 - [x] **P0-B korak 6 = v0.6.4** (lazy `PlayerView` + hls.js, hook-ovi u `src/renderer/player/`, brzina reprodukcije + meni, buffered traka + tooltip; 709 testova; objavljeno 2026-10-10 kao Latest, spojeno u `main`).
 - [x] **P0-B korak 7 = v0.6.5** (prefetch linka sledeće epizode; 736 testova; ručna provera sa pravim ani-cli-jem: „Sledeća” 7,3 s → 0,87 s; objavljeno 2026-10-10 kao Latest, spojeno u `main`). **P0-B je završen.** Sledeće: P1 (v0.7).
 - [x] **P1 korak 1 = v0.7.0 (objavljeno 2026-10-11, Latest, spojeno u `main`):** spoiler model (`src/shared/spoilers.js`, primena u main-u kroz `src/main/seriesEpisodes.js`) + metapodaci epizoda iz ani.zip (prebačeno iz P2) + keš stvarne ani-cli liste. 826 testova, završni pregled (Opus) urađen + talas ispravki. Ostatak P1 (kartice, progres po epizodi, „N novih”, istorija navigacije, `Modal.jsx`, toastovi, keš postera) ide u v0.7.1+ po dogovoru.
-- [x] **P1 korak 2 = v0.7.1 (na grani, 2026-10-16, NIJE objavljeno):** zajednička `MediaCard` (bedž 3/12, traka, tačka statusa, ocena, ▶/★ na hover/fokus), `Poster` skeleton/fade-in, progres po epizodi (kartica, Hero, pilule, Lista) preko `positions.forSeries` + `event:positions-changed`. 857 testova, završni pregled (Opus) „Yes” + talas sitnih ispravki. Ostatak P1 ("sledeća izlazi…"/"N novih", header detalja, istorija navigacije, `Modal.jsx`, toastovi, keš postera) ide u v0.7.2+.
+- [x] **P1 korak 2 = v0.7.1 (objavljeno 2026-10-16, Latest, spojeno u `main`):** zajednička `MediaCard` (bedž 3/12, traka, tačka statusa, ocena, ▶/★ na hover/fokus), `Poster` skeleton/fade-in, progres po epizodi (kartica, Hero, pilule, Lista) preko `positions.forSeries` + `event:positions-changed`. 857 testova, završni pregled (Opus) „Yes” + talas sitnih ispravki. Ostatak P1 ("sledeća izlazi…"/"N novih", header detalja, istorija navigacije, `Modal.jsx`, toastovi, keš postera) ide u v0.7.2+ — predlog: v0.7.2 = „sledeća izlazi…”/„N novih” + header detalja; v0.7.3 = `Modal.jsx`, toastovi, istorija navigacije + skrol, keš postera.
 
 ## Odluke korisnika (važe za dalje)
 1. Serija je „Završeno” tek kad su **sve** epizode odgledane (urađeno u 0.5.1).
