@@ -1,8 +1,10 @@
 import { useId } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
-import { Poster } from './Poster.jsx'
+import { PosterFrame, usePosterInfo } from './Poster.jsx'
 import { Icon } from './Icon.jsx'
+import { NewBadge } from './AiringLine.jsx'
 import { nextEpisode } from '../../shared/domain.js'
+import { newEpisodeCount } from '../../shared/airing.js'
 import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
 
 export function isSeriesComplete(entry) {
@@ -28,6 +30,9 @@ export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null
   const lineId = useId()
   const key = entry.aniCliTitle ?? entry.title
   const progress = useEpisodeProgress(key)
+  const info = usePosterInfo(entry.title, entry.aniListId)
+  // Cards have no clock of their own; they re-render on every library/position change.
+  const fresh = newEpisodeCount(entry, info, Date.now())
   const total = entry.totalEpisodes
   const complete = isSeriesComplete(entry)
   const finished = complete || entry.status === 'completed'
@@ -39,18 +44,19 @@ export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null
     <div className="card media-card" data-status={entry.status} data-complete={complete ? 'true' : undefined}>
       <button
         type="button" className="media-card__open" onClick={() => onOpen(entry.id)}
-        aria-label={t('card.label', { title: entry.title, watched, total: total ?? '?', status: t(`status.${entry.status}`) })}
+        aria-label={t('card.label', { title: entry.title, watched, total: total ?? '?', status: t(`status.${entry.status}`) }) + (fresh > 0 ? t.n('airing.newLabel', fresh) : '')}
         aria-describedby={line ? lineId : undefined}
       >
-        <Poster title={entry.title} aniListId={entry.aniListId}>
+        <PosterFrame info={info}>
           <span className="media-card__fade" aria-hidden="true" />
           {ratio != null && <span className="media-card__bar" aria-hidden="true" style={{ '--ratio': ratio }} />}
           <span className="media-card__status" aria-hidden="true" />
+          <NewBadge count={fresh} />
           <span className="badge badge--progress" aria-hidden="true">
             {complete ? `✓ ${total}/${total}` : <>{watched}<span className="muted">/{total ?? '?'}</span></>}
           </span>
           {showScore && entry.rating ? <span className="badge badge--score" aria-hidden="true">★ {entry.rating}</span> : null}
-        </Poster>
+        </PosterFrame>
         <span className="card__title">{entry.title}</span>
         {line && <span className="card__meta" id={lineId}>{t(line.key, line.vars)}</span>}
       </button>

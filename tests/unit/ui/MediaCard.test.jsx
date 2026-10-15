@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { screen, fireEvent } from '@testing-library/react'
+import { screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { renderUi, makeFakeApi } from './helpers.jsx'
 import { MediaCard, cardLine, isSeriesComplete } from '../../../src/renderer/components/MediaCard.jsx'
 
@@ -85,5 +85,29 @@ describe('MediaCard', () => {
     card({}, api)
     await screen.findByText('EP 4 · ostalo 16 min')
     expect(api.episodes.forSeries).not.toHaveBeenCalled()
+  })
+
+  const airingInfo = (over = {}) => ({ id: 1, status: 'RELEASING', nextAiring: { episode: 8, airingAt: Date.now() + 3600 * 1000 }, poster: null, ...over })
+
+  it('shows how many episodes aired since the last watched one', async () => {
+    const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => airingInfo()) } })
+    card({}, api) // watched 1–3, episode 8 airs next → 7 aired → 4 new
+    expect(await screen.findByText('4 nove')).toHaveClass('badge--new')
+    expect(screen.getByRole('button', { name: /^Show — 3\/12, Gledam, 4 nove epizode$/ })).toBeInTheDocument()
+    expect(api.anilist.forTitle).toHaveBeenCalledTimes(1)
+    expect(api.episodes.forSeries).not.toHaveBeenCalled()
+  })
+  it('shows no badge for a planned series or a finished show', async () => {
+    const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => airingInfo()) } })
+    card({ entry: entry({ status: 'planned' }) }, api)
+    await waitFor(() => expect(api.anilist.forTitle).toHaveBeenCalled())
+    await act(async () => {})
+    expect(screen.queryByText(/nove|novih|nova/)).not.toBeInTheDocument()
+
+    const api2 = makeFakeApi({ anilist: { forTitle: vi.fn(async () => airingInfo({ status: 'FINISHED', nextAiring: null })) } })
+    card({}, api2)
+    await waitFor(() => expect(api2.anilist.forTitle).toHaveBeenCalled())
+    await act(async () => {})
+    expect(screen.queryByText(/nove|novih|nova/)).not.toBeInTheDocument()
   })
 })
