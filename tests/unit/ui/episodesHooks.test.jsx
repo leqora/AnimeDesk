@@ -81,6 +81,34 @@ describe('useEpisodeProgress', () => {
     act(() => changed())
     await waitFor(() => expect(result.current).toEqual({}))
   })
+  it('shares one subscription between hooks and unsubscribes after the last unmount', async () => {
+    let changed
+    const off = vi.fn()
+    const api = makeFakeApi({ positions: { forSeries: vi.fn(async () => ({})) } })
+    api.onPositionsChanged = vi.fn((cb) => { changed = cb; return off })
+    const a = renderHookUi(() => useEpisodeProgress('A'), { api })
+    const b = renderHookUi(() => useEpisodeProgress('B'), { api })
+    await waitFor(() => expect(api.positions.forSeries).toHaveBeenCalledTimes(2))
+    expect(api.onPositionsChanged).toHaveBeenCalledTimes(1)
+    act(() => changed())
+    await waitFor(() => expect(api.positions.forSeries).toHaveBeenCalledTimes(4))
+    a.unmount()
+    expect(off).not.toHaveBeenCalled()
+    b.unmount()
+    expect(off).toHaveBeenCalledTimes(1)
+  })
+  it('keeps the same object when an event returns identical data', async () => {
+    let changed
+    const api = makeFakeApi({ positions: { forSeries: vi.fn(async () => ({ 4: { position: 495, duration: 1440 } })) } })
+    api.onPositionsChanged = vi.fn((cb) => { changed = cb; return () => {} })
+    const { result } = renderHookUi(() => useEpisodeProgress('Show'), { api })
+    await waitFor(() => expect(result.current[4]).toBeDefined())
+    const before = result.current
+    act(() => changed())
+    await waitFor(() => expect(api.positions.forSeries).toHaveBeenCalledTimes(2))
+    await act(async () => {})
+    expect(result.current).toBe(before)
+  })
   it('never lets an older answer overwrite a newer title', async () => {
     let resolveA
     const forSeries = vi.fn((title) => (title === 'A' ? new Promise((r) => { resolveA = r }) : Promise.resolve({ 2: { position: 100, duration: 1400 } })))

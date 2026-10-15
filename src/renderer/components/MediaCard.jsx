@@ -14,7 +14,7 @@ export function isSeriesComplete(entry) {
 
 // The line under the title. Only "EP N" — never an episode title (those only come through seriesEpisodes in main).
 export function cardLine(entry, progress) {
-  if (isSeriesComplete(entry)) return { key: 'card.completed', vars: {} }
+  if (entry.status === 'completed' || isSeriesComplete(entry)) return { key: 'card.completed', vars: {} }
   const next = nextEpisode(entry)
   const saved = progress[String(next)]
   if (saved) return { key: 'card.remaining', vars: { episode: next, min: saved.remaining } }
@@ -30,6 +30,7 @@ export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null
   const progress = useEpisodeProgress(key)
   const total = entry.totalEpisodes
   const complete = isSeriesComplete(entry)
+  const finished = complete || entry.status === 'completed'
   const watched = Number.isInteger(total) && total > 0 ? Math.min(entry.watchedEpisodes.length, total) : entry.watchedEpisodes.length
   const ratio = Number.isInteger(total) && total > 0 ? Math.min(1, watched / total) : null
   const next = nextEpisode(entry)
@@ -54,7 +55,7 @@ export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null
         {line && <span className="card__meta" id={lineId}>{t(line.key, line.vars)}</span>}
       </button>
       <div className="media-card__actions">
-        {!complete && (
+        {!finished && (
           <button type="button" className="primary media-card__play" disabled={!ready} aria-label={t('home.continueEp', { episode: next })} onClick={() => onContinue({ query: key, anime: key, episode: String(next) })}>
             <Icon name="play" />
           </button>

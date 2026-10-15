@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { screen, fireEvent, waitFor } from '@testing-library/react'
+import { screen, fireEvent } from '@testing-library/react'
 import { renderUi, makeFakeApi } from './helpers.jsx'
 import { MediaCard, cardLine, isSeriesComplete } from '../../../src/renderer/components/MediaCard.jsx'
 
@@ -57,6 +57,14 @@ describe('MediaCard', () => {
     expect(container.querySelector('.media-card')).toHaveAttribute('data-complete', 'true')
     expect(screen.getByText('✓ Završeno')).toBeInTheDocument()
     expect(container.querySelector('.media-card__play')).toBeNull()
+  })
+  it('treats status completed as finished even when the total is unknown', () => {
+    const { container } = card({ entry: entry({ status: 'completed', totalEpisodes: null, watchedEpisodes: Array.from({ length: 12 }, (_, i) => i + 1) }) })
+    expect(screen.getByText('✓ Završeno')).toBeInTheDocument()
+    expect(screen.queryByText(/Sledeća/)).toBeNull()
+    expect(container.querySelector('.media-card__play')).toBeNull()
+    expect(container.querySelector('.badge--progress')).toHaveTextContent('12/?')
+    expect(container.querySelector('.media-card')).not.toHaveAttribute('data-complete')
   })
   it('shows the score and the pin action only when asked', () => {
     const onTogglePin = vi.fn()
