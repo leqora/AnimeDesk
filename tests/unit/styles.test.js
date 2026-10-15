@@ -9,7 +9,11 @@ describe('styles.css', () => {
     const root = css.slice(0, rootEnd)
     for (const t of ['--bg', '--bg-elev', '--glass', '--glass-strong', '--glass-border', '--blur', '--text', '--text-muted',
       '--accent', '--accent-2', '--cta', '--ok', '--warn', '--bad', '--poster-tint', '--radius', '--radius-sm', '--glow', '--ease',
-      '--font-display', '--font-body', '--font-hud', '--sub-text', '--sub-text-alt', '--sub-box-rgb', '--sub-outline', '--panel-solid']) {
+      '--font-display', '--font-body', '--font-hud', '--sub-text', '--sub-text-alt', '--sub-box-rgb', '--sub-outline', '--panel-solid',
+      '--card-ratio', '--card-min', '--rail-card-w', '--card-radius', '--dur-fast', '--dur', '--dur-slow', '--card-zoom', '--card-lift',
+      '--badge-bg', '--poster-fade', '--status-watching', '--status-completed', '--status-planned', '--status-paused', '--status-dropped',
+      '--z-card-media', '--z-card-fade', '--z-card-badge', '--z-card-actions',
+    ]) {
       expect(root, t).toContain(`${t}:`)
     }
   })
