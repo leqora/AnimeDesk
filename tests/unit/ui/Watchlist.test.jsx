@@ -78,6 +78,15 @@ describe('WatchlistPage', () => {
 })
 
 describe('AnimeDetail', () => {
+  it('shows saved positions on the detail page pills', async () => {
+    const api = makeFakeApi({
+      library: { list: vi.fn(async () => [entry({ id: 'a', title: 'Show', aniCliTitle: 'Show' })]) },
+      positions: { forSeries: vi.fn(async () => ({ 3: { position: 600, duration: 1440 } })) },
+    })
+    renderUi(<WatchlistPage ready onContinue={() => {}} initialOpenId="a" />, { api })
+    await waitFor(() => expect(screen.getByRole('button', { name: '3' })).toHaveAttribute('title', 'ostalo 14 min'))
+    expect(api.positions.forSeries).toHaveBeenCalledWith('Show')
+  })
   const info = { id: 154587, genres: ['Adventure'], year: 2023, episodes: 28, description: 'Tajna radnja', poster: null }
 
   it('uses the episode list from main and offers the spoiler actions', async () => {

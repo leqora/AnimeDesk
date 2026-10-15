@@ -224,6 +224,7 @@
   "episodes.number": "Epizoda {n}",
   "episodes.titled": "Epizoda {n} · {title}",
   "episodes.minutes": "{n} min",
+  "episodes.remaining": "ostalo {min} min",
   "episodes.watchedMark": "✓ odgledano",
   "episodes.reveal": "Prikaži",
   "episodes.summary": "Opis",

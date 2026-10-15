@@ -6,7 +6,7 @@ import { GROUP_SIZE, episodeGroups, findEpisodeIndex, firstUnwatchedIndex } from
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 
-export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, series = null, poster = null, onReveal = null, loadThumb = null, children }) {
+export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, children }) {
   const t = useT()
   const groups = episodeGroups(episodes)
   const [group, setGroup] = useState(() => Math.floor(firstUnwatchedIndex(episodes, watched) / GROUP_SIZE))
@@ -71,6 +71,7 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
               onToggle={onToggle}
               onReveal={onReveal}
               loadThumb={loadThumb}
+              progress={progress[String(Number(ep))] ?? null}
               rowRef={(el) => { buttons.current[ep] = el }}
             />
           ))}
@@ -79,8 +80,12 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
         <div className="ep-grid">
           {visible.map((ep) => {
             const cls = ['ep', selected.includes(ep) && 'ep--selected', watched.includes(Number(ep)) && 'ep--watched', noted.includes(ep) && 'ep--note'].filter(Boolean).join(' ')
+            const saved = progress[String(Number(ep))]
             return (
-              <button type="button" key={ep} ref={(el) => { buttons.current[ep] = el }} className={cls} aria-pressed={selected.includes(ep)} onClick={() => onToggle(ep)}>{ep}</button>
+              <button type="button" key={ep} ref={(el) => { buttons.current[ep] = el }} className={cls} aria-pressed={selected.includes(ep)} title={saved ? t('episodes.remaining', { min: saved.remaining }) : undefined} onClick={() => onToggle(ep)}>
+                {ep}
+                {saved && <span className="ep__progress" aria-hidden="true" style={{ '--ratio': saved.ratio }} />}
+              </button>
             )
           })}
         </div>

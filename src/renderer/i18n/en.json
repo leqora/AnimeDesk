@@ -224,6 +224,7 @@
   "episodes.number": "Episode {n}",
   "episodes.titled": "Episode {n} · {title}",
   "episodes.minutes": "{n} min",
+  "episodes.remaining": "{min} min left",
   "episodes.watchedMark": "✓ watched",
   "episodes.reveal": "Show",
   "episodes.summary": "Summary",

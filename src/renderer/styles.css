@@ -183,7 +183,8 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 
 /* episodes */
 .ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 6px; }
-.ep { padding: 8px 0; text-align: center; font-family: var(--font-hud); font-weight: 600; }
+.ep { position: relative; overflow: hidden; padding: 8px 0; text-align: center; font-family: var(--font-hud); font-weight: 600; }
+.ep__progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; transform: scaleX(var(--ratio, 0)); transform-origin: left; background: var(--accent-2); box-shadow: var(--glow-cyan); }
 .ep--watched { border-color: var(--accent-2); color: var(--accent-2); }
 .ep--selected { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: var(--glow); }
 .episode-picker { display: flex; flex-direction: column; gap: 12px; }
@@ -196,6 +197,10 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .ep-list { display: flex; flex-direction: column; gap: 6px; }
 .ep-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .ep-row__main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; padding: 8px; text-align: left; }
+.ep-row__media { position: relative; flex: none; display: block; overflow: hidden; border-radius: var(--radius-sm); }
+.ep-row__media .ep-row__thumb { display: block; }
+.ep-row__progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; transform: scaleX(var(--ratio, 0)); transform-origin: left; background: var(--accent-2); }
+.ep-row__left { color: var(--accent-2); }
 .ep-row__thumb { width: 160px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--radius-sm); flex: none; background: var(--glass); transition: opacity .2s var(--ease); }
 .ep-row--watched .ep-row__thumb { opacity: .45; }
 .ep-row--watched:hover .ep-row__thumb { opacity: 1; }

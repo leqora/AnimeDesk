@@ -4,6 +4,7 @@ import { useT } from '../i18n/I18nContext.jsx'
 import { ReadyNotice } from '../components/ReadyNotice.jsx'
 import { Poster, usePosterInfo } from '../components/Poster.jsx'
 import { useSeriesEpisodes } from '../episodes/useSeriesEpisodes.js'
+import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
 import { EpisodePicker } from '../components/EpisodePicker.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { animeLineTitle, normalizeTitle } from '../../shared/domain.js'
@@ -27,6 +28,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const episodeMenu = phase === 'episode' && menu ? menu.lines.map((l) => l.trim()) : null
   const { series, update: updateSpoilers, thumb } = useSeriesEpisodes({ title: episodeMenu ? anime : null, list: episodeMenu })
   const posterInfo = usePosterInfo(episodeMenu ? anime : null)
+  const progress = useEpisodeProgress(episodeMenu ? anime : null)
 
   // The session id and phase are mirrored in a ref so the unmount cleanup sees the latest values.
   const [prefs, setPrefs] = useState({ quality: null, mode: null })
@@ -217,7 +219,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
           <div className="row"><button type="button" onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button></div>
           <h2>{anime} — {t('search.selectEpisode')}</h2>
           <EpisodePicker episodes={episodeMenu} selected={selected} watched={watched} onToggle={toggle} prefs={prefs} onPrefs={changePrefs}
-            series={series} poster={posterInfo?.poster ?? null} onReveal={(ep) => updateSpoilers({ episode: ep })} loadThumb={thumb}>
+            series={series} poster={posterInfo?.poster ?? null} onReveal={(ep) => updateSpoilers({ episode: ep })} loadThumb={thumb} progress={progress}>
             <button type="button" className="primary" disabled={!ready || selected.length === 0} onClick={watchSelected}>{t('search.watch')}</button>
             <button type="button" disabled={!ready || selected.length === 0} onClick={downloadSelected}>{t('search.download')}</button>
             {!settings.downloadDir && (

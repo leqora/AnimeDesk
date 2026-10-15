@@ -6,6 +6,7 @@ import { ConfirmButton } from '../components/ConfirmButton.jsx'
 import { EpisodePicker } from '../components/EpisodePicker.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { useSeriesEpisodes } from '../episodes/useSeriesEpisodes.js'
+import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
 import { usePosterTint } from '../theme/usePosterTint.js'
 import { STATUSES, nextEpisode } from '../../shared/domain.js'
 
@@ -37,6 +38,7 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
   const watched = entry.watchedEpisodes
   const animeKey = entry.aniCliTitle ?? entry.title
   const { series, update, thumb } = useSeriesEpisodes({ title: animeKey, aniListId: entry.aniListId ?? null })
+  const progress = useEpisodeProgress(animeKey)
   const maxEp = Math.max(entry.totalEpisodes ?? 0, ...watched.map(Math.ceil), 1)
   // The real ani-cli list (or 1..max) comes from main; until it answers, 1..max as before.
   const episodes = series?.episodes?.length ? series.episodes.map((e) => e.number) : Array.from({ length: maxEp }, (_, i) => String(i + 1))
@@ -111,6 +113,7 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
             onToggle={(ep) => openNote(Number(ep))}
             series={series}
             poster={info?.poster ?? null}
+            progress={progress}
             onReveal={(ep) => update({ episode: ep })}
             loadThumb={thumb}
           >

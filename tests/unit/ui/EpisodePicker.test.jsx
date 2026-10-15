@@ -63,6 +63,13 @@ describe('EpisodePicker', () => {
     fireEvent.change(screen.getByLabelText('Režim'), { target: { value: '' } })
     expect(onPrefs).toHaveBeenLastCalledWith({ mode: null })
   })
+  it('marks a partly watched episode on its pill', () => {
+    const { container } = renderUi(<EpisodePicker {...base({ progress: { 4: { ratio: 0.34, remaining: 16 } } })} />)
+    const pill = screen.getByRole('button', { name: '4' })
+    expect(pill).toHaveAttribute('title', 'ostalo 16 min')
+    expect(pill.querySelector('.ep__progress').style.getPropertyValue('--ratio')).toBe('0.34')
+    expect(container.querySelectorAll('.ep__progress')).toHaveLength(1)
+  })
   it('scrolls once per jump, including repeated jumps to the same episode', () => {
     const orig = Element.prototype.scrollIntoView
     const scroll = vi.fn()
@@ -159,6 +166,15 @@ describe('EpisodePicker list view', () => {
     } finally {
       Element.prototype.scrollIntoView = orig
     }
+  })
+  it('shows progress on a hidden row without revealing its title', async () => {
+    const { container } = renderUi(<EpisodePicker {...base({ episodes: ['1', '2', '3'], progress: { 3: { ratio: 0.5, remaining: 12 } } })} series={SERIES} poster="data:poster" />, { api: listApi() })
+    await waitFor(() => expect(screen.getByText('Epizoda 2 · Naslov 2')).toBeInTheDocument())
+    const row = screen.getByText('Epizoda 3').closest('.ep-row')
+    expect(row.querySelector('.ep-row__progress').style.getPropertyValue('--ratio')).toBe('0.5')
+    expect(row).toHaveTextContent('ostalo 12 min')
+    expect(row).not.toHaveTextContent(/Naslov/)
+    expect(container.querySelectorAll('.ep-row__progress')).toHaveLength(1)
   })
   it('keeps pills free of titles', () => {
     renderUi(<EpisodePicker {...base({ episodes: ['1', '2', '3'] })} series={SERIES} />)
