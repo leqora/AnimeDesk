@@ -4,6 +4,7 @@ import { act, waitFor } from '@testing-library/react'
 import { renderHookUi, makeFakeApi } from './helpers.jsx'
 import { useSeriesEpisodes } from '../../../src/renderer/episodes/useSeriesEpisodes.js'
 import { useEpisodeView } from '../../../src/renderer/episodes/useEpisodeView.js'
+import { useEpisodeProgress } from '../../../src/renderer/episodes/useEpisodeProgress.js'
 
 const LIST = { episodes: [{ number: '1', runtime: 24, visibility: 'preview', title: 'Naslov 1', hasThumb: true }], source: 'menu', meta: 'ok' }
 
@@ -64,5 +65,40 @@ describe('useEpisodeView', () => {
     act(() => result.current[1]('numbers'))
     expect(result.current[0]).toBe('numbers')
     expect(api.settings.update).toHaveBeenCalledWith({ episodeView: 'numbers' })
+  })
+})
+
+describe('useEpisodeProgress', () => {
+  it('loads positions with ratio and minutes left, and reloads on change events', async () => {
+    let changed
+    const api = makeFakeApi({ positions: { forSeries: vi.fn(async () => ({ 4: { position: 495, duration: 1440 }, 5: { position: 'x', duration: 1 } })) } })
+    api.onPositionsChanged = vi.fn((cb) => { changed = cb; return () => {} })
+    const { result } = renderHookUi(() => useEpisodeProgress('Show'), { api })
+    await waitFor(() => expect(result.current[4]).toEqual({ position: 495, duration: 1440, ratio: 495 / 1440, remaining: 16 }))
+    expect(result.current[5]).toBeUndefined()
+    expect(api.positions.forSeries).toHaveBeenCalledWith('Show')
+    api.positions.forSeries.mockResolvedValueOnce({})
+    act(() => changed())
+    await waitFor(() => expect(result.current).toEqual({}))
+  })
+  it('never lets an older answer overwrite a newer title', async () => {
+    let resolveA
+    const forSeries = vi.fn((title) => (title === 'A' ? new Promise((r) => { resolveA = r }) : Promise.resolve({ 2: { position: 100, duration: 1400 } })))
+    const api = makeFakeApi({ positions: { forSeries } })
+    const { result, rerender } = renderHookUi(({ title }) => useEpisodeProgress(title), { api, initialProps: { title: 'A' } })
+    rerender({ title: 'B' })
+    await waitFor(() => expect(result.current[2]).toBeDefined())
+    await act(async () => { resolveA({ 9: { position: 100, duration: 1400 } }) })
+    expect(result.current[9]).toBeUndefined()
+  })
+  it('is empty without a title and on errors', async () => {
+    const bad = makeFakeApi({ positions: { forSeries: vi.fn(async () => { throw new Error('x') }) } })
+    const { result } = renderHookUi(() => useEpisodeProgress('Show'), { api: bad })
+    await waitFor(() => expect(bad.positions.forSeries).toHaveBeenCalled())
+    expect(result.current).toEqual({})
+    const none = makeFakeApi()
+    const r2 = renderHookUi(() => useEpisodeProgress(null), { api: none })
+    expect(r2.result.current).toEqual({})
+    expect(none.positions.forSeries).not.toHaveBeenCalled()
   })
 })

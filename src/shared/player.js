@@ -53,3 +53,11 @@ export function bufferedRanges(tr) {
 }
 
 export const sameRanges = (a, b) => a.length === b.length && a.every((r, i) => r.start === b[i].start && r.end === b[i].end)
+
+const validSpan = (position, duration) => Number.isFinite(position) && Number.isFinite(duration) && duration > 0
+
+export const remainingMinutes = (position, duration) =>
+  validSpan(position, duration) ? Math.max(1, Math.ceil((duration - position) / 60)) : null
+
+export const progressRatio = (position, duration) =>
+  validSpan(position, duration) ? Math.min(1, Math.max(0, position / duration)) : 0
