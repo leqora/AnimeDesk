@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatTime, segmentAt, nextEpisodeNumber, shouldOfferResume, trackMax, isLastEpisode, qualityLabel, qualityName, RATES, stepRate, formatRate, bufferedRanges, sameRanges } from '../../src/shared/player.js'
+import { formatTime, segmentAt, nextEpisodeNumber, shouldOfferResume, trackMax, isLastEpisode, qualityLabel, qualityName, RATES, stepRate, formatRate, bufferedRanges, sameRanges, remainingMinutes, progressRatio } from '../../src/shared/player.js'
 
 describe('player helpers', () => {
   it('formats time', () => {
@@ -97,5 +97,21 @@ describe('buffered ranges', () => {
     expect(sameRanges([{ start: 0, end: 30 }], [{ start: 0, end: 31 }])).toBe(false)
     expect(sameRanges([], [{ start: 0, end: 1 }])).toBe(false)
     expect(sameRanges([], [])).toBe(true)
+  })
+})
+
+describe('episode progress helpers', () => {
+  it('rounds the remaining time up to whole minutes, at least 1', () => {
+    expect(remainingMinutes(495, 1440)).toBe(16)
+    expect(remainingMinutes(1430, 1440)).toBe(1)
+    expect(remainingMinutes(0, 1440)).toBe(24)
+    expect(remainingMinutes(NaN, 1440)).toBeNull()
+    expect(remainingMinutes(10, 0)).toBeNull()
+  })
+  it('gives a 0..1 ratio', () => {
+    expect(progressRatio(720, 1440)).toBe(0.5)
+    expect(progressRatio(2000, 1440)).toBe(1)
+    expect(progressRatio(-5, 1440)).toBe(0)
+    expect(progressRatio(10, null)).toBe(0)
   })
 })

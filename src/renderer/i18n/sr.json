@@ -182,6 +182,7 @@
   "profile.activityCell": "{date}: {count} ep.",
   "home.continue": "Nastavi gledanje",
   "home.continueEp": "Nastavi EP {episode}",
+  "home.continueEpFrom": "Nastavi EP {episode} od {time}",
   "home.details": "Detalji",
   "home.welcome": "Šta gledamo danas?",
   "home.welcomeSub": "Pretraži anime i kreni sa gledanjem.",
@@ -224,6 +225,7 @@
   "episodes.number": "Epizoda {n}",
   "episodes.titled": "Epizoda {n} · {title}",
   "episodes.minutes": "{n} min",
+  "episodes.remaining": "ostalo {min} min",
   "episodes.watchedMark": "✓ odgledano",
   "episodes.reveal": "Prikaži",
   "episodes.summary": "Opis",
@@ -289,5 +291,9 @@
   "episodes.metaOff": "Isključi metapodatke za ovu seriju",
   "episodes.unreliable": "Naslovi epizoda nisu prikazani: brojevi epizoda kod izvora se ne poklapaju.",
   "settings.spoilersSection": "Spojleri",
-  "settings.hideSpoilers": "Skrivaj spojlere (naslove, sličice i opise epizoda posle sledeće)"
+  "settings.hideSpoilers": "Skrivaj spojlere (naslove, sličice i opise epizoda posle sledeće)",
+  "card.label": "{title} — {watched}/{total}, {status}",
+  "card.remaining": "EP {episode} · ostalo {min} min",
+  "card.next": "Sledeća: EP {episode}",
+  "card.completed": "✓ Završeno"
 }

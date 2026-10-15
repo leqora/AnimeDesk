@@ -1,6 +1,6 @@
 # Seanime analiza → unapređenje AnimeDesk-a — stanje rada (predaja smene)
 
-Poslednje ažuriranje: 2026-10-11 (v0.7.0 na grani, spoiler model + metapodaci epizoda; nije objavljeno).
+Poslednje ažuriranje: 2026-10-16 (v0.7.1 na grani `feat/v0.7.1-cards-progress`: redizajn kartice + progres po epizodi; nije objavljeno, čeka dozvolu).
 
 - Spec korisnika: `C:\Users\Nikola\Desktop\Claude\Anime\Aplikacija za gledanje Anime-a\Seanime\zadatak.txt`
 - Seanime klon (referenca, GPL-3.0 — samo inspiracija, ne kopirati kod): `C:\Users\Nikola\Desktop\Projekti\_ref\seanime` (commit 2da73d9; ne commitovati).
@@ -21,6 +21,7 @@ Poslednje ažuriranje: 2026-10-11 (v0.7.0 na grani, spoiler model + metapodaci e
 - [x] **P0-B korak 6 = v0.6.4** (lazy `PlayerView` + hls.js, hook-ovi u `src/renderer/player/`, brzina reprodukcije + meni, buffered traka + tooltip; 709 testova; objavljeno 2026-10-10 kao Latest, spojeno u `main`).
 - [x] **P0-B korak 7 = v0.6.5** (prefetch linka sledeće epizode; 736 testova; ručna provera sa pravim ani-cli-jem: „Sledeća” 7,3 s → 0,87 s; objavljeno 2026-10-10 kao Latest, spojeno u `main`). **P0-B je završen.** Sledeće: P1 (v0.7).
 - [x] **P1 korak 1 = v0.7.0 (objavljeno 2026-10-11, Latest, spojeno u `main`):** spoiler model (`src/shared/spoilers.js`, primena u main-u kroz `src/main/seriesEpisodes.js`) + metapodaci epizoda iz ani.zip (prebačeno iz P2) + keš stvarne ani-cli liste. 826 testova, završni pregled (Opus) urađen + talas ispravki. Ostatak P1 (kartice, progres po epizodi, „N novih”, istorija navigacije, `Modal.jsx`, toastovi, keš postera) ide u v0.7.1+ po dogovoru.
+- [x] **P1 korak 2 = v0.7.1 (na grani, 2026-10-16, NIJE objavljeno):** zajednička `MediaCard` (bedž 3/12, traka, tačka statusa, ocena, ▶/★ na hover/fokus), `Poster` skeleton/fade-in, progres po epizodi (kartica, Hero, pilule, Lista) preko `positions.forSeries` + `event:positions-changed`. 857 testova, završni pregled (Opus) „Yes” + talas sitnih ispravki. Ostatak P1 ("sledeća izlazi…"/"N novih", header detalja, istorija navigacije, `Modal.jsx`, toastovi, keš postera) ide u v0.7.2+.
 
 ## Odluke korisnika (važe za dalje)
 1. Serija je „Završeno” tek kad su **sve** epizode odgledane (urađeno u 0.5.1).
@@ -48,6 +49,7 @@ Obaveštenja o novim epizodama (Seanime ovo NEMA) · tray/autostart/single-insta
 JASSUB/ASS, Anime4K za mpv, nedeljni raspored, command palette, Discord RPC (bez naziva epizode), discover/preporuke, dostignuća, `@ts-check`.
 
 ## Napomene za sledeću sesiju
+- Iskustvo iz v0.7.1: Sonnet podagent je u prvom commit-u stavio „Claude Sonnet 5.5”, jer ga je sesijski podsetnik za atribuciju na to naveo — u `implementer-instructions.md` izričito napisati da pravilo projekta (Opus 5.5) ima prednost; posle toga su svi commit-ovi bili ispravni. Ručna provera sa snimkom ekrana je opet našla nešto što testovi i pregledi nisu (sivi pravougaonik iza naslova kartice na hover — opšte `button:hover` pravilo). Skripta za ručnu proveru (izolovan profil sa 5 serija + `positions.json`, junction za alate) bila je u scratchpad-u (`manual.mjs`); ffmpeg `crop`+`scale` je zgodan za uveličavanje detalja na snimku.
 - Iskustvo iz v0.7.0: Haiku je opet stavio svoj potpis u commit (ispravljeno amend-om pre pregleda) — za implementere koristiti Sonnet ili u dispatch-u izričito tražiti tačan trailer; zajednička uputstva za podagente u fajl u radnom folderu (`implementer-instructions.md`, `reviewer-instructions.md`) skraćuju dispatch. Pozadinska bezbednosna provera commit-a je uhvatila SSRF/neograničeno preuzimanje sličica koje pregled zadatka nije (sada allowlist hosta + ograničen tok). Ručna provera sa pravim alatima: junction `<izolovan profil>	ools` → `%APPDATA%AnimeDesk	ools` + `autoUpdateTools: false`; junction ukloniti (`cmd /c rmdir`) PRE brisanja profila.
 - Ručna provera aplikacije: Playwright `_electron` skripta sa izolovanim `ANIMEDESK_USER_DATA` i probnim videom ubačenim u `downloads.json` (ffmpeg `testsrc`). Chrome-devtools MCP ne radi za ovo (nema preload-a).
 - Python na ovoj mašini ne pokretati preko heredoc-a (Windows alias visi) — koristiti `node -e`.

@@ -64,4 +64,43 @@ describe('positions', () => {
     expect(warn).toHaveBeenCalledWith('positions: write failed', expect.any(String))
     warn.mockRestore()
   })
+  it('lists the resumable positions of one series only', () => {
+    const p = createPositions(file)
+    p.save('Naruto', 4, { position: 495, duration: 1440 })
+    p.save('Naruto', '05', { position: 5, duration: 1440 }) // too early: not resumable
+    p.save('Naruto Shippuden', 1, { position: 300, duration: 1440 })
+    p.save('Naruto', 12.5, { position: 100, duration: 1440 })
+    expect(p.forSeries('NARUTO')).toEqual({ 4: { position: 495, duration: 1440 }, '12.5': { position: 100, duration: 1440 } })
+    expect(p.forSeries('Naruto Shippuden')).toEqual({ 1: { position: 300, duration: 1440 } })
+    expect(p.forSeries('')).toEqual({})
+    expect(p.forSeries(null)).toEqual({})
+  })
+  it('reports real changes to listeners until they unsubscribe', () => {
+    let t = 0
+    const p = createPositions(file, { now: () => t })
+    const seen = []
+    const off = p.onChange((kind) => seen.push(kind))
+    p.save('A b', 1, { position: 100, duration: 1400 })
+    p.save('A b', 1, { position: NaN, duration: 1400 }) // ignored save: no event
+    p.clear('A b', 1)
+    p.clear('A b', 1) // nothing to clear: no event
+    p.save('Old', 1, { position: 100, duration: 1400 })
+    t = 61 * 86400000
+    p.prune(60)
+    p.prune(60) // nothing left to prune: no event
+    off()
+    p.save('A b', 2, { position: 100, duration: 1400 })
+    expect(seen).toEqual(['save', 'clear', 'save', 'prune'])
+  })
+  it('keeps working when a listener throws', () => {
+    const p = createPositions(file)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const ok = vi.fn()
+    p.onChange(() => { throw new Error('boom') })
+    p.onChange(ok)
+    p.save('A b', 1, { position: 100, duration: 1400 })
+    expect(ok).toHaveBeenCalledWith('save')
+    expect(p.get('A b', 1)).not.toBeNull()
+    warn.mockRestore()
+  })
 })

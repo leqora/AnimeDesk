@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
 
 // One episode in the list view. What it may show was decided in main: a hidden row only ever has number + runtime.
-export function EpisodeRow({ row, poster = null, watched = false, selected = false, noted = false, onToggle, onReveal = null, loadThumb = null, rowRef = null }) {
+export function EpisodeRow({ row, poster = null, watched = false, selected = false, noted = false, onToggle, onReveal = null, loadThumb = null, rowRef = null, progress = null }) {
   const t = useT()
   const ref = useRef(null)
   const [src, setSrc] = useState(null)
@@ -35,11 +35,15 @@ export function EpisodeRow({ row, poster = null, watched = false, selected = fal
   return (
     <div ref={(el) => { ref.current = el; rowRef?.(el) }} className={cls}>
       <button type="button" className="ep-row__main" aria-pressed={selected} onClick={() => onToggle(row.number)}>
-        {img ? <img className="ep-row__thumb" src={img} alt="" /> : <span className="ep-row__thumb ep-row__thumb--empty" aria-hidden="true" />}
+        <span className="ep-row__media">
+          {img ? <img className="ep-row__thumb" src={img} alt="" /> : <span className="ep-row__thumb ep-row__thumb--empty" aria-hidden="true" />}
+          {progress && <span className="ep-row__progress" aria-hidden="true" style={{ '--ratio': progress.ratio }} />}
+        </span>
         <span className="ep-row__text">
           <span className="ep-row__title">{label}</span>
           <span className="ep-row__meta muted">
             {row.runtime ? t('episodes.minutes', { n: row.runtime }) : null}
+            {progress && <span className="ep-row__left">{t('episodes.remaining', { min: progress.remaining })}</span>}
             {watched && <span className="ep-row__done">{t('episodes.watchedMark')}</span>}
           </span>
         </span>

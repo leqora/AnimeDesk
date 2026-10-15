@@ -20,7 +20,7 @@ function services() {
     updater: { getState: vi.fn(() => ({ status: 'idle' })), check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(() => true), install: vi.fn(() => true), applySettings: vi.fn() },
     whatsNew: { get: vi.fn(() => null), seen: vi.fn() },
     window: { get: vi.fn(() => true), set: vi.fn() },
-    positions: { clear: vi.fn() },
+    positions: { clear: vi.fn(), forSeries: vi.fn((title) => (title === 'Show' ? { 4: { position: 495, duration: 1440 } } : {})) },
     skipLookup: vi.fn(async () => ({ op: { start: 1, end: 2 }, ed: null, recap: null })),
     send: vi.fn(),
   }
@@ -125,6 +125,15 @@ describe('ipc', () => {
     const s = services()
     createHandlers(s)[INVOKE.libraryRecord]({ aniCliTitle: 'A', episode: '1' })
     expect(s.positions.clear).toHaveBeenCalledWith('A', '1')
+  })
+  it('reads the saved positions of one series', async () => {
+    const s = services()
+    const h = createHandlers(s)
+    expect(INVOKE.positionsForSeries).toBe('positions:for-series')
+    expect(await h[INVOKE.positionsForSeries]('Show')).toEqual({ 4: { position: 495, duration: 1440 } })
+    expect(await h[INVOKE.positionsForSeries](undefined)).toEqual({})
+    expect(s.positions.forSeries).toHaveBeenLastCalledWith('')
+    expect(await createHandlers({ ...s, positions: null })[INVOKE.positionsForSeries]('Show')).toEqual({})
   })
   it('installMissing streams progress and re-runs the health check', async () => {
     const s = services()

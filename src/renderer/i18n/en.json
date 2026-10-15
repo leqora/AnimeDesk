@@ -182,6 +182,7 @@
   "profile.activityCell": "{date}: {count} ep.",
   "home.continue": "Continue watching",
   "home.continueEp": "Continue EP {episode}",
+  "home.continueEpFrom": "Continue EP {episode} from {time}",
   "home.details": "Details",
   "home.welcome": "What are we watching today?",
   "home.welcomeSub": "Search for an anime and start watching.",
@@ -224,6 +225,7 @@
   "episodes.number": "Episode {n}",
   "episodes.titled": "Episode {n} · {title}",
   "episodes.minutes": "{n} min",
+  "episodes.remaining": "{min} min left",
   "episodes.watchedMark": "✓ watched",
   "episodes.reveal": "Show",
   "episodes.summary": "Summary",
@@ -289,5 +291,9 @@
   "episodes.metaOff": "Turn off episode details for this series",
   "episodes.unreliable": "Episode titles are not shown: the source's episode numbers do not match.",
   "settings.spoilersSection": "Spoilers",
-  "settings.hideSpoilers": "Hide spoilers (titles, thumbnails and summaries of episodes after the next one)"
+  "settings.hideSpoilers": "Hide spoilers (titles, thumbnails and summaries of episodes after the next one)",
+  "card.label": "{title} — {watched}/{total}, {status}",
+  "card.remaining": "EP {episode} · {min} min left",
+  "card.next": "Next: EP {episode}",
+  "card.completed": "✓ Completed"
 }

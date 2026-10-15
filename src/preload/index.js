@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('animedesk', {
   seriesPrefs: { get: invoke(INVOKE.seriesPrefsGet), set: invoke(INVOKE.seriesPrefsSet) },
   anilist: { forTitle: invoke(INVOKE.anilistForTitle), search: invoke(INVOKE.anilistSearch) },
   episodes: { forSeries: invoke(INVOKE.episodesForSeries), thumb: invoke(INVOKE.episodesThumb), spoilers: invoke(INVOKE.episodesSpoilers) },
+  positions: { forSeries: invoke(INVOKE.positionsForSeries) },
   tools: {
     status: invoke(INVOKE.toolsStatus),
     installMissing: invoke(INVOKE.toolsInstallMissing),
@@ -71,4 +72,5 @@ contextBridge.exposeInMainWorld('animedesk', {
   skip: { get: invoke(INVOKE.skipGet) },
   app: { openRepo: invoke(INVOKE.appOpenRepo) },
   onLibraryChanged: on(EVENTS.libraryChanged),
+  onPositionsChanged: on(EVENTS.positionsChanged),
 })
