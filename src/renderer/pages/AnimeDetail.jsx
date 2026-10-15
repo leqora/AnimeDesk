@@ -9,6 +9,10 @@ import { useSeriesEpisodes } from '../episodes/useSeriesEpisodes.js'
 import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
 import { usePosterTint } from '../theme/usePosterTint.js'
 import { STATUSES, nextEpisode } from '../../shared/domain.js'
+import { useNow } from '../useNow.js'
+import { AiringLine, NewBadge } from '../components/AiringLine.jsx'
+import { newEpisodeCount, upcoming, ANILIST_STATUSES } from '../../shared/airing.js'
+import { formatTime } from '../../shared/player.js'
 
 export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
   const api = useApi()
@@ -43,6 +47,18 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
   // The real ani-cli list (or 1..max) comes from main; until it answers, 1..max as before.
   const episodes = series?.episodes?.length ? series.episodes.map((e) => e.number) : Array.from({ length: maxEp }, (_, i) => String(i + 1))
   const nextEp = nextEpisode(entry)
+  const now = useNow()
+  const fresh = newEpisodeCount(entry, info, now)
+  const saved = progress[String(nextEp)]
+  const totalEps = entry.totalEpisodes ?? info?.episodes ?? null
+  const meta = info
+    ? [
+        info.year,
+        totalEps && t('detail.episodesCount', { n: totalEps }),
+        info.duration && t('detail.duration', { min: info.duration }),
+        ANILIST_STATUSES.includes(info.status) && t(`airing.status.${info.status}`),
+      ].filter(Boolean)
+    : []
 
   const openNote = (ep) => { setNoteEp(ep); setNoteText(entry.episodeNotes[String(ep)] ?? '') }
   const saveNote = async () => { await api.library.setEpisodeNote(entry.id, noteEp, noteText); onChanged() }
@@ -59,24 +75,37 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
     <section className="page">
       <div className="row">
         <button type="button" onClick={onBack}>{t('detail.back')}</button>
-        <button type="button" aria-pressed={Boolean(entry.pinnedAt)} onClick={togglePin}><Icon name="star" /> {entry.pinnedAt ? t('pin.remove') : t('pin.add')}</button>
       </div>
-      {pinNotice && <div className="notice" role="status">{pinNotice}</div>}
       <div className="banner" style={tint ? { '--poster-tint': tint } : undefined}>
         {info?.poster && <div className="hero__bg" style={{ backgroundImage: `url(${info.poster})` }} />}
         <div className="banner__body">
           <Poster title={entry.title} aniListId={entry.aniListId} />
-          <h2>{entry.title}</h2>
+          <div className="banner__text">
+            <h2>{entry.title}</h2>
+            {meta.length > 0 && <p className="banner__meta hud">{meta.join(' · ')}</p>}
+            {(upcoming(info, now) || fresh > 0) && (
+              <div className="banner__airing">
+                <AiringLine info={info} now={now} />
+                <NewBadge count={fresh} inline />
+              </div>
+            )}
+            {info?.genres?.length > 0 && (
+              <ul className="chips" aria-label={t('detail.genres')}>
+                {info.genres.map((g) => <li key={g} className="chip">{g}</li>)}
+              </ul>
+            )}
+            <div className="row banner__actions">
+              <button type="button" className="primary" disabled={!ready} onClick={() => onContinue({ query: animeKey, anime: animeKey, episode: String(nextEp) })}>
+                <Icon name="play" /> {saved ? t('home.continueEpFrom', { episode: nextEp, time: formatTime(saved.position) }) : t('home.continueEp', { episode: nextEp })}
+              </button>
+              <button type="button" aria-pressed={Boolean(entry.pinnedAt)} onClick={togglePin}><Icon name="star" /> {entry.pinnedAt ? t('pin.remove') : t('pin.add')}</button>
+            </div>
+          </div>
         </div>
       </div>
+      {pinNotice && <div className="notice" role="status">{pinNotice}</div>}
       <div className="detail">
         <div className="page">
-          {info && (
-            <p className="muted">
-              {t('detail.genres')}: {info.genres.map((g) => <span key={g}>{g} </span>)}
-              {info.year && <> · {t('detail.year')}: {info.year}</>}
-            </p>
-          )}
           <p>{t('detail.progress', { watched: watched.length, total: entry.totalEpisodes ?? '?' })}</p>
           <div className="row">
             <label className="field">
@@ -116,11 +145,7 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
             progress={progress}
             onReveal={(ep) => update({ episode: ep })}
             loadThumb={thumb}
-          >
-            <button type="button" className="primary" disabled={!ready} onClick={() => onContinue({ query: animeKey, anime: animeKey, episode: String(nextEp) })}>
-              {t('detail.continue')}
-            </button>
-          </EpisodePicker>
+          />
           {series && series.meta !== 'none' && (
             <div className="row spoiler-row">
               {series.meta === 'unreliable' && <span className="muted">{t('episodes.unreliable')}</span>}

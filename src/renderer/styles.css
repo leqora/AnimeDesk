@@ -219,9 +219,16 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .ep-row__overview { flex-basis: 100%; margin: 0; padding: 10px 12px; background: var(--glass); border-radius: var(--radius-sm); white-space: pre-wrap; }
 
 /* detail banner */
-.banner { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--glass-border); }
-.banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, var(--bg) 5%, color-mix(in srgb, var(--poster-tint) 30%, transparent)); }
-.banner__body { position: relative; z-index: 1; display: flex; gap: 20px; align-items: flex-end; padding: 24px; }
+.banner { position: relative; min-height: 260px; display: flex; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--glass-border); }
+.banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--bg) 20%, transparent 70%), linear-gradient(0deg, var(--bg) 5%, color-mix(in srgb, var(--poster-tint) 30%, transparent)); }
+.banner__body { position: relative; z-index: 1; flex: 1; display: flex; gap: 20px; align-items: flex-end; padding: 24px; }
+.banner__text { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.banner__text h2 { margin: 0; }
+.banner__meta { margin: 0; color: var(--text-muted); font-size: 13px; }
+.banner__airing { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.chip { padding: 2px 10px; font-size: 12px; border-radius: 999px; background: var(--badge-bg); border: 1px solid var(--glass-border); }
+.banner__actions { margin-top: 4px; }
 .banner .poster { width: 150px; }
 .detail { display: flex; flex-direction: column; gap: 18px; }
 .field { display: flex; flex-direction: column; gap: 4px; }
