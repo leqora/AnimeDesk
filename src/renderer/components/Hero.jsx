@@ -4,11 +4,14 @@ import { usePosterTint } from '../theme/usePosterTint.js'
 import { XpBar } from './XpBar.jsx'
 import { Icon } from './Icon.jsx'
 import { nextEpisode } from '../../shared/domain.js'
+import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
+import { formatTime } from '../../shared/player.js'
 
 export function Hero({ entry, ready, onContinue, onDetails, onSearch }) {
   const t = useT()
   const info = usePosterInfo(entry?.title ?? null, entry?.aniListId ?? null)
   const tint = usePosterTint(info?.poster ?? null)
+  const progress = useEpisodeProgress(entry ? (entry.aniCliTitle ?? entry.title) : null)
 
   if (!entry) {
     return (
@@ -28,6 +31,7 @@ export function Hero({ entry, ready, onContinue, onDetails, onSearch }) {
 
   const key = entry.aniCliTitle ?? entry.title
   const next = nextEpisode(entry)
+  const saved = progress[String(next)]
   const watched = entry.watchedEpisodes.length
   return (
     <section className="hero" style={tint ? { '--poster-tint': tint } : undefined}>
@@ -38,9 +42,10 @@ export function Hero({ entry, ready, onContinue, onDetails, onSearch }) {
           <h1 className="hero__title">{entry.title}</h1>
           <span className="hud muted">{t('home.episodeOf', { watched, total: entry.totalEpisodes ?? '?' })}</span>
           {entry.totalEpisodes ? <XpBar into={watched} total={entry.totalEpisodes} /> : null}
+          {saved && <div className="hero__ep-progress" aria-hidden="true"><span style={{ '--ratio': saved.ratio }} /></div>}
           <div className="row">
             <button type="button" className="primary" disabled={!ready} onClick={() => onContinue({ query: key, anime: key, episode: String(next) })}>
-              <Icon name="play" /> {t('home.continueEp', { episode: next })}
+              <Icon name="play" /> {saved ? t('home.continueEpFrom', { episode: next, time: formatTime(saved.position) }) : t('home.continueEp', { episode: next })}
             </button>
             <button type="button" onClick={() => onDetails(entry.id)}><Icon name="info" /> {t('home.details')}</button>
           </div>

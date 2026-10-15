@@ -125,6 +125,8 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .hero__label { color: var(--accent-2); font-size: 13px; }
 .hero__title { font-size: 34px; line-height: 1.15; }
 .hero__poster { width: 150px; border-radius: var(--radius-sm); box-shadow: 0 10px 30px var(--scrim); }
+.hero__ep-progress { height: 3px; max-width: 320px; background: var(--glass-strong); border-radius: 2px; overflow: hidden; }
+.hero__ep-progress > span { display: block; height: 100%; transform: scaleX(var(--ratio, 0)); transform-origin: left; background: var(--accent-2); box-shadow: var(--glow-cyan); }
 .hero--welcome::after { background: radial-gradient(circle at 80% 20%, color-mix(in srgb, var(--accent) 35%, transparent), transparent 60%), linear-gradient(0deg, var(--bg), transparent); }
 
 /* rails + cards */

@@ -182,6 +182,7 @@
   "profile.activityCell": "{date}: {count} ep.",
   "home.continue": "Continue watching",
   "home.continueEp": "Continue EP {episode}",
+  "home.continueEpFrom": "Continue EP {episode} from {time}",
   "home.details": "Details",
   "home.welcome": "What are we watching today?",
   "home.welcomeSub": "Search for an anime and start watching.",

@@ -182,6 +182,7 @@
   "profile.activityCell": "{date}: {count} ep.",
   "home.continue": "Nastavi gledanje",
   "home.continueEp": "Nastavi EP {episode}",
+  "home.continueEpFrom": "Nastavi EP {episode} od {time}",
   "home.details": "Detalji",
   "home.welcome": "Šta gledamo danas?",
   "home.welcomeSub": "Pretraži anime i kreni sa gledanjem.",

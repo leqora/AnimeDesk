@@ -33,6 +33,15 @@ describe('Hero', () => {
     fireEvent.click(screen.getByRole('button', { name: /Detalji/ }))
     expect(onDetails).toHaveBeenCalledWith('a')
   })
+  it('offers to continue from the saved position', async () => {
+    const onContinue = vi.fn()
+    const api = makeFakeApi({ positions: { forSeries: vi.fn(async () => ({ 3: { position: 495, duration: 1440 } })) } })
+    const { container } = renderUi(<Hero entry={entry()} ready onContinue={onContinue} onDetails={() => {}} onSearch={() => {}} />, { api })
+    fireEvent.click(await screen.findByRole('button', { name: /Nastavi EP 3 od 8:15/ }))
+    expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '3' })
+    expect(container.querySelector('.hero__ep-progress > span').style.getPropertyValue('--ratio')).toBe(String(495 / 1440))
+    expect(api.positions.forSeries).toHaveBeenCalledWith('Show')
+  })
   it('welcomes a new user and focuses search', () => {
     const onSearch = vi.fn()
     renderUi(<Hero entry={null} ready onContinue={() => {}} onDetails={() => {}} onSearch={onSearch} />)
