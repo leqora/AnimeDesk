@@ -52,6 +52,8 @@ export const INVOKE = {
   playerRecover: 'player:recover',
   playerRetryAgain: 'player:retry-again',
   skipGet: 'skip:get',
+  notificationsList: 'notifications:list',
+  notificationsMarkRead: 'notifications:mark-read',
 }
 
 export const EVENTS = {
@@ -71,4 +73,7 @@ export const EVENTS = {
   playerOpen: 'event:player-open',
   playerClose: 'event:player-close',
   playerRetry: 'event:player-retry',
+  notificationsChanged: 'event:notifications-changed',
+  openAnime: 'event:open-anime',
+  openPage: 'event:open-page',
 }

@@ -72,6 +72,10 @@ contextBridge.exposeInMainWorld('animedesk', {
   dialog: { pickFolder: invoke(INVOKE.dialogPickFolder) },
   skip: { get: invoke(INVOKE.skipGet) },
   app: { openRepo: invoke(INVOKE.appOpenRepo) },
+  notifications: { list: invoke(INVOKE.notificationsList), markRead: invoke(INVOKE.notificationsMarkRead) },
+  onNotificationsChanged: on(EVENTS.notificationsChanged),
+  onOpenAnime: on(EVENTS.openAnime),
+  onOpenPage: on(EVENTS.openPage),
   onLibraryChanged: on(EVENTS.libraryChanged),
   onPositionsChanged: on(EVENTS.positionsChanged),
 })

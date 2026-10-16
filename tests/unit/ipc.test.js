@@ -19,6 +19,7 @@ function services() {
     progress: { snapshot: vi.fn(() => ({ level: 1 })), check: vi.fn() },
     updater: { getState: vi.fn(() => ({ status: 'idle' })), check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(() => true), install: vi.fn(() => true), applySettings: vi.fn() },
     whatsNew: { get: vi.fn(() => null), seen: vi.fn() },
+    notifications: { list: vi.fn(() => [{ id: 'n1' }]), unreadCount: vi.fn(() => 1), markAllRead: vi.fn() },
     window: { get: vi.fn(() => true), set: vi.fn() },
     positions: { clear: vi.fn(), forSeries: vi.fn((title) => (title === 'Show' ? { 4: { position: 495, duration: 1440 } } : {})) },
     skipLookup: vi.fn(async () => ({ op: { start: 1, end: 2 }, ed: null, recap: null })),
@@ -204,11 +205,39 @@ describe('ipc', () => {
     h[INVOKE.settingsUpdate]({ mpvModernUi: true })
     expect(s.toolManager.installOptional).toHaveBeenCalledTimes(1)
   })
+  it('forwards notifications list and mark-read to the store', () => {
+    const s = services()
+    const h = createHandlers(s)
+    expect(h[INVOKE.notificationsList]()).toEqual({ items: [{ id: 'n1' }], unread: 1 })
+    expect(h[INVOKE.notificationsMarkRead]()).toEqual({ items: [{ id: 'n1' }], unread: 1 })
+    expect(s.notifications.markAllRead).toHaveBeenCalledTimes(1)
+  })
   it('reads and sets window fullscreen', () => {
     const s = services()
     const h = createHandlers(s)
     expect(h[INVOKE.windowGetFullscreen]()).toBe(true)
     h[INVOKE.windowSetFullscreen](false)
     expect(s.window.set).toHaveBeenCalledWith(false)
+  })
+})
+
+describe('ipc background hooks', () => {
+  it('calls onSettingsChanged with the updated settings', () => {
+    const s = services()
+    s.onSettingsChanged = vi.fn()
+    createHandlers(s)[INVOKE.settingsUpdate]({ launchAtLogin: true })
+    expect(s.onSettingsChanged).toHaveBeenCalledWith({ launchAtLogin: true })
+  })
+  it('calls onLibraryChanged after a library add', () => {
+    const s = services()
+    s.onLibraryChanged = vi.fn()
+    createHandlers(s)[INVOKE.libraryAdd]({ title: 'A' })
+    expect(s.onLibraryChanged).toHaveBeenCalled()
+  })
+  it('works without the hooks', () => {
+    const s = services()
+    const h = createHandlers(s)
+    expect(() => h[INVOKE.settingsUpdate]({ language: 'en' })).not.toThrow()
+    expect(() => h[INVOKE.libraryAdd]({ title: 'A' })).not.toThrow()
   })
 })

@@ -52,8 +52,17 @@ function ToastItem({ toast, onDone, saved }) {
 }
 
 // hold: while true nothing is shown and timers stand still, so toasts are not missed behind an overlay.
-export function ToastProvider({ children, hold = false }) {
+export function ToastProvider({ children, hold: holdProp = false }) {
   const t = useT()
+  // A hidden window (e.g. in the tray) also holds, so toasts do not expire unseen.
+  const [hidden, setHidden] = useState(() => document.visibilityState === 'hidden')
+  useEffect(() => {
+    const onVis = () => setHidden(document.visibilityState === 'hidden')
+    document.addEventListener('visibilitychange', onVis)
+    onVis()
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [])
+  const hold = holdProp || hidden
   const saved = useRef(new Map()).current
   const [queue, setQueue] = useState([])
   const nextId = useRef(1)

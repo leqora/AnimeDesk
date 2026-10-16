@@ -238,6 +238,8 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .field > span { color: var(--text-muted); font-size: 12px; font-family: var(--font-hud); text-transform: uppercase; letter-spacing: .08em; }
 .field--inline { flex-direction: row; align-items: center; gap: 6px; }
 .check { display: flex; gap: 8px; align-items: center; }
+.check-group { display: flex; flex-direction: column; gap: 2px; }
+.check-hint { margin: 0 0 0 24px; font-size: 0.85em; }
 .description { white-space: pre-wrap; background: var(--glass); padding: 12px; border-radius: var(--radius-sm); }
 
 /* profile page */
@@ -294,6 +296,19 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .update-banner__text { flex: 1; }
 .update-banner .xp-bar { width: 160px; }
 .whats-new__notes { white-space: pre-wrap; max-height: 50vh; overflow-y: auto; background: var(--glass); padding: 12px; border-radius: var(--radius-sm); }
+
+/* notification bell + panel */
+.bell__icon { position: relative; display: inline-flex; }
+.bell__badge { position: absolute; top: -7px; right: -9px; min-width: 16px; padding: 0 4px; font-size: 11px; line-height: 16px; text-align: center; background: var(--accent); color: var(--bg); border-radius: 8px; box-shadow: var(--glow); }
+.bell:hover:not(:disabled) .bell__icon { color: var(--accent-2); }
+.bell:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.bell__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow-y: auto; }
+.bell__item { display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%; padding: 10px 12px; text-align: left; background: var(--glass); border: 1px solid transparent; border-radius: var(--radius-sm); }
+.bell__item--unread { border-color: var(--glass-border); border-left: 3px solid var(--accent); }
+.bell__item:hover:not(:disabled) { background: var(--glass-strong); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+.bell__item:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.bell__item:disabled { opacity: .5; cursor: default; }
+.bell__item-time { font-size: 12px; white-space: nowrap; }
 
 /* narrow window: icon-only sidebar */
 @media (max-width: 960px) {

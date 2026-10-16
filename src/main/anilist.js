@@ -6,6 +6,8 @@ import { AIRED_GRACE_MS } from '../shared/airing.js'
 const ENDPOINT = 'https://graphql.anilist.co'
 const FIELDS = 'id idMal status title { romaji english native } coverImage { large } genres seasonYear episodes duration description(asHtml: false) nextAiringEpisode { episode airingAt }'
 const SEARCH = `query ($search: String) { Page(perPage: 10) { media(search: $search, type: ANIME) { ${FIELDS} } } }`
+const AIRING_BATCH = 'query ($ids: [Int], $page: Int) { Page(page: $page, perPage: 50) { media(id_in: $ids, type: ANIME) { id status episodes nextAiringEpisode { episode airingAt } } } }'
+const AIRING_CHUNK = 50
 const BY_ID = `query ($id: Int) { Media(id: $id, type: ANIME) { ${FIELDS} } }`
 
 const norm = (s) => String(s ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
@@ -229,5 +231,24 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
     return run
   }
 
-  return { search, getForTitle, getCached }
+  // One batched query per 50 ids. Returns every series AniList answered for; those with a cache entry also get it updated
+  // (read -> merge -> write in one synchronous step, so poster etc. are kept). A failed chunk rejects the whole call.
+  async function refreshAiring(ids) {
+    const result = new Map()
+    const unique = [...new Set(ids)]
+    for (let i = 0; i < unique.length; i += AIRING_CHUNK) {
+      const data = await gql(AIRING_BATCH, { ids: unique.slice(i, i + AIRING_CHUNK), page: 1 })
+      for (const m of data.Page.media) {
+        const entry = { status: m.status ?? null, episodes: m.episodes ?? null, nextAiring: toNextAiring(m.nextAiringEpisode) }
+        result.set(m.id, entry)
+        const file = cacheFile(cacheKey(null, m.id))
+        const cached = readJson(file, null).data
+        // a null count from AniList must not wipe a count we already know
+        if (cached && !cached.notFound) writeJsonAtomic(file, { ...cached, ...entry, episodes: m.episodes ?? cached.episodes ?? null, fetchedAt: now() })
+      }
+    }
+    return result
+  }
+
+  return { search, getForTitle, getCached, refreshAiring }
 }

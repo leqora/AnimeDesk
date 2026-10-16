@@ -104,6 +104,23 @@ describe('ToastProvider', () => {
     expect(screen.queryByText('Drži')).not.toBeInTheDocument()
     expect(screen.getByText('Novo')).toBeInTheDocument()
   })
+  it('a hidden document holds toasts like hold does', () => {
+    vi.useFakeTimers()
+    let state = 'visible'
+    const spy = vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => state)
+    try {
+      render(<I18nProvider lang="sr"><ToastProvider><Grab /></ToastProvider></I18nProvider>)
+      act(() => { api.show({ message: 'Skriveno' }) })
+      expect(screen.getByText('Skriveno')).toBeInTheDocument()
+      state = 'hidden'
+      act(() => { document.dispatchEvent(new Event('visibilitychange')) })
+      expect(screen.queryByText('Skriveno')).not.toBeInTheDocument()
+      act(() => vi.advanceTimersByTime(20000))
+      state = 'visible'
+      act(() => { document.dispatchEvent(new Event('visibilitychange')) })
+      expect(screen.getByText('Skriveno')).toBeInTheDocument()
+    } finally { spy.mockRestore() }
+  })
   it('dismiss removes a toast by id', () => {
     setup()
     let id

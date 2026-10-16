@@ -24,6 +24,34 @@ describe('SettingsPage', () => {
     fireEvent.click(screen.getByLabelText('Automatsko ažuriranje ani-cli i yt-dlp'))
     expect(onSettings).toHaveBeenLastCalledWith({ autoUpdateTools: false })
   })
+  it('has a background and notifications section with four checkboxes', () => {
+    const onSettings = vi.fn()
+    renderUi(<SettingsPage settings={{ ...DEFAULT_SETTINGS, isPackaged: true }} onSettings={onSettings} />)
+    expect(screen.getByRole('heading', { name: 'Pozadina i obaveštenja' })).toBeInTheDocument()
+    const cases = [
+      ['Zatvaranje prozora ostavlja AnimeDesk u pozadini (tray)', { closeToTray: false }],
+      ['Pokreni sa Windows-om (u pozadini)', { launchAtLogin: true }],
+      ['Obaveštenja o novim epizodama', { notifyNewEpisodes: false }],
+      ['Obaveštenja o preuzimanjima', { notifyDownloads: false }],
+    ]
+    for (const [name, patch] of cases) {
+      fireEvent.click(screen.getByRole('checkbox', { name }))
+      expect(onSettings).toHaveBeenLastCalledWith(patch)
+    }
+  })
+  it('disables autostart with a described hint when not packaged', () => {
+    const onSettings = vi.fn()
+    renderUi(<SettingsPage settings={{ ...DEFAULT_SETTINGS, isPackaged: false }} onSettings={onSettings} />)
+    const box = screen.getByRole('checkbox', { name: 'Pokreni sa Windows-om (u pozadini)' })
+    expect(box).toBeDisabled()
+    expect(box).toHaveAccessibleDescription('Dostupno u instaliranoj aplikaciji')
+    expect(screen.getByText('Dostupno u instaliranoj aplikaciji')).toHaveClass('muted')
+  })
+  it('enables autostart without a hint when packaged', () => {
+    renderUi(<SettingsPage settings={{ ...DEFAULT_SETTINGS, isPackaged: true }} onSettings={() => {}} />)
+    expect(screen.getByRole('checkbox', { name: 'Pokreni sa Windows-om (u pozadini)' })).toBeEnabled()
+    expect(screen.queryByText('Dostupno u instaliranoj aplikaciji')).toBeNull()
+  })
   it('toggles spoiler protection', () => {
     const onSettings = vi.fn()
     renderUi(<SettingsPage settings={{ ...DEFAULT_SETTINGS }} onSettings={onSettings} />)

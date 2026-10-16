@@ -25,12 +25,17 @@ function findEpisodeFile(dir, episode) {
   return null
 }
 
-export function createDownloads({ file, aniCli, onChange = () => {}, now = () => new Date().toISOString(), uuid = () => crypto.randomUUID(), resolvePrefs = null, episodeLists = null }) {
+export function createDownloads({ file, aniCli, onChange = () => {}, onFinished = () => {}, now =() => new Date().toISOString(), uuid = () => crypto.randomUUID(), resolvePrefs = null, episodeLists = null }) {
   const db = readJson(file, { version: 1, items: [] }).data
   const save = () => writeJsonAtomic(file, db)
   // Unfinished items survive an app restart; whatever was running or waiting comes back paused.
   let queue = (db.queue ?? []).map((i) => ({ ...i, status: ['queued', 'downloading'].includes(i.status) ? 'paused' : i.status }))
   let active = null // { item, session }
+
+  // Called once per item that ends as done or error (never for cancelled/paused).
+  const finished = (item) => {
+    try { onFinished({ title: item.title, episode: item.episode, status: item.status }) } catch (err) { console.warn('downloads: onFinished failed', err?.message) }
+  }
 
   const emit = () => {
     db.queue = queue.filter((i) => !['done', 'cancelled'].includes(i.status))
@@ -74,6 +79,7 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
       item.status = 'error'
       item.error = err.message
       emit()
+      finished(item)
       pump()
       return
     }
@@ -81,7 +87,8 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
     emit()
     session.done.then((r) => {
       active = null
-      if (item.status === 'downloading') {
+      const wasDownloading = item.status === 'downloading'
+      if (wasDownloading) {
         if (r.ok) {
           const found = findEpisodeFile(targetDir, item.episode)
           if (found) {
@@ -99,6 +106,7 @@ export function createDownloads({ file, aniCli, onChange = () => {}, now = () =>
         }
       }
       emit()
+      if (wasDownloading) finished(item)
       pump()
     })
   }

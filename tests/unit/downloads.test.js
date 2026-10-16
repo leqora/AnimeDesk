@@ -208,3 +208,41 @@ describe('downloads episode lists', () => {
     expect(episodeLists.set).toHaveBeenCalledWith('Show', 'sub', ['1', '2'])
   })
 })
+
+describe('downloads onFinished', () => {
+  const mk = (onFinished) => createDownloads({ file: path.join(base, 'fin.json'), aniCli, onChange: () => {}, uuid: () => 'f1', now: () => '2026-10-01T00:00:00Z', onFinished })
+  it('fires once on done and on error', async () => {
+    const onFinished = vi.fn()
+    const d = mk(onFinished)
+    d.enqueue({ title: 'Show', aniCliTitle: 'Show', episodes: ['1', '2'], dir: base })
+    sessions[0].finish(true); await flush()
+    expect(onFinished).toHaveBeenCalledTimes(1)
+    expect(onFinished).toHaveBeenLastCalledWith({ title: 'Show', episode: '1', status: 'done' })
+    sessions[1].finish(false); await flush()
+    expect(onFinished).toHaveBeenCalledTimes(2)
+    expect(onFinished).toHaveBeenLastCalledWith({ title: 'Show', episode: '2', status: 'error' })
+  })
+  it('does not fire on cancel or pause', async () => {
+    const onFinished = vi.fn()
+    const d = mk(onFinished)
+    d.enqueue({ title: 'Show', aniCliTitle: 'Show', episodes: ['1', '2'], dir: base })
+    const id1 = d.queueItems()[0].id
+    d.pause(id1); await flush()
+    const id2 = d.queueItems()[1].id
+    d.cancel(id2); await flush()
+    expect(onFinished).not.toHaveBeenCalled()
+  })
+  it('fires when the session cannot even start', () => {
+    const onFinished = vi.fn()
+    aniCli.startSession.mockImplementationOnce(() => { throw new Error('tools-missing') })
+    const d = mk(onFinished)
+    d.enqueue({ title: 'Show', aniCliTitle: 'Show', episodes: ['1'], dir: base })
+    expect(onFinished).toHaveBeenCalledWith({ title: 'Show', episode: '1', status: 'error' })
+  })
+  it('survives a throwing onFinished', async () => {
+    const d = mk(() => { throw new Error('boom') })
+    d.enqueue({ title: 'Show', aniCliTitle: 'Show', episodes: ['1'], dir: base })
+    sessions[0].finish(true); await flush()
+    expect(d.queueItems()[0].status).toBe('done')
+  })
+})

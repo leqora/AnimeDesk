@@ -272,6 +272,26 @@ export default function App({ api, sound: injectedSound }) {
     return () => offs.forEach((off) => off())
   }, [api])
 
+  // ids of library series, so the notification panel can disable entries whose series was removed
+  const [libraryIds, setLibraryIds] = useState(() => new Set())
+  useEffect(() => {
+    let alive = true
+    const refresh = () => api.library.list().then((l) => { if (alive) setLibraryIds(new Set((l ?? []).map((e) => e.id))) }, () => {})
+    refresh()
+    const off = api.onLibraryChanged(refresh)
+    return () => { alive = false; off?.() }
+  }, [api])
+
+  // main asks to show a series (notification click) or a page (tray menu)
+  const openRef = useRef({})
+  useEffect(() => {
+    const offs = [
+      api.onOpenAnime(({ animeId }) => openRef.current.anime(animeId)),
+      api.onOpenPage(({ page }) => openRef.current.page(page)),
+    ]
+    return () => offs.forEach((off) => off?.())
+  }, [api])
+
   useEffect(() => { if (health.reason === 'missing-tools') setWizardOpen(true) }, [health.reason])
 
   if (!settings) return bootFailed ? <BootError onRetry={loadSettings} /> : null
@@ -280,6 +300,7 @@ export default function App({ api, sound: injectedSound }) {
   const updateSettings = async (patch) => setSettings(await api.settings.update(patch))
   const navigate = (p) => { if (p !== page) sound.play('navigate'); nav.navigate({ page: p, animeId: null }) }
   const openAnime = (id) => nav.navigate({ page: 'watchlist', animeId: id })
+  openRef.current = { anime: openAnime, page: navigate }
   const closeDetail = () => (nav.canBack ? nav.back() : nav.navigate({ page: 'watchlist', animeId: null }))
   // a removed series has no detail to come back to: step back, or swap the entry in place when there is no history
   const onRemoved = () => (nav.canBack ? nav.back() : nav.replace({ page: 'watchlist', animeId: null }))
@@ -303,6 +324,8 @@ export default function App({ api, sound: injectedSound }) {
             profileName={settings.profileName || settings.systemName}
             stats={stats}
             version={updateState.currentVersion}
+            onOpenAnime={openAnime}
+            libraryIds={libraryIds}
             fullscreen={fullscreen}
             onToggleFullscreen={() => api.window.setFullscreen(!fullscreen)}
           />

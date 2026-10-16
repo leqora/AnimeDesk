@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import crypto from 'node:crypto'
 import { createAniList, bestMatch, cleanDescription, SEARCH_VERSION, toNextAiring, isFresh } from '../../src/main/anilist.js'
 
 const media = (id, romaji, english, extra = {}) => ({
@@ -491,5 +492,71 @@ describe('anilist request dedup and retry timing', () => {
     clock = start + 50 * 60 * 1000 + HOUR + 1
     await al.getForTitle('Slow Show')
     expect(f.mock.calls.length).toBeGreaterThan(calls)
+  })
+})
+
+describe('refreshAiring (batched airing schedule)', () => {
+  const NOW = 1_800_000_000_000
+  const pageFetch = (rows) => vi.fn(async (url, init) => {
+    const { ids } = JSON.parse(init.body).variables
+    return Response.json({ data: { Page: { media: rows.filter((r) => ids.includes(r.id)) } } })
+  })
+  const row = (id, extra = {}) => ({ id, status: 'RELEASING', episodes: null, nextAiringEpisode: { episode: 7, airingAt: 1_800_100_000 }, ...extra })
+
+  it('sends one request for up to 50 ids and two for 51', async () => {
+    const f = pageFetch([])
+    const al = createAniList({ cacheDir, fetchImpl: f, now: () => NOW })
+    await al.refreshAiring(Array.from({ length: 50 }, (_, i) => i + 1))
+    expect(f).toHaveBeenCalledTimes(1)
+    await al.refreshAiring(Array.from({ length: 51 }, (_, i) => i + 1))
+    expect(f).toHaveBeenCalledTimes(3)
+    const body = JSON.parse(f.mock.calls[0][1].body)
+    expect(body.query).toContain('id_in: $ids')
+    expect(body.variables.page).toBe(1)
+  })
+
+  it('merges into the cache entry keeping poster/title and stays fresh', async () => {
+    const first = createAniList({ cacheDir, fetchImpl: mkFetch([media(5, 'Show', 'Show', { status: 'RELEASING' })]), now: () => NOW - 1000 })
+    await first.getForTitle('Show', { aniListId: 5 })
+    const before = first.getCached(null, { aniListId: 5 })
+    const al = createAniList({ cacheDir, fetchImpl: pageFetch([row(5, { episodes: 24 })]), now: () => NOW })
+    const result = await al.refreshAiring([5])
+    expect(result.get(5)).toEqual({ status: 'RELEASING', episodes: 24, nextAiring: { episode: 7, airingAt: 1_800_100_000_000 } })
+    const merged = al.getCached(null, { aniListId: 5 })
+    expect(merged).toEqual({ ...before, status: 'RELEASING', episodes: 24, nextAiring: { episode: 7, airingAt: 1_800_100_000_000 }, fetchedAt: NOW })
+    expect(merged.poster).toBe(before.poster)
+    expect(merged.title).toBe('Show')
+    expect(isFresh(merged, NOW)).toBe(true)
+  })
+
+  it('keeps a known episode count when AniList now reports null', async () => {
+    const first = createAniList({ cacheDir, fetchImpl: mkFetch([media(5, 'Show', 'Show', { status: 'RELEASING', episodes: 12 })]), now: () => NOW - 1000 })
+    await first.getForTitle('Show', { aniListId: 5 })
+    const al = createAniList({ cacheDir, fetchImpl: pageFetch([row(5, { episodes: null })]), now: () => NOW })
+    await al.refreshAiring([5])
+    expect(al.getCached(null, { aniListId: 5 }).episodes).toBe(12)
+  })
+
+  it('does not create a cache file for ids without one, but returns them', async () => {
+    const al = createAniList({ cacheDir, fetchImpl: pageFetch([row(9)]), now: () => NOW })
+    const result = await al.refreshAiring([9])
+    expect(result.get(9).nextAiring.episode).toBe(7)
+    expect(fs.readdirSync(cacheDir)).toEqual([])
+    expect(al.getCached(null, { aniListId: 9 })).toBeNull()
+  })
+
+  it('leaves notFound markers alone', async () => {
+    const file = path.join(cacheDir, `${crypto.createHash('sha1').update('id:3').digest('hex')}.json`)
+    const marker = { notFound: true, at: NOW, searchVersion: SEARCH_VERSION }
+    fs.writeFileSync(file, JSON.stringify(marker))
+    const al = createAniList({ cacheDir, fetchImpl: pageFetch([row(3)]), now: () => NOW })
+    expect((await al.refreshAiring([3])).has(3)).toBe(true)
+    expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual(marker)
+  })
+
+  it('rejects when a chunk fails with an HTTP error', async () => {
+    const f = vi.fn(async () => new Response('boom', { status: 500 }))
+    const al = createAniList({ cacheDir, fetchImpl: f, now: () => NOW })
+    await expect(al.refreshAiring([1])).rejects.toThrow('AniList HTTP 500')
   })
 })

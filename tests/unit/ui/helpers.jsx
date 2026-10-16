@@ -45,6 +45,10 @@ export function makeFakeApi(overrides = {}) {
       // by default the automatic recovery is already used up, so the player shows its error screen
       recover: vi.fn(async () => ({ ok: true, auto: false })), retryAgain: vi.fn(async () => {}),
     },
+    notifications: { list: vi.fn(async () => ({ items: [], unread: 0 })), markRead: vi.fn(async () => ({ items: [], unread: 0 })) },
+    onNotificationsChanged: sub(),
+    onOpenAnime: sub(),
+    onOpenPage: sub(),
     onLibraryChanged: sub(),
     onPositionsChanged: sub(),
   }
