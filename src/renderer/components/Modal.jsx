@@ -25,14 +25,15 @@ export function Modal({ label, labelledBy, onClose, initialFocus, className = ''
     const onKey = (e) => {
       if (stack[stack.length - 1] !== id) return
       if (e.key === 'Escape') {
-        if (!onCloseRef.current) return
+        if (e.defaultPrevented || !onCloseRef.current) return
         e.preventDefault()
         onCloseRef.current()
       } else if (e.key === 'Tab' && !box.contains(document.activeElement)) {
         // focus escaped (e.g. click on the scrim): pull it back into the box
         e.preventDefault()
         const items = focusables(box)
-        ;(e.shiftKey ? items[items.length - 1] : items[0] ?? box)?.focus()
+        const edge = e.shiftKey ? items[items.length - 1] : items[0]
+        ;(edge ?? box).focus()
       }
     }
     window.addEventListener('keydown', onKey)
