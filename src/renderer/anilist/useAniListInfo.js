@@ -8,20 +8,27 @@ const LIVE_SLACK_MS = 30_000
 
 // undefined = still loading, null = nothing found / failed, falsy title = null.
 // Starts from the shared cache so returning to a page shows posters without a skeleton.
+// State is tagged with its key, so after a title/id change another series' info is never returned.
 // With live, one timer refetches shortly after the next episode has aired and its grace hour passed.
 export function useAniListInfo(title, aniListId = null, { live = false } = {}) {
   const api = useApi()
   const cache = infoCache(api)
-  const [info, setInfo] = useState(() => (title ? cache.peek(title, aniListId) : null))
+  const key = `${aniListId ?? ''}|${title ?? ''}`
+  const [state, setState] = useState(null) // { key, info }
 
   useEffect(() => {
     let active = true
-    if (!title) { setInfo(null); return undefined }
-    const cached = cache.peek(title, aniListId)
-    setInfo(cached)
-    if (cached === undefined) cache.get(title, aniListId).then((v) => { if (active) setInfo(v) }).catch(() => { if (active) setInfo(null) })
+    if (!title || cache.peek(title, aniListId) !== undefined) return undefined
+    cache.get(title, aniListId)
+      .then((info) => { if (active) setState({ key, info }) })
+      .catch(() => { if (active) setState({ key, info: null }) })
     return () => { active = false }
-  }, [cache, title, aniListId])
+  }, [cache, key])
+
+  let info
+  if (!title) info = null
+  else if (state?.key === key) info = state.info
+  else info = cache.peek(title, aniListId)
 
   const airingAt = live ? info?.nextAiring?.airingAt : undefined
   useEffect(() => {
@@ -30,10 +37,10 @@ export function useAniListInfo(title, aniListId = null, { live = false } = {}) {
     if (delay > LIVE_WINDOW_MS) return undefined
     let active = true
     const timer = setTimeout(() => {
-      cache.get(title, aniListId).then((v) => { if (active) setInfo(v) }).catch(() => {})
+      cache.get(title, aniListId).then((value) => { if (active) setState({ key, info: value }) }).catch(() => {})
     }, Math.max(0, delay))
     return () => { active = false; clearTimeout(timer) }
-  }, [cache, title, aniListId, airingAt])
+  }, [cache, key, airingAt])
 
   return info
 }

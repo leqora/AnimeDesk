@@ -76,4 +76,16 @@ describe('infoCache', () => {
     expect(infoCache(b).peek('X')).toBeUndefined()
     expect(infoCache(a)).toBe(infoCache(a))
   })
+  it('a lookup by title also fills the id key of the resolved info', async () => {
+    const api = fakeApi(async () => ({ id: 42, poster: 'p' }))
+    const c = infoCache(api)
+    await c.get('X')
+    expect(c.peek('X', 42)).toEqual({ id: 42, poster: 'p' })
+  })
+  it('turns a synchronous throw into a rejection', async () => {
+    const api = { anilist: { forTitle: vi.fn(() => { throw new Error('boom') }) } }
+    const c = infoCache(api)
+    await expect(c.get('X')).rejects.toThrow('boom')
+    expect(c.peek('X')).toBeUndefined()
+  })
 })

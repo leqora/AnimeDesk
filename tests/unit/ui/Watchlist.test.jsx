@@ -236,4 +236,18 @@ describe('WatchlistPage info cache', () => {
     await screen.findByText('Beta')
     expect({ Alpha: count('Alpha'), Beta: count('Beta') }).toEqual(before)
   })
+  it('detail patches aniListId once without a second request or a poster flash', async () => {
+    const info = { id: 99, poster: 'https://img/Solo.jpg', episodes: 4, genres: [] }
+    const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => info) } })
+    const props = { ready: true, onBack: () => {}, onChanged: () => {}, onContinue: () => {} }
+    const { container, rerender } = renderUi(<AnimeDetail entry={entry({ id: 's', title: 'Solo' })} {...props} />, { api })
+    await waitFor(() => expect(container.querySelector('.banner .hero__bg')).not.toBeNull())
+    await waitFor(() => expect(api.library.update).toHaveBeenCalledTimes(1))
+    expect(api.library.update).toHaveBeenCalledWith('s', { aniListId: 99 })
+    // the library now carries the linked id
+    rerender(<AnimeDetail entry={entry({ id: 's', title: 'Solo', aniListId: 99 })} {...props} />)
+    expect(container.querySelector('.banner .hero__bg')).not.toBeNull()
+    expect(api.anilist.forTitle).toHaveBeenCalledTimes(1)
+    expect(api.library.update).toHaveBeenCalledTimes(1)
+  })
 })

@@ -26,12 +26,13 @@ export function infoCache(api, { now = Date.now } = {}) {
       if (cached !== undefined) return Promise.resolve(cached)
       const key = keyOf(title, aniListId)
       if (inflight.has(key)) return inflight.get(key)
-      const p = Promise.resolve(api.anilist.forTitle(title, aniListId)).then((value) => {
+      const p = (async () => api.anilist.forTitle(title, aniListId))().then((value) => {
         const info = value ?? null
-        const storedAt = now()
-        let until = storedAt + INFO_TTL_MS
+        let until = now() + INFO_TTL_MS
         if (info?.nextAiring) until = Math.min(until, info.nextAiring.airingAt + AIRED_GRACE_MS)
         store.set(key, { info, until })
+        // Also under the id key, so a later lookup by the freshly linked aniListId hits the same entry.
+        if (info?.id) store.set(keyOf(title, info.id), { info, until })
         return info
       }).finally(() => { inflight.delete(key) })
       inflight.set(key, p)
