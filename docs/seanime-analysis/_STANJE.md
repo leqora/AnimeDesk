@@ -1,6 +1,6 @@
 # Seanime analiza → unapređenje AnimeDesk-a — stanje rada (predaja smene)
 
-Poslednje ažuriranje: 2026-10-16 (v0.7.2 gotov na grani `feat/v0.7.2-airing-header`, čeka objavu; v0.7.1 je Latest).
+Poslednje ažuriranje: 2026-10-16 (v0.7.2 objavljen kao Latest: „sledeća izlazi…”, bedž „N novih”, header detalja).
 
 - Spec korisnika: `C:\Users\Nikola\Desktop\Claude\Anime\Aplikacija za gledanje Anime-a\Seanime\zadatak.txt`
 - Seanime klon (referenca, GPL-3.0 — samo inspiracija, ne kopirati kod): `C:\Users\Nikola\Desktop\Projekti\_ref\seanime` (commit 2da73d9; ne commitovati).
@@ -23,7 +23,7 @@ Poslednje ažuriranje: 2026-10-16 (v0.7.2 gotov na grani `feat/v0.7.2-airing-hea
 - [x] **P1 korak 1 = v0.7.0 (objavljeno 2026-10-11, Latest, spojeno u `main`):** spoiler model (`src/shared/spoilers.js`, primena u main-u kroz `src/main/seriesEpisodes.js`) + metapodaci epizoda iz ani.zip (prebačeno iz P2) + keš stvarne ani-cli liste. 826 testova, završni pregled (Opus) urađen + talas ispravki. Ostatak P1 (kartice, progres po epizodi, „N novih”, istorija navigacije, `Modal.jsx`, toastovi, keš postera) ide u v0.7.1+ po dogovoru.
 - [x] **P1 korak 2 = v0.7.1 (objavljeno 2026-10-16, Latest, spojeno u `main`):** zajednička `MediaCard` (bedž 3/12, traka, tačka statusa, ocena, ▶/★ na hover/fokus), `Poster` skeleton/fade-in, progres po epizodi (kartica, Hero, pilule, Lista) preko `positions.forSeries` + `event:positions-changed`. 857 testova, završni pregled (Opus) „Yes” + talas sitnih ispravki. Ostatak P1 ("sledeća izlazi…"/"N novih", header detalja, istorija navigacije, `Modal.jsx`, toastovi, keš postera) ide u v0.7.2+ — predlog: v0.7.2 = „sledeća izlazi…”/„N novih” + header detalja; v0.7.3 = `Modal.jsx`, toastovi, istorija navigacije + skrol, keš postera.
 
-- [x] **P1 korak 3 = v0.7.2 (gotovo na grani `feat/v0.7.2-airing-header`, 2026-10-16, čeka dozvolu za spajanje/objavu):** „sledeća epizoda izlazi…” (Hero + detalj), bedž „N novih” (kartica, Hero, detalj; samo „Gledam” + `RELEASING`), header detalja (meta, žanrovi, akcije u baneru). AniList `nextAiringEpisode` u postojećem upitu + keš koji ističe posle emitovanja; `src/shared/airing.js`. 892 testa, završni pregled (Opus) „With fixes” → talas sitnih ispravki. Ostatak P1 (`Modal.jsx`, toastovi, istorija navigacije + skrol, keš postera/dedup) = v0.7.3.
+- [x] **P1 korak 3 = v0.7.2 (objavljeno 2026-10-16, Latest, spojeno u `main`):** „sledeća epizoda izlazi…” (Hero + detalj), bedž „N novih” (kartica, Hero, detalj; samo „Gledam” + `RELEASING`), header detalja (meta, žanrovi, akcije u baneru). AniList `nextAiringEpisode` u postojećem upitu + keš koji ističe posle emitovanja; `src/shared/airing.js`. 892 testa, završni pregled (Opus) „With fixes” → talas sitnih ispravki. Ostatak P1 (`Modal.jsx`, toastovi, istorija navigacije + skrol, keš postera/dedup) = v0.7.3.
 
 ## Odluke korisnika (važe za dalje)
 1. Serija je „Završeno” tek kad su **sve** epizode odgledane (urađeno u 0.5.1).
