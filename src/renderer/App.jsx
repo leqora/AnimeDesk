@@ -47,8 +47,8 @@ function UndoShortcut({ disabled }) {
   off.current = disabled
   useEffect(() => {
     const onKey = (e) => {
-      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || (e.key.toLowerCase() !== 'z' && e.code !== 'KeyZ')) return
-      if (off.current || e.target?.closest?.('input, textarea, select, [contenteditable="true"], [contenteditable=""]')) return
+      if (e.repeat || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || (e.key.toLowerCase() !== 'z' && e.code !== 'KeyZ')) return
+      if (off.current || e.target?.closest?.('input, textarea, select, [contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"]')) return
       if (document.querySelector('[aria-modal="true"]')) return
       if (runLatestAction()) e.preventDefault()
     }
