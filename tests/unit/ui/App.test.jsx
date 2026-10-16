@@ -229,6 +229,16 @@ describe('App', () => {
     expect(document.querySelector('.player')).not.toBeInTheDocument()
     expect(api.player.closed).not.toHaveBeenCalled()
   })
+  it('closes the bell panel when playback starts', async () => {
+    let openPlayer
+    const api = makeFakeApi({ player: { onOpen: vi.fn((cb) => { openPlayer = cb; return () => {} }) } })
+    render(<App api={api} />)
+    fireEvent.click(await screen.findByRole('button', { name: /Obaveštenja/ }))
+    expect(await screen.findByRole('dialog', { name: 'Obaveštenja' })).toBeInTheDocument()
+    act(() => openPlayer({ playbackId: 'p1', title: 'Show', episode: '3', kind: 'hls', src: 'http://127.0.0.1:9/x', subtitleUrl: null, resumeAt: null, totalEpisodes: 12 }))
+    expect(document.querySelector('.player')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Obaveštenja' })).toBeNull()
+  })
   it('starts the next episode through the normal continue path', async () => {
     let openPlayer
     const api = makeFakeApi({ player: { onOpen: vi.fn((cb) => { openPlayer = cb; return () => {} }) } })

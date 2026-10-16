@@ -103,6 +103,17 @@ describe('NotificationBell', () => {
     await waitFor(() => expect(container.querySelector('.bell__badge')).toBeNull())
   })
 
+  it('closes the panel when the player opens', async () => {
+    const user = userEvent.setup()
+    const api = makeFakeApi({ notifications: { list: vi.fn(async () => ({ items: [], unread: 0 })) } })
+    const el = (playerOpen) => <NotificationBell onOpenAnime={vi.fn()} libraryIds={new Set()} playerOpen={playerOpen} />
+    const { rerender } = renderUi(el(false), { api, lang: 'sr' })
+    await user.click(await screen.findByRole('button', { name: 'Obaveštenja' }))
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    rerender(el(true))
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
   it('empty state', async () => {
     const user = userEvent.setup()
     setup([])

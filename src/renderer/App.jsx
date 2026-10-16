@@ -326,6 +326,7 @@ export default function App({ api, sound: injectedSound }) {
             version={updateState.currentVersion}
             onOpenAnime={openAnime}
             libraryIds={libraryIds}
+            playerOpen={Boolean(player)}
             fullscreen={fullscreen}
             onToggleFullscreen={() => api.window.setFullscreen(!fullscreen)}
           />

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { useNotifications } from '../notifications/useNotifications.js'
@@ -14,11 +14,13 @@ function relativeTime(at, locale) {
   return rtf.format(0, 'second')
 }
 
-export function NotificationBell({ onOpenAnime, libraryIds }) {
+export function NotificationBell({ onOpenAnime, libraryIds, playerOpen = false }) {
   const api = useApi()
   const t = useT()
   const { items, unread, markRead } = useNotifications(api)
   const [open, setOpen] = useState(false)
+  // The panel is portalled outside the inert app shell, so close it when the player takes over.
+  useEffect(() => { if (playerOpen) setOpen(false) }, [playerOpen])
   const label = unread > 0 ? t('notifications.title') + ' (' + t.n('notifications.unread', unread) + ')' : t('notifications.title')
   const sorted = [...items].sort((a, b) => new Date(b.at) - new Date(a.at))
   return (

@@ -6,7 +6,7 @@ import { NotificationBell } from './NotificationBell.jsx'
 
 const PAGES = ['home', 'watchlist', 'downloads', 'profile', 'settings']
 
-export function Sidebar({ page, onNavigate, health, onSemaphoreClick, profileName, stats, version = '', onOpenAnime = () => {}, libraryIds = new Set(), fullscreen = false, onToggleFullscreen = () => {} }) {
+export function Sidebar({ page, onNavigate, health, onSemaphoreClick, profileName, stats, version = '', onOpenAnime = () => {}, libraryIds = new Set(), fullscreen = false, onToggleFullscreen = () => {}, playerOpen = false }) {
   const t = useT()
   return (
     <aside className="sidebar">
@@ -28,7 +28,7 @@ export function Sidebar({ page, onNavigate, health, onSemaphoreClick, profileNam
       </nav>
       <div className="sidebar__footer">
         <Semaphore health={health} onClick={onSemaphoreClick} />
-        <NotificationBell onOpenAnime={onOpenAnime} libraryIds={libraryIds} />
+        <NotificationBell onOpenAnime={onOpenAnime} libraryIds={libraryIds} playerOpen={playerOpen} />
         <ProfileCard name={profileName} stats={stats} onClick={() => onNavigate('profile')} />
         <button type="button" className="nav-item" aria-label={fullscreen ? t('window.exitFullscreen') : t('window.fullscreen')} onClick={onToggleFullscreen}>
           <Icon name={fullscreen ? 'minimize' : 'maximize'} size={20} />
