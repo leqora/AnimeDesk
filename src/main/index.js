@@ -159,6 +159,7 @@ async function main() {
     if (win.isMinimized()) win.restore()
     win.show()
     win.focus()
+    fullscreen?.afterShow()
   }
   // OS toast; the object is kept referenced until it is clicked, closed or failed (Windows GC drops handlers otherwise).
   const osNotify = (kind, data, onClick) => {
@@ -232,6 +233,7 @@ async function main() {
   win.on('close', (e) => {
     if (!shouldHideOnClose({ closeToTray: settings.get().closeToTray, quitting })) return
     e.preventDefault()
+    fullscreen?.beforeHide()
     win.hide()
     releasePlayback()
     if (!settings.get().trayHintShown) {

@@ -9,8 +9,19 @@ export function attachFullscreen({ win, settings, send }) {
     event.preventDefault()
     win.setFullScreen(!win.isFullScreen())
   })
-  const sync = (value) => { settings.update({ fullscreen: value }); send(EVENTS.fullscreen, value) }
+  // Windows emits leave-full-screen when a fullscreen window is hidden (possibly after hide() returns), so while
+  // `hidden` is set the enter/leave events are not persisted; afterShow() restores fullscreen from the saved setting.
+  let hidden = false
+  const sync = (value) => { if (hidden) return; settings.update({ fullscreen: value }); send(EVENTS.fullscreen, value) }
   win.on('enter-full-screen', () => sync(true))
   win.on('leave-full-screen', () => sync(false))
-  return { get: () => win.isFullScreen(), set: (v) => win.setFullScreen(Boolean(v)) }
+  return {
+    get: () => win.isFullScreen(),
+    set: (v) => win.setFullScreen(Boolean(v)),
+    beforeHide: () => { hidden = true },
+    afterShow: () => {
+      hidden = false
+      if (settings.get().fullscreen && !win.isFullScreen()) win.setFullScreen(true)
+    },
+  }
 }
