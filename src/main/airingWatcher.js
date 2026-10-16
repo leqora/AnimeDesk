@@ -9,29 +9,53 @@ const MAX_CHECK_DELAY_MS = REFRESH_EVERY_MS
 const validId = (id) => Number.isInteger(id) && id > 0
 const watched = (entries) => entries.filter((e) => e?.status === 'watching' && validId(e.aniListId))
 
-// Pure. `notified` maps aniListId -> highest episode already accounted for.
-// - unseen id: seed with the current aired count, never notify (no flood after an update / first run)
+// Memory per series: { episode, freshAt }. freshAt = last time a check on freshly refreshed data included
+// this series; it vouches that nothing newer than that was missed. Old flat { id: episode } is migrated.
+const normEntry = (v) => {
+  if (Number.isInteger(v) && v >= 0) return { episode: v, freshAt: null }
+  if (v && typeof v === 'object' && Number.isInteger(v.episode) && v.episode >= 0) {
+    return { episode: v.episode, freshAt: Number.isFinite(v.freshAt) ? v.freshAt : null }
+  }
+  return null
+}
+export function normalizeNotified(raw) {
+  const out = {}
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    for (const [id, v] of Object.entries(raw)) {
+      const n = normEntry(v)
+      if (n) out[id] = n
+    }
+  }
+  return out
+}
+
+// Pure. `notified` maps aniListId -> { episode, freshAt } (flat numbers accepted).
+// - unseen id: seed with the current aired count, never notify (no flood after an update / first run);
+//   with no known aired count (no schedule yet) nothing is seeded, so a schedule appearing later seeds silently
 // - new aired episode: notify once (the newest one) if it aired within 24 h. The air time is known only
-//   while nextAiring still points at that episode; once the cache moved on it is unknown, so we trust
-//   `lastCheckAt` (the last check that ran on freshly refreshed data) being within 24 h instead.
-export function dueNotifications({ entries, infoById, notified, lastCheckAt = null, now }) {
-  const next = { ...notified }
+//   while nextAiring still points at that episode; once the cache moved on it is unknown, so we trust the
+//   series' OWN freshAt being within 24 h (a series paused or missing from recent fresh checks stays silent).
+// - `fresh`: the cache was just refreshed; series with info are stamped freshAt = now.
+export function dueNotifications({ entries, infoById, notified, now, fresh = false }) {
+  const next = normalizeNotified(notified)
   const due = []
   for (const e of watched(entries)) {
     const info = infoById?.[e.aniListId]
     if (!info) continue
     const aired = airedCount(info, now)
-    const seen = next[e.aniListId]
-    if (seen === undefined) {
-      next[e.aniListId] = aired ?? 0
+    if (aired == null) continue
+    const prev = next[e.aniListId]
+    const stamp = fresh ? now : (prev?.freshAt ?? null)
+    if (!prev) {
+      next[e.aniListId] = { episode: aired, freshAt: stamp }
       continue
     }
-    if (aired == null || aired <= seen) continue
+    next[e.aniListId] = { episode: Math.max(prev.episode, aired), freshAt: stamp }
+    if (aired <= prev.episode) continue
     const na = info.nextAiring
     const recent = now >= na.airingAt
       ? now - na.airingAt <= WINDOW_MS
-      : Number.isFinite(lastCheckAt) && now - lastCheckAt <= WINDOW_MS
-    next[e.aniListId] = aired
+      : Number.isFinite(prev.freshAt) && now - prev.freshAt <= WINDOW_MS
     if (recent) due.push({ animeId: e.id, aniListId: e.aniListId, title: e.title, episode: aired })
   }
   return { due, notified: next }
@@ -45,17 +69,16 @@ export function createAiringWatcher({
   setInterval: setI = globalThis.setInterval,
   clearInterval: clearI = globalThis.clearInterval,
 }) {
-  const loaded = readJson(file, { lastCheckAt: null, notified: {} }).data
-  const state = {
-    lastCheckAt: Number.isFinite(loaded?.lastCheckAt) ? loaded.lastCheckAt : null,
-    notified: loaded && typeof loaded.notified === 'object' && loaded.notified && !Array.isArray(loaded.notified) ? { ...loaded.notified } : {},
-  }
+  let loaded = null
+  try { loaded = readJson(file, { notified: {} }).data } catch (err) { console.warn('airingWatcher: read failed', err?.message) }
+  const state = { notified: normalizeNotified(loaded?.notified) }
 
   let firstRefreshTimer = null
   let intervalTimer = null
   let checkTimer = null
   let graceTimer = null
   let running = false
+  let stopped = false
   let inflight = null
 
   const persist = () => {
@@ -88,16 +111,16 @@ export function createAiringWatcher({
     graceTimer = setT(() => { graceTimer = null; refresh() }, AIRED_GRACE_MS)
   }
 
-  // `fresh`: the cache was just refreshed, so lastCheckAt may advance (it vouches "nothing newer than this
-  // was missed"). Plain timer checks work from possibly stale cache and must not vouch for the 24 h window.
+  // `fresh`: the cache was just refreshed, so per-series freshAt may advance. Plain timer checks work from
+  // possibly stale cache and must not vouch for the 24 h window.
   function check({ fresh = false } = {}) {
+    if (stopped) return
     const t = now()
     let entries = []
     try { entries = library.list() } catch (err) { console.warn('airingWatcher: library failed', err?.message) }
     const infoById = infoMap(entries)
-    const { due, notified } = dueNotifications({ entries, infoById, notified: state.notified, lastCheckAt: state.lastCheckAt, now: t })
+    const { due, notified } = dueNotifications({ entries, infoById, notified: state.notified, now: t, fresh })
     state.notified = notified
-    if (fresh) state.lastCheckAt = t
     persist()
     for (const item of due) {
       try { notify(item) } catch (err) { console.warn('airingWatcher: notify failed', err?.message) }
@@ -112,6 +135,7 @@ export function createAiringWatcher({
       try {
         const ids = [...new Set(watched(library.list()).map((e) => e.aniListId))]
         if (ids.length) await anilist.refreshAiring(ids)
+        if (stopped) return
         check({ fresh: true })
       } catch (err) {
         console.warn('airingWatcher: refresh failed', err?.message) // scheduled runs retry; no retry loop here
@@ -125,6 +149,7 @@ export function createAiringWatcher({
   function start() {
     if (running) return
     running = true
+    stopped = false
     check()
     firstRefreshTimer = setT(() => { firstRefreshTimer = null; refresh() }, REFRESH_FIRST_MS)
     intervalTimer = setI(() => { refresh() }, REFRESH_EVERY_MS)
@@ -132,6 +157,7 @@ export function createAiringWatcher({
 
   function stop() {
     running = false
+    stopped = true
     if (firstRefreshTimer) clearT(firstRefreshTimer)
     if (intervalTimer) clearI(intervalTimer)
     if (checkTimer) clearT(checkTimer)

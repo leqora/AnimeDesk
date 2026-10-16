@@ -9,21 +9,23 @@ const T = 1_800_000_000_000
 const MIN = 60_000, H = 60 * MIN, D = 24 * H
 const entry = (id, aniListId, over = {}) => ({ id, title: `Title ${id}`, status: 'watching', aniListId, ...over })
 // info whose next episode `episode` airs at `airingAt`
+const eps = (n) => Object.fromEntries(Object.entries(n).map(([k, v]) => [k, v.episode]))
+const fr = (episode, freshAt) => ({ episode, freshAt })
 const info = (episode, airingAt) => ({ status: 'RELEASING', nextAiring: { episode, airingAt } })
 
 describe('dueNotifications', () => {
   it('seeds unseen ids without notifying (Review Focus 1)', () => {
     const entries = [entry('a', 1), entry('b', 2), entry('c', 3)]
     const infoById = { 1: info(5, T - 3 * H), 2: info(9, T - H), 3: info(4, T + H) }
-    const r = dueNotifications({ entries, infoById, notified: {}, lastCheckAt: T - H, now: T })
+    const r = dueNotifications({ entries, infoById, notified: {}, now: T, fresh: true })
     expect(r.due).toEqual([])
-    expect(r.notified).toEqual({ 1: 5, 2: 9, 3: 3 })
+    expect(eps(r.notified)).toEqual({ 1: 5, 2: 9, 3: 3 })
   })
 
   it('notifies once for an episode that aired within 24 h (known airingAt)', () => {
     const r = dueNotifications({ entries: [entry('a', 1)], infoById: { 1: info(6, T - 2 * H) }, notified: { 1: 5 }, now: T })
     expect(r.due).toEqual([{ animeId: 'a', aniListId: 1, title: 'Title a', episode: 6 }])
-    expect(r.notified).toEqual({ 1: 6 })
+    expect(eps(r.notified)).toEqual({ 1: 6 })
     const again = dueNotifications({ entries: [entry('a', 1)], infoById: { 1: info(6, T - 2 * H) }, notified: r.notified, now: T + MIN })
     expect(again.due).toEqual([])
   })
@@ -31,7 +33,7 @@ describe('dueNotifications', () => {
   it('does not notify for an episode older than 24 h, but updates memory (Review Focus 2)', () => {
     const r = dueNotifications({ entries: [entry('a', 1)], infoById: { 1: info(9, T - 3 * D) }, notified: { 1: 5 }, now: T })
     expect(r.due).toEqual([])
-    expect(r.notified).toEqual({ 1: 9 })
+    expect(eps(r.notified)).toEqual({ 1: 9 })
   })
 
   it('app off 3 days: only the series with a fresh episode notifies, one item each (Review Focus 2)', () => {
@@ -39,18 +41,49 @@ describe('dueNotifications', () => {
     const infoById = { 1: info(12, T - 3 * D), 2: info(8, T - 2 * H) }
     const r = dueNotifications({ entries, infoById, notified: { 1: 6, 2: 3 }, now: T })
     expect(r.due).toEqual([{ animeId: 'new', aniListId: 2, title: 'Title new', episode: 8 }])
-    expect(r.notified).toEqual({ 1: 12, 2: 8 })
+    expect(eps(r.notified)).toEqual({ 1: 12, 2: 8 })
   })
 
-  it('cache already moved on: notifies only if previous check was within 24 h', () => {
+  it('cache already moved on: notifies only if THIS series was in a fresh check within 24 h', () => {
     const infoById = { 1: info(7, T + 5 * D) } // aired = 6, time unknown
-    const recent = dueNotifications({ entries: [entry('a', 1)], infoById, notified: { 1: 5 }, lastCheckAt: T - 6 * H, now: T })
+    const run = (notified) => dueNotifications({ entries: [entry('a', 1)], infoById, notified, now: T })
+    const recent = run({ 1: fr(5, T - 6 * H) })
     expect(recent.due).toEqual([{ animeId: 'a', aniListId: 1, title: 'Title a', episode: 6 }])
-    const stale = dueNotifications({ entries: [entry('a', 1)], infoById, notified: { 1: 5 }, lastCheckAt: T - 3 * D, now: T })
+    const stale = run({ 1: fr(5, T - 3 * D) })
     expect(stale.due).toEqual([])
-    expect(stale.notified).toEqual({ 1: 6 })
-    const none = dueNotifications({ entries: [entry('a', 1)], infoById, notified: { 1: 5 }, lastCheckAt: null, now: T })
-    expect(none.due).toEqual([])
+    expect(eps(stale.notified)).toEqual({ 1: 6 })
+    expect(run({ 1: 5 }).due).toEqual([]) // migrated flat shape: freshAt unknown
+    expect(run({ 1: fr(5, null) }).due).toEqual([])
+  })
+
+  it('series paused for weeks then set back to watching stays silent although other series are fresh (I-1)', () => {
+    const entries = [entry('a', 1), entry('b', 2, { status: 'paused' })]
+    const infoById = { 1: info(4, T + D), 2: info(8, T + 5 * D) }
+    // fresh checks kept running for series 1 (stamped 2 h ago); series 2 was paused so its stamp is weeks old
+    let notified = { 1: fr(3, T - 2 * H), 2: fr(5, T - 30 * D) }
+    entries[1].status = 'watching'
+    const r = dueNotifications({ entries, infoById, notified, now: T })
+    expect(r.due).toEqual([])
+    expect(eps(r.notified)).toEqual({ 1: 3, 2: 7 })
+  })
+
+  it('series absent from the last fresh check (no cached info) is not stamped fresh', () => {
+    const entries = [entry('a', 1), entry('b', 2)]
+    const r1 = dueNotifications({ entries, infoById: { 1: info(4, T + D) }, notified: { 1: fr(3, T - H), 2: fr(5, T - 40 * D) }, now: T, fresh: true })
+    expect(r1.notified[1].freshAt).toBe(T)
+    expect(r1.notified[2].freshAt).toBe(T - 40 * D)
+    const r2 = dueNotifications({ entries, infoById: { 1: info(4, T + D), 2: info(8, T + 5 * D) }, notified: r1.notified, now: T + H })
+    expect(r2.due).toEqual([])
+  })
+
+  it('no schedule at first sighting: not seeded, later schedule seeds silently (I-2)', () => {
+    const entries = [entry('a', 1)]
+    const r1 = dueNotifications({ entries, infoById: { 1: { status: 'RELEASING', nextAiring: null } }, notified: {}, now: T, fresh: true })
+    expect(r1.due).toEqual([])
+    expect(r1.notified).toEqual({})
+    const r2 = dueNotifications({ entries, infoById: { 1: info(13, T + 3 * D) }, notified: r1.notified, now: T + H, fresh: true })
+    expect(r2.due).toEqual([])
+    expect(eps(r2.notified)).toEqual({ 1: 12 })
   })
 
   it('ignores non-watching entries and entries without a valid aniListId', () => {
@@ -58,14 +91,14 @@ describe('dueNotifications', () => {
     const infoById = { 1: info(6, T - H), 5: info(6, T - H) }
     const r = dueNotifications({ entries, infoById, notified: { 1: 2, 5: 5 }, now: T })
     expect(r.due.map((d) => d.animeId)).toEqual(['e'])
-    expect(r.notified).toEqual({ 1: 2, 5: 6 })
+    expect(eps(r.notified)).toEqual({ 1: 2, 5: 6 })
   })
 
   it('does not notify without cached info and does not mutate its input', () => {
     const notified = { 1: 2 }
     const r = dueNotifications({ entries: [entry('a', 1)], infoById: {}, notified, now: T })
     expect(r.due).toEqual([])
-    expect(r.notified).toEqual({ 1: 2 })
+    expect(eps(r.notified)).toEqual({ 1: 2 })
     expect(notified).toEqual({ 1: 2 })
   })
 })
@@ -93,15 +126,14 @@ describe('createAiringWatcher', () => {
     fs.rmSync(dir, { recursive: true, force: true })
   })
 
-  it('seeds on first check; lastCheckAt is persisted only after a successful refresh', async () => {
+  it('seeds on first check; freshAt is persisted only after a successful refresh', async () => {
     const w = make()
     w.check()
     expect(notify).not.toHaveBeenCalled()
     const saved = JSON.parse(fs.readFileSync(file, 'utf8'))
-    expect(saved.notified).toEqual({ 1: 5 })
-    expect(saved.lastCheckAt).toBeNull()
+    expect(saved.notified).toEqual({ 1: { episode: 5, freshAt: null } })
     await w.refresh()
-    expect(JSON.parse(fs.readFileSync(file, 'utf8')).lastCheckAt).toBe(T)
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).notified).toEqual({ 1: { episode: 5, freshAt: T } })
     w.stop()
   })
 
@@ -152,14 +184,14 @@ describe('createAiringWatcher', () => {
     w.stop()
   })
 
-  it('moved-on cache: notifies after a refresh when last fresh check was recent; stale lastCheckAt does not', async () => {
-    fs.writeFileSync(file, JSON.stringify({ lastCheckAt: T - 3 * D, notified: { 1: 5 } }))
+  it('moved-on cache: notifies after a refresh when the series own freshAt is recent; stale one does not', async () => {
+    fs.writeFileSync(file, JSON.stringify({ notified: { 1: fr(5, T - 3 * D) } }))
     state.infos[1] = info(7, T + 5 * D)
     const w = make()
     await w.refresh()
     expect(notify).not.toHaveBeenCalled()
     w.stop()
-    fs.writeFileSync(file, JSON.stringify({ lastCheckAt: T - 6 * H, notified: { 1: 5 } }))
+    fs.writeFileSync(file, JSON.stringify({ notified: { 1: fr(5, T - 6 * H) } }))
     const w2 = make()
     await w2.refresh()
     expect(notify).toHaveBeenCalledTimes(1)
@@ -187,7 +219,7 @@ describe('createAiringWatcher', () => {
     const w = make()
     w.check()
     expect(notify).not.toHaveBeenCalled()
-    expect(JSON.parse(fs.readFileSync(file, 'utf8')).notified).toEqual({ 1: 5 })
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).notified).toEqual({ 1: { episode: 5, freshAt: null } })
     w.stop()
   })
 
@@ -222,5 +254,40 @@ describe('createAiringWatcher', () => {
     expect(notify).toHaveBeenCalledTimes(2)
     warn.mockRestore()
     w.stop()
+  })
+
+  it('migrates the old flat file shape and drops invalid entries (M-2)', () => {
+    fs.writeFileSync(file, JSON.stringify({ lastCheckAt: T, notified: { 1: 5, 2: -1, 3: 'x', 4: 1.5, 5: { episode: 2, freshAt: 'bad' } } }))
+    const w = make()
+    w.check()
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).notified).toEqual({ 1: { episode: 5, freshAt: null }, 5: { episode: 2, freshAt: null } })
+    expect(notify).not.toHaveBeenCalled()
+    w.stop()
+  })
+
+  it('unreadable file starts empty instead of throwing (M-1)', () => {
+    fs.mkdirSync(file) // a directory where the file should be: readFileSync throws EISDIR
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    let w
+    expect(() => { w = make() }).not.toThrow()
+    expect(() => w.check()).not.toThrow()
+    expect(notify).not.toHaveBeenCalled()
+    warn.mockRestore()
+    w.stop()
+  })
+
+  it('stop() while a refresh is in flight: no check, no notify, no write afterwards (I-3)', async () => {
+    let release
+    anilist.refreshAiring.mockImplementation(() => new Promise((res) => { release = res }))
+    state.infos[1] = info(6, T - H) // would be due
+    fs.writeFileSync(file, JSON.stringify({ notified: { 1: fr(5, T - H) } }))
+    const before = fs.readFileSync(file, 'utf8')
+    const w = make()
+    const p = w.refresh()
+    w.stop()
+    release(new Map())
+    await p
+    expect(notify).not.toHaveBeenCalled()
+    expect(fs.readFileSync(file, 'utf8')).toBe(before)
   })
 })
