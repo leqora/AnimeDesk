@@ -100,6 +100,26 @@ describe('navigation', () => {
     await screen.findByLabelText('Naziv animea')
     await waitFor(() => expect(main.scrollTop).toBe(600))
   })
+  it('a back pressed while a scroll restore is pending keeps the saved position', async () => {
+    vi.stubGlobal('requestAnimationFrame', () => 1)
+    setup()
+    await goWatchlist()
+    const main = document.querySelector('main.content')
+    const size = (h) => Object.defineProperty(main, 'scrollHeight', { configurable: true, value: h })
+    Object.defineProperty(main, 'clientHeight', { configurable: true, value: 500 })
+    size(3000)
+    main.scrollTop = 600
+    await openCard('Alpha')
+    size(100) // content not loaded yet: the restore stays pending
+    altBack()
+    await screen.findByLabelText('Naziv animea')
+    altBack() // second back before the restore finished
+    await screen.findByRole('region', { name: 'Nastavi gledanje' })
+    size(3000)
+    altForward()
+    await screen.findByLabelText('Naziv animea')
+    await waitFor(() => expect(main.scrollTop).toBe(600))
+  })
   it('a removed series route shows the watchlist grid', async () => {
     const changed = []
     let lib = LIB

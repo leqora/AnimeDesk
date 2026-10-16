@@ -92,13 +92,19 @@ export default function App({ api, sound: injectedSound }) {
   const [health, setHealth] = useState({ light: 'yellow', reason: 'checking' })
   const mainRef = useRef(null)
   const cancelScroll = useRef(() => {})
+  // target of a restore still waiting for content; until it ends, scrollTop is not the real position
+  const pendingY = useRef(null)
+  useEffect(() => () => cancelScroll.current(), [])
   const nav = useNavigation({
-    getScroll: () => mainRef.current?.scrollTop ?? 0,
+    getScroll: () => pendingY.current ?? mainRef.current?.scrollTop ?? 0,
     onArrive: (entry, kind) => {
       cancelScroll.current()
       const main = mainRef.current
       if (!main) return
-      if (kind === 'back' || kind === 'forward') cancelScroll.current = restoreScroll(main, entry.scroll)
+      if (kind === 'back' || kind === 'forward') {
+        pendingY.current = entry.scroll
+        cancelScroll.current = restoreScroll(main, entry.scroll, { onDone: () => { pendingY.current = null } })
+      }
       else main.scrollTop = 0
     },
   })

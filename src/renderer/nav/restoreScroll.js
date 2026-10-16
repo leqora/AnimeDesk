@@ -1,6 +1,6 @@
 // Scrolls `el` to `y`, waiting (rAF loop) until its content is tall enough, e.g. a page that loads its list async.
 // The user scrolling or clicking meanwhile cancels it. Returns cancel().
-export function restoreScroll(el, y, { timeoutMs = 1500 } = {}) {
+export function restoreScroll(el, y, { timeoutMs = 1500, onDone } = {}) {
   if (!el) return () => {}
   if (!(y > 0)) { el.scrollTop = 0; return () => {} }
   const start = Date.now()
@@ -8,8 +8,10 @@ export function restoreScroll(el, y, { timeoutMs = 1500 } = {}) {
   let stopped = false
   const events = ['wheel', 'keydown', 'pointerdown']
   const stop = () => {
+    if (stopped) return
     stopped = true
-    if (raf != null) cancelAnimationFrame?.(raf)
+    if (raf != null) globalThis.cancelAnimationFrame?.(raf)
+    onDone?.()
     events.forEach((n) => el.removeEventListener(n, stop))
   }
   events.forEach((n) => el.addEventListener(n, stop))
@@ -21,7 +23,7 @@ export function restoreScroll(el, y, { timeoutMs = 1500 } = {}) {
       stop()
       return
     }
-    raf = requestAnimationFrame(tick)
+    raf = globalThis.requestAnimationFrame(tick)
   }
   tick()
   return stop

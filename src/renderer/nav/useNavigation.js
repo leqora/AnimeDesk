@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createHistory, push, replace, back, forward, canBack, current, setScroll, setState, sameRoute } from './history.js'
 
 export const RouteStateContext = createContext(null)
@@ -34,7 +34,7 @@ export function useNavigation({ getScroll, onArrive }) {
   }, [])
 
   // after the new page is rendered
-  useEffect(() => {
+  useLayoutEffect(() => {
     const p = pending.current
     if (!p) return
     pending.current = null
