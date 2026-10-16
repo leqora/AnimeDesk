@@ -3,7 +3,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { act, waitFor } from '@testing-library/react'
 import { renderHookUi, makeFakeApi } from './helpers.jsx'
 import { infoCache } from '../../../src/renderer/anilist/infoCache.js'
-import { useAniListInfo } from '../../../src/renderer/anilist/useAniListInfo.js'
+import { useAniListInfo, LIVE_RETRY_MS, LIVE_GIVE_UP_MS } from '../../../src/renderer/anilist/useAniListInfo.js'
 import { AIRED_GRACE_MS } from '../../../src/shared/airing.js'
 
 afterEach(() => { vi.useRealTimers() })
@@ -105,5 +105,107 @@ describe('useAniListInfo', () => {
     unmount()
     await act(async () => { await vi.advanceTimersByTimeAsync(5 * MIN + AIRED_GRACE_MS + 60_000) })
     expect(forTitle).toHaveBeenCalledTimes(1)
+  })
+  describe('live retries', () => {
+    const HOUR = 60 * MIN
+    const setup = (forTitle, opts = {}) => {
+      const api = makeFakeApi({ anilist: { forTitle } })
+      return renderHookUi(() => useAniListInfo('Show', null, { live: true }), { api, ...opts })
+    }
+    const at = async (ms) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms) }) }
+    const LIVE = 5 * MIN + AIRED_GRACE_MS + 30_000 // first live fetch, relative to mount
+
+    it('exports the retry schedule', () => {
+      expect(LIVE_RETRY_MS).toEqual([5 * MIN, 15 * MIN, 60 * MIN])
+      expect(LIVE_GIVE_UP_MS).toBe(24 * HOUR)
+    })
+    it('retries when the refetch still has the same past airingAt, then stops for a new one', async () => {
+      vi.useFakeTimers()
+      const t0 = Date.now()
+      const same = airing(t0 + 5 * MIN)
+      const forTitle = vi.fn()
+        .mockResolvedValueOnce(same).mockResolvedValueOnce(same).mockResolvedValueOnce(same).mockResolvedValueOnce(same)
+        .mockResolvedValue(airing(t0 + 7 * 24 * HOUR, 'new'))
+      const { result } = setup(forTitle)
+      await at(0)
+      expect(forTitle).toHaveBeenCalledTimes(1)
+      await at(LIVE)
+      expect(forTitle).toHaveBeenCalledTimes(2)
+      await at(5 * MIN)
+      expect(forTitle).toHaveBeenCalledTimes(3)
+      await at(15 * MIN)
+      expect(forTitle).toHaveBeenCalledTimes(4)
+      await at(60 * MIN)
+      expect(forTitle).toHaveBeenCalledTimes(5)
+      expect(result.current.poster).toBe('new')
+      await at(5 * HOUR)
+      expect(forTitle).toHaveBeenCalledTimes(5)
+    })
+    it('retries after a rejected refetch', async () => {
+      vi.useFakeTimers()
+      const t0 = Date.now()
+      const forTitle = vi.fn()
+        .mockResolvedValueOnce(airing(t0 + 5 * MIN))
+        .mockRejectedValueOnce(new Error('net'))
+        .mockResolvedValue(airing(t0 + 7 * 24 * HOUR, 'new'))
+      const { result } = setup(forTitle)
+      await at(0)
+      await at(LIVE)
+      expect(forTitle).toHaveBeenCalledTimes(2)
+      await at(5 * MIN - 1000)
+      expect(forTitle).toHaveBeenCalledTimes(2)
+      await at(1000)
+      expect(forTitle).toHaveBeenCalledTimes(3)
+      expect(result.current.poster).toBe('new')
+    })
+    it('stops 24 h after airing', async () => {
+      vi.useFakeTimers()
+      const t0 = Date.now()
+      const forTitle = vi.fn(async () => airing(t0 + 5 * MIN))
+      setup(forTitle)
+      await at(0)
+      await at(5 * MIN + 25 * HOUR)
+      const n = forTitle.mock.calls.length
+      expect(n).toBeGreaterThan(4)
+      await at(5 * HOUR)
+      expect(forTitle).toHaveBeenCalledTimes(n)
+    })
+    it('a series already past airingAt + 24 h starts no chain', async () => {
+      vi.useFakeTimers()
+      const forTitle = vi.fn(async () => airing(Date.now() - 25 * HOUR))
+      setup(forTitle)
+      await at(30 * HOUR)
+      expect(forTitle).toHaveBeenCalledTimes(1)
+    })
+    it('a series mounted past grace fetches immediately and keeps retrying', async () => {
+      vi.useFakeTimers()
+      const past = Date.now() - 2 * HOUR
+      const forTitle = vi.fn(async () => airing(past))
+      setup(forTitle)
+      await at(0) // the immediate live fetch is served by the 60 s cache entry
+      expect(forTitle).toHaveBeenCalledTimes(1)
+      await at(5 * MIN)
+      expect(forTitle).toHaveBeenCalledTimes(2)
+      await at(15 * MIN)
+      expect(forTitle).toHaveBeenCalledTimes(3)
+    })
+    it('a new airingAt from another hook clears the old retry chain', async () => {
+      vi.useFakeTimers()
+      const t0 = Date.now()
+      const same = airing(t0 + 5 * MIN)
+      const forTitle = vi.fn(async () => same)
+      const api = makeFakeApi({ anilist: { forTitle } })
+      const a = renderHookUi(() => useAniListInfo('Show', null, { live: true }), { api })
+      await at(0)
+      await at(LIVE)
+      expect(forTitle).toHaveBeenCalledTimes(2)
+      // another view delivers a new schedule through the shared cache
+      forTitle.mockImplementation(async () => airing(t0 + 7 * 24 * HOUR, 'new'))
+      await at(5 * MIN)
+      expect(a.result.current.poster).toBe('new')
+      const n = forTitle.mock.calls.length
+      await at(3 * HOUR)
+      expect(forTitle).toHaveBeenCalledTimes(n)
+    })
   })
 })

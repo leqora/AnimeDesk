@@ -5,6 +5,10 @@ import { infoCache } from './infoCache.js'
 
 const LIVE_WINDOW_MS = 24 * 3600 * 1000
 const LIVE_SLACK_MS = 30_000
+// Main returns the stale entry (same airingAt) when the network fails, so "still the same past airingAt"
+// is the usual failure shape. Retry with growing gaps (last repeats) until airingAt + LIVE_GIVE_UP_MS.
+export const LIVE_RETRY_MS = [5 * 60_000, 15 * 60_000, 60 * 60_000]
+export const LIVE_GIVE_UP_MS = 24 * 3600_000
 
 // undefined = still loading, null = nothing found / failed, falsy title = null.
 // Starts from the shared cache so returning to a page shows posters without a skeleton.
@@ -41,10 +45,23 @@ export function useAniListInfo(title, aniListId = null, { live = false } = {}) {
     if (!title || airingAt == null) return undefined
     const delay = airingAt + AIRED_GRACE_MS + LIVE_SLACK_MS - Date.now()
     if (delay > LIVE_WINDOW_MS) return undefined
+    if (Date.now() >= airingAt + LIVE_GIVE_UP_MS) return undefined
     let active = true
-    const timer = setTimeout(() => {
-      cache.get(title, aniListId).then((value) => { if (active) setState({ key, info: value }) }).catch(() => {})
-    }, Math.max(0, delay))
+    let timer
+    let attempt = 0
+    const schedule = (ms) => { timer = setTimeout(run, Math.max(0, ms)) }
+    const retry = () => {
+      if (!active || Date.now() >= airingAt + LIVE_GIVE_UP_MS) return
+      schedule(LIVE_RETRY_MS[Math.min(attempt++, LIVE_RETRY_MS.length - 1)])
+    }
+    function run() {
+      cache.get(title, aniListId).then((value) => {
+        if (!active) return
+        setState({ key, info: value })
+        if (value?.nextAiring?.airingAt === airingAt) retry() // schedule not updated yet
+      }).catch(retry)
+    }
+    schedule(delay)
     return () => { active = false; clearTimeout(timer) }
   }, [cache, key, airingAt])
 
