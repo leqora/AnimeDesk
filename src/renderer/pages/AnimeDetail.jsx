@@ -66,12 +66,20 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   // Latest known watched list: follows the entry on refresh, and the last saved list in between (rapid marks accumulate).
   const latestWatched = useRef(watched)
   useEffect(() => { latestWatched.current = watched }, [watched])
+  // The toast outlives the detail: its undo must know whether the detail is still mounted.
+  const mounted = useRef(true)
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const setWatched = async (next) => {
     const previous = latestWatched.current
     latestWatched.current = next
-    try { await save({ watchedEpisodes: next }) } catch (err) { latestWatched.current = previous; throw err }
+    try { await save({ watchedEpisodes: next }) } catch (err) {
+      // Only roll back if no newer mark has replaced this one meanwhile.
+      if (latestWatched.current === next) latestWatched.current = previous
+      throw err
+    }
   }
   const toggleWatched = async (ep) => {
+    const id = entry.id
     const marking = !latestWatched.current.includes(ep)
     try {
       await setWatched(marking ? [...latestWatched.current, ep] : latestWatched.current.filter((x) => x !== ep))
@@ -83,9 +91,18 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
         label: t('toast.undo'),
         // Undo touches only this episode, relative to the current list.
         onAction: async () => {
-          const cur = latestWatched.current
-          const next = marking ? cur.filter((x) => x !== ep) : cur.includes(ep) ? cur : [...cur, ep]
-          try { await setWatched(next) } catch (err) { console.error(err) }
+          const undoIn = (cur) => marking ? cur.filter((x) => x !== ep) : cur.includes(ep) ? cur : [...cur, ep]
+          if (mounted.current) {
+            try { await setWatched(undoIn(latestWatched.current)) } catch (err) { console.error(err) }
+            return
+          }
+          // The detail is gone: its list is stale, so read the library's current entry.
+          try {
+            const fresh = (await api.library.list()).find((e) => e.id === id)
+            if (!fresh) return
+            await api.library.update(id, { watchedEpisodes: undoIn(fresh.watchedEpisodes) })
+            onChanged()
+          } catch (err) { console.error(err) }
         },
       },
     })
