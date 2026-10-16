@@ -8,6 +8,7 @@ export function createHandlers(s) {
       const updated = s.settings.update(patch)
       if (patch && 'autoDownloadUpdates' in patch) s.updater.applySettings()
       if (patch?.mpvModernUi === true) s.toolManager.installOptional(progress)
+      s.onSettingsChanged?.(patch)
       return updated
     },
     [INVOKE.updateGetState]: () => s.updater.getState(),
@@ -21,7 +22,11 @@ export function createHandlers(s) {
     [INVOKE.windowGetFullscreen]: () => s.window.get(),
     [INVOKE.windowSetFullscreen]: (value) => s.window.set(Boolean(value)),
     [INVOKE.libraryList]: () => s.library.list(),
-    [INVOKE.libraryAdd]: (entry) => s.library.add(entry),
+    [INVOKE.libraryAdd]: (entry) => {
+      const added = s.library.add(entry)
+      s.onLibraryChanged?.()
+      return added
+    },
     [INVOKE.libraryUpdate]: (id, patch) => {
       const result = s.tracker.update(id, patch)
       s.send(EVENTS.libraryChanged)

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, Notification, powerMonitor } from 'electron'
 import path from 'node:path'
 import os from 'node:os'
 import extractZip from 'extract-zip'
@@ -39,13 +39,24 @@ import { createUpdater } from './updater.js'
 import { createWhatsNew, readReleaseNotes } from './whatsNew.js'
 import { markdownToText } from '../shared/releaseNotes.js'
 import { EVENTS } from '../shared/channels.js'
+import { createNotificationsStore } from './notificationsStore.js'
+import { createAiringWatcher } from './airingWatcher.js'
+import { createTray } from './tray.js'
+import { shouldHideOnClose, startHidden, notificationText, shouldNotifyDownload, trayLabels } from './background.js'
 
 const REPO_URL = 'https://github.com/leqora/AnimeDesk'
 const SIX_HOURS = 6 * 60 * 60 * 1000
 
+app.setAppUserModelId('com.leqora.animedesk')
 app.setPath('userData', process.env.ANIMEDESK_USER_DATA ?? path.join(app.getPath('appData'), 'AnimeDesk'))
+// The lock is per userData, so isolated e2e/manual profiles do not collide with an installed app.
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) app.quit()
 
 let win = null
+let quitting = false
+let tray = null
+const liveNotifications = new Set() // Windows GC drops click handlers of unreferenced Notification objects
 const send = (channel, payload) => { if (win && !win.isDestroyed()) win.webContents.send(channel, payload) }
 
 let fullscreen = null
@@ -57,6 +68,7 @@ function createWindow(settings) {
     minWidth: 800,
     minHeight: 560,
     fullscreen: settings.get().fullscreen,
+    show: false,
     backgroundColor: '#15151c',
     autoHideMenuBar: true,
     title: 'AnimeDesk',
@@ -70,6 +82,7 @@ function createWindow(settings) {
   })
   hardenWindow(win.webContents, { devUrl: process.env.ELECTRON_RENDERER_URL ?? null })
   fullscreen = attachFullscreen({ win, settings, send })
+  win.once('ready-to-show', () => { if (!startHidden(process.argv)) win.show() })
   if (process.env.ELECTRON_RENDERER_URL) win.loadURL(process.env.ELECTRON_RENDERER_URL)
   else win.loadFile(path.join(__dirname, '../renderer/index.html'))
 }
@@ -77,7 +90,7 @@ function createWindow(settings) {
 async function main() {
   await app.whenReady()
   const paths = createPaths(app.getPath('userData'))
-  const settings = createSettings(paths.settings, { systemName: os.userInfo().username })
+  const settings = createSettings(paths.settings, { systemName: os.userInfo().username, isPackaged: app.isPackaged })
   const releasesDir = app.isPackaged ? path.join(process.resourcesPath, 'releases') : path.join(app.getAppPath(), 'docs', 'releases')
   const whatsNew = createWhatsNew({ settings, currentVersion: app.getVersion(), readNotes: (v) => markdownToText(readReleaseNotes(releasesDir, v)) })
   whatsNew.init()
@@ -141,11 +154,62 @@ async function main() {
     } catch { return [] }
   }
   const watch = createWatchService({ mpvExtraArgs, skipsFor: skipLookup, aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs, celebrations, getTotalEpisodes: totalEpisodes, episodeLists })
-  const downloads = createDownloads({ file: paths.downloads, aniCli, onChange: () => send(EVENTS.downloads, downloads.queueItems()), resolvePrefs: (title) => seriesPrefs.resolve(title, settings.get()), episodeLists })
+  const iconPath = app.isPackaged ? path.join(process.resourcesPath, 'icon.ico') : path.join(app.getAppPath(), 'build', 'icon.ico')
+  const showWindow = () => {
+    if (!win || win.isDestroyed()) return
+    if (win.isMinimized()) win.restore()
+    win.show()
+    win.focus()
+  }
+  // OS toast; the object is kept referenced until it is clicked, closed or failed (Windows GC drops handlers otherwise).
+  const osNotify = (kind, data, onClick) => {
+    if (!Notification.isSupported()) return
+    try {
+      const n = new Notification({ ...notificationText(kind, data, settings.get().language), icon: iconPath })
+      const release = () => liveNotifications.delete(n)
+      n.on('click', () => { release(); onClick?.() })
+      n.on('close', release)
+      n.on('failed', release)
+      liveNotifications.add(n)
+      n.show()
+    } catch (err) { console.warn('notification failed', err?.message) }
+  }
+  const notificationsStore = createNotificationsStore(paths.notifications, { onChange: (payload) => send(EVENTS.notificationsChanged, payload) })
+  const airingWatcher = createAiringWatcher({
+    library, anilist, file: paths.airingNotified,
+    notify: ({ animeId, title, episode }) => {
+      const item = notificationsStore.add({ animeId, title, episode })
+      if (!item || !settings.get().notifyNewEpisodes) return
+      osNotify('episode', { title, episode }, () => { showWindow(); send(EVENTS.openAnime, { animeId }) })
+    },
+  })
+  const applyLoginItem = () => {
+    if (!app.isPackaged) return
+    try { app.setLoginItemSettings({ openAtLogin: Boolean(settings.get().launchAtLogin), args: ['--hidden'] }) } catch (err) { console.warn('login item failed', err?.message) }
+  }
+  applyLoginItem()
+  const downloads = createDownloads({
+    file: paths.downloads, aniCli,
+    onChange: () => send(EVENTS.downloads, downloads.queueItems()),
+    onFinished: ({ title, episode, status }) => {
+      const windowFocused = Boolean(win && !win.isDestroyed() && win.isFocused() && win.isVisible())
+      if (!shouldNotifyDownload({ notifyDownloads: settings.get().notifyDownloads, windowFocused })) return
+      osNotify(status === 'done' ? 'downloaded' : 'downloadFailed', { title, episode }, () => { showWindow(); send(EVENTS.openPage, { page: 'downloads' }) })
+    },
+    resolvePrefs: (title) => seriesPrefs.resolve(title, settings.get()), episodeLists })
   const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
 
   registerIpc(ipcMain, createHandlers({
-    settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, updater, whatsNew, send,
+    settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, updater, whatsNew, notifications: notificationsStore,
+    send: (channel, payload) => {
+      send(channel, payload)
+      if (channel === EVENTS.libraryChanged) airingWatcher.check() // a series newly "watching" gets seeded promptly
+    },
+    onLibraryChanged: () => airingWatcher.check(),
+    onSettingsChanged: (patch) => {
+      if (patch && 'launchAtLogin' in patch) applyLoginItem()
+      if (patch && 'language' in patch) tray?.setLabels(trayLabels(settings.get().language))
+    },
     window: { get: () => fullscreen?.get() ?? false, set: (v) => fullscreen?.set(v) },
     electron: {
       pickFolder: async () => {
@@ -163,19 +227,33 @@ async function main() {
   const releasePlayback = () => { try { internalPlayer.stop() } catch (err) { console.warn('internalPlayer.stop failed', err?.message) } }
   win.webContents.on('render-process-gone', releasePlayback)
   win.webContents.on('did-start-loading', releasePlayback)
+  win.on('close', (e) => {
+    if (!shouldHideOnClose({ closeToTray: settings.get().closeToTray, quitting })) return
+    e.preventDefault()
+    win.hide()
+    releasePlayback()
+    if (!settings.get().trayHintShown) {
+      settings.update({ trayHintShown: true })
+      osNotify('trayHint', {})
+    }
+  })
+  tray = createTray({ Tray, Menu, iconPath, labels: trayLabels(settings.get().language), onOpen: showWindow, onQuit: () => app.quit() })
+  app.on('second-instance', showWindow)
+  powerMonitor.on('resume', () => airingWatcher.refresh())
+  airingWatcher.start()
   updater.start()
   health.run().then(() => health.dailyUpdate({ enabled: settings.get().autoUpdateTools, now: new Date().toISOString() }))
     .then(() => { if (settings.get().mpvModernUi) return toolManager.installOptional() })
   setInterval(() => { if (health.get().reason === 'source-down') health.run() }, SIX_HOURS)
 
-  app.on('window-all-closed', () => app.quit())
-  app.on('before-quit', () => { stopPositionEvents(); watch.dispose(); server.stop(); streams.stop() })
+  app.on('window-all-closed', () => { if (!shouldHideOnClose({ closeToTray: settings.get().closeToTray, quitting })) app.quit() })
+  app.on('before-quit', () => { quitting = true; airingWatcher.stop(); tray?.destroy(); stopPositionEvents(); watch.dispose(); server.stop(); streams.stop() })
 }
 
 // A failed startup must not leave a silent background process; a stray rejection must not go unnoticed.
 process.on('unhandledRejection', (err) => console.error('Unhandled rejection', err))
 
-main().catch(async (err) => {
+if (gotLock) main().catch(async (err) => {
   console.error('Startup failed', err)
   await app.whenReady()
   dialog.showErrorBox('AnimeDesk', `Aplikacija nije mogla da se pokrene / The app could not start.\n\n${err?.stack ?? err}`)

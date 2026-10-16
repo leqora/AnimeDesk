@@ -220,3 +220,24 @@ describe('ipc', () => {
     expect(s.window.set).toHaveBeenCalledWith(false)
   })
 })
+
+describe('ipc background hooks', () => {
+  it('calls onSettingsChanged with the updated settings', () => {
+    const s = services()
+    s.onSettingsChanged = vi.fn()
+    createHandlers(s)[INVOKE.settingsUpdate]({ launchAtLogin: true })
+    expect(s.onSettingsChanged).toHaveBeenCalledWith({ launchAtLogin: true })
+  })
+  it('calls onLibraryChanged after a library add', () => {
+    const s = services()
+    s.onLibraryChanged = vi.fn()
+    createHandlers(s)[INVOKE.libraryAdd]({ title: 'A' })
+    expect(s.onLibraryChanged).toHaveBeenCalled()
+  })
+  it('works without the hooks', () => {
+    const s = services()
+    const h = createHandlers(s)
+    expect(() => h[INVOKE.settingsUpdate]({ language: 'en' })).not.toThrow()
+    expect(() => h[INVOKE.libraryAdd]({ title: 'A' })).not.toThrow()
+  })
+})
