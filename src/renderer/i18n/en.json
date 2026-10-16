@@ -194,6 +194,8 @@
   "levelup.title": "LEVEL UP",
   "toast.levelUp": "LEVEL UP · LV {level} · {title}",
   "toast.completed": "COMPLETED · {title} · +{xp} XP",
+  "toast.undo": "Undo",
+  "toast.region": "Notifications",
   "update.available": "Version {version} is available",
   "update.downloading": "Downloading version {version}… {percent}%",
   "update.ready": "Version {version} is ready",

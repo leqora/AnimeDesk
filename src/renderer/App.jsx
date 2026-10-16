@@ -11,7 +11,7 @@ import { WatchlistPage } from './pages/WatchlistPage.jsx'
 import { DownloadsPage } from './pages/DownloadsPage.jsx'
 import { SettingsPage } from './pages/SettingsPage.jsx'
 import { LevelUpOverlay } from './components/LevelUpOverlay.jsx'
-import { Toast } from './components/Toast.jsx'
+import { ToastProvider, useToast } from './toast/ToastProvider.jsx'
 import { UpdateBanner } from './components/UpdateBanner.jsx'
 import { WhatsNewDialog } from './components/WhatsNewDialog.jsx'
 import { loadPlayer } from './player/loadPlayer.js'
@@ -58,15 +58,21 @@ const SILENT = { soundKey: false, soundUi: false, soundVolume: 0 }
 
 function Celebrations({ levelUp, toast, stats, motionOff, onLevelUpDone, onToastDone }) {
   const t = useT()
-  return (
-    <>
-      {levelUp && !motionOff && <LevelUpOverlay level={levelUp.level} title={levelUp.title} xpIntoLevel={stats.xpIntoLevel} xpForNext={stats.xpForNext} onDone={onLevelUpDone} />}
-      {levelUp && motionOff && (
-        <Toast onDone={onLevelUpDone} icon="flame">{t('toast.levelUp', { level: levelUp.level, title: t(`title.${levelUp.title}`) })}</Toast>
-      )}
-      {!levelUp && toast && <Toast onDone={onToastDone}>{t('toast.completed', { title: toast.title, xp: toast.xp })}</Toast>}
-    </>
-  )
+  const { show } = useToast()
+  // With animations off the level-up becomes a queued toast; hand it over once and clear the state.
+  useEffect(() => {
+    if (!levelUp || !motionOff) return
+    show({ message: t('toast.levelUp', { level: levelUp.level, title: t(`title.${levelUp.title}`) }), icon: 'flame' })
+    onLevelUpDone()
+  }, [levelUp, motionOff])
+  useEffect(() => {
+    if (!toast) return
+    show({ message: t('toast.completed', { title: toast.title, xp: toast.xp }) })
+    onToastDone()
+  }, [toast])
+  return levelUp && !motionOff
+    ? <LevelUpOverlay level={levelUp.level} title={levelUp.title} xpIntoLevel={stats.xpIntoLevel} xpForNext={stats.xpForNext} onDone={onLevelUpDone} />
+    : null
 }
 
 export default function App({ api, sound: injectedSound }) {
@@ -211,6 +217,7 @@ export default function App({ api, sound: injectedSound }) {
   return (
     <ApiContext.Provider value={api}>
       <I18nProvider lang={settings.language}>
+        <ToastProvider>
         <div className="app-shell" inert={overlay} aria-hidden={overlay ? 'true' : undefined}>
           <Sidebar
             page={page}
@@ -272,6 +279,7 @@ export default function App({ api, sound: injectedSound }) {
         {asks.length > 0 && <AskDialog ask={asks[0]} onDone={() => setAsks((q) => q.slice(1))} />}
         <Celebrations levelUp={levelUp} toast={toast} stats={stats} motionOff={motionOff} onLevelUpDone={() => setLevelUp(null)} onToastDone={() => setToast(null)} />
         {whatsNew && <WhatsNewDialog mode={whatsNew.mode} version={whatsNew.version} notes={whatsNew.notes} status={updateState.status} onClose={closeWhatsNew} />}
+        </ToastProvider>
       </I18nProvider>
     </ApiContext.Provider>
   )

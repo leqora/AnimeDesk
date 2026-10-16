@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
+import { useToast } from '../toast/ToastProvider.jsx'
 import { MediaCard } from '../components/MediaCard.jsx'
 import { AnimeDetail } from './AnimeDetail.jsx'
 import { STATUSES } from '../../shared/domain.js'
@@ -21,7 +22,7 @@ export function WatchlistPage({ ready, onContinue, initialOpenId = null }) {
   const [sort, setSort] = useState('title')
   const [openId, setOpenId] = useState(initialOpenId)
   const [newTitle, setNewTitle] = useState('')
-  const [notice, setNotice] = useState(null)
+  const toast = useToast()
 
   const load = () => api.library.list().then(setItems)
   useEffect(() => {
@@ -43,7 +44,7 @@ export function WatchlistPage({ ready, onContinue, initialOpenId = null }) {
 
   const togglePin = async (entry) => {
     const r = await api.library.setPinned(entry.id, !entry.pinnedAt)
-    setNotice(r.ok ? null : t('pin.limit'))
+    if (!r.ok) toast.show({ message: t('pin.limit'), icon: 'alert' })
     load()
   }
 
@@ -69,7 +70,6 @@ export function WatchlistPage({ ready, onContinue, initialOpenId = null }) {
         </form>
       </div>
       {items && items.length === 0 && <p className="muted">{t('watchlist.empty')}</p>}
-      {notice && <div className="notice" role="status">{notice}</div>}
       <div className="card-grid">
         {visible.map((i) => (
           <MediaCard key={i.id} entry={i} ready={ready} onOpen={setOpenId} onContinue={onContinue} onTogglePin={togglePin} showScore />

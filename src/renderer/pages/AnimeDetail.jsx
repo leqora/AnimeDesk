@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useApi } from '../api.js'
 import { useAniListInfo } from '../anilist/useAniListInfo.js'
 import { useT } from '../i18n/I18nContext.jsx'
+import { useToast } from '../toast/ToastProvider.jsx'
 import { Poster } from '../components/Poster.jsx'
 import { ConfirmButton } from '../components/ConfirmButton.jsx'
 import { EpisodePicker } from '../components/EpisodePicker.jsx'
@@ -25,7 +26,7 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
   const [comment, setComment] = useState(entry.comment)
   const [noteEp, setNoteEp] = useState(null)
   const [noteText, setNoteText] = useState('')
-  const [pinNotice, setPinNotice] = useState(null)
+  const toast = useToast()
 
   // Patch aniListId/totalEpisodes into the library once per entry id, when its info first arrives.
   const patchedFor = useRef(null)
@@ -67,8 +68,7 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
   const remove = async () => { await api.library.remove(entry.id); onBack(); onChanged() }
   const togglePin = async () => {
     const r = await api.library.setPinned(entry.id, !entry.pinnedAt)
-    if (!r.ok) { setPinNotice(t('pin.limit')); return }
-    setPinNotice(null)
+    if (!r.ok) { toast.show({ message: t('pin.limit'), icon: 'alert' }); return }
     onChanged()
   }
 
@@ -104,7 +104,6 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
           </div>
         </div>
       </div>
-      {pinNotice && <div className="notice" role="status">{pinNotice}</div>}
       <div className="detail">
         <div className="page">
           <p>{t('detail.progress', { watched: watched.length, total: entry.totalEpisodes ?? '?' })}</p>

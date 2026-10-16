@@ -55,6 +55,15 @@ describe('App celebrations', () => {
     expect(screen.getByRole('status')).toHaveTextContent('LEVEL UP · LV 11 · Veteran')
     expect(document.documentElement).toHaveClass('reduce-motion')
   })
+  it('level-up with animations off and a completed series show two toasts at once', async () => {
+    const { handlers } = setup({ animations: false })
+    await waitFor(() => expect(handlers.levelUp).toBeDefined())
+    act(() => handlers.levelUp({ level: 11, title: 'veteran' }))
+    act(() => handlers.completed({ title: 'Show', xp: 50 }))
+    expect(screen.getByText('LEVEL UP · LV 11 · Veteran')).toBeInTheDocument()
+    expect(screen.getByText('ZAVRŠENO · Show · +50 XP')).toBeInTheDocument()
+    expect(screen.getAllByRole('status')).toHaveLength(2)
+  })
   it('removes the reduce-motion class on unmount', async () => {
     const api = makeFakeApi()
     api.settings.get.mockResolvedValue({ ...DEFAULT_SETTINGS, animations: false })

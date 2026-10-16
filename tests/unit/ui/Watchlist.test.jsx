@@ -47,6 +47,15 @@ describe('WatchlistPage', () => {
     expect(await screen.findByText('Možeš zakačiti najviše 5 serija. Otkači neku pa pokušaj ponovo.')).toBeInTheDocument()
     expect(api.library.setPinned).toHaveBeenCalledWith('a', true)
   })
+  it('pin limit shows a toast', async () => {
+    const api = makeFakeApi({ library: { list: vi.fn(async () => [entry({ id: 'a', title: 'Show' })]) } })
+    api.library.setPinned.mockResolvedValueOnce({ ok: false, error: 'pin-limit' })
+    renderUi(<WatchlistPage ready onContinue={() => {}} />, { api })
+    fireEvent.click(await screen.findByRole('button', { name: 'Dodaj u omiljene: Show' }))
+    const toast = await screen.findByRole('status')
+    expect(toast).toHaveTextContent('Možeš zakačiti najviše 5 serija. Otkači neku pa pokušaj ponovo.')
+    expect(toast.closest('.toast-stack')).not.toBeNull()
+  })
   it('pins from a watchlist card without opening it', async () => {
     const api = makeFakeApi({ library: { list: vi.fn(async () => [entry({ id: 'a', title: 'Show', pinnedAt: '2026-10-03T00:00:00Z' })]) } })
     renderUi(<WatchlistPage ready onContinue={() => {}} />, { api })

@@ -280,7 +280,10 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .levelup__text { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; animation: pop 400ms var(--ease); }
 .levelup__title { font-family: var(--font-display); font-size: 56px; letter-spacing: .08em; color: var(--accent-2); text-shadow: var(--glow-cyan); }
 .levelup .xp-bar { width: 320px; }
-.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 25; display: flex; gap: 10px; align-items: center; padding: 12px 18px; border-radius: var(--radius); background: color-mix(in srgb, var(--bg-elev) 92%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); box-shadow: var(--glow); animation: fade-in 200ms var(--ease); }
+.toast-stack { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 25; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+.toast-stack > * { pointer-events: auto; }
+.toast__action { margin-left: 6px; padding: 4px 10px; border-radius: var(--radius-sm); background: transparent; border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); color: var(--accent-2); cursor: pointer; }
+.toast { display: flex; gap: 10px; align-items: center; padding: 12px 18px; border-radius: var(--radius); background: color-mix(in srgb, var(--bg-elev) 92%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); box-shadow: var(--glow); animation: fade-in 200ms var(--ease); }
 @keyframes fade-in { from { opacity: 0; } }
 @keyframes beam { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes pop { from { opacity: 0; transform: scale(.9); } }

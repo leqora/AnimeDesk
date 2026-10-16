@@ -194,6 +194,8 @@
   "levelup.title": "LEVEL UP",
   "toast.levelUp": "LEVEL UP · LV {level} · {title}",
   "toast.completed": "ZAVRŠENO · {title} · +{xp} XP",
+  "toast.undo": "Poništi",
+  "toast.region": "Obaveštenja",
   "update.available": "Dostupna je verzija {version}",
   "update.downloading": "Verzija {version} se preuzima… {percent}%",
   "update.ready": "Verzija {version} je spremna",

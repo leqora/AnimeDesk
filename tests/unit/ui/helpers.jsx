@@ -3,6 +3,7 @@ import { render, renderHook } from '@testing-library/react'
 import { ApiContext } from '../../../src/renderer/api.js'
 import { I18nProvider } from '../../../src/renderer/i18n/I18nContext.jsx'
 import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
+import { ToastProvider } from '../../../src/renderer/toast/ToastProvider.jsx'
 import { EMPTY_STATS } from '../../../src/shared/stats.js'
 
 const sub = () => vi.fn(() => () => {})
@@ -54,7 +55,7 @@ export function makeFakeApi(overrides = {}) {
 export function renderUi(ui, { api = makeFakeApi(), lang = 'sr' } = {}) {
   const wrapper = ({ children }) => (
     <ApiContext.Provider value={api}>
-      <I18nProvider lang={lang}>{children}</I18nProvider>
+      <I18nProvider lang={lang}><ToastProvider>{children}</ToastProvider></I18nProvider>
     </ApiContext.Provider>
   )
   const result = render(ui, { wrapper })
@@ -64,7 +65,7 @@ export function renderUi(ui, { api = makeFakeApi(), lang = 'sr' } = {}) {
 export function renderHookUi(callback, { api = makeFakeApi(), lang = 'sr', initialProps } = {}) {
   const wrapper = ({ children }) => (
     <ApiContext.Provider value={api}>
-      <I18nProvider lang={lang}>{children}</I18nProvider>
+      <I18nProvider lang={lang}><ToastProvider>{children}</ToastProvider></I18nProvider>
     </ApiContext.Provider>
   )
   return { api, ...renderHook(callback, { wrapper, initialProps }) }
