@@ -89,6 +89,46 @@ describe('AnimeDetail', () => {
   })
   const info = { id: 154587, genres: ['Adventure'], year: 2023, episodes: 28, description: 'Tajna radnja', poster: null }
 
+  it('puts meta, genres, airing and the main actions in the banner', async () => {
+    const AT = Date.now() + (2 * 24 + 4) * 3600 * 1000 + 30_000
+    const airing = { ...info, status: 'RELEASING', duration: 24, nextAiring: { episode: 4, airingAt: AT } }
+    const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => airing) } })
+    const onContinue = vi.fn()
+    const { container } = renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={onContinue} />, { api })
+    const banner = container.querySelector('.banner')
+    await waitFor(() => expect(within(banner).getByText('2023 · 4 EP · 24 min · Emituje se')).toBeInTheDocument())
+    expect(within(banner).getByText(/^EP 4 izlazi za 2 d 4 h · /)).toBeInTheDocument()
+    expect(within(banner).getByText('1 nova')).toBeInTheDocument() // aired 3, watched up to 2
+    expect(within(banner).getByRole('list', { name: 'Žanrovi' })).toHaveTextContent('Adventure')
+    fireEvent.click(within(banner).getByRole('button', { name: /Nastavi EP 3/ }))
+    expect(onContinue).toHaveBeenCalledWith({ query: 'Frieren', anime: 'Frieren', episode: '3' })
+    expect(within(banner).getByRole('button', { name: /Dodaj u omiljene/ })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getAllByRole('button', { name: /Nastavi/ })).toHaveLength(1) // moved, not duplicated
+    expect(screen.queryByText(/Godina:/)).not.toBeInTheDocument()
+  })
+  it('offers to watch again instead of continue for a completed series', async () => {
+    const onContinue = vi.fn()
+    const done = entry({ status: 'completed', totalEpisodes: 4, watchedEpisodes: [1, 2, 3, 4] })
+    const { container } = renderUi(<AnimeDetail entry={done} ready onBack={() => {}} onChanged={() => {}} onContinue={onContinue} />)
+    const banner = container.querySelector('.banner')
+    fireEvent.click(within(banner).getByRole('button', { name: /Gledaj ponovo/ }))
+    expect(onContinue).toHaveBeenCalledWith({ query: 'Frieren', anime: 'Frieren', episode: '1' })
+    expect(screen.queryByRole('button', { name: /Nastavi EP/ })).not.toBeInTheDocument()
+  })
+  it('continues from the saved position in the banner', async () => {
+    const api = makeFakeApi({ positions: { forSeries: vi.fn(async () => ({ 3: { position: 495, duration: 1440 } })) } })
+    const { container } = renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />, { api })
+    expect(await within(container.querySelector('.banner')).findByRole('button', { name: /Nastavi EP 3 od 8:15/ })).toBeInTheDocument()
+  })
+  it('keeps the banner usable without AniList info', () => {
+    const { container } = renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />)
+    const banner = container.querySelector('.banner')
+    expect(within(banner).getByRole('heading', { name: 'Frieren' })).toBeInTheDocument()
+    expect(within(banner).getByRole('button', { name: /Nastavi EP 3/ })).toBeInTheDocument()
+    expect(banner.querySelector('.banner__meta')).toBeNull()
+    expect(banner.querySelector('.chips')).toBeNull()
+  })
+
   it('uses the episode list from main and offers the spoiler actions', async () => {
     const series = { source: 'ani-cli', meta: 'ok', episodes: ['0', '1', '2', '3'].map((n) => ({ number: n, runtime: null, visibility: n === '3' ? 'hidden' : 'full' })) }
     const api = makeFakeApi({ episodes: { forSeries: vi.fn(async () => series), spoilers: vi.fn(async () => series), thumb: vi.fn(async () => null) } })
@@ -152,7 +192,7 @@ describe('AnimeDetail', () => {
     const onContinue = vi.fn()
     const onBack = vi.fn()
     const { api } = renderUi(<AnimeDetail entry={entry()} ready onBack={onBack} onChanged={() => {}} onContinue={onContinue} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Nastavi gledanje' }))
+    fireEvent.click(screen.getByRole('button', { name: /Nastavi EP 3/ }))
     expect(onContinue).toHaveBeenCalledWith({ query: 'Frieren', anime: 'Frieren', episode: '3' })
     fireEvent.click(screen.getByRole('button', { name: 'Ukloni iz watchlist-e' }))
     fireEvent.click(screen.getByRole('button', { name: 'Da' }))
@@ -161,7 +201,7 @@ describe('AnimeDetail', () => {
   })
   it('disables continue when components are not ready', () => {
     renderUi(<AnimeDetail entry={entry()} ready={false} onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />)
-    expect(screen.getByRole('button', { name: 'Nastavi gledanje' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Nastavi EP 3/ })).toBeDisabled()
   })
   it('shows a banner with the blurred poster', async () => {
     const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => ({ ...info, poster: 'data:image/png;base64,AA' })) } })

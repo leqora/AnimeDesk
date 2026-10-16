@@ -1,9 +1,10 @@
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
+import { AIRED_GRACE_MS } from '../shared/airing.js'
 
 const ENDPOINT = 'https://graphql.anilist.co'
-const FIELDS = 'id idMal status title { romaji english native } coverImage { large } genres seasonYear episodes duration description(asHtml: false)'
+const FIELDS = 'id idMal status title { romaji english native } coverImage { large } genres seasonYear episodes duration description(asHtml: false) nextAiringEpisode { episode airingAt }'
 const SEARCH = `query ($search: String) { Page(perPage: 10) { media(search: $search, type: ANIME) { ${FIELDS} } } }`
 const BY_ID = `query ($id: Int) { Media(id: $id, type: ANIME) { ${FIELDS} } }`
 
@@ -46,6 +47,14 @@ export function searchCandidates(title) {
   return out
 }
 
+// Only the episode number and air time (AniList gives seconds) — fail closed on anything odd.
+export function toNextAiring(raw) {
+  const episode = raw?.episode
+  const at = raw?.airingAt
+  if (!Number.isInteger(episode) || episode < 1 || typeof at !== 'number' || !Number.isFinite(at)) return null
+  return { episode, airingAt: at * 1000 }
+}
+
 function toInfo(m) {
   return {
     id: m.id,
@@ -59,15 +68,25 @@ function toInfo(m) {
     description: cleanDescription(m.description),
     coverUrl: m.coverImage?.large ?? null,
     status: m.status ?? null,
+    nextAiring: toNextAiring(m.nextAiringEpisode),
     poster: null,
   }
 }
 
 // Airing shows gain episodes (and a final count), so their cache entry expires; finished ones never change.
+const RETRY_AFTER_FAIL_MS = 3600 * 1000
 const AIRING_TTL_MS = 24 * 3600 * 1000
 const AIRING = new Set(['RELEASING', 'NOT_YET_RELEASED'])
-const isFresh = (info, nowMs) =>
-  'malId' in info && info.fetchedAt != null && (!AIRING.has(info.status) || nowMs - info.fetchedAt < AIRING_TTL_MS)
+// Airing shows expire after a day, when their next episode aired after the entry was fetched, or when the entry predates
+// nextAiring. An airingAt already past at fetch time (lagging schedule) falls back to the TTL, so it cannot refetch in a loop.
+export function isFresh(info, nowMs) {
+  if (!('malId' in info) || info.fetchedAt == null) return false
+  if (!AIRING.has(info.status)) return true
+  if (!('nextAiring' in info)) return false
+  const airedBy = info.nextAiring ? info.nextAiring.airingAt + AIRED_GRACE_MS : null
+  if (airedBy != null && info.fetchedAt < airedBy && nowMs >= airedBy) return false
+  return nowMs - info.fetchedAt < AIRING_TTL_MS
+}
 
 const MAX_ATTEMPTS = 3
 const MAX_WAIT_MS = 65_000
@@ -159,7 +178,7 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
     return { m: null, complete }
   }
 
-  const refreshed = new Set()
+  const refreshAttemptAt = new Map() // file -> start of the last refresh that has not succeeded
 
   async function getForTitle(title, { aniListId = null } = {}) {
     const file = cacheFile(cacheKey(title, aniListId))
@@ -167,12 +186,13 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
     if (cached?.notFound) {
       if (cached.searchVersion === SEARCH_VERSION && now() - cached.at < NOT_FOUND_TTL_MS) return null
     } else if (cached && isFresh(cached, now())) return cached
-    // Expired, or saved before malId/status existed: refresh it once per run, but never lose it if the refresh fails.
+    // Expired, or saved before malId/status/nextAiring existed: refresh it (a failed refresh is retried only after RETRY_AFTER_FAIL_MS), but never lose it.
     const stale = cached && !cached.notFound ? cached : null
     const fallback = () => (stale ? { malId: null, ...stale } : null)
     if (stale) {
-      if (refreshed.has(file)) return fallback()
-      refreshed.add(file)
+      const attemptedAt = refreshAttemptAt.get(file)
+      if (attemptedAt != null && now() - attemptedAt < RETRY_AFTER_FAIL_MS) return fallback()
+      refreshAttemptAt.set(file, now()) // set before the first await so concurrent calls are deduped
     }
     try {
       let m
@@ -188,6 +208,7 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
         ? stale.poster
         : await posterDataUrl(info.coverUrl).catch(() => null)
       writeJsonAtomic(file, info)
+      refreshAttemptAt.delete(file) // the guard is for failures; a later expiry may refresh again
       return info
     } catch {
       return fallback()

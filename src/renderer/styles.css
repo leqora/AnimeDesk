@@ -122,7 +122,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--bg) 15%, color-mix(in srgb, var(--poster-tint) 35%, transparent) 70%, transparent), linear-gradient(0deg, var(--bg), transparent 60%); }
 .hero__body { position: relative; z-index: 1; display: flex; gap: 24px; align-items: flex-end; justify-content: space-between; width: 100%; padding: 28px; }
 .hero__text { display: flex; flex-direction: column; gap: 10px; max-width: 60%; }
-.hero__label { color: var(--accent-2); font-size: 13px; }
+.hero__label { color: var(--accent-2); font-size: 13px; display: flex; align-items: center; gap: 8px; }
 .hero__title { font-size: 34px; line-height: 1.15; }
 .hero__poster { width: 150px; border-radius: var(--radius-sm); box-shadow: 0 10px 30px var(--scrim); }
 .hero__ep-progress { height: 3px; max-width: 320px; background: var(--glass-strong); border-radius: 2px; overflow: hidden; }
@@ -166,8 +166,13 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .badge--progress { left: 0; bottom: 0; border-radius: 0 var(--radius-sm) 0 var(--card-radius); }
 .media-card[data-complete] .badge--progress { color: var(--status-completed); }
 .badge--score { right: 0; bottom: 0; border-radius: var(--radius-sm) 0 var(--card-radius) 0; color: var(--warn); }
+.badge--new { text-transform: none; transition: opacity var(--dur) var(--ease); top: 3px; right: 0; border-radius: var(--radius-sm) 0 0 var(--radius-sm); color: var(--accent-2); border-color: color-mix(in srgb, var(--accent-2) 45%, transparent); }
+.badge--inline { position: static; display: inline-block; vertical-align: middle; border-radius: var(--radius-sm); }
+.airing-line { margin: 0; color: var(--accent-2); font-size: 13px; }
 .media-card__actions { position: absolute; top: 14px; right: 14px; z-index: var(--z-card-actions); display: flex; gap: 6px; opacity: 0; transform: translateY(-4px); transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease); }
 .media-card:hover .media-card__actions, .media-card:focus-within .media-card__actions { opacity: 1; transform: none; }
+/* The hover actions land on the poster badge; hide it while they are shown. */
+.media-card:hover .badge--new:not(.badge--inline), .media-card:focus-within .badge--new:not(.badge--inline) { opacity: 0; }
 .media-card__actions button { padding: 6px; border-radius: 50%; }
 .media-card__pin[aria-pressed="true"] { color: var(--accent-2); }
 .reduce-motion .media-card:hover, .reduce-motion .card.media-card:active, .reduce-motion .media-card:focus-within, .reduce-motion .media-card:hover .poster--in, .reduce-motion .media-card:focus-within .poster--in { transform: none; }
@@ -216,9 +221,16 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .ep-row__overview { flex-basis: 100%; margin: 0; padding: 10px 12px; background: var(--glass); border-radius: var(--radius-sm); white-space: pre-wrap; }
 
 /* detail banner */
-.banner { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--glass-border); }
-.banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, var(--bg) 5%, color-mix(in srgb, var(--poster-tint) 30%, transparent)); }
-.banner__body { position: relative; z-index: 1; display: flex; gap: 20px; align-items: flex-end; padding: 24px; }
+.banner { position: relative; min-height: 260px; display: flex; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--glass-border); }
+.banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--bg) 20%, transparent 70%), linear-gradient(0deg, var(--bg) 5%, color-mix(in srgb, var(--poster-tint) 30%, transparent)); }
+.banner__body { position: relative; z-index: 1; flex: 1; display: flex; gap: 20px; align-items: flex-end; padding: 24px; }
+.banner__text { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.banner__text h2 { margin: 0; }
+.banner__meta { margin: 0; color: var(--text-muted); font-size: 13px; }
+.banner__airing { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.chip { padding: 2px 10px; font-size: 12px; border-radius: 999px; background: var(--badge-bg); border: 1px solid var(--glass-border); }
+.banner__actions { margin-top: 4px; }
 .banner .poster { width: 150px; }
 .detail { display: flex; flex-direction: column; gap: 18px; }
 .field { display: flex; flex-direction: column; gap: 4px; }

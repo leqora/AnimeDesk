@@ -42,6 +42,24 @@ describe('Hero', () => {
     expect(container.querySelector('.hero__ep-progress > span').style.getPropertyValue('--ratio')).toBe(String(495 / 1440))
     expect(api.positions.forSeries).toHaveBeenCalledWith('Show')
   })
+  it('shows new episodes and when the next one airs, and updates when it airs', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] })
+    const AT = new Date(2026, 9, 16, 17, 30).getTime()
+    vi.setSystemTime(AT - (2 * 24 + 4) * 3600 * 1000)
+    try {
+      const info = { id: 1, status: 'RELEASING', nextAiring: { episode: 6, airingAt: AT }, poster: null }
+      const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => info) } })
+      renderUi(<Hero entry={entry()} ready onContinue={() => {}} onDetails={() => {}} onSearch={() => {}} />, { api })
+      expect(await screen.findByText('EP 6 izlazi za 2 d 4 h · pet 17:30')).toBeInTheDocument()
+      expect(screen.getByText('3 nove')).toHaveClass('badge--inline') // aired 5, watched up to 2
+      act(() => { vi.advanceTimersByTime((2 * 24 + 4) * 3600 * 1000 + 60_000) })
+      expect(screen.queryByText(/izlazi/)).not.toBeInTheDocument()
+      expect(screen.getByText('4 nove')).toBeInTheDocument()
+      expect(api.episodes.forSeries).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
   it('welcomes a new user and focuses search', () => {
     const onSearch = vi.fn()
     renderUi(<Hero entry={null} ready onContinue={() => {}} onDetails={() => {}} onSearch={onSearch} />)

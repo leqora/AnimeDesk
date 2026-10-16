@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createAniList, bestMatch, cleanDescription, SEARCH_VERSION } from '../../src/main/anilist.js'
+import { createAniList, bestMatch, cleanDescription, SEARCH_VERSION, toNextAiring, isFresh } from '../../src/main/anilist.js'
 
 const media = (id, romaji, english, extra = {}) => ({
   id, idMal: 900 + id, title: { romaji, english, native: null }, coverImage: { large: `https://img/${id}.jpg` },
@@ -309,5 +309,131 @@ describe('anilist cache freshness', () => {
     const { f, al } = make([media(1, 'Frieren', 'Frieren', { status: 'FINISHED' })])
     expect((await al.getForTitle('Frieren')).status).toBe('FINISHED')
     expect(apiCalls(f)).toBe(1)
+  })
+})
+
+describe('airing schedule (nextAiring)', () => {
+  const HOUR = 3600 * 1000
+  const T = 1_800_000_000_000 // ms
+  const airing = (episode, atMs) => ({ status: 'RELEASING', nextAiringEpisode: { episode, airingAt: atMs / 1000 } })
+
+  it('converts AniList nextAiringEpisode to ms and rejects malformed values', () => {
+    expect(toNextAiring({ episode: 13, airingAt: T / 1000 })).toEqual({ episode: 13, airingAt: T })
+    expect(toNextAiring(null)).toBeNull()
+    expect(toNextAiring(undefined)).toBeNull()
+    expect(toNextAiring({ episode: 0, airingAt: 1 })).toBeNull()
+    expect(toNextAiring({ episode: 1.5, airingAt: 1 })).toBeNull()
+    expect(toNextAiring({ episode: '3', airingAt: 1 })).toBeNull()
+    expect(toNextAiring({ episode: 3, airingAt: null })).toBeNull()
+    expect(toNextAiring({ episode: 3, airingAt: 'soon' })).toBeNull()
+  })
+
+  it('returns nextAiring with the info and only the number and time', async () => {
+    const f = mkFetch([media(7, 'Airing Show', 'Airing Show', airing(5, T))])
+    const al = createAniList({ cacheDir, fetchImpl: f, now: () => T - HOUR })
+    const info = await al.getForTitle('Airing Show')
+    expect(info.nextAiring).toEqual({ episode: 5, airingAt: T })
+    expect(Object.keys(info.nextAiring).sort()).toEqual(['airingAt', 'episode'])
+    expect(info.status).toBe('RELEASING')
+  })
+
+  it('has nextAiring null for a finished show', async () => {
+    const f = mkFetch([media(8, 'Done Show', 'Done Show', { status: 'FINISHED' })])
+    const info = await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Done Show')
+    expect(info.nextAiring).toBeNull()
+  })
+
+  it('decides freshness for airing shows by schedule, age and missing key', () => {
+    const base = { malId: 1, fetchedAt: T - HOUR, status: 'RELEASING', nextAiring: { episode: 5, airingAt: T } }
+    expect(isFresh(base, T - 1)).toBe(true)
+    expect(isFresh(base, T + HOUR - 1)).toBe(true) // inside the grace hour
+    expect(isFresh(base, T + HOUR)).toBe(false) // AniList has moved on by now
+    const old = { ...base } // cache written by 0.7.1
+    delete old.nextAiring
+    expect(isFresh(old, T - 1)).toBe(false)
+    expect(isFresh({ ...base, nextAiring: null }, T)).toBe(true)
+    expect(isFresh({ ...base, nextAiring: null }, base.fetchedAt + 24 * HOUR)).toBe(false)
+  })
+
+  it('does not expire an entry fetched after its episode already aired (lagging schedule)', () => {
+    const lagging = { malId: 1, fetchedAt: T + 2 * HOUR, status: 'RELEASING', nextAiring: { episode: 5, airingAt: T } }
+    expect(isFresh(lagging, T + 2 * HOUR + 1000)).toBe(true)
+    expect(isFresh(lagging, lagging.fetchedAt + 24 * HOUR)).toBe(false) // the TTL still applies
+  })
+
+  it('does not refetch every call when AniList returns an already-past airingAt', async () => {
+    const f = mkFetch([media(11, 'Lagging Show', 'Lagging Show', airing(5, T))])
+    const al = createAniList({ cacheDir, fetchImpl: f, now: () => T + 5 * HOUR })
+    const queries = () => f.mock.calls.filter(([url]) => !url.startsWith('https://img/')).length
+    await al.getForTitle('Lagging Show')
+    const first = queries()
+    await al.getForTitle('Lagging Show')
+    await al.getForTitle('Lagging Show')
+    expect(queries()).toBe(first)
+  })
+
+  it('keeps finished shows fresh forever, even without the new key', () => {
+    expect(isFresh({ malId: 1, fetchedAt: 0, status: 'FINISHED' }, T)).toBe(true)
+    expect(isFresh({ fetchedAt: 0, status: 'FINISHED' }, T)).toBe(false) // malId rule unchanged
+  })
+
+  it('refreshes again in the same run after a successful refresh', async () => {
+    let clock = T - HOUR
+    let list = [media(9, 'Weekly Show', 'Weekly Show', airing(5, T))]
+    const f = vi.fn(async (url, init) => mkFetch(list)(url, init))
+    const al = createAniList({ cacheDir, fetchImpl: f, now: () => clock })
+    const queries = () => f.mock.calls.filter(([url]) => !url.startsWith('https://img/')).length
+
+    expect((await al.getForTitle('Weekly Show')).nextAiring.episode).toBe(5)
+    const first = queries()
+
+    clock = T + HOUR // episode 5 aired an hour ago
+    list = [media(9, 'Weekly Show', 'Weekly Show', airing(6, T + 7 * 24 * HOUR))]
+    expect((await al.getForTitle('Weekly Show')).nextAiring.episode).toBe(6)
+    const second = queries()
+    expect(second).toBeGreaterThan(first)
+
+    clock = T + 7 * 24 * HOUR + HOUR // episode 6 aired too, same app run
+    list = [media(9, 'Weekly Show', 'Weekly Show', airing(7, T + 14 * 24 * HOUR))]
+    expect((await al.getForTitle('Weekly Show')).nextAiring.episode).toBe(7)
+    expect(queries()).toBeGreaterThan(second)
+  })
+
+  it('still does not retry a failed refresh in the same run', async () => {
+    let clock = T - HOUR
+    const ok = mkFetch([media(10, 'Flaky Show', 'Flaky Show', airing(5, T))])
+    let failing = false
+    const f = vi.fn(async (url, init) => { if (failing) throw new Error('offline'); return ok(url, init) })
+    const al = createAniList({ cacheDir, fetchImpl: f, now: () => clock })
+    await al.getForTitle('Flaky Show')
+    clock = T + HOUR
+    failing = true
+    expect((await al.getForTitle('Flaky Show')).nextAiring.episode).toBe(5) // stale but kept
+    const calls = f.mock.calls.length
+    expect((await al.getForTitle('Flaky Show')).nextAiring.episode).toBe(5)
+    expect(f.mock.calls.length).toBe(calls)
+  })
+  it('retries a failed refresh after an hour', async () => {
+    let clock = T - HOUR
+    const ok = mkFetch([media(11, 'Retry Show', 'Retry Show', airing(5, T))])
+    let failing = false
+    const f = vi.fn(async (url, init) => { if (failing) throw new Error('offline'); return ok(url, init) })
+    const al = createAniList({ cacheDir, fetchImpl: f, now: () => clock })
+    await al.getForTitle('Retry Show')
+    clock = T + HOUR
+    failing = true
+    await al.getForTitle('Retry Show')
+    const calls = f.mock.calls.length
+    await al.getForTitle('Retry Show')
+    expect(f.mock.calls.length).toBe(calls) // still inside the retry window
+
+    clock += HOUR // exactly one hour after the failure
+    await al.getForTitle('Retry Show')
+    expect(f.mock.calls.length).toBeGreaterThan(calls)
+
+    failing = false
+    clock += HOUR
+    expect((await al.getForTitle('Retry Show')).nextAiring.episode).toBe(5)
+    expect(f.mock.calls.length).toBeGreaterThan(calls + 1)
   })
 })
