@@ -88,4 +88,14 @@ describe('infoCache', () => {
     await expect(c.get('X')).rejects.toThrow('boom')
     expect(c.peek('X')).toBeUndefined()
   })
+  it('an entry whose airing grace is already past still lives 60 s', async () => {
+    let t = 10_000_000
+    const api = fakeApi(async () => ({ id: 1, nextAiring: { airingAt: t - AIRED_GRACE_MS - 5000, episode: 2 } }))
+    const c = infoCache(api, { now: () => t })
+    await c.get('X')
+    t += 59_000
+    expect(c.peek('X')).toBeDefined()
+    t += 2000
+    expect(c.peek('X')).toBeUndefined()
+  })
 })

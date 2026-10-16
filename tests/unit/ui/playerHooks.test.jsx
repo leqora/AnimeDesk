@@ -265,6 +265,15 @@ describe('usePlayerShortcuts', () => {
     expect(first).not.toHaveBeenCalled()
     expect(second).toHaveBeenCalledTimes(1)
   })
+  it('ignores keys while a dialog is open over the player', () => {
+    const space = vi.fn()
+    renderHook(() => usePlayerShortcuts({ ' ': space }))
+    const dialog = document.body.appendChild(document.createElement('div'))
+    dialog.setAttribute('aria-modal', 'true')
+    expect(key({ key: ' ', code: 'Space' })).toBe(true)
+    expect(space).not.toHaveBeenCalled()
+    dialog.remove()
+  })
 })
 
 describe('usePlaybackRate', () => {

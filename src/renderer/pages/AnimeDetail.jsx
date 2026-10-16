@@ -67,8 +67,9 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const latestWatched = useRef(watched)
   useEffect(() => { latestWatched.current = watched }, [watched])
   const setWatched = async (next) => {
+    const previous = latestWatched.current
     latestWatched.current = next
-    await save({ watchedEpisodes: next })
+    try { await save({ watchedEpisodes: next }) } catch (err) { latestWatched.current = previous; throw err }
   }
   const toggleWatched = async (ep) => {
     const marking = !latestWatched.current.includes(ep)
@@ -96,6 +97,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
     ;(onRemoved ?? onBack)()
     onChanged()
     toast.show({
+      focusAction: true,
       message: t('toast.removed', { title }),
       action: {
         label: t('toast.undo'),

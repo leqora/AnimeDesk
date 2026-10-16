@@ -1,6 +1,7 @@
 import { AIRED_GRACE_MS } from '../../shared/airing.js'
 
 export const INFO_TTL_MS = 10 * 60 * 1000
+const MIN_TTL_MS = 60 * 1000
 
 const caches = new WeakMap()
 
@@ -30,6 +31,8 @@ export function infoCache(api, { now = Date.now } = {}) {
         const info = value ?? null
         let until = now() + INFO_TTL_MS
         if (info?.nextAiring) until = Math.min(until, info.nextAiring.airingAt + AIRED_GRACE_MS)
+        // an entry already past its airing grace must not be born expired (it would re-fetch on every mount)
+        until = Math.max(until, now() + MIN_TTL_MS)
         store.set(key, { info, until })
         // Also under the id key, so a later lookup by the freshly linked aniListId hits the same entry.
         if (info?.id) store.set(keyOf(title, info.id), { info, until })

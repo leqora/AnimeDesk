@@ -3,7 +3,7 @@ import { Toast } from '../components/Toast.jsx'
 import { useT } from '../i18n/I18nContext.jsx'
 import { add, remove, visible, DEFAULT_MS, ACTION_MS } from './toastQueue.js'
 
-const NOOP = { show: () => null, dismiss() {} }
+const NOOP = { show: () => null, dismiss() {}, runLatestAction: () => false }
 const ToastCtx = createContext(NOOP)
 export const useToast = () => useContext(ToastCtx)
 
@@ -17,12 +17,14 @@ function ToastItem({ toast, onDone, saved }) {
   const onDoneRef = useRef(onDone)
   onDoneRef.current = onDone
   const start = () => {
+    if (paused.current) return // focus/hover arrived before the timer was started
     startedAt.current = Date.now()
     timer.current = setTimeout(() => onDoneRef.current(), remaining.current)
   }
   const pause = () => {
     if (paused.current) return
     paused.current = true
+    if (startedAt.current === 0) return
     clearTimeout(timer.current)
     remaining.current = Math.max(0, remaining.current - (Date.now() - startedAt.current))
   }
@@ -41,7 +43,7 @@ function ToastItem({ toast, onDone, saved }) {
   }, [])
   return (
     <Toast
-      message={toast.message} icon={toast.icon} action={toast.action}
+      message={toast.message} icon={toast.icon} action={toast.action} focusAction={toast.focusAction}
       onAction={() => { try { toast.action.onAction() } finally { onDone() } }}
       onPause={pause} onResume={resume}
     />
@@ -55,13 +57,23 @@ export function ToastProvider({ children, hold = false }) {
   const [queue, setQueue] = useState([])
   const nextId = useRef(1)
   const dismiss = useCallback((id) => setQueue((q) => remove(q, id)), [])
-  const show = useCallback(({ message, icon = 'check', action = null, ms }) => {
+  const show = useCallback(({ message, icon = 'check', action = null, ms, focusAction = false }) => {
     const id = nextId.current++
-    setQueue((q) => add(q, { id, message, icon, action, ms: ms ?? (action ? ACTION_MS : DEFAULT_MS) }))
+    setQueue((q) => add(q, { id, message, icon, action, focusAction, ms: ms ?? (action ? ACTION_MS : DEFAULT_MS) }))
     return id
   }, [])
   const shown = visible(queue)
-  const api = useMemo(() => ({ show, dismiss }), [show, dismiss])
+  const shownRef = useRef([])
+  shownRef.current = hold ? [] : shown
+  // Runs (and dismisses) the newest visible toast that has an action, like clicking it. False when there is none.
+  const runLatestAction = useCallback(() => {
+    const target = [...shownRef.current].reverse().find((x) => x.action)
+    if (!target) return false
+    dismiss(target.id)
+    try { target.action.onAction() } catch (err) { console.error(err) }
+    return true
+  }, [dismiss])
+  const api = useMemo(() => ({ show, dismiss, runLatestAction }), [show, dismiss, runLatestAction])
   return (
     <ToastCtx.Provider value={api}>
       {children}

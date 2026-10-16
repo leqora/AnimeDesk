@@ -40,6 +40,24 @@ function PlayerFallback() {
   )
 }
 
+// Ctrl/Cmd+Z runs the newest "Undo" toast. Not while typing, over a dialog, or under the player.
+function UndoShortcut({ disabled }) {
+  const { runLatestAction } = useToast()
+  const off = useRef(disabled)
+  off.current = disabled
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || (e.key.toLowerCase() !== 'z' && e.code !== 'KeyZ')) return
+      if (off.current || e.target?.closest?.('input, textarea, select, [contenteditable="true"], [contenteditable=""]')) return
+      if (document.querySelector('[aria-modal="true"]')) return
+      if (runLatestAction()) e.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [runLatestAction])
+  return null
+}
+
 function BootText({ k }) {
   const t = useT()
   return t(k)
@@ -263,6 +281,8 @@ export default function App({ api, sound: injectedSound }) {
   const navigate = (p) => { if (p !== page) sound.play('navigate'); nav.navigate({ page: p, animeId: null }) }
   const openAnime = (id) => nav.navigate({ page: 'watchlist', animeId: id })
   const closeDetail = () => (nav.canBack ? nav.back() : nav.navigate({ page: 'watchlist', animeId: null }))
+  // a removed series has no detail to come back to: step back, or swap the entry in place when there is no history
+  const onRemoved = () => (nav.canBack ? nav.back() : nav.replace({ page: 'watchlist', animeId: null }))
   const continueWatching = (params) => { setPendingWatch(params); nav.navigate({ page: 'home', animeId: null }) }
   const openWhatsNew = () => setWhatsNew({ mode: 'before', version: updateState.version, notes: updateState.notes })
   const closeWhatsNew = () => { if (whatsNew?.mode === 'after') api.whatsNew.seen(); setWhatsNew(null) }
@@ -273,6 +293,7 @@ export default function App({ api, sound: injectedSound }) {
     <ApiContext.Provider value={api}>
       <I18nProvider lang={settings.language}>
         <ToastProvider hold={Boolean(levelUp) && !motionOff}>
+        <UndoShortcut disabled={overlay} />
         <div className="app-shell" inert={overlay} aria-hidden={overlay ? 'true' : undefined}>
           <Sidebar
             page={page}
@@ -294,7 +315,7 @@ export default function App({ api, sound: injectedSound }) {
                 {page === 'home' && (
                   <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} />
                 )}
-                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={closeDetail} />}
+                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} />}
                 {page === 'downloads' && <DownloadsPage />}
                 {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} />}
                 {page === 'settings' && <SettingsPage settings={settings} onSettings={updateSettings} onTestSound={() => sound.play('levelUp')} updateState={updateState} />}

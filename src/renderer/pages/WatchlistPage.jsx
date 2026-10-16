@@ -33,6 +33,8 @@ export function WatchlistPage({ ready, onContinue, animeId = null, onOpen, onBac
   // an id that is no longer in the library (removed elsewhere) simply falls through to the grid
   const open = animeId != null ? items?.find((i) => i.id === animeId) : null
   if (open) return <AnimeDetail key={open.id} entry={open} ready={ready} onBack={onBack} onRemoved={onRemoved} onChanged={load} onContinue={onContinue} />
+  // the library is still loading for a detail route: paint nothing rather than flash the grid
+  if (animeId != null && items == null) return null
 
   const visible = sortItems((items ?? []).filter((i) => filter === 'all' || i.status === filter), sort)
   const addManual = async (e) => {
