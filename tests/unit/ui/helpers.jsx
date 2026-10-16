@@ -3,6 +3,7 @@ import { render, renderHook } from '@testing-library/react'
 import { ApiContext } from '../../../src/renderer/api.js'
 import { I18nProvider } from '../../../src/renderer/i18n/I18nContext.jsx'
 import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
+import { ToastProvider } from '../../../src/renderer/toast/ToastProvider.jsx'
 import { EMPTY_STATS } from '../../../src/shared/stats.js'
 
 const sub = () => vi.fn(() => () => {})
@@ -12,7 +13,7 @@ export function makeFakeApi(overrides = {}) {
     settings: { get: vi.fn(async () => ({ ...DEFAULT_SETTINGS })), update: vi.fn(async (p) => ({ ...DEFAULT_SETTINGS, ...p })) },
     library: {
       list: vi.fn(async () => []), add: vi.fn(async (e) => ({ id: 'new', ...e })), update: vi.fn(async (id, p) => ({ id, ...p })),
-      remove: vi.fn(async () => true), setEpisodeNote: vi.fn(async () => ({})), recordWatched: vi.fn(async () => ({})), wasCorrupt: vi.fn(async () => false),
+      remove: vi.fn(async () => true), restore: vi.fn(async () => ({ ok: true, entry: {} })), setEpisodeNote: vi.fn(async () => ({})), recordWatched: vi.fn(async () => ({})), wasCorrupt: vi.fn(async () => false),
       setPinned: vi.fn(async (id, pinned) => ({ ok: true, entry: { id, pinnedAt: pinned ? 'now' : null } })),
     },
     seriesPrefs: { get: vi.fn(async () => ({ quality: null, mode: null, subOffset: { sub: 0, dub: 0 } })), set: vi.fn(async (title, patch) => ({ quality: null, mode: null, subOffset: { sub: 0, dub: 0 }, ...patch })) },
@@ -54,7 +55,7 @@ export function makeFakeApi(overrides = {}) {
 export function renderUi(ui, { api = makeFakeApi(), lang = 'sr' } = {}) {
   const wrapper = ({ children }) => (
     <ApiContext.Provider value={api}>
-      <I18nProvider lang={lang}>{children}</I18nProvider>
+      <I18nProvider lang={lang}><ToastProvider>{children}</ToastProvider></I18nProvider>
     </ApiContext.Provider>
   )
   const result = render(ui, { wrapper })
@@ -64,7 +65,7 @@ export function renderUi(ui, { api = makeFakeApi(), lang = 'sr' } = {}) {
 export function renderHookUi(callback, { api = makeFakeApi(), lang = 'sr', initialProps } = {}) {
   const wrapper = ({ children }) => (
     <ApiContext.Provider value={api}>
-      <I18nProvider lang={lang}>{children}</I18nProvider>
+      <I18nProvider lang={lang}><ToastProvider>{children}</ToastProvider></I18nProvider>
     </ApiContext.Provider>
   )
   return { api, ...renderHook(callback, { wrapper, initialProps }) }

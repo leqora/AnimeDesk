@@ -30,6 +30,11 @@ export function createHandlers(s) {
       s.send(EVENTS.libraryChanged)
       return result
     },
+    [INVOKE.libraryRestore]: (id) => {
+      const result = s.tracker.restore(id)
+      if (result.ok) s.send(EVENTS.libraryChanged)
+      return result
+    },
     [INVOKE.libraryNote]: (id, episode, text) => s.library.setEpisodeNote(id, episode, text),
     [INVOKE.libraryRecord]: (payload) => {
       const entry = s.tracker.recordWatched(payload, 'auto')

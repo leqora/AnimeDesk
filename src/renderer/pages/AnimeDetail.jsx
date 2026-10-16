@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApi } from '../api.js'
+import { useAniListInfo } from '../anilist/useAniListInfo.js'
 import { useT } from '../i18n/I18nContext.jsx'
+import { useToast } from '../toast/ToastProvider.jsx'
 import { Poster } from '../components/Poster.jsx'
-import { ConfirmButton } from '../components/ConfirmButton.jsx'
 import { EpisodePicker } from '../components/EpisodePicker.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { useSeriesEpisodes } from '../episodes/useSeriesEpisodes.js'
@@ -15,29 +16,27 @@ import { AiringLine, NewBadge } from '../components/AiringLine.jsx'
 import { newEpisodeCount, upcoming, ANILIST_STATUSES } from '../../shared/airing.js'
 import { formatTime } from '../../shared/player.js'
 
-export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
+export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onContinue }) {
   const api = useApi()
   const t = useT()
-  const [info, setInfo] = useState(null)
+  const info = useAniListInfo(entry.title, entry.aniListId, { live: true }) ?? null
   const tint = usePosterTint(info?.poster ?? null)
   const [showDesc, setShowDesc] = useState(false)
   const [comment, setComment] = useState(entry.comment)
   const [noteEp, setNoteEp] = useState(null)
   const [noteText, setNoteText] = useState('')
-  const [pinNotice, setPinNotice] = useState(null)
+  const toast = useToast()
 
+  // Patch aniListId/totalEpisodes into the library once per entry id, when its info first arrives.
+  const patchedFor = useRef(null)
   useEffect(() => {
-    let live = true
-    api.anilist.forTitle(entry.title, entry.aniListId).then((i) => {
-      if (!live || !i) return
-      setInfo(i)
-      const patch = {}
-      if (entry.aniListId == null) patch.aniListId = i.id
-      if (entry.totalEpisodes == null && i.episodes) patch.totalEpisodes = i.episodes
-      if (Object.keys(patch).length) api.library.update(entry.id, patch).then(onChanged)
-    }).catch(() => {})
-    return () => { live = false }
-  }, [api, entry.id])
+    if (!info || patchedFor.current === entry.id) return
+    patchedFor.current = entry.id
+    const patch = {}
+    if (entry.aniListId == null) patch.aniListId = info.id
+    if (entry.totalEpisodes == null && info.episodes) patch.totalEpisodes = info.episodes
+    if (Object.keys(patch).length) api.library.update(entry.id, patch).then(onChanged)
+  }, [api, entry.id, info])
 
   const save = async (patch) => { await api.library.update(entry.id, patch); onChanged() }
   const watched = entry.watchedEpisodes
@@ -64,12 +63,56 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
 
   const openNote = (ep) => { setNoteEp(ep); setNoteText(entry.episodeNotes[String(ep)] ?? '') }
   const saveNote = async () => { await api.library.setEpisodeNote(entry.id, noteEp, noteText); onChanged() }
-  const toggleWatched = (ep) => save({ watchedEpisodes: watched.includes(ep) ? watched.filter((x) => x !== ep) : [...watched, ep] })
-  const remove = async () => { await api.library.remove(entry.id); onBack(); onChanged() }
+  // Latest known watched list: follows the entry on refresh, and the last saved list in between (rapid marks accumulate).
+  const latestWatched = useRef(watched)
+  useEffect(() => { latestWatched.current = watched }, [watched])
+  const setWatched = async (next) => {
+    const previous = latestWatched.current
+    latestWatched.current = next
+    try { await save({ watchedEpisodes: next }) } catch (err) { latestWatched.current = previous; throw err }
+  }
+  const toggleWatched = async (ep) => {
+    const marking = !latestWatched.current.includes(ep)
+    try {
+      await setWatched(marking ? [...latestWatched.current, ep] : latestWatched.current.filter((x) => x !== ep))
+    } catch (err) { console.error(err); return }
+    // Only the episode number goes in the toast, never a title (spoilers).
+    toast.show({
+      message: t(marking ? 'toast.markedWatched' : 'toast.unmarkedWatched', { episode: ep }),
+      action: {
+        label: t('toast.undo'),
+        // Undo touches only this episode, relative to the current list.
+        onAction: async () => {
+          const cur = latestWatched.current
+          const next = marking ? cur.filter((x) => x !== ep) : cur.includes(ep) ? cur : [...cur, ep]
+          try { await setWatched(next) } catch (err) { console.error(err) }
+        },
+      },
+    })
+  }
+  const remove = async () => {
+    // Capture id/title: the detail unmounts after removal, the toast outlives it.
+    const { id, title } = entry
+    try { await api.library.remove(id) } catch (err) { console.error(err); return }
+    ;(onRemoved ?? onBack)()
+    onChanged()
+    toast.show({
+      focusAction: true,
+      message: t('toast.removed', { title }),
+      action: {
+        label: t('toast.undo'),
+        onAction: async () => {
+          let ok = false
+          try { ok = Boolean((await api.library.restore(id))?.ok) } catch (err) { console.error(err) }
+          if (ok) onChanged()
+          else toast.show({ message: t('toast.restoreFailed'), icon: 'alert' })
+        },
+      },
+    })
+  }
   const togglePin = async () => {
     const r = await api.library.setPinned(entry.id, !entry.pinnedAt)
-    if (!r.ok) { setPinNotice(t('pin.limit')); return }
-    setPinNotice(null)
+    if (!r.ok) { toast.show({ message: t('pin.limit'), icon: 'alert' }); return }
     onChanged()
   }
 
@@ -105,7 +148,6 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
           </div>
         </div>
       </div>
-      {pinNotice && <div className="notice" role="status">{pinNotice}</div>}
       <div className="detail">
         <div className="page">
           <p>{t('detail.progress', { watched: watched.length, total: entry.totalEpisodes ?? '?' })}</p>
@@ -174,7 +216,7 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
             </div>
           )}
           <div className="row">
-            <ConfirmButton label={t('detail.delete')} confirmLabel={t('detail.confirmDelete')} onConfirm={remove} />
+            <button type="button" onClick={remove}>{t('detail.delete')}</button>
           </div>
         </div>
       </div>

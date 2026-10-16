@@ -1,18 +1,10 @@
-import { useEffect, useState } from 'react'
-import { useApi } from '../api.js'
+import { useState } from 'react'
+import { useAniListInfo } from '../anilist/useAniListInfo.js'
 import { Icon } from './Icon.jsx'
 
 // undefined = still loading, null = nothing found; callers that only read info?.poster see no difference.
 export function usePosterInfo(title, aniListId = null) {
-  const api = useApi()
-  const [info, setInfo] = useState(title ? undefined : null)
-  useEffect(() => {
-    let live = true
-    setInfo(title ? undefined : null)
-    if (title) api.anilist.forTitle(title, aniListId).then((value) => { if (live) setInfo(value ?? null) }).catch(() => { if (live) setInfo(null) })
-    return () => { live = false }
-  }, [api, title, aniListId])
-  return info
+  return useAniListInfo(title, aniListId)
 }
 
 const Empty = () => <div className="poster poster--empty" aria-hidden="true"><Icon name="film" size={28} /></div>

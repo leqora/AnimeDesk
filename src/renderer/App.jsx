@@ -11,7 +11,7 @@ import { WatchlistPage } from './pages/WatchlistPage.jsx'
 import { DownloadsPage } from './pages/DownloadsPage.jsx'
 import { SettingsPage } from './pages/SettingsPage.jsx'
 import { LevelUpOverlay } from './components/LevelUpOverlay.jsx'
-import { Toast } from './components/Toast.jsx'
+import { ToastProvider, useToast } from './toast/ToastProvider.jsx'
 import { UpdateBanner } from './components/UpdateBanner.jsx'
 import { WhatsNewDialog } from './components/WhatsNewDialog.jsx'
 import { loadPlayer } from './player/loadPlayer.js'
@@ -19,6 +19,8 @@ import { PlayerReconnecting } from './components/PlayerReconnecting.jsx'
 import { ErrorBoundary } from './components/ErrorBoundary.jsx'
 import { nextEpisodeNumber } from '../shared/player.js'
 import { createSound } from './sound.js'
+import { useNavigation, RouteStateContext } from './nav/useNavigation.js'
+import { restoreScroll } from './nav/restoreScroll.js'
 
 function CorruptBanner() {
   const t = useT()
@@ -36,6 +38,24 @@ function PlayerFallback() {
       </div>
     </div>
   )
+}
+
+// Ctrl/Cmd+Z runs the newest "Undo" toast. Not while typing, over a dialog, or under the player.
+function UndoShortcut({ disabled }) {
+  const { runLatestAction } = useToast()
+  const off = useRef(disabled)
+  off.current = disabled
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || (e.key.toLowerCase() !== 'z' && e.code !== 'KeyZ')) return
+      if (off.current || e.target?.closest?.('input, textarea, select, [contenteditable="true"], [contenteditable=""]')) return
+      if (document.querySelector('[aria-modal="true"]')) return
+      if (runLatestAction()) e.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [runLatestAction])
+  return null
 }
 
 function BootText({ k }) {
@@ -58,15 +78,26 @@ const SILENT = { soundKey: false, soundUi: false, soundVolume: 0 }
 
 function Celebrations({ levelUp, toast, stats, motionOff, onLevelUpDone, onToastDone }) {
   const t = useT()
-  return (
-    <>
-      {levelUp && !motionOff && <LevelUpOverlay level={levelUp.level} title={levelUp.title} xpIntoLevel={stats.xpIntoLevel} xpForNext={stats.xpForNext} onDone={onLevelUpDone} />}
-      {levelUp && motionOff && (
-        <Toast onDone={onLevelUpDone} icon="flame">{t('toast.levelUp', { level: levelUp.level, title: t(`title.${levelUp.title}`) })}</Toast>
-      )}
-      {!levelUp && toast && <Toast onDone={onToastDone}>{t('toast.completed', { title: toast.title, xp: toast.xp })}</Toast>}
-    </>
-  )
+  const { show } = useToast()
+  // latest values for the effects below, so they re-run only when the celebration state changes
+  const latest = useRef({})
+  latest.current = { t, onLevelUpDone, onToastDone }
+  // With animations off the level-up becomes a queued toast; hand it over once and clear the state.
+  useEffect(() => {
+    if (!levelUp || !motionOff) return
+    const { t, onLevelUpDone } = latest.current
+    show({ message: t('toast.levelUp', { level: levelUp.level, title: t(`title.${levelUp.title}`) }), icon: 'flame' })
+    onLevelUpDone()
+  }, [levelUp, motionOff, show])
+  useEffect(() => {
+    if (!toast) return
+    const { t, onToastDone } = latest.current
+    show({ message: t('toast.completed', { title: toast.title, xp: toast.xp }) })
+    onToastDone()
+  }, [toast, show])
+  return levelUp && !motionOff
+    ? <LevelUpOverlay level={levelUp.level} title={levelUp.title} xpIntoLevel={stats.xpIntoLevel} xpForNext={stats.xpForNext} onDone={onLevelUpDone} />
+    : null
 }
 
 export default function App({ api, sound: injectedSound }) {
@@ -77,14 +108,31 @@ export default function App({ api, sound: injectedSound }) {
   const [toast, setToast] = useState(null)
   const [settings, setSettings] = useState(null)
   const [health, setHealth] = useState({ light: 'yellow', reason: 'checking' })
-  const [page, setPage] = useState('home')
+  const mainRef = useRef(null)
+  const cancelScroll = useRef(() => {})
+  // target of a restore still waiting for content; until it ends, scrollTop is not the real position
+  const pendingY = useRef(null)
+  useEffect(() => () => cancelScroll.current(), [])
+  const nav = useNavigation({
+    getScroll: () => pendingY.current ?? mainRef.current?.scrollTop ?? 0,
+    onArrive: (entry, kind) => {
+      cancelScroll.current()
+      const main = mainRef.current
+      if (!main) return
+      if (kind === 'back' || kind === 'forward') {
+        pendingY.current = entry.scroll
+        cancelScroll.current = restoreScroll(main, entry.scroll, { onDone: () => { pendingY.current = null } })
+      }
+      else main.scrollTop = 0
+    },
+  })
+  const { page, animeId } = nav.route
   const [stats, setStats] = useState(EMPTY_STATS)
   const [wizardOpen, setWizardOpen] = useState(false)
   // FIFO: an ask for episode N must survive the ask for N+1 (askOnClose + autoNext)
   const [asks, setAsks] = useState([])
   const [pendingWatch, setPendingWatch] = useState(null)
   const [corrupt, setCorrupt] = useState(false)
-  const [openAnimeId, setOpenAnimeId] = useState(null)
   const [updateState, setUpdateState] = useState({ status: 'idle', currentVersion: '' })
   const [whatsNew, setWhatsNew] = useState(null)
   const [fullscreen, setFullscreen] = useState(false)
@@ -104,6 +152,36 @@ export default function App({ api, sound: injectedSound }) {
   }, [])
   const [reconnecting, setReconnecting] = useState(null)
   const [bootFailed, setBootFailed] = useState(false)
+
+  // Alt+Left/Right and the mouse back/forward buttons walk the history; not while the player or a modal is up.
+  const navKeys = useRef({})
+  navKeys.current = { back: nav.back, forward: nav.forward, blocked: player != null || reconnecting != null }
+  useEffect(() => {
+    const blocked = () => navKeys.current.blocked || document.querySelector('[aria-modal="true"]') != null
+    const onKey = (e) => {
+      if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return
+      if (blocked()) return
+      e.preventDefault()
+      if (e.key === 'ArrowLeft') navKeys.current.back()
+      else navKeys.current.forward()
+    }
+    const onDown = (e) => { if (e.button === 3 || e.button === 4) e.preventDefault() }
+    const onUp = (e) => {
+      if (e.button !== 3 && e.button !== 4) return
+      e.preventDefault()
+      if (blocked()) return
+      if (e.button === 3) navKeys.current.back()
+      else navKeys.current.forward()
+    }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('mousedown', onDown)
+    window.addEventListener('mouseup', onUp)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('mousedown', onDown)
+      window.removeEventListener('mouseup', onUp)
+    }
+  }, [])
 
   const loadSettings = () => api.settings.get().then(
     (s) => { setBootFailed(false); setSettings(s) },
@@ -200,9 +278,12 @@ export default function App({ api, sound: injectedSound }) {
   settingsRef.current = settings
   const ready = health.light === 'green'
   const updateSettings = async (patch) => setSettings(await api.settings.update(patch))
-  const navigate = (p) => { if (p !== page) sound.play('navigate'); setOpenAnimeId(null); setPage(p) }
-  const openAnime = (id) => { setOpenAnimeId(id); setPage('watchlist') }
-  const continueWatching = (params) => { setPendingWatch(params); setPage('home') }
+  const navigate = (p) => { if (p !== page) sound.play('navigate'); nav.navigate({ page: p, animeId: null }) }
+  const openAnime = (id) => nav.navigate({ page: 'watchlist', animeId: id })
+  const closeDetail = () => (nav.canBack ? nav.back() : nav.navigate({ page: 'watchlist', animeId: null }))
+  // a removed series has no detail to come back to: step back, or swap the entry in place when there is no history
+  const onRemoved = () => (nav.canBack ? nav.back() : nav.replace({ page: 'watchlist', animeId: null }))
+  const continueWatching = (params) => { setPendingWatch(params); nav.navigate({ page: 'home', animeId: null }) }
   const openWhatsNew = () => setWhatsNew({ mode: 'before', version: updateState.version, notes: updateState.notes })
   const closeWhatsNew = () => { if (whatsNew?.mode === 'after') api.whatsNew.seen(); setWhatsNew(null) }
 
@@ -211,6 +292,8 @@ export default function App({ api, sound: injectedSound }) {
   return (
     <ApiContext.Provider value={api}>
       <I18nProvider lang={settings.language}>
+        <ToastProvider hold={Boolean(levelUp) && !motionOff}>
+        <UndoShortcut disabled={overlay} />
         <div className="app-shell" inert={overlay} aria-hidden={overlay ? 'true' : undefined}>
           <Sidebar
             page={page}
@@ -223,18 +306,20 @@ export default function App({ api, sound: injectedSound }) {
             fullscreen={fullscreen}
             onToggleFullscreen={() => api.window.setFullscreen(!fullscreen)}
           />
-          <main className="content">
+          <main className="content" ref={mainRef}>
             <UpdateBanner state={updateState} onWhatsNew={openWhatsNew} />
-            <div key={page} className="page-enter">
+            <div key={`${page}:${animeId ?? ''}`} className="page-enter">
               <ErrorBoundary>
+                <RouteStateContext.Provider value={{ state: nav.entry.state, set: nav.setRouteState }}>
                 {corrupt && <CorruptBanner />}
                 {page === 'home' && (
                   <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} />
                 )}
-                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} initialOpenId={openAnimeId} />}
+                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} />}
                 {page === 'downloads' && <DownloadsPage />}
                 {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} />}
                 {page === 'settings' && <SettingsPage settings={settings} onSettings={updateSettings} onTestSound={() => sound.play('levelUp')} updateState={updateState} />}
+                </RouteStateContext.Provider>
               </ErrorBoundary>
             </div>
           </main>
@@ -272,6 +357,7 @@ export default function App({ api, sound: injectedSound }) {
         {asks.length > 0 && <AskDialog ask={asks[0]} onDone={() => setAsks((q) => q.slice(1))} />}
         <Celebrations levelUp={levelUp} toast={toast} stats={stats} motionOff={motionOff} onLevelUpDone={() => setLevelUp(null)} onToastDone={() => setToast(null)} />
         {whatsNew && <WhatsNewDialog mode={whatsNew.mode} version={whatsNew.version} notes={whatsNew.notes} status={updateState.status} onClose={closeWhatsNew} />}
+        </ToastProvider>
       </I18nProvider>
     </ApiContext.Provider>
   )

@@ -29,7 +29,7 @@ describe('styles.css', () => {
     const z = (sel) => Number(new RegExp(`(^|\\n)\\${sel} \\{[^}]*z-index: (\\d+)`).exec(css)?.[2])
     const player = z('.player')
     expect(Number.isFinite(player)).toBe(true)
-    for (const sel of ['.modal', '.levelup', '.toast']) expect(player, sel).toBeLessThan(z(sel))
+    for (const sel of ['.modal', '.levelup', '.toast-stack']) expect(player, sel).toBeLessThan(z(sel))
   })
   it('lets subtitles scale with the player', () => {
     expect(css).toMatch(/.player {[^}]*container-type: size/)

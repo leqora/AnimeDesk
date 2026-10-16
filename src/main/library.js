@@ -81,6 +81,19 @@ export function createLibrary(file, { now = () => new Date().toISOString(), uuid
     return true
   }
 
+  // Put a previously removed entry back as-is (same id and fields); used by the undo flow.
+  function restore(entry) {
+    if (db.anime[entry.id] || findRaw(entry.aniCliTitle ?? entry.title)) throw new Error('conflict')
+    const e = structuredClone(entry)
+    if (e.pinnedAt) {
+      const pinned = Object.values(db.anime).filter((x) => x.pinnedAt).length
+      if (pinned >= MAX_PINNED) e.pinnedAt = null
+    }
+    db.anime[e.id] = e
+    save()
+    return copy(e)
+  }
+
   function setEpisodeNote(id, episode, text) {
     const e = mustGet(id)
     const k = String(Number(episode))
@@ -125,6 +138,6 @@ export function createLibrary(file, { now = () => new Date().toISOString(), uuid
     list: () => Object.values(db.anime).map(copy),
     get: (id) => copy(db.anime[id]),
     findByAniCliTitle: (title) => copy(findRaw(title)),
-    add, update, remove, setEpisodeNote, recordWatched, setPinned,
+    add, update, remove, restore, setEpisodeNote, recordWatched, setPinned,
   }
 }

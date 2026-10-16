@@ -15,7 +15,7 @@ function services() {
     watch: { watch: vi.fn(), cancel: vi.fn(), answerMenu: vi.fn(), playLocal: vi.fn(async () => 'watched'), recover: vi.fn(() => ({ ok: true })), retryAgain: vi.fn() },
     downloads: { enqueue: vi.fn(), pause: vi.fn(), resume: vi.fn(), cancel: vi.fn(), queueItems: vi.fn(), listDownloaded: vi.fn(), removeDownloaded: vi.fn(), getDownloaded: vi.fn((id) => (id === 'd1' ? { path: 'D:\\A\\A Episode 1.mp4', title: 'A', episode: '1', mode: 'dub' } : null)) },
     electron: { pickFolder: vi.fn(async () => 'D:\\X'), showItemInFolder: vi.fn(), openRepo: vi.fn() },
-    tracker: { update: vi.fn(), remove: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })) },
+    tracker: { update: vi.fn(), remove: vi.fn(), restore: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })) },
     progress: { snapshot: vi.fn(() => ({ level: 1 })), check: vi.fn() },
     updater: { getState: vi.fn(() => ({ status: 'idle' })), check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(() => true), install: vi.fn(() => true), applySettings: vi.fn() },
     whatsNew: { get: vi.fn(() => null), seen: vi.fn() },
@@ -91,6 +91,18 @@ describe('ipc', () => {
     s.send.mockClear()
     expect(h[INVOKE.libraryRemove]('id1')).toBe(true)
     expect(s.send).toHaveBeenCalledWith(EVENTS.libraryChanged)
+  })
+  it('library:restore returns the tracker result and notifies only on success', () => {
+    const s = services()
+    const h = createHandlers(s)
+    s.tracker.restore.mockReturnValueOnce({ ok: true, entry: { id: 'a' } })
+    expect(h[INVOKE.libraryRestore]('a')).toEqual({ ok: true, entry: { id: 'a' } })
+    expect(s.tracker.restore).toHaveBeenCalledWith('a')
+    expect(s.send).toHaveBeenCalledWith(EVENTS.libraryChanged)
+    s.send.mockClear()
+    s.tracker.restore.mockReturnValueOnce({ ok: false, error: 'expired' })
+    expect(h[INVOKE.libraryRestore]('a')).toEqual({ ok: false, error: 'expired' })
+    expect(s.send).not.toHaveBeenCalled()
   })
   it('opens the fixed repo URL through the main process', () => {
     const s = services()

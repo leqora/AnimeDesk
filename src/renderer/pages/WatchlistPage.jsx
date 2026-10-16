@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
+import { useToast } from '../toast/ToastProvider.jsx'
 import { MediaCard } from '../components/MediaCard.jsx'
 import { AnimeDetail } from './AnimeDetail.jsx'
 import { STATUSES } from '../../shared/domain.js'
+import { useRouteState } from '../nav/useNavigation.js'
 
 export function sortItems(items, sort) {
   const copy = [...items]
@@ -13,15 +15,14 @@ export function sortItems(items, sort) {
   return copy
 }
 
-export function WatchlistPage({ ready, onContinue, initialOpenId = null }) {
+export function WatchlistPage({ ready, onContinue, animeId = null, onOpen, onBack, onRemoved }) {
   const api = useApi()
   const t = useT()
   const [items, setItems] = useState(null)
-  const [filter, setFilter] = useState('all')
-  const [sort, setSort] = useState('title')
-  const [openId, setOpenId] = useState(initialOpenId)
+  const [filter, setFilter] = useRouteState('filter', 'all')
+  const [sort, setSort] = useRouteState('sort', 'title')
   const [newTitle, setNewTitle] = useState('')
-  const [notice, setNotice] = useState(null)
+  const toast = useToast()
 
   const load = () => api.library.list().then(setItems)
   useEffect(() => {
@@ -29,8 +30,11 @@ export function WatchlistPage({ ready, onContinue, initialOpenId = null }) {
     return api.onLibraryChanged(load)
   }, [api])
 
-  const open = items?.find((i) => i.id === openId)
-  if (open) return <AnimeDetail key={open.id} entry={open} ready={ready} onBack={() => setOpenId(null)} onChanged={load} onContinue={onContinue} />
+  // an id that is no longer in the library (removed elsewhere) simply falls through to the grid
+  const open = animeId != null ? items?.find((i) => i.id === animeId) : null
+  if (open) return <AnimeDetail key={open.id} entry={open} ready={ready} onBack={onBack} onRemoved={onRemoved} onChanged={load} onContinue={onContinue} />
+  // the library is still loading for a detail route: paint nothing rather than flash the grid
+  if (animeId != null && items == null) return null
 
   const visible = sortItems((items ?? []).filter((i) => filter === 'all' || i.status === filter), sort)
   const addManual = async (e) => {
@@ -43,7 +47,7 @@ export function WatchlistPage({ ready, onContinue, initialOpenId = null }) {
 
   const togglePin = async (entry) => {
     const r = await api.library.setPinned(entry.id, !entry.pinnedAt)
-    setNotice(r.ok ? null : t('pin.limit'))
+    if (!r.ok) toast.show({ message: t('pin.limit'), icon: 'alert' })
     load()
   }
 
@@ -69,10 +73,9 @@ export function WatchlistPage({ ready, onContinue, initialOpenId = null }) {
         </form>
       </div>
       {items && items.length === 0 && <p className="muted">{t('watchlist.empty')}</p>}
-      {notice && <div className="notice" role="status">{notice}</div>}
       <div className="card-grid">
         {visible.map((i) => (
-          <MediaCard key={i.id} entry={i} ready={ready} onOpen={setOpenId} onContinue={onContinue} onTogglePin={togglePin} showScore />
+          <MediaCard key={i.id} entry={i} ready={ready} onOpen={onOpen} onContinue={onContinue} onTogglePin={togglePin} showScore />
         ))}
       </div>
     </section>

@@ -82,10 +82,10 @@ describe('HomePage', () => {
   })
 })
 
-describe('WatchlistPage initialOpenId', () => {
+describe('WatchlistPage animeId', () => {
   it('opens the requested series directly', async () => {
     const api = makeFakeApi({ library: { list: vi.fn(async () => [entry()]) } })
-    renderUi(<WatchlistPage ready onContinue={() => {}} initialOpenId="a" />, { api })
+    renderUi(<WatchlistPage ready onContinue={() => {}} animeId="a" />, { api })
     await waitFor(() => expect(screen.getByRole('button', { name: 'Nazad' })).toBeInTheDocument())
   })
 })
