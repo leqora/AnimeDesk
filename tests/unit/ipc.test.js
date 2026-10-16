@@ -19,6 +19,7 @@ function services() {
     progress: { snapshot: vi.fn(() => ({ level: 1 })), check: vi.fn() },
     updater: { getState: vi.fn(() => ({ status: 'idle' })), check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(() => true), install: vi.fn(() => true), applySettings: vi.fn() },
     whatsNew: { get: vi.fn(() => null), seen: vi.fn() },
+    notifications: { list: vi.fn(() => [{ id: 'n1' }]), unreadCount: vi.fn(() => 1), markAllRead: vi.fn() },
     window: { get: vi.fn(() => true), set: vi.fn() },
     positions: { clear: vi.fn(), forSeries: vi.fn((title) => (title === 'Show' ? { 4: { position: 495, duration: 1440 } } : {})) },
     skipLookup: vi.fn(async () => ({ op: { start: 1, end: 2 }, ed: null, recap: null })),
@@ -203,6 +204,13 @@ describe('ipc', () => {
     expect(s.toolManager.installOptional).not.toHaveBeenCalled()
     h[INVOKE.settingsUpdate]({ mpvModernUi: true })
     expect(s.toolManager.installOptional).toHaveBeenCalledTimes(1)
+  })
+  it('forwards notifications list and mark-read to the store', () => {
+    const s = services()
+    const h = createHandlers(s)
+    expect(h[INVOKE.notificationsList]()).toEqual({ items: [{ id: 'n1' }], unread: 1 })
+    h[INVOKE.notificationsMarkRead]()
+    expect(s.notifications.markAllRead).toHaveBeenCalledTimes(1)
   })
   it('reads and sets window fullscreen', () => {
     const s = services()
