@@ -18,6 +18,12 @@ describe('Modal', () => {
     const d = screen.getByRole('dialog', { name: 'Naslov' })
     expect(d).toHaveAttribute('aria-modal', 'true')
   })
+  it('renders into document.body even when nested in a container', () => {
+    const { container } = render(<div id="host"><Modal label="P"><button>A</button></Modal></div>)
+    const d = screen.getByRole('dialog', { name: 'P' })
+    expect(container.contains(d)).toBe(false)
+    expect(d.closest('.modal').parentElement).toBe(document.body)
+  })
   it('focuses the first focusable element on open', () => {
     render(<Modal label="N"><button>A</button><button>B</button></Modal>)
     expect(screen.getByText('A')).toHaveFocus()

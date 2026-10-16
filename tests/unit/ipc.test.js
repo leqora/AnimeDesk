@@ -209,7 +209,7 @@ describe('ipc', () => {
     const s = services()
     const h = createHandlers(s)
     expect(h[INVOKE.notificationsList]()).toEqual({ items: [{ id: 'n1' }], unread: 1 })
-    h[INVOKE.notificationsMarkRead]()
+    expect(h[INVOKE.notificationsMarkRead]()).toEqual({ items: [{ id: 'n1' }], unread: 1 })
     expect(s.notifications.markAllRead).toHaveBeenCalledTimes(1)
   })
   it('reads and sets window fullscreen', () => {

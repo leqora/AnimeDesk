@@ -153,7 +153,6 @@ async function main() {
       return dir ? [`--config-dir=${dir}`] : []
     } catch { return [] }
   }
-  const watch = createWatchService({ mpvExtraArgs, skipsFor: skipLookup, aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: send, seriesPrefs, celebrations, getTotalEpisodes: totalEpisodes, episodeLists })
   const iconPath = app.isPackaged ? path.join(process.resourcesPath, 'icon.ico') : path.join(app.getAppPath(), 'build', 'icon.ico')
   const showWindow = () => {
     if (!win || win.isDestroyed()) return
@@ -188,6 +187,12 @@ async function main() {
     try { app.setLoginItemSettings({ openAtLogin: Boolean(settings.get().launchAtLogin), args: ['--hidden'] }) } catch (err) { console.warn('login item failed', err?.message) }
   }
   applyLoginItem()
+  // Auto-tracking and IPC both announce library changes through here; a newly "watching" series gets seeded promptly.
+  const sendAndWatch = (channel, payload) => {
+    send(channel, payload)
+    if (channel === EVENTS.libraryChanged) airingWatcher.check()
+  }
+  const watch = createWatchService({ mpvExtraArgs, skipsFor: skipLookup, aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: sendAndWatch, seriesPrefs, celebrations, getTotalEpisodes: totalEpisodes, episodeLists })
   const downloads = createDownloads({
     file: paths.downloads, aniCli,
     onChange: () => send(EVENTS.downloads, downloads.queueItems()),
@@ -201,10 +206,7 @@ async function main() {
 
   registerIpc(ipcMain, createHandlers({
     settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, updater, whatsNew, notifications: notificationsStore,
-    send: (channel, payload) => {
-      send(channel, payload)
-      if (channel === EVENTS.libraryChanged) airingWatcher.check() // a series newly "watching" gets seeded promptly
-    },
+    send: sendAndWatch,
     onLibraryChanged: () => airingWatcher.check(),
     onSettingsChanged: (patch) => {
       if (patch && 'launchAtLogin' in patch) applyLoginItem()
@@ -237,8 +239,11 @@ async function main() {
       osNotify('trayHint', {})
     }
   })
+  // Windows logoff/shutdown must not be blocked by close-to-tray.
+  win.on('query-session-end', () => { quitting = true })
+  win.on('session-end', () => { quitting = true; app.quit() })
   tray = createTray({ Tray, Menu, iconPath, labels: trayLabels(settings.get().language), onOpen: showWindow, onQuit: () => app.quit() })
-  app.on('second-instance', showWindow)
+  app.on('second-instance', (_e, argv) => { if (!startHidden(argv)) showWindow() })
   powerMonitor.on('resume', () => airingWatcher.refresh())
   airingWatcher.start()
   updater.start()

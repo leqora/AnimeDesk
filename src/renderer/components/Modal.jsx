@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
 // Module-level stack of open modal instance ids; only the last one is "on top".
@@ -59,7 +60,8 @@ export function Modal({ label, labelledBy, onClose, initialFocus, className = ''
     else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus() }
   }
 
-  return (
+  // Portaled to <body>: an ancestor with backdrop-filter/transform would otherwise become the containing block of position: fixed.
+  return createPortal(
     <div className="modal">
       <div
         ref={boxRef}
@@ -73,6 +75,7 @@ export function Modal({ label, labelledBy, onClose, initialFocus, className = ''
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

@@ -238,6 +238,8 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .field > span { color: var(--text-muted); font-size: 12px; font-family: var(--font-hud); text-transform: uppercase; letter-spacing: .08em; }
 .field--inline { flex-direction: row; align-items: center; gap: 6px; }
 .check { display: flex; gap: 8px; align-items: center; }
+.check-group { display: flex; flex-direction: column; gap: 2px; }
+.check-hint { margin: 0 0 0 24px; font-size: 0.85em; }
 .description { white-space: pre-wrap; background: var(--glass); padding: 12px; border-radius: var(--radius-sm); }
 
 /* profile page */

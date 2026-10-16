@@ -28,7 +28,7 @@ describe('NotificationBell', () => {
 
   it('shows count and aria-label with 3 unread', async () => {
     const { container } = setup([item(1, 'a1', 'A', 1, 5), item(2, 'a2', 'B', 2, 6), item(3, 'a3', 'C', 3, 7)])
-    expect(await screen.findByRole('button', { name: 'Obaveštenja (3 nepročitanih)' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Obaveštenja (3 nepročitana)' })).toBeInTheDocument()
     expect(container.querySelector('.bell__badge').textContent).toBe('3')
   })
 
@@ -36,6 +36,30 @@ describe('NotificationBell', () => {
     const { container } = setup([], { unread: 12, lang: 'en' })
     expect(await screen.findByRole('button', { name: 'Notifications (12 unread)' })).toBeInTheDocument()
     expect(container.querySelector('.bell__badge').textContent).toBe('9+')
+  })
+
+  it('Serbian plural forms in the label', async () => {
+    const one = setup([], { unread: 1 })
+    expect(await screen.findByRole('button', { name: 'Obaveštenja (1 nepročitano)' })).toBeInTheDocument()
+    one.unmount()
+    setup([], { unread: 5 })
+    expect(await screen.findByRole('button', { name: 'Obaveštenja (5 nepročitanih)' })).toBeInTheDocument()
+  })
+
+  it('English label with 1 unread', async () => {
+    setup([], { unread: 1, lang: 'en' })
+    expect(await screen.findByRole('button', { name: 'Notifications (1 unread)' })).toBeInTheDocument()
+  })
+
+  it('under a minute shows now in both languages', async () => {
+    const user = userEvent.setup()
+    const v = setup([item(1, 'a1', 'Alpha', 4, 0.2)])
+    await user.click(await screen.findByRole('button', { name: /Obaveštenja/ }))
+    expect((await screen.findByRole('dialog')).querySelector('.bell__item-time').textContent).toBe('sada')
+    v.unmount()
+    setup([item(1, 'a1', 'Alpha', 4, 0.2)], { lang: 'en' })
+    await user.click(await screen.findByRole('button', { name: /Notifications/ }))
+    expect((await screen.findByRole('dialog')).querySelector('.bell__item-time').textContent).toBe('now')
   })
 
   it('panel lists items newest first with only series and EP', async () => {

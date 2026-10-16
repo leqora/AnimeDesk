@@ -106,6 +106,7 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
         <input type="checkbox" checked={settings.closeToTray} onChange={(e) => onSettings({ closeToTray: e.target.checked })} />
         {t('settings.background.closeToTray')}
       </label>
+      <div className="check-group">
       <label className="check">
         <input
           type="checkbox" checked={settings.launchAtLogin} disabled={!settings.isPackaged}
@@ -114,7 +115,8 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
         />
         {t('settings.background.launchAtLogin')}
       </label>
-      {!settings.isPackaged && <p id="launch-at-login-hint" className="muted">{t('settings.background.launchAtLoginHint')}</p>}
+      {!settings.isPackaged && <p id="launch-at-login-hint" className="check-hint muted">{t('settings.background.launchAtLoginHint')}</p>}
+      </div>
       <label className="check">
         <input type="checkbox" checked={settings.notifyNewEpisodes} onChange={(e) => onSettings({ notifyNewEpisodes: e.target.checked })} />
         {t('settings.background.notifyNewEpisodes')}

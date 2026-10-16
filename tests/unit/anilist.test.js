@@ -529,6 +529,14 @@ describe('refreshAiring (batched airing schedule)', () => {
     expect(isFresh(merged, NOW)).toBe(true)
   })
 
+  it('keeps a known episode count when AniList now reports null', async () => {
+    const first = createAniList({ cacheDir, fetchImpl: mkFetch([media(5, 'Show', 'Show', { status: 'RELEASING', episodes: 12 })]), now: () => NOW - 1000 })
+    await first.getForTitle('Show', { aniListId: 5 })
+    const al = createAniList({ cacheDir, fetchImpl: pageFetch([row(5, { episodes: null })]), now: () => NOW })
+    await al.refreshAiring([5])
+    expect(al.getCached(null, { aniListId: 5 }).episodes).toBe(12)
+  })
+
   it('does not create a cache file for ids without one, but returns them', async () => {
     const al = createAniList({ cacheDir, fetchImpl: pageFetch([row(9)]), now: () => NOW })
     const result = await al.refreshAiring([9])

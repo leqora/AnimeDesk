@@ -11,7 +11,7 @@ function relativeTime(at, locale) {
   const diff = new Date(at).getTime() - Date.now()
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
   for (const [unit, ms] of UNITS) if (Math.abs(diff) >= ms) return rtf.format(Math.round(diff / ms), unit)
-  return rtf.format(0, 'minute')
+  return rtf.format(0, 'second')
 }
 
 export function NotificationBell({ onOpenAnime, libraryIds }) {
@@ -19,7 +19,7 @@ export function NotificationBell({ onOpenAnime, libraryIds }) {
   const t = useT()
   const { items, unread, markRead } = useNotifications(api)
   const [open, setOpen] = useState(false)
-  const label = unread > 0 ? t('notifications.bellUnread', { n: unread }) : t('notifications.title')
+  const label = unread > 0 ? t('notifications.title') + ' (' + t.n('notifications.unread', unread) + ')' : t('notifications.title')
   const sorted = [...items].sort((a, b) => new Date(b.at) - new Date(a.at))
   return (
     <>

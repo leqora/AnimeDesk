@@ -243,7 +243,8 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
         result.set(m.id, entry)
         const file = cacheFile(cacheKey(null, m.id))
         const cached = readJson(file, null).data
-        if (cached && !cached.notFound) writeJsonAtomic(file, { ...cached, ...entry, fetchedAt: now() })
+        // a null count from AniList must not wipe a count we already know
+        if (cached && !cached.notFound) writeJsonAtomic(file, { ...cached, ...entry, episodes: m.episodes ?? cached.episodes ?? null, fetchedAt: now() })
       }
     }
     return result

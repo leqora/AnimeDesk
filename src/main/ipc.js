@@ -18,7 +18,10 @@ export function createHandlers(s) {
     [INVOKE.whatsNewGet]: () => s.whatsNew.get(),
     [INVOKE.whatsNewSeen]: () => s.whatsNew.seen(),
     [INVOKE.notificationsList]: () => ({ items: s.notifications.list(), unread: s.notifications.unreadCount() }),
-    [INVOKE.notificationsMarkRead]: () => s.notifications.markAllRead(),
+    [INVOKE.notificationsMarkRead]: () => {
+      s.notifications.markAllRead()
+      return { items: s.notifications.list(), unread: s.notifications.unreadCount() }
+    },
     [INVOKE.windowGetFullscreen]: () => s.window.get(),
     [INVOKE.windowSetFullscreen]: (value) => s.window.set(Boolean(value)),
     [INVOKE.libraryList]: () => s.library.list(),
