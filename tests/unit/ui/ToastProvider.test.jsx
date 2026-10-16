@@ -8,7 +8,7 @@ let api
 function Grab() { api = useToast(); return null }
 function setup() {
   vi.useFakeTimers()
-  render(<I18nProvider lang="sr"><ToastProvider><Grab /></ToastProvider></I18nProvider>)
+  return render(<I18nProvider lang="sr"><ToastProvider><Grab /></ToastProvider></I18nProvider>)
 }
 afterEach(() => { vi.useRealTimers() })
 
@@ -84,6 +84,25 @@ describe('ToastProvider', () => {
     window.removeEventListener('error', swallow)
     expect(onAction).toHaveBeenCalled()
     expect(screen.queryByText('Greška')).not.toBeInTheDocument()
+  })
+  it('hold pauses and hides toasts; releasing shows them with their remaining time', () => {
+    vi.useFakeTimers()
+    const ui = (hold) => <I18nProvider lang="sr"><ToastProvider hold={hold}><Grab /></ToastProvider></I18nProvider>
+    const { rerender } = render(ui(false))
+    act(() => { api.show({ message: 'Drži' }) })
+    act(() => vi.advanceTimersByTime(2000))
+    rerender(ui(true))
+    expect(screen.queryByText('Drži')).not.toBeInTheDocument()
+    act(() => { api.show({ message: 'Novo' }) })
+    act(() => vi.advanceTimersByTime(20000))
+    rerender(ui(false))
+    expect(screen.getByText('Drži')).toBeInTheDocument()
+    expect(screen.getByText('Novo')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(900))
+    expect(screen.getByText('Drži')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(200))
+    expect(screen.queryByText('Drži')).not.toBeInTheDocument()
+    expect(screen.getByText('Novo')).toBeInTheDocument()
   })
   it('dismiss removes a toast by id', () => {
     setup()

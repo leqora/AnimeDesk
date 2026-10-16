@@ -8,8 +8,9 @@ const ToastCtx = createContext(NOOP)
 export const useToast = () => useContext(ToastCtx)
 
 // Mounted only while the toast is visible, so its timer starts when it becomes visible.
-function ToastItem({ toast, onDone }) {
-  const remaining = useRef(toast.ms)
+// `saved` keeps the remaining time across unmounts (the provider's hold), keyed by toast id.
+function ToastItem({ toast, onDone, saved }) {
+  const remaining = useRef(saved.get(toast.id) ?? toast.ms)
   const startedAt = useRef(0)
   const timer = useRef(null)
   const paused = useRef(false)
@@ -30,7 +31,14 @@ function ToastItem({ toast, onDone }) {
     paused.current = false
     start()
   }
-  useEffect(() => { start(); return () => clearTimeout(timer.current) }, [])
+  useEffect(() => {
+    start()
+    return () => {
+      clearTimeout(timer.current)
+      if (!paused.current) remaining.current = Math.max(0, remaining.current - (Date.now() - startedAt.current))
+      saved.set(toast.id, remaining.current)
+    }
+  }, [])
   return (
     <Toast
       message={toast.message} icon={toast.icon} action={toast.action}
@@ -40,8 +48,10 @@ function ToastItem({ toast, onDone }) {
   )
 }
 
-export function ToastProvider({ children }) {
+// hold: while true nothing is shown and timers stand still, so toasts are not missed behind an overlay.
+export function ToastProvider({ children, hold = false }) {
   const t = useT()
+  const saved = useRef(new Map()).current
   const [queue, setQueue] = useState([])
   const nextId = useRef(1)
   const dismiss = useCallback((id) => setQueue((q) => remove(q, id)), [])
@@ -55,9 +65,9 @@ export function ToastProvider({ children }) {
   return (
     <ToastCtx.Provider value={api}>
       {children}
-      {shown.length > 0 && (
+      {shown.length > 0 && !hold && (
         <div className="toast-stack" role="group" aria-label={t('toast.region')}>
-          {shown.map((x) => <ToastItem key={x.id} toast={x} onDone={() => dismiss(x.id)} />)}
+          {shown.map((x) => <ToastItem key={x.id} toast={x} onDone={() => dismiss(x.id)} saved={saved} />)}
         </div>
       )}
     </ToastCtx.Provider>

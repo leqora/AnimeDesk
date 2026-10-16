@@ -69,13 +69,12 @@ function Celebrations({ levelUp, toast, stats, motionOff, onLevelUpDone, onToast
     show({ message: t('toast.levelUp', { level: levelUp.level, title: t(`title.${levelUp.title}`) }), icon: 'flame' })
     onLevelUpDone()
   }, [levelUp, motionOff, show])
-  // While the overlay is up its scrim would hide the toast, so wait until it closes.
   useEffect(() => {
-    if (!toast || (levelUp && !motionOff)) return
+    if (!toast) return
     const { t, onToastDone } = latest.current
     show({ message: t('toast.completed', { title: toast.title, xp: toast.xp }) })
     onToastDone()
-  }, [toast, levelUp, motionOff, show])
+  }, [toast, show])
   return levelUp && !motionOff
     ? <LevelUpOverlay level={levelUp.level} title={levelUp.title} xpIntoLevel={stats.xpIntoLevel} xpForNext={stats.xpForNext} onDone={onLevelUpDone} />
     : null
@@ -223,7 +222,7 @@ export default function App({ api, sound: injectedSound }) {
   return (
     <ApiContext.Provider value={api}>
       <I18nProvider lang={settings.language}>
-        <ToastProvider>
+        <ToastProvider hold={Boolean(levelUp) && !motionOff}>
         <div className="app-shell" inert={overlay} aria-hidden={overlay ? 'true' : undefined}>
           <Sidebar
             page={page}
