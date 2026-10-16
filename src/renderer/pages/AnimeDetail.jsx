@@ -17,7 +17,7 @@ import { AiringLine, NewBadge } from '../components/AiringLine.jsx'
 import { newEpisodeCount, upcoming, ANILIST_STATUSES } from '../../shared/airing.js'
 import { formatTime } from '../../shared/player.js'
 
-export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
+export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onContinue }) {
   const api = useApi()
   const t = useT()
   const info = useAniListInfo(entry.title, entry.aniListId, { live: true }) ?? null
@@ -65,7 +65,7 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
   const openNote = (ep) => { setNoteEp(ep); setNoteText(entry.episodeNotes[String(ep)] ?? '') }
   const saveNote = async () => { await api.library.setEpisodeNote(entry.id, noteEp, noteText); onChanged() }
   const toggleWatched = (ep) => save({ watchedEpisodes: watched.includes(ep) ? watched.filter((x) => x !== ep) : [...watched, ep] })
-  const remove = async () => { await api.library.remove(entry.id); onBack(); onChanged() }
+  const remove = async () => { await api.library.remove(entry.id); (onRemoved ?? onBack)(); onChanged() }
   const togglePin = async () => {
     const r = await api.library.setPinned(entry.id, !entry.pinnedAt)
     if (!r.ok) { toast.show({ message: t('pin.limit'), icon: 'alert' }); return }

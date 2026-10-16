@@ -19,6 +19,8 @@ import { PlayerReconnecting } from './components/PlayerReconnecting.jsx'
 import { ErrorBoundary } from './components/ErrorBoundary.jsx'
 import { nextEpisodeNumber } from '../shared/player.js'
 import { createSound } from './sound.js'
+import { useNavigation, RouteStateContext } from './nav/useNavigation.js'
+import { restoreScroll } from './nav/restoreScroll.js'
 
 function CorruptBanner() {
   const t = useT()
@@ -88,14 +90,25 @@ export default function App({ api, sound: injectedSound }) {
   const [toast, setToast] = useState(null)
   const [settings, setSettings] = useState(null)
   const [health, setHealth] = useState({ light: 'yellow', reason: 'checking' })
-  const [page, setPage] = useState('home')
+  const mainRef = useRef(null)
+  const cancelScroll = useRef(() => {})
+  const nav = useNavigation({
+    getScroll: () => mainRef.current?.scrollTop ?? 0,
+    onArrive: (entry, kind) => {
+      cancelScroll.current()
+      const main = mainRef.current
+      if (!main) return
+      if (kind === 'back' || kind === 'forward') cancelScroll.current = restoreScroll(main, entry.scroll)
+      else main.scrollTop = 0
+    },
+  })
+  const { page, animeId } = nav.route
   const [stats, setStats] = useState(EMPTY_STATS)
   const [wizardOpen, setWizardOpen] = useState(false)
   // FIFO: an ask for episode N must survive the ask for N+1 (askOnClose + autoNext)
   const [asks, setAsks] = useState([])
   const [pendingWatch, setPendingWatch] = useState(null)
   const [corrupt, setCorrupt] = useState(false)
-  const [openAnimeId, setOpenAnimeId] = useState(null)
   const [updateState, setUpdateState] = useState({ status: 'idle', currentVersion: '' })
   const [whatsNew, setWhatsNew] = useState(null)
   const [fullscreen, setFullscreen] = useState(false)
@@ -115,6 +128,36 @@ export default function App({ api, sound: injectedSound }) {
   }, [])
   const [reconnecting, setReconnecting] = useState(null)
   const [bootFailed, setBootFailed] = useState(false)
+
+  // Alt+Left/Right and the mouse back/forward buttons walk the history; not while the player or a modal is up.
+  const navKeys = useRef({})
+  navKeys.current = { back: nav.back, forward: nav.forward, blocked: player != null || reconnecting != null }
+  useEffect(() => {
+    const blocked = () => navKeys.current.blocked || document.querySelector('[aria-modal="true"]') != null
+    const onKey = (e) => {
+      if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return
+      if (blocked()) return
+      e.preventDefault()
+      if (e.key === 'ArrowLeft') navKeys.current.back()
+      else navKeys.current.forward()
+    }
+    const onDown = (e) => { if (e.button === 3 || e.button === 4) e.preventDefault() }
+    const onUp = (e) => {
+      if (e.button !== 3 && e.button !== 4) return
+      e.preventDefault()
+      if (blocked()) return
+      if (e.button === 3) navKeys.current.back()
+      else navKeys.current.forward()
+    }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('mousedown', onDown)
+    window.addEventListener('mouseup', onUp)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('mousedown', onDown)
+      window.removeEventListener('mouseup', onUp)
+    }
+  }, [])
 
   const loadSettings = () => api.settings.get().then(
     (s) => { setBootFailed(false); setSettings(s) },
@@ -211,9 +254,10 @@ export default function App({ api, sound: injectedSound }) {
   settingsRef.current = settings
   const ready = health.light === 'green'
   const updateSettings = async (patch) => setSettings(await api.settings.update(patch))
-  const navigate = (p) => { if (p !== page) sound.play('navigate'); setOpenAnimeId(null); setPage(p) }
-  const openAnime = (id) => { setOpenAnimeId(id); setPage('watchlist') }
-  const continueWatching = (params) => { setPendingWatch(params); setPage('home') }
+  const navigate = (p) => { if (p !== page) sound.play('navigate'); nav.navigate({ page: p, animeId: null }) }
+  const openAnime = (id) => nav.navigate({ page: 'watchlist', animeId: id })
+  const closeDetail = () => (nav.canBack ? nav.back() : nav.navigate({ page: 'watchlist', animeId: null }))
+  const continueWatching = (params) => { setPendingWatch(params); nav.navigate({ page: 'home', animeId: null }) }
   const openWhatsNew = () => setWhatsNew({ mode: 'before', version: updateState.version, notes: updateState.notes })
   const closeWhatsNew = () => { if (whatsNew?.mode === 'after') api.whatsNew.seen(); setWhatsNew(null) }
 
@@ -235,18 +279,20 @@ export default function App({ api, sound: injectedSound }) {
             fullscreen={fullscreen}
             onToggleFullscreen={() => api.window.setFullscreen(!fullscreen)}
           />
-          <main className="content">
+          <main className="content" ref={mainRef}>
             <UpdateBanner state={updateState} onWhatsNew={openWhatsNew} />
-            <div key={page} className="page-enter">
+            <div key={`${page}:${animeId ?? ''}`} className="page-enter">
               <ErrorBoundary>
+                <RouteStateContext.Provider value={{ state: nav.entry.state, set: nav.setRouteState }}>
                 {corrupt && <CorruptBanner />}
                 {page === 'home' && (
                   <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} />
                 )}
-                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} initialOpenId={openAnimeId} />}
+                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={closeDetail} />}
                 {page === 'downloads' && <DownloadsPage />}
                 {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} />}
                 {page === 'settings' && <SettingsPage settings={settings} onSettings={updateSettings} onTestSound={() => sound.play('levelUp')} updateState={updateState} />}
+                </RouteStateContext.Provider>
               </ErrorBoundary>
             </div>
           </main>

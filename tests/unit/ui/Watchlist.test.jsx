@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { useState } from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { renderUi, makeFakeApi } from './helpers.jsx'
@@ -42,7 +43,7 @@ describe('WatchlistPage', () => {
   it('pins from the detail page and explains the limit', async () => {
     const api = makeFakeApi({ library: { list: vi.fn(async () => [entry({ id: 'a', title: 'Show' })]) } })
     api.library.setPinned.mockResolvedValueOnce({ ok: false, error: 'pin-limit' })
-    renderUi(<WatchlistPage ready onContinue={() => {}} initialOpenId="a" />, { api })
+    renderUi(<WatchlistPage ready onContinue={() => {}} animeId="a" />, { api })
     fireEvent.click(await screen.findByRole('button', { name: /Dodaj u omiljene/ }))
     expect(await screen.findByText('Možeš zakačiti najviše 5 serija. Otkači neku pa pokušaj ponovo.')).toBeInTheDocument()
     expect(api.library.setPinned).toHaveBeenCalledWith('a', true)
@@ -67,7 +68,7 @@ describe('WatchlistPage', () => {
   })
   it('pages a long series in the detail page', async () => {
     const api = makeFakeApi({ library: { list: vi.fn(async () => [entry({ id: 'a', title: 'Long', totalEpisodes: 1100, watchedEpisodes: [], episodeNotes: {} })]) } })
-    renderUi(<WatchlistPage ready onContinue={() => {}} initialOpenId="a" />, { api })
+    renderUi(<WatchlistPage ready onContinue={() => {}} animeId="a" />, { api })
     expect(await screen.findByRole('group', { name: 'Grupe epizoda' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '7' }))
     expect(screen.getByLabelText('Beleška za epizodu 7')).toBeInTheDocument()
@@ -92,7 +93,7 @@ describe('AnimeDetail', () => {
       library: { list: vi.fn(async () => [entry({ id: 'a', title: 'Show', aniCliTitle: 'Show' })]) },
       positions: { forSeries: vi.fn(async () => ({ 3: { position: 600, duration: 1440 } })) },
     })
-    renderUi(<WatchlistPage ready onContinue={() => {}} initialOpenId="a" />, { api })
+    renderUi(<WatchlistPage ready onContinue={() => {}} animeId="a" />, { api })
     await waitFor(() => expect(screen.getByRole('button', { name: '3' })).toHaveAttribute('title', 'ostalo 14 min'))
     expect(api.positions.forSeries).toHaveBeenCalledWith('Show')
   })
@@ -235,7 +236,12 @@ describe('WatchlistPage info cache', () => {
       library: { list: vi.fn(async () => entries) },
       anilist: { forTitle: vi.fn(async (title, id) => ({ id, poster: `https://img/${title}.jpg`, episodes: 4 })) },
     })
-    renderUi(<WatchlistPage ready onContinue={() => {}} />, { api })
+    // the route (open id) lives in App now; a small host stands in for it
+    function Host() {
+      const [id, setId] = useState(null)
+      return <WatchlistPage ready onContinue={() => {}} animeId={id} onOpen={setId} onBack={() => setId(null)} />
+    }
+    renderUi(<Host />, { api })
     await screen.findByText('Alpha')
     await waitFor(() => expect(api.anilist.forTitle).toHaveBeenCalledTimes(2))
     const count = (title) => api.anilist.forTitle.mock.calls.filter((c) => c[0] === title).length
