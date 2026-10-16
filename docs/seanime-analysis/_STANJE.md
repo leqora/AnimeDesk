@@ -1,6 +1,6 @@
 # Seanime analiza → unapređenje AnimeDesk-a — stanje rada (predaja smene)
 
-Poslednje ažuriranje: 2026-10-16 (v0.7.3 gotov na grani `feat/v0.7.3-ui-infra`, čeka dozvolu za spajanje/objavu: `Modal.jsx`, toastovi sa „Poništi” + `Ctrl+Z`, istorija navigacije + skrol, keš AniList podataka + dedup — kraj P1).
+Poslednje ažuriranje: 2026-10-16 (v0.7.3 objavljen kao Latest: `Modal.jsx`, toastovi sa „Poništi” + `Ctrl+Z`, istorija navigacije + skrol, keš AniList podataka + dedup — kraj P1).
 
 - Spec korisnika: `C:\Users\Nikola\Desktop\Claude\Anime\Aplikacija za gledanje Anime-a\Seanime\zadatak.txt`
 - Seanime klon (referenca, GPL-3.0 — samo inspiracija, ne kopirati kod): `C:\Users\Nikola\Desktop\Projekti\_ref\seanime` (commit 2da73d9; ne commitovati).
@@ -25,7 +25,7 @@ Poslednje ažuriranje: 2026-10-16 (v0.7.3 gotov na grani `feat/v0.7.3-ui-infra`,
 
 - [x] **P1 korak 3 = v0.7.2 (objavljeno 2026-10-16, Latest, spojeno u `main`):** „sledeća epizoda izlazi…” (Hero + detalj), bedž „N novih” (kartica, Hero, detalj; samo „Gledam” + `RELEASING`), header detalja (meta, žanrovi, akcije u baneru). AniList `nextAiringEpisode` u postojećem upitu + keš koji ističe posle emitovanja; `src/shared/airing.js`. 892 testa, završni pregled (Opus) „With fixes” → talas sitnih ispravki. Ostatak P1 (`Modal.jsx`, toastovi, istorija navigacije + skrol, keš postera/dedup) = v0.7.3.
 
-- [x] **P1 korak 4 = v0.7.3 (gotovo na grani `feat/v0.7.3-ui-infra` 2026-10-16, NIJE spojeno/objavljeno):** zajednički `Modal.jsx`, red toastova sa „Poništi” (uklanjanje serije bez potvrde + vraćanje iz korpe u main-u; označi/odznači epizodu) + `Ctrl+Z`, istorija navigacije (`Alt+←/→`, miš 4/5) + pamćenje skrola i filtera, keš AniList podataka u rendereru (+ live osvežavanje posle emitovanja) + `inflight` dedup u main-u. 995 testova, završni pregled (Opus) „With fixes” → talas ispravki + ponovni pregled. **P1 je ovim završen**; sledeće P2 (vidi STATUS „Sledeće”).
+- [x] **P1 korak 4 = v0.7.3 (objavljeno 2026-10-16, Latest, spojeno u `main`):** zajednički `Modal.jsx`, red toastova sa „Poništi” (uklanjanje serije bez potvrde + vraćanje iz korpe u main-u; označi/odznači epizodu) + `Ctrl+Z`, istorija navigacije (`Alt+←/→`, miš 4/5) + pamćenje skrola i filtera, keš AniList podataka u rendereru (+ live osvežavanje posle emitovanja) + `inflight` dedup u main-u. 995 testova, završni pregled (Opus) „With fixes” → talas ispravki + ponovni pregled. **P1 je ovim završen**; sledeće P2 (vidi STATUS „Sledeće”).
 
 ## Odluke korisnika (važe za dalje)
 1. Serija je „Završeno” tek kad su **sve** epizode odgledane (urađeno u 0.5.1).
