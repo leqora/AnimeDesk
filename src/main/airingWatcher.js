@@ -111,6 +111,34 @@ export function createAiringWatcher({
     graceTimer = setT(() => { graceTimer = null; refresh() }, AIRED_GRACE_MS)
   }
 
+  // Highest episode announced per aniListId, so one cycle never announces the same episode twice.
+  const announced = new Map()
+
+  function announce(item) {
+    announced.set(item.aniListId, Math.max(announced.get(item.aniListId) ?? 0, item.episode))
+    try { notify(item) } catch (err) { console.warn('airingWatcher: notify failed', err?.message) }
+  }
+
+  // After a successful confirming refresh the cache-found candidates are only SUPPRESSED when the fresh data
+  // positively says the episode has not aired yet (a delay). Anything else (next episode already listed,
+  // no next episode at all after a finale) means it did air, so it is announced as the cache check would have.
+  function confirmCandidates(candidates) {
+    const t = now()
+    const toAnnounce = []
+    for (const item of candidates) {
+      if ((announced.get(item.aniListId) ?? 0) >= item.episode) continue // the fresh check already announced it
+      const na = anilist.getCached(null, { aniListId: item.aniListId })?.nextAiring
+      if (na && na.episode <= item.episode && na.airingAt > t) continue // delayed: the re-armed timer handles it
+      const prev = state.notified[item.aniListId]
+      state.notified[item.aniListId] = { episode: Math.max(prev?.episode ?? 0, item.episode), freshAt: prev?.freshAt ?? null }
+      toAnnounce.push(item)
+    }
+    if (!toAnnounce.length) return
+    persist()
+    for (const item of toAnnounce) announce(item)
+    armGrace()
+  }
+
   // `fresh`: the cache was just refreshed, so per-series freshAt may advance. Plain timer checks work from
   // possibly stale cache and must not vouch for the 24 h window.
   // `confirmed`: internal, a cache check run after a failed confirming refresh; it announces from cache.
@@ -136,16 +164,17 @@ export function createAiringWatcher({
       state.notified = merged
       persist()
       armCheck(entries, infoById, t)
+      const candidates = due
       refresh().then((ok) => {
-        if (!ok && !stopped) check({ confirmed: true }) // refresh failed: announce from cache, once
+        if (stopped) return
+        if (ok) confirmCandidates(candidates)
+        else check({ confirmed: true }) // refresh failed: announce from cache, once
       })
       return
     }
     state.notified = notified
     persist()
-    for (const item of due) {
-      try { notify(item) } catch (err) { console.warn('airingWatcher: notify failed', err?.message) }
-    }
+    for (const item of due) announce(item)
     if (due.length) armGrace()
     armCheck(entries, infoById, t)
   }

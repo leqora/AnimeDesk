@@ -247,6 +247,36 @@ describe('createAiringWatcher', () => {
     w.stop()
   })
 
+  it('announces the season finale when the fresh data has no next episode', async () => {
+    fs.writeFileSync(file, JSON.stringify({ notified: { 1: fr(11, T) } }))
+    state.infos[1] = info(12, T - MIN)
+    anilist.refreshAiring.mockImplementation(async () => {
+      state.infos[1] = { status: 'FINISHED', nextAiring: null }
+      return new Map()
+    })
+    const w = make()
+    w.check()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(notify.mock.calls[0][0].episode).toBe(12)
+    w.stop()
+  })
+
+  it('announces an episode whose next airing already moved on, even after a long gap', async () => {
+    fs.writeFileSync(file, JSON.stringify({ notified: { 1: fr(5, T - 30 * H) } }))
+    state.infos[1] = info(6, T - MIN)
+    anilist.refreshAiring.mockImplementation(async () => {
+      state.infos[1] = info(7, T + 7 * D)
+      return new Map()
+    })
+    const w = make()
+    w.check()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(notify.mock.calls[0][0].episode).toBe(6)
+    w.stop()
+  })
+
   it('announces from cache once when the refresh fails', async () => {
     fs.writeFileSync(file, JSON.stringify({ notified: { 1: fr(5, T) } }))
     state.infos[1] = info(6, T - MIN)
