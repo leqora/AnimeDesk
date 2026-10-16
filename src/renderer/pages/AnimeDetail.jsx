@@ -4,7 +4,6 @@ import { useAniListInfo } from '../anilist/useAniListInfo.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { useToast } from '../toast/ToastProvider.jsx'
 import { Poster } from '../components/Poster.jsx'
-import { ConfirmButton } from '../components/ConfirmButton.jsx'
 import { EpisodePicker } from '../components/EpisodePicker.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { useSeriesEpisodes } from '../episodes/useSeriesEpisodes.js'
@@ -64,8 +63,34 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
 
   const openNote = (ep) => { setNoteEp(ep); setNoteText(entry.episodeNotes[String(ep)] ?? '') }
   const saveNote = async () => { await api.library.setEpisodeNote(entry.id, noteEp, noteText); onChanged() }
-  const toggleWatched = (ep) => save({ watchedEpisodes: watched.includes(ep) ? watched.filter((x) => x !== ep) : [...watched, ep] })
-  const remove = async () => { await api.library.remove(entry.id); (onRemoved ?? onBack)(); onChanged() }
+  const toggleWatched = async (ep) => {
+    const previous = watched
+    const marking = !previous.includes(ep)
+    await save({ watchedEpisodes: marking ? [...previous, ep] : previous.filter((x) => x !== ep) })
+    // Only the episode number goes in the toast, never a title (spoilers).
+    toast.show({
+      message: t(marking ? 'toast.markedWatched' : 'toast.unmarkedWatched', { episode: ep }),
+      action: { label: t('toast.undo'), onAction: () => save({ watchedEpisodes: previous }) },
+    })
+  }
+  const remove = async () => {
+    // Capture id/title: the detail unmounts after removal, the toast outlives it.
+    const { id, title } = entry
+    await api.library.remove(id)
+    ;(onRemoved ?? onBack)()
+    onChanged()
+    toast.show({
+      message: t('toast.removed', { title }),
+      action: {
+        label: t('toast.undo'),
+        onAction: async () => {
+          const r = await api.library.restore(id)
+          if (r?.ok) onChanged()
+          else toast.show({ message: t('toast.restoreFailed'), icon: 'alert' })
+        },
+      },
+    })
+  }
   const togglePin = async () => {
     const r = await api.library.setPinned(entry.id, !entry.pinnedAt)
     if (!r.ok) { toast.show({ message: t('pin.limit'), icon: 'alert' }); return }
@@ -172,7 +197,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
             </div>
           )}
           <div className="row">
-            <ConfirmButton label={t('detail.delete')} confirmLabel={t('detail.confirmDelete')} onConfirm={remove} />
+            <button type="button" onClick={remove}>{t('detail.delete')}</button>
           </div>
         </div>
       </div>

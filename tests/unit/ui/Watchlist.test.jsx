@@ -198,14 +198,13 @@ describe('AnimeDetail', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ukloni oznaku odgledano' }))
     await waitFor(() => expect(api.library.update).toHaveBeenCalledWith('a1', { watchedEpisodes: [1] }))
   })
-  it('continues with the first unwatched episode and removes after confirmation', async () => {
+  it('continues with the first unwatched episode and removes the series', async () => {
     const onContinue = vi.fn()
     const onBack = vi.fn()
     const { api } = renderUi(<AnimeDetail entry={entry()} ready onBack={onBack} onChanged={() => {}} onContinue={onContinue} />)
     fireEvent.click(screen.getByRole('button', { name: /Nastavi EP 3/ }))
     expect(onContinue).toHaveBeenCalledWith({ query: 'Frieren', anime: 'Frieren', episode: '3' })
     fireEvent.click(screen.getByRole('button', { name: 'Ukloni iz watchlist-e' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Da' }))
     await waitFor(() => expect(api.library.remove).toHaveBeenCalledWith('a1'))
     expect(onBack).toHaveBeenCalled()
   })
