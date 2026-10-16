@@ -7,7 +7,9 @@ const MAX_ITEMS = 30
 // Text is only series title + episode number (no spoilers).
 export function createNotificationsStore(file, { now = Date.now, onChange = () => {} } = {}) {
   const loaded = readJson(file, { version: 1, items: [] }).data
-  const db = loaded && !Array.isArray(loaded) && Array.isArray(loaded.items) ? loaded : { version: 1, items: [] }
+  const wellFormed = (i) => i !== null && typeof i === 'object' && typeof i.id === 'string' && typeof i.animeId === 'string' && i.animeId !== '' &&
+    typeof i.title === 'string' && i.title.trim() !== '' && Number.isInteger(i.episode) && i.episode > 0 && Number.isFinite(i.at) && typeof i.read === 'boolean'
+  const db = { version: 1, items: loaded && !Array.isArray(loaded) && Array.isArray(loaded.items) ? loaded.items.filter(wellFormed) : [] }
 
   const persist = () => {
     try { writeJsonAtomic(file, db) } catch (err) { console.warn('notifications: write failed', err?.message) } // in-memory state stays valid
@@ -20,7 +22,8 @@ export function createNotificationsStore(file, { now = Date.now, onChange = () =
 
   return {
     add({ animeId, title, episode }) {
-      const item = { id: crypto.randomUUID(), animeId, title, episode, at: now(), read: false }
+      if (typeof animeId !== 'string' || animeId === '' || typeof title !== 'string' || title.trim() === '' || !Number.isInteger(episode) || episode <= 0) return null
+      const item = { id: crypto.randomUUID(), animeId, title: title.trim(), episode, at: now(), read: false }
       db.items.push(item)
       if (db.items.length > MAX_ITEMS) db.items.splice(0, db.items.length - MAX_ITEMS)
       persist()

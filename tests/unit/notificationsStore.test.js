@@ -54,6 +54,26 @@ describe('notificationsStore', () => {
     fs.writeFileSync(file, JSON.stringify({ version: 1, items: 'nope' }))
     expect(createNotificationsStore(file).list()).toEqual([])
   })
+  it('rejects invalid input without storing or notifying', () => {
+    const onChange = vi.fn()
+    const store = createNotificationsStore(file, { onChange })
+    for (const bad of [
+      { animeId: 'a', title: '', episode: 1 }, { animeId: 'a', title: '   ', episode: 1 }, { animeId: 'a', title: 5, episode: 1 },
+      { animeId: 'a', title: 'A', episode: 0 }, { animeId: 'a', title: 'A', episode: 1.5 }, { animeId: 'a', title: 'A', episode: '2' },
+      { animeId: '', title: 'A', episode: 1 }, { animeId: 7, title: 'A', episode: 1 },
+    ]) expect(store.add(bad)).toBeNull()
+    expect(store.list()).toEqual([])
+    expect(onChange).not.toHaveBeenCalled()
+  })
+  it('drops malformed items on load', () => {
+    const good = { id: 'g', animeId: 'a', title: 'A', episode: 1, at: 5, read: false }
+    fs.writeFileSync(file, JSON.stringify({ version: 1, items: [null, { bad: true }, good, 'x'] }))
+    const store = createNotificationsStore(file)
+    expect(store.list()).toEqual([good])
+    expect(store.unreadCount()).toBe(1)
+    store.markAllRead()
+    expect(store.unreadCount()).toBe(0)
+  })
   it('calls onChange with { items, unread } on add and markAllRead', () => {
     const onChange = vi.fn()
     const store = createNotificationsStore(file, { onChange })
