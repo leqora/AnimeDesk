@@ -4,7 +4,7 @@ import { Icon } from './Icon.jsx'
 
 // undefined = still loading, null = nothing found; callers that only read info?.poster see no difference.
 export function usePosterInfo(title, aniListId = null) {
-  return useAniListInfo(title, aniListId)
+  return useAniListInfo(title, aniListId, { live: true })
 }
 
 const Empty = () => <div className="poster poster--empty" aria-hidden="true"><Icon name="film" size={28} /></div>

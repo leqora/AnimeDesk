@@ -25,6 +25,12 @@ export function useAniListInfo(title, aniListId = null, { live = false } = {}) {
     return () => { active = false }
   }, [cache, key])
 
+  // A refetch by any view of this series (e.g. a live timer elsewhere) reaches this one too.
+  useEffect(() => {
+    if (!title) return undefined
+    return cache.subscribe(title, aniListId, (value) => setState({ key, info: value }))
+  }, [cache, key])
+
   let info
   if (!title) info = null
   else if (state?.key === key) info = state.info
