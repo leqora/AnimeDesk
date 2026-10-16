@@ -11,6 +11,7 @@ export const INVOKE = {
   libraryAdd: 'library:add',
   libraryUpdate: 'library:update',
   libraryRemove: 'library:remove',
+  libraryRestore: 'library:restore',
   libraryNote: 'library:note',
   libraryRecord: 'library:record',
   libraryWasCorrupt: 'library:was-corrupt',

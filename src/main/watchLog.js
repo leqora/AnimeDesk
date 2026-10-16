@@ -24,6 +24,15 @@ export function createWatchLog(file, { now = () => new Date().toISOString(), uui
       save()
       return true
     },
+    // Re-add entries that are not present (by id), keeping the log ordered by time.
+    restore(entries) {
+      const have = new Set(db.entries.map((e) => e.id))
+      const missing = entries.filter((e) => !have.has(e.id)).map((e) => ({ ...e }))
+      if (!missing.length) return 0
+      db.entries = [...db.entries, ...missing].sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
+      save()
+      return missing.length
+    },
     removeAnime(animeId) {
       const before = db.entries.length
       db.entries = db.entries.filter((e) => e.animeId !== animeId)

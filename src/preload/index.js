@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('animedesk', {
     add: invoke(INVOKE.libraryAdd),
     update: invoke(INVOKE.libraryUpdate),
     remove: invoke(INVOKE.libraryRemove),
+    restore: invoke(INVOKE.libraryRestore),
     setEpisodeNote: invoke(INVOKE.libraryNote),
     recordWatched: invoke(INVOKE.libraryRecord),
     wasCorrupt: invoke(INVOKE.libraryWasCorrupt),

@@ -42,6 +42,17 @@ describe('watchLog', () => {
     log.list()[0].episode = 99
     expect(log.list()[0].episode).toBe(1)
   })
+  it('restore re-adds missing entries without duplicates', () => {
+    log.append({ animeId: 'a', episode: 1, source: 'auto' })
+    log.append({ animeId: 'b', episode: 1, source: 'auto' })
+    log.append({ animeId: 'a', episode: 2, source: 'auto' })
+    const gone = log.list().filter((e) => e.animeId === 'a')
+    log.removeAnime('a')
+    expect(log.restore(gone)).toBe(2)
+    expect(log.restore(gone)).toBe(0)
+    expect(log.list().map((e) => e.id)).toEqual(['w1', 'w2', 'w3'])
+    expect(createWatchLog(file).list()).toHaveLength(3)
+  })
   it('tolerates valid JSON without entries', () => {
     fs.writeFileSync(file, JSON.stringify({ version: 1 }))
     const l = createWatchLog(file)

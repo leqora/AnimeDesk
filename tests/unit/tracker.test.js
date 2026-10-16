@@ -57,4 +57,49 @@ describe('tracker', () => {
     expect(watchLog.list()).toHaveLength(1)
     expect(progress.check).toHaveBeenCalledTimes(3)
   })
+  describe('restore', () => {
+    let clock
+    beforeEach(() => {
+      clock = 1_000_000
+      tracker = createTracker({ library, watchLog, progress, now: () => clock })
+    })
+    it('remove then restore brings back entry and its watch log', () => {
+      const e = tracker.recordWatched({ aniCliTitle: 'Show', episode: 1 })
+      tracker.recordWatched({ aniCliTitle: 'Show', episode: 2 })
+      tracker.recordWatched({ aniCliTitle: 'Other', episode: 1 })
+      const before = watchLog.list().map((x) => x.id)
+      const entry = library.get(e.id)
+      tracker.remove(e.id)
+      expect(library.get(e.id)).toBeNull()
+      progress.check.mockClear()
+      expect(tracker.restore(e.id)).toEqual({ ok: true, entry })
+      expect(library.get(e.id)).toEqual(entry)
+      expect(watchLog.list().map((x) => x.id).sort()).toEqual([...before].sort())
+      expect(progress.check).toHaveBeenCalled()
+      expect(tracker.restore(e.id)).toEqual({ ok: false, error: 'expired' })
+    })
+    it('restore after 10 minutes is expired', () => {
+      const e = tracker.recordWatched({ aniCliTitle: 'Show', episode: 1 })
+      tracker.remove(e.id)
+      clock += 10 * 60 * 1000 + 1
+      expect(tracker.restore(e.id)).toEqual({ ok: false, error: 'expired' })
+      expect(library.get(e.id)).toBeNull()
+    })
+    it('restore of an unknown id is expired', () => {
+      expect(tracker.restore('nope')).toEqual({ ok: false, error: 'expired' })
+    })
+    it('restore conflicts when the series was re-created', () => {
+      const e = tracker.recordWatched({ aniCliTitle: 'Show', episode: 1 })
+      tracker.remove(e.id)
+      tracker.recordWatched({ aniCliTitle: 'Show', episode: 1 })
+      expect(tracker.restore(e.id)).toEqual({ ok: false, error: 'conflict' })
+      expect(library.list().filter((x) => x.aniCliTitle === 'Show')).toHaveLength(1)
+    })
+    it('trash keeps at most 20 entries', () => {
+      const ids = Array.from({ length: 21 }, (_, i) => library.add({ title: `S${i}` }).id)
+      for (const id of ids) tracker.remove(id)
+      expect(tracker.restore(ids[0])).toEqual({ ok: false, error: 'expired' })
+      expect(tracker.restore(ids[1]).ok).toBe(true)
+    })
+  })
 })
