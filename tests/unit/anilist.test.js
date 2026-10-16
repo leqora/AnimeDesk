@@ -437,3 +437,59 @@ describe('airing schedule (nextAiring)', () => {
     expect(f.mock.calls.length).toBeGreaterThan(calls + 1)
   })
 })
+
+describe('anilist request dedup and retry timing', () => {
+  const HOUR = 3600 * 1000
+  const T = 1_800_000_000_000
+  const queries = (f) => f.mock.calls.filter(([url]) => !url.startsWith('https://img/')).length
+
+  it('concurrent calls for the same title make one request', async () => {
+    const f = mkFetch([media(21, 'Same Show', 'Same Show', { status: 'FINISHED' })])
+    const al = createAniList({ cacheDir, fetchImpl: f })
+    const [a, b] = await Promise.all([al.getForTitle('Same Show'), al.getForTitle('Same Show')])
+    expect(queries(f)).toBe(1)
+    expect(a).toEqual(b)
+    expect(a.malId).toBe(921)
+  })
+
+  it('concurrent calls with the same aniListId make one BY_ID request', async () => {
+    const f = mkFetch([media(22, 'Id Show', 'Id Show', { status: 'FINISHED' })])
+    const al = createAniList({ cacheDir, fetchImpl: f })
+    const [a, b] = await Promise.all([al.getForTitle('Id Show', { aniListId: 22 }), al.getForTitle('Id Show', { aniListId: 22 })])
+    expect(queries(f)).toBe(1)
+    expect(a).toEqual(b)
+  })
+
+  it('does not merge different titles', async () => {
+    const f = mkFetch([media(23, 'Alpha Show', 'Alpha Show'), media(24, 'Beta Show', 'Beta Show')])
+    const al = createAniList({ cacheDir, fetchImpl: f })
+    const [a, b] = await Promise.all([al.getForTitle('Alpha Show'), al.getForTitle('Beta Show')])
+    expect(queries(f)).toBe(2)
+    expect(a.title ?? a.malId).not.toEqual(b.title ?? b.malId)
+  })
+
+  it('after a slow failed refresh the retry pause starts at the failure', async () => {
+    let clock = T - HOUR
+    const ok = mkFetch([media(25, 'Slow Show', 'Slow Show', { status: 'RELEASING', nextAiring: undefined, nextAiringEpisode: { episode: 5, airingAt: T / 1000 } })])
+    let mode = 'ok'
+    const f = vi.fn(async (url, init) => {
+      if (mode === 'slow-fail') { clock += 50 * 60 * 1000; throw new Error('offline') }
+      return ok(url, init)
+    })
+    const al = createAniList({ cacheDir, fetchImpl: f, now: () => clock })
+    await al.getForTitle('Slow Show')
+    clock = T + HOUR
+    const start = clock
+    mode = 'slow-fail'
+    expect((await al.getForTitle('Slow Show')).nextAiring.episode).toBe(5) // stale kept
+    const calls = f.mock.calls.length
+
+    clock = start + 70 * 60 * 1000 // 20 min after the failure, 70 min after the attempt began
+    await al.getForTitle('Slow Show')
+    expect(f.mock.calls.length).toBe(calls)
+
+    clock = start + 50 * 60 * 1000 + HOUR + 1
+    await al.getForTitle('Slow Show')
+    expect(f.mock.calls.length).toBeGreaterThan(calls)
+  })
+})

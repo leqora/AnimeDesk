@@ -178,7 +178,8 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
     return { m: null, complete }
   }
 
-  const refreshAttemptAt = new Map() // file -> start of the last refresh that has not succeeded
+  const refreshAttemptAt = new Map() // file -> start of the in-progress refresh, then the moment of its failure
+  const inflight = new Map() // file -> Promise of the lookup currently running
 
   async function getForTitle(title, { aniListId = null } = {}) {
     const file = cacheFile(cacheKey(title, aniListId))
@@ -194,25 +195,38 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
       if (attemptedAt != null && now() - attemptedAt < RETRY_AFTER_FAIL_MS) return fallback()
       refreshAttemptAt.set(file, now()) // set before the first await so concurrent calls are deduped
     }
-    try {
-      let m
-      if (aniListId) m = (await gql(BY_ID, { id: aniListId })).Media
-      else {
-        const found = await findByTitle(title)
-        m = found.m
-        if (!m && found.complete && !stale) writeJsonAtomic(file, { notFound: true, at: now(), searchVersion: SEARCH_VERSION })
-      }
-      if (!m) return fallback()
-      const info = { ...toInfo(m), fetchedAt: now() }
-      info.poster = stale?.poster && stale.coverUrl === info.coverUrl
-        ? stale.poster
-        : await posterDataUrl(info.coverUrl).catch(() => null)
-      writeJsonAtomic(file, info)
-      refreshAttemptAt.delete(file) // the guard is for failures; a later expiry may refresh again
-      return info
-    } catch {
+    // Share one lookup per cache file; the retry pause is measured from the moment of failure, not from the start.
+    const pending = inflight.get(file)
+    if (pending) return pending
+    const failed = () => {
+      if (stale) refreshAttemptAt.set(file, now())
       return fallback()
     }
+    const run = (async () => {
+      try {
+        let m
+        if (aniListId) m = (await gql(BY_ID, { id: aniListId })).Media
+        else {
+          const found = await findByTitle(title)
+          m = found.m
+          if (!m && found.complete && !stale) writeJsonAtomic(file, { notFound: true, at: now(), searchVersion: SEARCH_VERSION })
+        }
+        if (!m) return failed()
+        const info = { ...toInfo(m), fetchedAt: now() }
+        info.poster = stale?.poster && stale.coverUrl === info.coverUrl
+          ? stale.poster
+          : await posterDataUrl(info.coverUrl).catch(() => null)
+        writeJsonAtomic(file, info)
+        refreshAttemptAt.delete(file) // the guard is for failures; a later expiry may refresh again
+        return info
+      } catch {
+        return failed()
+      } finally {
+        inflight.delete(file)
+      }
+    })()
+    inflight.set(file, run)
+    return run
   }
 
   return { search, getForTitle, getCached }
