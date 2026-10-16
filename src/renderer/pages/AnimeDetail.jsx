@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApi } from '../api.js'
+import { useAniListInfo } from '../anilist/useAniListInfo.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Poster } from '../components/Poster.jsx'
 import { ConfirmButton } from '../components/ConfirmButton.jsx'
@@ -18,7 +19,7 @@ import { formatTime } from '../../shared/player.js'
 export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
   const api = useApi()
   const t = useT()
-  const [info, setInfo] = useState(null)
+  const info = useAniListInfo(entry.title, entry.aniListId, { live: true }) ?? null
   const tint = usePosterTint(info?.poster ?? null)
   const [showDesc, setShowDesc] = useState(false)
   const [comment, setComment] = useState(entry.comment)
@@ -26,18 +27,16 @@ export function AnimeDetail({ entry, ready, onBack, onChanged, onContinue }) {
   const [noteText, setNoteText] = useState('')
   const [pinNotice, setPinNotice] = useState(null)
 
+  // Patch aniListId/totalEpisodes into the library once per entry id, when its info first arrives.
+  const patchedFor = useRef(null)
   useEffect(() => {
-    let live = true
-    api.anilist.forTitle(entry.title, entry.aniListId).then((i) => {
-      if (!live || !i) return
-      setInfo(i)
-      const patch = {}
-      if (entry.aniListId == null) patch.aniListId = i.id
-      if (entry.totalEpisodes == null && i.episodes) patch.totalEpisodes = i.episodes
-      if (Object.keys(patch).length) api.library.update(entry.id, patch).then(onChanged)
-    }).catch(() => {})
-    return () => { live = false }
-  }, [api, entry.id])
+    if (!info || patchedFor.current === entry.id) return
+    patchedFor.current = entry.id
+    const patch = {}
+    if (entry.aniListId == null) patch.aniListId = info.id
+    if (entry.totalEpisodes == null && info.episodes) patch.totalEpisodes = info.episodes
+    if (Object.keys(patch).length) api.library.update(entry.id, patch).then(onChanged)
+  }, [api, entry.id, info])
 
   const save = async (patch) => { await api.library.update(entry.id, patch); onChanged() }
   const watched = entry.watchedEpisodes

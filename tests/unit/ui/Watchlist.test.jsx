@@ -218,3 +218,22 @@ describe('AnimeDetail', () => {
     expect(screen.getByRole('button', { name: '101–200' })).toHaveAttribute('aria-pressed', 'true')
   })
 })
+
+describe('WatchlistPage info cache', () => {
+  it('returning to the watchlist does not request posters again', async () => {
+    const entries = [entry({ id: 'a', title: 'Alpha', aniListId: 11 }), entry({ id: 'b', title: 'Beta', aniListId: 12 })]
+    const api = makeFakeApi({
+      library: { list: vi.fn(async () => entries) },
+      anilist: { forTitle: vi.fn(async (title, id) => ({ id, poster: `https://img/${title}.jpg`, episodes: 4 })) },
+    })
+    renderUi(<WatchlistPage ready onContinue={() => {}} />, { api })
+    await screen.findByText('Alpha')
+    await waitFor(() => expect(api.anilist.forTitle).toHaveBeenCalledTimes(2))
+    const count = (title) => api.anilist.forTitle.mock.calls.filter((c) => c[0] === title).length
+    const before = { Alpha: count('Alpha'), Beta: count('Beta') }
+    fireEvent.click(screen.getByText('Alpha'))
+    fireEvent.click(await screen.findByRole('button', { name: /Nazad/ }))
+    await screen.findByText('Beta')
+    expect({ Alpha: count('Alpha'), Beta: count('Beta') }).toEqual(before)
+  })
+})

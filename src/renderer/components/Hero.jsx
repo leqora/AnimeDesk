@@ -1,5 +1,5 @@
 import { useT } from '../i18n/I18nContext.jsx'
-import { usePosterInfo } from './Poster.jsx'
+import { useAniListInfo } from '../anilist/useAniListInfo.js'
 import { usePosterTint } from '../theme/usePosterTint.js'
 import { XpBar } from './XpBar.jsx'
 import { Icon } from './Icon.jsx'
@@ -12,7 +12,7 @@ import { newEpisodeCount } from '../../shared/airing.js'
 
 export function Hero({ entry, ready, onContinue, onDetails, onSearch }) {
   const t = useT()
-  const info = usePosterInfo(entry?.title ?? null, entry?.aniListId ?? null)
+  const info = useAniListInfo(entry?.title ?? null, entry?.aniListId ?? null, { live: true })
   const tint = usePosterTint(info?.poster ?? null)
   const progress = useEpisodeProgress(entry ? (entry.aniCliTitle ?? entry.title) : null)
   const now = useNow()
