@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, act } from '@testing-library/react'
-import { renderUi, renderHookUi } from './helpers.jsx'
+import { renderUi, renderHookUi, hasNoContent } from './helpers.jsx'
 import { AiringLine, NewBadge } from '../../../src/renderer/components/AiringLine.jsx'
 import { useNow } from '../../../src/renderer/useNow.js'
 
@@ -23,11 +23,11 @@ describe('AiringLine', () => {
   })
   it('renders nothing once the episode has aired or without a schedule', () => {
     const { container, rerender } = renderUi(<AiringLine info={info} now={AT} />)
-    expect(container).toBeEmptyDOMElement()
+    expect(hasNoContent(container)).toBe(true)
     rerender(<AiringLine info={{ ...info, nextAiring: null }} now={AT - H} />)
-    expect(container).toBeEmptyDOMElement()
+    expect(hasNoContent(container)).toBe(true)
     rerender(<AiringLine info={undefined} now={AT - H} />)
-    expect(container).toBeEmptyDOMElement()
+    expect(hasNoContent(container)).toBe(true)
   })
 })
 
@@ -42,7 +42,7 @@ describe('NewBadge', () => {
     const { container, rerender } = renderUi(<NewBadge count={5} />)
     expect(screen.getByText('5 novih')).toHaveAttribute('aria-hidden', 'true')
     rerender(<NewBadge count={0} />)
-    expect(container).toBeEmptyDOMElement()
+    expect(hasNoContent(container)).toBe(true)
   })
 })
 

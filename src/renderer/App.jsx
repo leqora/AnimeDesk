@@ -306,7 +306,7 @@ export default function App({ api, sound: injectedSound }) {
             fullscreen={fullscreen}
             onToggleFullscreen={() => api.window.setFullscreen(!fullscreen)}
           />
-          <main className="content" ref={mainRef}>
+          <main className="content" ref={mainRef} tabIndex={-1}>
             <UpdateBanner state={updateState} onWhatsNew={openWhatsNew} />
             <div key={`${page}:${animeId ?? ''}`} className="page-enter">
               <ErrorBoundary>
