@@ -162,13 +162,13 @@ describe('createAiringWatcher', () => {
     expect(warn).toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(H + 59 * MIN) // up to airingAt (T + 2h)
     expect(notify).toHaveBeenCalledTimes(1)
-    expect(anilist.refreshAiring).toHaveBeenCalledTimes(1) // nothing before airingAt
+    expect(anilist.refreshAiring).toHaveBeenCalledTimes(2) // first refresh + the one confirming refresh at airingAt (failed, announced from cache, no loop)
     await vi.advanceTimersByTimeAsync(AIRED_GRACE_MS) // only the grace refresh
-    expect(anilist.refreshAiring).toHaveBeenCalledTimes(2)
-    await vi.advanceTimersByTimeAsync(2 * H)
-    expect(anilist.refreshAiring).toHaveBeenCalledTimes(2)
-    await vi.advanceTimersByTimeAsync(6 * H) // 6 h interval from start is next
     expect(anilist.refreshAiring).toHaveBeenCalledTimes(3)
+    await vi.advanceTimersByTimeAsync(2 * H)
+    expect(anilist.refreshAiring).toHaveBeenCalledTimes(3)
+    await vi.advanceTimersByTimeAsync(6 * H) // 6 h interval from start is next
+    expect(anilist.refreshAiring).toHaveBeenCalledTimes(4)
     warn.mockRestore()
     w.stop()
   })
@@ -199,19 +199,100 @@ describe('createAiringWatcher', () => {
     w2.stop()
   })
 
-  it('persists memory across instances (no duplicate notification)', () => {
+  it('persists memory across instances (no duplicate notification)', async () => {
     const w = make()
     w.check()
     w.stop()
     vi.setSystemTime(T + 3 * H)
     const w1 = make()
     w1.check()
+    await vi.advanceTimersByTimeAsync(0) // confirming refresh resolves
     expect(notify).toHaveBeenCalledTimes(1)
     w1.stop()
     const w2 = make()
     w2.check()
+    await vi.advanceTimersByTimeAsync(0)
     expect(notify).toHaveBeenCalledTimes(1)
     w2.stop()
+  })
+
+  it('refreshes before announcing an episode found in cache', async () => {
+    fs.writeFileSync(file, JSON.stringify({ notified: { 1: fr(5, T) } }))
+    state.infos[1] = info(6, T - MIN)
+    let release
+    anilist.refreshAiring.mockImplementation(() => new Promise((res) => { release = res }))
+    const w = make()
+    w.check()
+    expect(anilist.refreshAiring).toHaveBeenCalledTimes(1)
+    expect(notify).not.toHaveBeenCalled()
+    release(new Map())
+    await vi.advanceTimersByTimeAsync(0)
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(notify.mock.calls[0][0].episode).toBe(6)
+    w.stop()
+  })
+
+  it('does not announce a delayed episode and re-arms for the new time', async () => {
+    anilist.refreshAiring.mockImplementation(async () => {
+      if (state.infos[1].nextAiring.airingAt === T + 2 * H) state.infos[1] = info(6, T + 4 * H) // AniList moved it +2 h
+      return new Map()
+    })
+    const w = make()
+    w.start()
+    await vi.advanceTimersByTimeAsync(2 * H) // timer check at the old airingAt -> confirm -> delayed
+    expect(notify).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(2 * H)
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(notify.mock.calls[0][0].episode).toBe(6)
+    w.stop()
+  })
+
+  it('announces from cache once when the refresh fails', async () => {
+    fs.writeFileSync(file, JSON.stringify({ notified: { 1: fr(5, T) } }))
+    state.infos[1] = info(6, T - MIN)
+    anilist.refreshAiring.mockRejectedValue(new Error('AniList down'))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const w = make()
+    w.check()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(notify.mock.calls[0][0].episode).toBe(6)
+    expect(anilist.refreshAiring).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(MIN)
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(anilist.refreshAiring).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+    w.stop()
+  })
+
+  it('announces nothing when stopped during the confirming refresh', async () => {
+    for (const fail of [false, true]) {
+      fs.writeFileSync(file, JSON.stringify({ notified: { 1: fr(5, T) } }))
+      state.infos[1] = info(6, T - MIN)
+      let settle
+      anilist.refreshAiring.mockImplementation(() => new Promise((res, rej) => { settle = fail ? () => rej(new Error('x')) : () => res(new Map()) }))
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const w = make()
+      w.check()
+      w.stop()
+      settle()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(notify).not.toHaveBeenCalled()
+      warn.mockRestore()
+    }
+  })
+
+  it('confirms several due series with one refresh', async () => {
+    state.entries = [entry('a', 1), entry('b', 2)]
+    state.infos = { 1: info(6, T - MIN), 2: info(4, T - MIN) }
+    fs.writeFileSync(file, JSON.stringify({ notified: { 1: fr(5, T), 2: fr(3, T) } }))
+    const w = make()
+    w.check()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(anilist.refreshAiring).toHaveBeenCalledTimes(1)
+    expect(anilist.refreshAiring).toHaveBeenCalledWith([1, 2])
+    expect(notify).toHaveBeenCalledTimes(2)
+    w.stop()
   })
 
   it('corrupt file starts empty (seeds again)', () => {
@@ -242,7 +323,7 @@ describe('createAiringWatcher', () => {
     expect(anilist.refreshAiring.mock.calls.length).toBe(calls)
   })
 
-  it('a throwing notify does not stop the other notifications', () => {
+  it('a throwing notify does not stop the other notifications', async () => {
     state.entries = [entry('a', 1), entry('b', 2)]
     state.infos = { 1: info(6, T + H), 2: info(3, T + H) }
     const w = make()
@@ -251,6 +332,7 @@ describe('createAiringWatcher', () => {
     notify.mockImplementationOnce(() => { throw new Error('boom') })
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     w.check()
+    await vi.advanceTimersByTimeAsync(0)
     expect(notify).toHaveBeenCalledTimes(2)
     warn.mockRestore()
     w.stop()
