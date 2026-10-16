@@ -20,8 +20,12 @@ export function Toast({ message, icon = 'check', action = null, focusAction = fa
       setTimeout(() => {
         const a = document.activeElement
         if (a && a !== document.body) return
-        const next = document.querySelector('.toast-stack .toast__action') || document.querySelector('main.content')
-        next?.focus()
+        // toasts sit above modals: prefer the open modal box (topmost = last) so focus stays inside aria-modal
+        const modals = document.querySelectorAll('[aria-modal="true"]')
+        const next = document.querySelector('.toast-stack .toast__action')
+          || modals[modals.length - 1]
+          || document.querySelector('main.content')
+        next?.focus({ preventScroll: true })
       }, 0)
     }
   }, [])

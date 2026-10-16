@@ -170,6 +170,20 @@ describe('ToastProvider', () => {
       act(() => vi.advanceTimersByTime(0))
       expect(screen.getByTestId('main')).toHaveFocus()
     })
+    it('focus falls back to an open modal dialog instead of main', () => {
+      vi.useFakeTimers()
+      render(ui(false, <>
+        <main className="content" tabIndex={-1} data-testid="main" />
+        <div role="dialog" aria-modal="true" tabIndex={-1} data-testid="dlg" />
+      </>))
+      let id
+      act(() => { id = api.show({ message: 'A', action }) })
+      act(() => screen.getByRole('button', { name: 'Poništi' }).focus())
+      act(() => api.dismiss(id))
+      act(() => vi.advanceTimersByTime(0))
+      expect(screen.getByTestId('dlg')).toHaveFocus()
+      expect(screen.getByTestId('main')).not.toHaveFocus()
+    })
     it('does not pull focus when the closing toast did not hold it', () => {
       vi.useFakeTimers()
       render(ui(false, <main className="content" tabIndex={-1} data-testid="main" />))

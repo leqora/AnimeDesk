@@ -189,7 +189,7 @@ describe('useAniListInfo', () => {
       await at(15 * MIN)
       expect(forTitle).toHaveBeenCalledTimes(3)
     })
-    it('a new airingAt from another hook clears the old retry chain', async () => {
+    it('a new airingAt clears the old retry chain', async () => {
       vi.useFakeTimers()
       const t0 = Date.now()
       const same = airing(t0 + 5 * MIN)
