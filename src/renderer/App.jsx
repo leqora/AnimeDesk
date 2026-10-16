@@ -59,17 +59,23 @@ const SILENT = { soundKey: false, soundUi: false, soundVolume: 0 }
 function Celebrations({ levelUp, toast, stats, motionOff, onLevelUpDone, onToastDone }) {
   const t = useT()
   const { show } = useToast()
+  // latest values for the effects below, so they re-run only when the celebration state changes
+  const latest = useRef({})
+  latest.current = { t, onLevelUpDone, onToastDone }
   // With animations off the level-up becomes a queued toast; hand it over once and clear the state.
   useEffect(() => {
     if (!levelUp || !motionOff) return
+    const { t, onLevelUpDone } = latest.current
     show({ message: t('toast.levelUp', { level: levelUp.level, title: t(`title.${levelUp.title}`) }), icon: 'flame' })
     onLevelUpDone()
-  }, [levelUp, motionOff])
+  }, [levelUp, motionOff, show])
+  // While the overlay is up its scrim would hide the toast, so wait until it closes.
   useEffect(() => {
-    if (!toast) return
+    if (!toast || (levelUp && !motionOff)) return
+    const { t, onToastDone } = latest.current
     show({ message: t('toast.completed', { title: toast.title, xp: toast.xp }) })
     onToastDone()
-  }, [toast])
+  }, [toast, levelUp, motionOff, show])
   return levelUp && !motionOff
     ? <LevelUpOverlay level={levelUp.level} title={levelUp.title} xpIntoLevel={stats.xpIntoLevel} xpForNext={stats.xpForNext} onDone={onLevelUpDone} />
     : null

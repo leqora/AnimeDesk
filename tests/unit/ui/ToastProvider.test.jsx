@@ -74,6 +74,17 @@ describe('ToastProvider', () => {
     expect(onAction).toHaveBeenCalledTimes(1)
     expect(screen.queryByText('Akcija')).not.toBeInTheDocument()
   })
+  it('action click dismisses even if onAction throws', () => {
+    setup()
+    const onAction = vi.fn(() => { throw new Error('boom') })
+    act(() => { api.show({ message: 'Greška', action: { label: 'Poništi', onAction } }) })
+    const swallow = (e) => e.preventDefault()
+    window.addEventListener('error', swallow)
+    try { fireEvent.click(screen.getByRole('button', { name: 'Poništi' })) } catch {}
+    window.removeEventListener('error', swallow)
+    expect(onAction).toHaveBeenCalled()
+    expect(screen.queryByText('Greška')).not.toBeInTheDocument()
+  })
   it('dismiss removes a toast by id', () => {
     setup()
     let id

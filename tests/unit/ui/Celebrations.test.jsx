@@ -64,6 +64,16 @@ describe('App celebrations', () => {
     expect(screen.getByText('ZAVRŠENO · Show · +50 XP')).toBeInTheDocument()
     expect(screen.getAllByRole('status')).toHaveLength(2)
   })
+  it('holds the completed toast until the level-up overlay is closed', async () => {
+    const { handlers } = setup()
+    await waitFor(() => expect(handlers.levelUp).toBeDefined())
+    act(() => handlers.levelUp({ level: 11, title: 'veteran' }))
+    act(() => handlers.completed({ title: 'Show', xp: 50 }))
+    expect(screen.getByRole('dialog', { name: 'LEVEL UP' })).toBeInTheDocument()
+    expect(screen.queryByText('ZAVRŠENO · Show · +50 XP')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('dialog', { name: 'LEVEL UP' }))
+    expect(screen.getByText('ZAVRŠENO · Show · +50 XP')).toBeInTheDocument()
+  })
   it('removes the reduce-motion class on unmount', async () => {
     const api = makeFakeApi()
     api.settings.get.mockResolvedValue({ ...DEFAULT_SETTINGS, animations: false })

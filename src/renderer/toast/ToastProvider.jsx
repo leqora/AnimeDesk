@@ -34,7 +34,7 @@ function ToastItem({ toast, onDone }) {
   return (
     <Toast
       message={toast.message} icon={toast.icon} action={toast.action}
-      onAction={() => { toast.action.onAction(); onDone() }}
+      onAction={() => { try { toast.action.onAction() } finally { onDone() } }}
       onPause={pause} onResume={resume}
     />
   )
