@@ -27,6 +27,11 @@ export const DEFAULT_SETTINGS = Object.freeze({
   playerMuted: false,
   hideSpoilers: true,
   episodeView: 'numbers',
+  closeToTray: true,
+  launchAtLogin: false,
+  notifyNewEpisodes: true,
+  notifyDownloads: true,
+  trayHintShown: false,
 })
 
 export const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
@@ -83,12 +88,17 @@ export function sanitizeSettings(input = {}) {
   if (typeof input.playerMuted === 'boolean') s.playerMuted = input.playerMuted
   if (typeof input.hideSpoilers === 'boolean') s.hideSpoilers = input.hideSpoilers
   if (EPISODE_VIEWS.includes(input.episodeView)) s.episodeView = input.episodeView
+  if (typeof input.closeToTray === 'boolean') s.closeToTray = input.closeToTray
+  if (typeof input.launchAtLogin === 'boolean') s.launchAtLogin = input.launchAtLogin
+  if (typeof input.notifyNewEpisodes === 'boolean') s.notifyNewEpisodes = input.notifyNewEpisodes
+  if (typeof input.notifyDownloads === 'boolean') s.notifyDownloads = input.notifyDownloads
+  if (typeof input.trayHintShown === 'boolean') s.trayHintShown = input.trayHintShown
   return s
 }
 
-export function createSettings(file, { systemName = 'Player' } = {}) {
+export function createSettings(file, { systemName = 'Player', isPackaged = false } = {}) {
   let current = sanitizeSettings(readJson(file, {}).data)
-  const view = () => ({ ...current, systemName })
+  const view = () => ({ ...current, systemName, isPackaged })
   return {
     get: view,
     update(patch) {

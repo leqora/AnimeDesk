@@ -16,6 +16,7 @@ describe('settings', () => {
       autoDownloadUpdates: true, lastSeenVersion: null, fullscreen: false,
       playerMode: 'internal', autoSkip: false, autoNext: true, subtitles: { enabled: { sub: true, dub: false }, size: 25, lineSpacing: 0, font: 'default', color: 'white', box: true, boxOpacity: 60 }, mpvModernUi: true,
       playerVolume: 1, playerMuted: false, hideSpoilers: true, episodeView: 'numbers',
+      closeToTray: true, launchAtLogin: false, notifyNewEpisodes: true, notifyDownloads: true, trayHintShown: false,
     })
   })
   it('clamps the threshold and ignores invalid values', () => {
@@ -113,5 +114,21 @@ describe('settings', () => {
     expect(sanitizeSettings({ hideSpoilers: 'no' }).hideSpoilers).toBe(true)
     expect(sanitizeSettings({ episodeView: 'list' }).episodeView).toBe('list')
     expect(sanitizeSettings({ episodeView: 'grid' }).episodeView).toBe('numbers')
+  })
+  it('sanitizes the background and notification switches', () => {
+    const defaults = { closeToTray: true, launchAtLogin: false, notifyNewEpisodes: true, notifyDownloads: true, trayHintShown: false }
+    expect(sanitizeSettings({})).toMatchObject(defaults)
+    for (const [key, def] of Object.entries(defaults)) {
+      expect(sanitizeSettings({ [key]: !def })[key]).toBe(!def)
+      expect(sanitizeSettings({ [key]: 'yes' })[key]).toBe(def)
+      expect(sanitizeSettings({ [key]: 1 })[key]).toBe(def)
+    }
+  })
+  it('exposes isPackaged without persisting it', () => {
+    expect(createSettings(file).get().isPackaged).toBe(false)
+    const s = createSettings(file, { isPackaged: true })
+    expect(s.get().isPackaged).toBe(true)
+    expect(s.update({ language: 'en' }).isPackaged).toBe(true)
+    expect(JSON.parse(fs.readFileSync(file, 'utf8'))).not.toHaveProperty('isPackaged')
   })
 })
