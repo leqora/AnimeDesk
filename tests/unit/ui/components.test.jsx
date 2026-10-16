@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
 import { screen, fireEvent, waitFor } from '@testing-library/react'
-import { renderUi, makeFakeApi } from './helpers.jsx'
+import { renderUi, makeFakeApi, hasNoContent } from './helpers.jsx'
 import { Semaphore } from '../../../src/renderer/components/Semaphore.jsx'
 import { ReadyNotice } from '../../../src/renderer/components/ReadyNotice.jsx'
 import { ConfirmButton } from '../../../src/renderer/components/ConfirmButton.jsx'
@@ -31,7 +31,7 @@ describe('Semaphore', () => {
 describe('ReadyNotice', () => {
   it('renders nothing when ready', () => {
     const { container } = renderUi(<ReadyNotice ready onOpenWizard={() => {}} />)
-    expect(container).toBeEmptyDOMElement()
+    expect(hasNoContent(container)).toBe(true)
   })
   it('explains the block and opens the wizard', () => {
     const onOpen = vi.fn()

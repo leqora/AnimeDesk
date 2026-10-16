@@ -88,6 +88,39 @@ describe('infoCache', () => {
     await expect(c.get('X')).rejects.toThrow('boom')
     expect(c.peek('X')).toBeUndefined()
   })
+  it('subscribe notifies after get stores a value', async () => {
+    let t = 0
+    const api = fakeApi()
+    const c = infoCache(api, { now: () => t })
+    const fn = vi.fn()
+    const unsubscribe = c.subscribe('T', null, fn)
+    await c.get('T')
+    expect(fn).toHaveBeenCalledTimes(1)
+    expect(fn).toHaveBeenCalledWith({ id: 1, poster: 'p' })
+    unsubscribe()
+    t += INFO_TTL_MS
+    await c.get('T')
+    expect(api.anilist.forTitle).toHaveBeenCalledTimes(2)
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+  it('notifies id alias subscribers', async () => {
+    const api = fakeApi(async () => ({ id: 7, poster: 'p' }))
+    const c = infoCache(api)
+    const fn = vi.fn()
+    c.subscribe('T', 7, fn)
+    await c.get('T')
+    expect(fn).toHaveBeenCalledTimes(1)
+    expect(fn).toHaveBeenCalledWith({ id: 7, poster: 'p' })
+  })
+  it('notifies a function subscribed under both keys only once per store', async () => {
+    const api = fakeApi(async () => ({ id: 7, poster: 'p' }))
+    const c = infoCache(api)
+    const fn = vi.fn()
+    c.subscribe('T', null, fn)
+    c.subscribe('T', 7, fn)
+    await c.get('T')
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
   it('an entry whose airing grace is already past still lives 60 s', async () => {
     let t = 10_000_000
     const api = fakeApi(async () => ({ id: 1, nextAiring: { airingAt: t - AIRED_GRACE_MS - 5000, episode: 2 } }))

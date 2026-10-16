@@ -70,3 +70,6 @@ export function renderHookUi(callback, { api = makeFakeApi(), lang = 'sr', initi
   )
   return { api, ...renderHook(callback, { wrapper, initialProps }) }
 }
+
+// renderUi always mounts the (empty) persistent toast live region; ignore it when asserting "renders nothing".
+export const hasNoContent = (container) => container.querySelector(':scope > :not(.toast-stack)') === null

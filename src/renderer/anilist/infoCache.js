@@ -14,7 +14,19 @@ export function infoCache(api, { now = Date.now } = {}) {
   if (cache) return cache
   const store = new Map() // key -> { info, until }
   const inflight = new Map() // key -> Promise
+  const subs = new Map() // key -> Set<fn>
   cache = {
+    // fn(info) runs after get stores a fetched value under this key (or its id alias). Returns unsubscribe.
+    subscribe(title, aniListId, fn) {
+      const key = keyOf(title, aniListId)
+      if (!subs.has(key)) subs.set(key, new Set())
+      subs.get(key).add(fn)
+      return () => {
+        const set = subs.get(key)
+        set?.delete(fn)
+        if (set?.size === 0) subs.delete(key)
+      }
+    },
     peek(title, aniListId = null) {
       const key = keyOf(title, aniListId)
       const hit = store.get(key)
@@ -36,6 +48,10 @@ export function infoCache(api, { now = Date.now } = {}) {
         store.set(key, { info, until })
         // Also under the id key, so a later lookup by the freshly linked aniListId hits the same entry.
         if (info?.id) store.set(keyOf(title, info.id), { info, until })
+        // Every view of this series (by title or by id) learns about the fresh value, each function once.
+        const targets = new Set(subs.get(key))
+        if (info?.id) for (const fn of subs.get(keyOf(title, info.id)) ?? []) targets.add(fn)
+        for (const fn of targets) fn(info)
         return info
       }).finally(() => { inflight.delete(key) })
       inflight.set(key, p)

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
 import { screen, fireEvent } from '@testing-library/react'
-import { renderUi } from './helpers.jsx'
+import { renderUi, hasNoContent } from './helpers.jsx'
 import { UpdateBanner } from '../../../src/renderer/components/UpdateBanner.jsx'
 import { WhatsNewDialog } from '../../../src/renderer/components/WhatsNewDialog.jsx'
 
@@ -32,7 +32,7 @@ describe('UpdateBanner', () => {
   it('hides on error and in every other state', () => {
     for (const status of ['idle', 'checking', 'none', 'error', 'disabled']) {
       const { container, unmount } = renderUi(<UpdateBanner state={st({ status })} onWhatsNew={() => {}} />)
-      expect(container).toBeEmptyDOMElement()
+      expect(hasNoContent(container)).toBe(true)
       unmount()
     }
   })

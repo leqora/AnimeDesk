@@ -97,6 +97,21 @@ describe('MediaCard', () => {
     expect(api.anilist.forTitle).toHaveBeenCalledTimes(1)
     expect(api.episodes.forSeries).not.toHaveBeenCalled()
   })
+  it('card refreshes after airing', async () => {
+    vi.useFakeTimers()
+    try {
+      const now = Date.now()
+      const forTitle = vi.fn()
+        .mockResolvedValueOnce(airingInfo({ nextAiring: { episode: 5, airingAt: now - 10 * 60 * 1000 } }))
+        .mockResolvedValue(airingInfo({ nextAiring: { episode: 7, airingAt: now + 7 * 24 * 3600 * 1000 } }))
+      card({}, makeFakeApi({ anilist: { forTitle } })) // watched 1–3, episode 5 aired → 2 new
+      await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+      expect(screen.getByRole('button', { name: /^Show — 3\/12, Gledam, 2 nove epizode$/ })).toBeInTheDocument()
+      await act(async () => { await vi.advanceTimersByTimeAsync(3600 * 1000 + 31_000) })
+      expect(forTitle).toHaveBeenCalledTimes(2)
+      expect(screen.getByRole('button', { name: /^Show — 3\/12, Gledam, 3 nove epizode$/ })).toBeInTheDocument()
+    } finally { vi.useRealTimers() }
+  })
   it('shows no badge for a planned series or a finished show', async () => {
     const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => airingInfo()) } })
     card({ entry: entry({ status: 'planned' }) }, api)

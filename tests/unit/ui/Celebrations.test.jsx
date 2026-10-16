@@ -52,7 +52,7 @@ describe('App celebrations', () => {
     await waitFor(() => expect(handlers.levelUp).toBeDefined())
     act(() => handlers.levelUp({ level: 11, title: 'veteran' }))
     expect(screen.queryByRole('dialog', { name: 'LEVEL UP' })).not.toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('LEVEL UP · LV 11 · Veteran')
+    expect(document.querySelector('.toast')).toHaveTextContent('LEVEL UP · LV 11 · Veteran')
     expect(document.documentElement).toHaveClass('reduce-motion')
   })
   it('level-up with animations off and a completed series show two toasts at once', async () => {
@@ -62,7 +62,7 @@ describe('App celebrations', () => {
     act(() => handlers.completed({ title: 'Show', xp: 50 }))
     expect(screen.getByText('LEVEL UP · LV 11 · Veteran')).toBeInTheDocument()
     expect(screen.getByText('ZAVRŠENO · Show · +50 XP')).toBeInTheDocument()
-    expect(screen.getAllByRole('status')).toHaveLength(2)
+    expect(document.querySelectorAll('.toast')).toHaveLength(2)
   })
   it('holds the completed toast until the level-up overlay is closed', async () => {
     const { handlers } = setup()
@@ -101,7 +101,7 @@ describe('App celebrations', () => {
     await waitFor(() => expect(handlers.completed).toBeDefined())
     act(() => handlers.completed({ title: 'Show', xp: 50 }))
     expect(sound.play).toHaveBeenCalledWith('seriesCompleted')
-    expect(screen.getByRole('status')).toHaveTextContent('ZAVRŠENO · Show · +50 XP')
+    expect(document.querySelector('.toast')).toHaveTextContent('ZAVRŠENO · Show · +50 XP')
   })
   it('plays the download sound once per finished item', async () => {
     const { sound, handlers } = setup()

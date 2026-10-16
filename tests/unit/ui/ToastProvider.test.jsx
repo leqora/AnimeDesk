@@ -16,7 +16,7 @@ describe('ToastProvider', () => {
   it('shows a message and hides it after 3 s', () => {
     setup()
     act(() => { api.show({ message: 'Zdravo' }) })
-    expect(screen.getByRole('status')).toHaveTextContent('Zdravo')
+    expect(document.querySelector('.toast')).toHaveTextContent('Zdravo')
     expect(screen.getByRole('group', { name: 'Obaveštenja' })).toBeInTheDocument()
     act(() => vi.advanceTimersByTime(2900))
     expect(screen.getByText('Zdravo')).toBeInTheDocument()
@@ -34,7 +34,7 @@ describe('ToastProvider', () => {
   it('four toasts: three visible, the fourth appears when one leaves', () => {
     setup()
     act(() => { for (const m of ['A', 'B', 'C', 'D']) api.show({ message: m }) })
-    expect(screen.getAllByRole('status')).toHaveLength(3)
+    expect(document.querySelectorAll('.toast')).toHaveLength(3)
     expect(screen.queryByText('D')).not.toBeInTheDocument()
     act(() => vi.advanceTimersByTime(3100))
     expect(screen.getByText('D')).toBeInTheDocument()
@@ -44,7 +44,7 @@ describe('ToastProvider', () => {
     setup()
     act(() => { api.show({ message: 'Hover' }) })
     act(() => vi.advanceTimersByTime(2000))
-    const el = screen.getByRole('status')
+    const el = document.querySelector('.toast')
     fireEvent.mouseEnter(el)
     act(() => vi.advanceTimersByTime(10000))
     expect(screen.getByText('Hover')).toBeInTheDocument()
@@ -115,5 +115,94 @@ describe('ToastProvider', () => {
     function Alone() { const x = useToast(); return <button onClick={() => x.show({ message: 'x' })}>go</button> }
     render(<Alone />)
     expect(() => fireEvent.click(screen.getByText('go'))).not.toThrow()
+  })
+
+  describe('focus and live region', () => {
+    const action = { label: 'Poništi', onAction: () => {} }
+    const ui = (hold = false, children = null) => (
+      <I18nProvider lang="sr"><ToastProvider hold={hold}><Grab />{children}</ToastProvider></I18nProvider>
+    )
+    it('focusAction focuses Undo when focus is on body', () => {
+      vi.useFakeTimers()
+      render(ui())
+      act(() => document.activeElement.blur())
+      act(() => { api.show({ message: 'x', focusAction: true, action }) })
+      expect(screen.getByRole('button', { name: 'Poništi' })).toHaveFocus()
+    })
+    it('focusAction does not steal focus from a focused control', () => {
+      vi.useFakeTimers()
+      render(ui(false, <input aria-label="polje" />))
+      const input = screen.getByLabelText('polje')
+      act(() => input.focus())
+      act(() => { api.show({ message: 'x', focusAction: true, action }) })
+      expect(input).toHaveFocus()
+    })
+    it('focusAction applies only on first mount', () => {
+      vi.useFakeTimers()
+      const { rerender } = render(ui(false, <input aria-label="polje" />))
+      const input = screen.getByLabelText('polje')
+      act(() => input.focus())
+      act(() => { api.show({ message: 'x', focusAction: true, action }) })
+      expect(input).toHaveFocus()
+      act(() => input.blur())
+      rerender(ui(true, <input aria-label="polje" />))
+      rerender(ui(false, <input aria-label="polje" />))
+      expect(screen.getByRole('button', { name: 'Poništi' })).not.toHaveFocus()
+    })
+    it('focus moves to the next toast action when the focused toast closes', () => {
+      vi.useFakeTimers()
+      render(ui())
+      act(() => { api.show({ message: 'A', action: { label: 'Prvi', onAction: () => {} } }) })
+      act(() => { api.show({ message: 'B', action: { label: 'Drugi', onAction: () => {} } }) })
+      const first = screen.getByRole('button', { name: 'Prvi' })
+      act(() => first.focus())
+      fireEvent.click(first)
+      act(() => vi.advanceTimersByTime(0))
+      expect(screen.getByRole('button', { name: 'Drugi' })).toHaveFocus()
+    })
+    it('focus falls back to main when the last focused toast closes', () => {
+      vi.useFakeTimers()
+      render(ui(false, <main className="content" tabIndex={-1} data-testid="main" />))
+      let id
+      act(() => { id = api.show({ message: 'A', action }) })
+      act(() => screen.getByRole('button', { name: 'Poništi' }).focus())
+      act(() => api.dismiss(id))
+      act(() => vi.advanceTimersByTime(0))
+      expect(screen.getByTestId('main')).toHaveFocus()
+    })
+    it('focus falls back to an open modal dialog instead of main', () => {
+      vi.useFakeTimers()
+      render(ui(false, <>
+        <main className="content" tabIndex={-1} data-testid="main" />
+        <div role="dialog" aria-modal="true" tabIndex={-1} data-testid="dlg" />
+      </>))
+      let id
+      act(() => { id = api.show({ message: 'A', action }) })
+      act(() => screen.getByRole('button', { name: 'Poništi' }).focus())
+      act(() => api.dismiss(id))
+      act(() => vi.advanceTimersByTime(0))
+      expect(screen.getByTestId('dlg')).toHaveFocus()
+      expect(screen.getByTestId('main')).not.toHaveFocus()
+    })
+    it('does not pull focus when the closing toast did not hold it', () => {
+      vi.useFakeTimers()
+      render(ui(false, <main className="content" tabIndex={-1} data-testid="main" />))
+      let id
+      act(() => { id = api.show({ message: 'A', action }) })
+      act(() => api.dismiss(id))
+      act(() => vi.advanceTimersByTime(0))
+      expect(screen.getByTestId('main')).not.toHaveFocus()
+    })
+    it('stack container is always rendered with aria-live polite', () => {
+      vi.useFakeTimers()
+      const { rerender } = render(ui())
+      const region = () => screen.getByRole('group', { name: 'Obaveštenja' })
+      expect(region()).toHaveAttribute('aria-live', 'polite')
+      act(() => { api.show({ message: 'Zdravo' }) })
+      expect(document.querySelector('.toast')).not.toHaveAttribute('role')
+      rerender(ui(true))
+      expect(region()).toHaveAttribute('aria-live', 'polite')
+      expect(document.querySelector('.toast')).toBeNull()
+    })
   })
 })

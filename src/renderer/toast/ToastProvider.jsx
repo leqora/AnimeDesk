@@ -11,6 +11,7 @@ export const useToast = () => useContext(ToastCtx)
 // `saved` keeps the remaining time across unmounts (the provider's hold), keyed by toast id.
 function ToastItem({ toast, onDone, saved }) {
   const remaining = useRef(saved.get(toast.id) ?? toast.ms)
+  const firstMount = useRef(!saved.has(toast.id)).current // a remount (after hold) must not grab focus again
   const startedAt = useRef(0)
   const timer = useRef(null)
   const paused = useRef(false)
@@ -43,7 +44,7 @@ function ToastItem({ toast, onDone, saved }) {
   }, [])
   return (
     <Toast
-      message={toast.message} icon={toast.icon} action={toast.action} focusAction={toast.focusAction}
+      message={toast.message} icon={toast.icon} action={toast.action} focusAction={toast.focusAction && firstMount}
       onAction={() => { try { toast.action.onAction() } finally { onDone() } }}
       onPause={pause} onResume={resume}
     />
@@ -77,11 +78,9 @@ export function ToastProvider({ children, hold = false }) {
   return (
     <ToastCtx.Provider value={api}>
       {children}
-      {shown.length > 0 && !hold && (
-        <div className="toast-stack" role="group" aria-label={t('toast.region')}>
-          {shown.map((x) => <ToastItem key={x.id} toast={x} onDone={() => dismiss(x.id)} saved={saved} />)}
-        </div>
-      )}
+      <div className="toast-stack" role="group" aria-live="polite" aria-label={t('toast.region')}>
+        {!hold && shown.map((x) => <ToastItem key={x.id} toast={x} onDone={() => dismiss(x.id)} saved={saved} />)}
+      </div>
     </ToastCtx.Provider>
   )
 }
