@@ -63,20 +63,36 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
 
   const openNote = (ep) => { setNoteEp(ep); setNoteText(entry.episodeNotes[String(ep)] ?? '') }
   const saveNote = async () => { await api.library.setEpisodeNote(entry.id, noteEp, noteText); onChanged() }
+  // Latest known watched list: follows the entry on refresh, and the last saved list in between (rapid marks accumulate).
+  const latestWatched = useRef(watched)
+  useEffect(() => { latestWatched.current = watched }, [watched])
+  const setWatched = async (next) => {
+    latestWatched.current = next
+    await save({ watchedEpisodes: next })
+  }
   const toggleWatched = async (ep) => {
-    const previous = watched
-    const marking = !previous.includes(ep)
-    await save({ watchedEpisodes: marking ? [...previous, ep] : previous.filter((x) => x !== ep) })
+    const marking = !latestWatched.current.includes(ep)
+    try {
+      await setWatched(marking ? [...latestWatched.current, ep] : latestWatched.current.filter((x) => x !== ep))
+    } catch (err) { console.error(err); return }
     // Only the episode number goes in the toast, never a title (spoilers).
     toast.show({
       message: t(marking ? 'toast.markedWatched' : 'toast.unmarkedWatched', { episode: ep }),
-      action: { label: t('toast.undo'), onAction: () => save({ watchedEpisodes: previous }) },
+      action: {
+        label: t('toast.undo'),
+        // Undo touches only this episode, relative to the current list.
+        onAction: async () => {
+          const cur = latestWatched.current
+          const next = marking ? cur.filter((x) => x !== ep) : cur.includes(ep) ? cur : [...cur, ep]
+          try { await setWatched(next) } catch (err) { console.error(err) }
+        },
+      },
     })
   }
   const remove = async () => {
     // Capture id/title: the detail unmounts after removal, the toast outlives it.
     const { id, title } = entry
-    await api.library.remove(id)
+    try { await api.library.remove(id) } catch (err) { console.error(err); return }
     ;(onRemoved ?? onBack)()
     onChanged()
     toast.show({
@@ -84,8 +100,9 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
       action: {
         label: t('toast.undo'),
         onAction: async () => {
-          const r = await api.library.restore(id)
-          if (r?.ok) onChanged()
+          let ok = false
+          try { ok = Boolean((await api.library.restore(id))?.ok) } catch (err) { console.error(err) }
+          if (ok) onChanged()
           else toast.show({ message: t('toast.restoreFailed'), icon: 'alert' })
         },
       },
