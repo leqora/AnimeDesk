@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { TOOL_IDS } from '../../shared/domain.js'
+import { Modal } from '../components/Modal.jsx'
 
 export function toolView(status, progress, error, busy) {
   if (status?.installed) return { light: 'green', state: 'installed', percent: null }
@@ -43,41 +44,39 @@ export function SetupWizard({ health, onClose }) {
   const hasErrors = Object.keys(errors).length > 0
 
   return (
-    <div className="modal" role="dialog" aria-labelledby="wizard-title">
-      <div className="modal__box">
-        <h2 id="wizard-title">{t('wizard.title')}</h2>
-        <p>{t('wizard.intro')}</p>
-        <ul className="tool-list">
-          {TOOL_IDS.map((id) => {
-            const view = toolView(status[id], progress[id], errors[id], busy)
-            const version = status[id]?.installed && status[id]?.version ? ` (${status[id].version})` : ''
-            return (
-              <li key={id} className="tool-row">
-                <span className={`dot dot--${view.light}`} data-testid={`tool-${id}`} data-light={view.light} />
-                <span className="tool-row__name">{t(`tool.${id}`)}</span>
-                <span className="tool-row__state">
-                  {view.percent != null ? `${t('tool.installing')} ${view.percent}%` : t(`tool.${view.state}`)}
-                  {version}
-                </span>
-              </li>
-            )
-          })}
-        </ul>
-        <p className="row">
-          <span className={`dot dot--${health.light}`} />
-          <span>{t(health.reason === 'ok' ? 'health.green' : `health.${health.reason}`)}</span>
-        </p>
-        <div className="row">
-          {loaded && !allInstalled && (
-            <button type="button" className="primary" disabled={busy} onClick={installAll}>
-              {hasErrors ? t('wizard.retry') : t('wizard.installAll')}
-            </button>
-          )}
-          {allInstalled && <span>{t('wizard.done')}</span>}
-          <button type="button" onClick={() => api.health.recheck()}>{t('health.recheck')}</button>
-          <button type="button" onClick={onClose}>{t('wizard.close')}</button>
-        </div>
+    <Modal labelledBy="wizard-title" onClose={onClose}>
+      <h2 id="wizard-title">{t('wizard.title')}</h2>
+      <p>{t('wizard.intro')}</p>
+      <ul className="tool-list">
+        {TOOL_IDS.map((id) => {
+          const view = toolView(status[id], progress[id], errors[id], busy)
+          const version = status[id]?.installed && status[id]?.version ? ` (${status[id].version})` : ''
+          return (
+            <li key={id} className="tool-row">
+              <span className={`dot dot--${view.light}`} data-testid={`tool-${id}`} data-light={view.light} />
+              <span className="tool-row__name">{t(`tool.${id}`)}</span>
+              <span className="tool-row__state">
+                {view.percent != null ? `${t('tool.installing')} ${view.percent}%` : t(`tool.${view.state}`)}
+                {version}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+      <p className="row">
+        <span className={`dot dot--${health.light}`} />
+        <span>{t(health.reason === 'ok' ? 'health.green' : `health.${health.reason}`)}</span>
+      </p>
+      <div className="row">
+        {loaded && !allInstalled && (
+          <button type="button" className="primary" disabled={busy} onClick={installAll}>
+            {hasErrors ? t('wizard.retry') : t('wizard.installAll')}
+          </button>
+        )}
+        {allInstalled && <span>{t('wizard.done')}</span>}
+        <button type="button" onClick={() => api.health.recheck()}>{t('health.recheck')}</button>
+        <button type="button" onClick={onClose}>{t('wizard.close')}</button>
       </div>
-    </div>
+    </Modal>
   )
 }
