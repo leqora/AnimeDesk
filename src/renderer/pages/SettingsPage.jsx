@@ -101,6 +101,28 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
           <option value="dub">{t('settings.mode.dub')}</option>
         </select>
       </label>
+      <h3>{t('settings.background.section')}</h3>
+      <label className="check">
+        <input type="checkbox" checked={settings.closeToTray} onChange={(e) => onSettings({ closeToTray: e.target.checked })} />
+        {t('settings.background.closeToTray')}
+      </label>
+      <label className="check">
+        <input
+          type="checkbox" checked={settings.launchAtLogin} disabled={!settings.isPackaged}
+          aria-describedby={settings.isPackaged ? undefined : 'launch-at-login-hint'}
+          onChange={(e) => onSettings({ launchAtLogin: e.target.checked })}
+        />
+        {t('settings.background.launchAtLogin')}
+      </label>
+      {!settings.isPackaged && <p id="launch-at-login-hint" className="muted">{t('settings.background.launchAtLoginHint')}</p>}
+      <label className="check">
+        <input type="checkbox" checked={settings.notifyNewEpisodes} onChange={(e) => onSettings({ notifyNewEpisodes: e.target.checked })} />
+        {t('settings.background.notifyNewEpisodes')}
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={settings.notifyDownloads} onChange={(e) => onSettings({ notifyDownloads: e.target.checked })} />
+        {t('settings.background.notifyDownloads')}
+      </label>
       <h3>{t('settings.spoilersSection')}</h3>
       <label className="check">
         <input type="checkbox" checked={settings.hideSpoilers} onChange={(e) => onSettings({ hideSpoilers: e.target.checked })} />
