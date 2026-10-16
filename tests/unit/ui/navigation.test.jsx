@@ -120,6 +120,21 @@ describe('navigation', () => {
     await screen.findByLabelText('Naziv animea')
     await waitFor(() => expect(main.scrollTop).toBe(600))
   })
+  it('going back to an entry with scroll 0 does not freeze later scroll saves', async () => {
+    vi.stubGlobal('requestAnimationFrame', (cb) => { cb(0); return 1 })
+    setup()
+    await goWatchlist()
+    altBack()
+    await screen.findByRole('region', { name: 'Nastavi gledanje' })
+    const main = document.querySelector('main.content')
+    Object.defineProperty(main, 'scrollHeight', { configurable: true, value: 3000 })
+    Object.defineProperty(main, 'clientHeight', { configurable: true, value: 500 })
+    main.scrollTop = 400
+    await goWatchlist()
+    altBack()
+    await screen.findByRole('region', { name: 'Nastavi gledanje' })
+    await waitFor(() => expect(main.scrollTop).toBe(400))
+  })
   it('a removed series route shows the watchlist grid', async () => {
     const changed = []
     let lib = LIB
