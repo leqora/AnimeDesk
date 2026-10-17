@@ -101,7 +101,10 @@ function createWindow(settings) {
   })
   hardenWindow(win.webContents, { devUrl: process.env.ELECTRON_RENDERER_URL ?? null })
   fullscreen = attachFullscreen({ win, settings, send })
-  win.once('ready-to-show', () => { if (!startHidden(process.argv) || pendingShow) win.show() })
+  win.once('ready-to-show', () => {
+    if (pendingShow) showWindow()
+    else if (!startHidden(process.argv)) win.show()
+  })
   if (process.env.ELECTRON_RENDERER_URL) win.loadURL(process.env.ELECTRON_RENDERER_URL)
   else win.loadFile(path.join(__dirname, '../renderer/index.html'))
 }

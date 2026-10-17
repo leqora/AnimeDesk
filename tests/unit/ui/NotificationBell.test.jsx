@@ -112,6 +112,8 @@ describe('NotificationBell', () => {
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
     rerender(el(true))
     expect(screen.queryByRole('dialog')).toBeNull()
+    rerender(el(false))
+    expect(screen.queryByRole('dialog')).toBeNull() // stays closed after the player closes
   })
 
   it('empty state', async () => {

@@ -125,7 +125,10 @@ export function createAiringWatcher({
   function confirmCandidates(candidates) {
     const t = now()
     const toAnnounce = []
+    let stillWatched = new Set()
+    try { stillWatched = new Set(watched(library.list()).map((e) => `${e.id}:${e.aniListId}`)) } catch (err) { console.warn('airingWatcher: library failed', err?.message) }
     for (const item of candidates) {
+      if (!stillWatched.has(`${item.animeId}:${item.aniListId}`)) continue // left "watching" during the refresh
       if ((announced.get(item.aniListId) ?? 0) >= item.episode) continue // the fresh check already announced it
       const na = anilist.getCached(null, { aniListId: item.aniListId })?.nextAiring
       if (na && na.episode <= item.episode && na.airingAt > t) continue // delayed: the re-armed timer handles it
@@ -158,8 +161,7 @@ export function createAiringWatcher({
       const merged = { ...notified }
       for (const item of due) {
         const prev = state.notified[item.aniListId]
-        if (prev) merged[item.aniListId] = prev
-        else delete merged[item.aniListId]
+        merged[item.aniListId] = prev // a due candidate always has a previous entry (unseen series are seeded, never due)
       }
       state.notified = merged
       persist()

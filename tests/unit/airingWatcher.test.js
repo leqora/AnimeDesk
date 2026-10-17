@@ -160,7 +160,10 @@ describe('createAiringWatcher', () => {
     await vi.advanceTimersByTimeAsync(60_000) // first refresh fails
     expect(anilist.refreshAiring).toHaveBeenCalledTimes(1)
     expect(warn).toHaveBeenCalled()
-    await vi.advanceTimersByTimeAsync(H + 59 * MIN) // up to airingAt (T + 2h)
+    await vi.advanceTimersByTimeAsync(H + 59 * MIN - 1) // 1 ms before airingAt (T + 2h)
+    expect(anilist.refreshAiring).toHaveBeenCalledTimes(1) // nothing before airingAt
+    expect(notify).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1) // airingAt
     expect(notify).toHaveBeenCalledTimes(1)
     expect(anilist.refreshAiring).toHaveBeenCalledTimes(2) // first refresh + the one confirming refresh at airingAt (failed, announced from cache, no loop)
     await vi.advanceTimersByTimeAsync(AIRED_GRACE_MS) // only the grace refresh
@@ -310,6 +313,21 @@ describe('createAiringWatcher', () => {
       expect(notify).not.toHaveBeenCalled()
       warn.mockRestore()
     }
+  })
+
+  it('does not announce a candidate whose series left "watching" during the refresh', async () => {
+    fs.writeFileSync(file, JSON.stringify({ notified: { 1: fr(5, T) } }))
+    state.infos[1] = info(6, T - MIN)
+    anilist.refreshAiring.mockImplementation(async () => {
+      state.entries = [entry('a', 1, { status: 'completed' })]
+      return new Map()
+    })
+    const w = make()
+    w.check()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(anilist.refreshAiring).toHaveBeenCalledTimes(1)
+    expect(notify).not.toHaveBeenCalled()
+    w.stop()
   })
 
   it('confirms several due series with one refresh', async () => {

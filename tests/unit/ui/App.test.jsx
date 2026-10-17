@@ -211,6 +211,7 @@ describe('App', () => {
       await screen.findByRole('button', { name: 'Ceo ekran (F11)' })
       // Only the listeners that exist before the toggles matter; listeners other components add later (under load) must not fail this test.
       const registered = keydown(add)
+      expect(registered.length).toBeGreaterThan(0)
       remove.mockClear()
       act(() => onFs(true))
       await screen.findByRole('button', { name: 'Izađi iz celog ekrana (Esc)' })

@@ -54,12 +54,23 @@ describe('fullscreen', () => {
     expect(send).not.toHaveBeenCalledWith(EVENTS.fullscreen, false)
   })
   it('returns to fullscreen when shown again', () => {
-    const { win, fs } = setup(true)
+    const { win, send, fs } = setup(true)
     fs.beforeHide()
     win.hide()
     fs.afterShow()
     expect(win.setFullScreen).toHaveBeenCalledWith(true)
     expect(fs.get()).toBe(true)
+    expect(send).toHaveBeenCalledWith(EVENTS.fullscreen, true)
+  })
+  it('afterShow without beforeHide restores fullscreen from settings', () => {
+    const on = setup(false)
+    on.settings.get().fullscreen = true // --hidden start: window never shown, not fullscreen yet
+    on.fs.afterShow()
+    expect(on.win.setFullScreen).toHaveBeenCalledWith(true)
+    expect(on.fs.get()).toBe(true)
+    const off = setup(false)
+    off.fs.afterShow()
+    expect(off.win.setFullScreen).not.toHaveBeenCalled()
   })
   it('does not enter fullscreen on show when it was off', () => {
     const { win, fs } = setup(false)
