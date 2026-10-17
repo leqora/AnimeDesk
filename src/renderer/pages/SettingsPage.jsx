@@ -3,6 +3,8 @@ import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { TOOL_IDS, OPTIONAL_TOOL_IDS } from '../../shared/domain.js'
+import { AniListAccount } from '../components/AniListAccount.jsx'
+import { AniListPicker } from '../components/AniListPicker.jsx'
 import { SubtitleOverlay } from '../components/SubtitleOverlay.jsx'
 import { DEFAULT_SUBTITLES, SUBTITLE_FONT_STACKS, SUBTITLE_COLORS } from '../../shared/subtitles.js'
 
@@ -17,6 +19,8 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
   const [checking, setChecking] = useState(false)
   const [threshold, setThreshold] = useState(settings.watchedThreshold)
   const [name, setName] = useState(settings.profileName ?? '')
+  const [pickedCount, setPickedCount] = useState(0)
+  const [picking, setPicking] = useState(null) // entry whose AniList match is being chosen manually
 
   useEffect(() => { api.tools.status().then(setTools) }, [api])
   useEffect(() => { setThreshold(settings.watchedThreshold) }, [settings.watchedThreshold])
@@ -101,6 +105,12 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
           <option value="dub">{t('settings.mode.dub')}</option>
         </select>
       </label>
+      <h3>{t('anilist.section')}</h3>
+      <AniListAccount onPick={setPicking} refreshKey={pickedCount} />
+      <AniListPicker
+        open={picking != null} initialQuery={picking?.title ?? ''} entryId={picking?.id}
+        onClose={() => setPicking(null)} onPicked={() => { setPicking(null); setPickedCount((n) => n + 1) }}
+      />
       <h3>{t('settings.background.section')}</h3>
       <label className="check">
         <input type="checkbox" checked={settings.closeToTray} onChange={(e) => onSettings({ closeToTray: e.target.checked })} />

@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import crypto from 'node:crypto'
-import { createAniList, bestMatch, cleanDescription, SEARCH_VERSION, toNextAiring, isFresh } from '../../src/main/anilist.js'
+import { createAniList, AniListAuthError, bestMatch, cleanDescription, SEARCH_VERSION, toNextAiring, isFresh } from '../../src/main/anilist.js'
 
 const media = (id, romaji, english, extra = {}) => ({
   id, idMal: 900 + id, title: { romaji, english, native: null }, coverImage: { large: `https://img/${id}.jpg` },
@@ -558,5 +558,115 @@ describe('refreshAiring (batched airing schedule)', () => {
     const f = vi.fn(async () => new Response('boom', { status: 500 }))
     const al = createAniList({ cacheDir, fetchImpl: f, now: () => NOW })
     await expect(al.refreshAiring([1])).rejects.toThrow('AniList HTTP 500')
+  })
+})
+
+describe('anilist authenticated calls', () => {
+  const TOKEN = 'tok'
+  const bodyOf = (f, i = 0) => JSON.parse(f.mock.calls[i][1].body)
+  const make = (handler) => {
+    const f = vi.fn(async (url, init) => handler(url, init))
+    return { f, al: createAniList({ cacheDir, fetchImpl: f, sleep: async () => {} }) }
+  }
+
+  it('viewer sends the bearer token and resolves { id, name }', async () => {
+    const { f, al } = make(() => Response.json({ data: { Viewer: { id: 42, name: 'Nikola', extra: 1 } } }))
+    expect(await al.viewer(TOKEN)).toEqual({ id: 42, name: 'Nikola' })
+    expect(f.mock.calls[0][1].headers.Authorization).toBe('Bearer tok')
+  })
+
+  it('sends no Authorization header without a token', async () => {
+    const { f, al } = make(() => Response.json({ data: { Page: { media: [] } } }))
+    await al.search('x')
+    expect('Authorization' in f.mock.calls[0][1].headers).toBe(false)
+  })
+
+  describe('error classification', () => {
+    const cases = [
+      ['HTTP 401', () => new Response('nope', { status: 401 }), true],
+      ['HTTP 400 with errors[].status 401', () => Response.json({ errors: [{ message: 'x', status: 401 }], data: null }, { status: 400 }), true],
+      ['HTTP 400 with "Invalid token" message', () => Response.json({ errors: [{ message: 'Invalid token' }], data: null }, { status: 400 }), true],
+      ['HTTP 200 with 401 error and null data', () => Response.json({ errors: [{ message: 'x', status: 401 }], data: null }), true],
+      ['HTTP 500', () => new Response('boom', { status: 500 }), false],
+      ['HTTP 200 with errors and null data', () => Response.json({ errors: [{ message: 'Validation', status: 400 }], data: null }), false],
+    ]
+    for (const [name, reply, isAuth] of cases) {
+      it(`${name} -> ${isAuth ? 'AniListAuthError' : 'plain Error'} without the token`, async () => {
+        const { al } = make(reply)
+        const err = await al.viewer(TOKEN).then(() => null, (e) => e)
+        expect(err).toBeInstanceOf(Error)
+        expect(err instanceof AniListAuthError).toBe(isAuth)
+        expect(String(err.message)).not.toContain('tok')
+      })
+    }
+    it('does not put the request body in the message', async () => {
+      const { al } = make(() => Response.json({ errors: [{ message: 'bad' }], data: null }))
+      const err = await al.saveProgress(5, { progress: 3 }, TOKEN).then(() => null, (e) => e)
+      expect(err.message).not.toContain('SaveMediaListEntry')
+    })
+  })
+
+  it('listEntry returns episodes and the entry (or null)', async () => {
+    const { f, al } = make(() => Response.json({ data: { Media: { episodes: 12, mediaListEntry: { progress: 4, status: 'CURRENT', id: 9 } } } }))
+    expect(await al.listEntry(5, TOKEN)).toEqual({ episodes: 12, entry: { progress: 4, status: 'CURRENT' } })
+    expect(bodyOf(f).variables).toEqual({ id: 5 })
+    expect(bodyOf(f).query).toContain('mediaListEntry { progress status }')
+    expect(f.mock.calls[0][1].headers.Authorization).toBe('Bearer tok')
+    const none = make(() => Response.json({ data: { Media: { episodes: null, mediaListEntry: null } } }))
+    expect(await none.al.listEntry(5, TOKEN)).toEqual({ episodes: null, entry: null })
+  })
+
+  it('saveProgress omits status when undefined and passes it when given', async () => {
+    const { f, al } = make(() => Response.json({ data: { SaveMediaListEntry: { progress: 3, status: 'CURRENT' } } }))
+    expect(await al.saveProgress(5, { progress: 3 }, TOKEN)).toEqual({ progress: 3, status: 'CURRENT' })
+    expect(bodyOf(f).variables).toEqual({ id: 5, progress: 3 })
+    expect('status' in bodyOf(f).variables).toBe(false)
+    expect(bodyOf(f).query).toContain('SaveMediaListEntry(mediaId: $id')
+    await al.saveProgress(5, { progress: 12, status: 'COMPLETED' }, TOKEN)
+    expect(bodyOf(f, 1).variables).toEqual({ id: 5, progress: 12, status: 'COMPLETED' })
+  })
+
+  describe('candidates', () => {
+    const many = Array.from({ length: 10 }, (_, i) => media(i + 1, `Romaji ${i + 1}`, i % 2 ? null : `English ${i + 1}`, { format: 'TV' }))
+    it('returns up to 8 items with format and poster, without description', async () => {
+      const { f, al } = make((url) => (url.startsWith('https://img/')
+        ? new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/jpeg' } })
+        : Response.json({ data: { Page: { media: many } } })))
+      const r = await al.candidates('x')
+      expect(r).toHaveLength(8)
+      expect(r[0]).toEqual({ id: 1, title: 'English 1', romaji: 'Romaji 1', year: 2020, format: 'TV', episodes: 12, poster: 'data:image/jpeg;base64,AQID' })
+      expect(r[1].title).toBe('Romaji 2')
+      expect(r.every((c) => !('description' in c))).toBe(true)
+      expect(bodyOf(f).query).toContain('format')
+      expect(bodyOf(f).query).not.toContain('description')
+    })
+    it('gives a null poster when the image fetch fails', async () => {
+      const { al } = make((url) => {
+        if (url === 'https://img/1.jpg') throw new Error('offline')
+        if (url.startsWith('https://img/')) return new Response('', { status: 404 })
+        return Response.json({ data: { Page: { media: many.slice(0, 2) } } })
+      })
+      expect((await al.candidates('x')).map((c) => c.poster)).toEqual([null, null])
+    })
+  })
+
+  it('authenticated calls share the single queue with search', async () => {
+    let inFlight = 0, maxInFlight = 0
+    const releases = []
+    const f = vi.fn((url, init) => new Promise((resolve) => {
+      inFlight++; maxInFlight = Math.max(maxInFlight, inFlight)
+      const isViewer = JSON.parse(init.body).query.includes('Viewer')
+      releases.push(() => { inFlight--; resolve(Response.json({ data: isViewer ? { Viewer: { id: 1, name: 'n' } } : { Page: { media: [] } } })) })
+    }))
+    const al = createAniList({ cacheDir, fetchImpl: f, sleep: async () => {} })
+    const both = Promise.all([al.viewer(TOKEN), al.search('x')])
+    await new Promise((r) => setTimeout(r, 10))
+    expect(f).toHaveBeenCalledTimes(1)
+    releases[0]()
+    await new Promise((r) => setTimeout(r, 10))
+    expect(f).toHaveBeenCalledTimes(2)
+    releases[1]()
+    await both
+    expect(maxInFlight).toBe(1)
   })
 })

@@ -1,4 +1,5 @@
 import { INVOKE, EVENTS } from '../shared/channels.js'
+import { ANILIST_CLIENT_ID, APPS_URL, authorizeUrl } from '../shared/anilistAuth.js'
 
 export function createHandlers(s) {
   const progress = (p) => s.send(EVENTS.toolProgress, p)
@@ -113,6 +114,60 @@ export function createHandlers(s) {
     [INVOKE.playerRecover]: (snapshot, opts) => s.watch.recover(snapshot, opts),
     [INVOKE.playerRetryAgain]: () => s.watch.retryAgain(),
     [INVOKE.skipGet]: (title, episode, duration) => s.skipLookup(title, episode, duration),
+    [INVOKE.anilistAuthStatus]: () => s.aniListAuth.status(),
+    [INVOKE.anilistAuthConnect]: async (token) => {
+      if (typeof token !== 'string') return { ok: false, error: 'empty' }
+      const r = await s.aniListAuth.connect(token)
+      if (!r?.ok) return { ok: false, error: r?.error ?? 'network' }
+      // reset() must run synchronously right after the await above, before any other await: auth.onChange
+      // already called sync.resume(), which armed a 0 ms timer that only this reset() can cancel.
+      s.aniListSync.reset()
+      s.aniListSync.check()
+      return { ok: true, status: r.status } // never the token
+    },
+    [INVOKE.anilistAuthDisconnect]: () => {
+      const r = s.aniListAuth.disconnect()
+      if (!r?.ok) return { ok: false }
+      s.aniListSync.reset()
+      return { ok: true }
+    },
+    [INVOKE.anilistAuthOpenAuthorize]: () => {
+      const url = authorizeUrl(ANILIST_CLIENT_ID)
+      if (!url) return false
+      s.electron.openExternal(url)
+      return true
+    },
+    [INVOKE.anilistAuthOpenApps]: () => { s.electron.openExternal(APPS_URL) },
+    [INVOKE.anilistSyncStateFor]: (entryId) => s.aniListSync.stateFor(entryId),
+    [INVOKE.anilistSyncConfirm]: (entryId, mediaId) => {
+      let result
+      try {
+        result = s.library.confirmAniList(entryId, mediaId)
+      } catch {
+        return { ok: false, error: 'invalid' }
+      }
+      if (result?.ok) {
+        s.aniListSync.syncNow(entryId)
+        s.send(EVENTS.libraryChanged)
+      }
+      return result
+    },
+    [INVOKE.anilistSyncSetEnabled]: (entryId, enabled) => {
+      const entry = s.library.get(entryId)
+      if (!entry) return false
+      const value = s.seriesPrefs.setAniListSync(entry.aniCliTitle ?? entry.title, Boolean(enabled))
+      s.aniListSync.check()
+      return value
+    },
+    [INVOKE.anilistSyncCandidates]: (search) => s.anilist.candidates(search),
+    [INVOKE.anilistSyncPendingConfirm]: () => {
+      const all = s.library.list()
+      // A media id already confirmed on another entry can never be confirmed here ('taken').
+      const taken = new Set(all.filter((e) => e.aniListConfirmed === true && e.aniListId != null).map((e) => e.aniListId))
+      return all
+        .filter((e) => e.aniListId != null && !e.aniListConfirmed && !taken.has(e.aniListId))
+        .map((e) => ({ id: e.id, title: e.title, aniListId: e.aniListId }))
+    },
   }
 }
 

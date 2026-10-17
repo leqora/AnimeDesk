@@ -55,6 +55,16 @@ export const INVOKE = {
   skipGet: 'skip:get',
   notificationsList: 'notifications:list',
   notificationsMarkRead: 'notifications:mark-read',
+  anilistAuthStatus: 'anilist-auth:status',
+  anilistAuthConnect: 'anilist-auth:connect',
+  anilistAuthDisconnect: 'anilist-auth:disconnect',
+  anilistAuthOpenAuthorize: 'anilist-auth:open-authorize',
+  anilistAuthOpenApps: 'anilist-auth:open-apps',
+  anilistSyncStateFor: 'anilist-sync:state-for',
+  anilistSyncConfirm: 'anilist-sync:confirm',
+  anilistSyncSetEnabled: 'anilist-sync:set-enabled',
+  anilistSyncCandidates: 'anilist-sync:candidates',
+  anilistSyncPendingConfirm: 'anilist-sync:pending-confirm',
 }
 
 export const EVENTS = {
@@ -77,4 +87,6 @@ export const EVENTS = {
   notificationsChanged: 'event:notifications-changed',
   openAnime: 'event:open-anime',
   openPage: 'event:open-page',
+  anilistAuthChanged: 'event:anilist-auth-changed',
+  anilistSyncChanged: 'event:anilist-sync-changed',
 }

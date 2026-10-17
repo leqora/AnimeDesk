@@ -64,7 +64,7 @@ button:active:not(:disabled) { transform: translateY(1px); }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 button:disabled { opacity: .45; cursor: not-allowed; }
 button.primary { background: var(--cta); border-color: var(--cta); color: var(--on-accent); font-weight: 600; }
-button.primary:hover:not(:disabled) { box-shadow: 0 0 16px color-mix(in srgb, var(--cta) 55%, transparent); }
+button.primary:hover:not(:disabled) { background: var(--cta); border-color: var(--cta); box-shadow: 0 0 16px color-mix(in srgb, var(--cta) 55%, transparent); }
 button.danger { background: var(--bad); border-color: var(--bad); color: var(--on-accent); }
 input, select, textarea { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 7px 10px; }
 input[type="range"] { padding: 0; accent-color: var(--accent); }
@@ -310,6 +310,26 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .bell__item:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 .bell__item:disabled { opacity: .5; cursor: default; }
 .bell__item-time { font-size: 12px; white-space: nowrap; }
+
+/* AniList account section + bulk confirm */
+.anilist-account { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.anilist-account p { margin: 0; }
+.anilist-account input[type="password"] { min-width: 260px; }
+.anilist-account__error, .anilist-confirm__error { color: var(--bad); }
+.anilist-confirm { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 55vh; overflow-y: auto; }
+.anilist-confirm__row { display: flex; align-items: center; gap: 12px; padding: 8px 10px; background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); }
+.anilist-confirm__poster { width: 44px; flex: none; }
+.anilist-confirm__text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.anilist-confirm__library { font-weight: 600; overflow-wrap: anywhere; }
+.anilist-confirm__modal, .anilist-picker { min-width: min(640px, 90vw); }
+.anilist-confirm__poster img { display: block; width: 100%; border-radius: var(--radius-sm); }
+.anilist-match { display: flex; flex-direction: column; gap: 6px; }
+.anilist-match .row { align-items: center; }
+.anilist-match:focus { outline: none; }
+.anilist-match__card { gap: 12px; }
+.anilist-match__poster { width: 44px; flex: none; }
+.anilist-match__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.anilist-match__state { font-size: 13px; }
 
 /* narrow window: icon-only sidebar */
 @media (max-width: 960px) {

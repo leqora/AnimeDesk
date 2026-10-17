@@ -41,7 +41,7 @@ export function createLibrary(file, { now = () => new Date().toISOString(), uuid
   const loaded = readJson(file, { version: 1, anime: {} })
   const db = loaded.data
   const save = () => writeJsonAtomic(file, db)
-  const copy = (e) => (e ? structuredClone(e) : null)
+  const copy = (e) => (e ? { ...structuredClone(e), aniListConfirmed: e.aniListConfirmed === true } : null)
   const key = (t) => normalizeTitle(t).toLowerCase()
 
   function findRaw(title) {
@@ -58,7 +58,7 @@ export function createLibrary(file, { now = () => new Date().toISOString(), uuid
   function add({ title, aniCliTitle = null, aniListId = null, status = 'planned', totalEpisodes = null }) {
     const ts = now()
     const entry = {
-      id: uuid(), title: '', aniCliTitle, aniListId, status, rating: null, comment: '',
+      id: uuid(), title: '', aniCliTitle, aniListId, aniListConfirmed: false, status, rating: null, comment: '',
       totalEpisodes, watchedEpisodes: [], episodeNotes: {}, addedAt: ts, updatedAt: ts, lastWatchedAt: null, pinnedAt: null,
     }
     Object.assign(entry, validatePatch({ title, status, totalEpisodes }))
@@ -69,9 +69,29 @@ export function createLibrary(file, { now = () => new Date().toISOString(), uuid
 
   function update(id, patch) {
     const e = mustGet(id)
-    Object.assign(e, validatePatch(patch), { updatedAt: now() })
+    const clean = validatePatch(patch)
+    // A different AniList id is an unconfirmed match until the user confirms it again.
+    if ('aniListId' in clean && clean.aniListId !== e.aniListId) e.aniListConfirmed = false
+    Object.assign(e, clean, { updatedAt: now() })
     save()
     return copy(e)
+  }
+
+  // The user confirmed that this entry is AniList media `mediaId`. One media id belongs to one entry.
+  function confirmAniList(id, mediaId) {
+    const e = mustGet(id)
+    if (!Number.isInteger(mediaId) || mediaId <= 0) throw new Error('invalid aniListId')
+    const other = Object.values(db.anime).find((x) => x.id !== id && x.aniListConfirmed === true && x.aniListId === mediaId)
+    if (other) return { ok: false, error: 'taken', title: other.title }
+    e.aniListId = mediaId
+    e.aniListConfirmed = true
+    e.updatedAt = now()
+    save()
+    return { ok: true, entry: copy(e) }
+  }
+
+  function findConfirmed(mediaId) {
+    return copy(Object.values(db.anime).find((x) => x.aniListConfirmed === true && x.aniListId === mediaId) ?? null)
   }
 
   function remove(id) {
@@ -85,6 +105,10 @@ export function createLibrary(file, { now = () => new Date().toISOString(), uuid
   function restore(entry) {
     if (db.anime[entry.id] || findRaw(entry.aniCliTitle ?? entry.title)) throw new Error('conflict')
     const e = structuredClone(entry)
+    // Another entry may have confirmed the same media id while this one was removed.
+    if (e.aniListConfirmed === true && Object.values(db.anime).some((x) => x.aniListConfirmed === true && x.aniListId === e.aniListId)) {
+      e.aniListConfirmed = false
+    }
     if (e.pinnedAt) {
       const pinned = Object.values(db.anime).filter((x) => x.pinnedAt).length
       if (pinned >= MAX_PINNED) e.pinnedAt = null
@@ -138,6 +162,6 @@ export function createLibrary(file, { now = () => new Date().toISOString(), uuid
     list: () => Object.values(db.anime).map(copy),
     get: (id) => copy(db.anime[id]),
     findByAniCliTitle: (title) => copy(findRaw(title)),
-    add, update, remove, restore, setEpisodeNote, recordWatched, setPinned,
+    add, update, confirmAniList, findConfirmed, remove, restore, setEpisodeNote, recordWatched, setPinned,
   }
 }

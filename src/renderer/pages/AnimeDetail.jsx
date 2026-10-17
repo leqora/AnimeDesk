@@ -6,6 +6,7 @@ import { useToast } from '../toast/ToastProvider.jsx'
 import { Poster } from '../components/Poster.jsx'
 import { EpisodePicker } from '../components/EpisodePicker.jsx'
 import { Icon } from '../components/Icon.jsx'
+import { AniListMatch } from '../components/AniListMatch.jsx'
 import { useSeriesEpisodes } from '../episodes/useSeriesEpisodes.js'
 import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
 import { usePosterTint } from '../theme/usePosterTint.js'
@@ -19,7 +20,8 @@ import { formatTime } from '../../shared/player.js'
 export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onContinue }) {
   const api = useApi()
   const t = useT()
-  const info = useAniListInfo(entry.title, entry.aniListId, { live: true }) ?? null
+  const rawInfo = useAniListInfo(entry.title, entry.aniListId, { live: true }) // undefined = loading, null = not found
+  const info = rawInfo ?? null
   const tint = usePosterTint(info?.poster ?? null)
   const [showDesc, setShowDesc] = useState(false)
   const [comment, setComment] = useState(entry.comment)
@@ -216,6 +218,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
               </p>
             </div>
           )}
+          <AniListMatch entry={entry} info={rawInfo}onChanged={onChanged} />
           <label className="field">
             <span>{t('detail.comment')}</span>
             <textarea aria-label={t('detail.comment')} value={comment} onChange={(e) => setComment(e.target.value)} onBlur={() => { if (comment !== entry.comment) save({ comment }) }} />

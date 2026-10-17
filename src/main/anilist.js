@@ -8,6 +8,11 @@ const FIELDS = 'id idMal status title { romaji english native } coverImage { lar
 const SEARCH = `query ($search: String) { Page(perPage: 10) { media(search: $search, type: ANIME) { ${FIELDS} } } }`
 const AIRING_BATCH = 'query ($ids: [Int], $page: Int) { Page(page: $page, perPage: 50) { media(id_in: $ids, type: ANIME) { id status episodes nextAiringEpisode { episode airingAt } } } }'
 const AIRING_CHUNK = 50
+const VIEWER = 'query { Viewer { id name } }'
+const LIST_ENTRY = 'query ($id: Int) { Media(id: $id, type: ANIME) { episodes mediaListEntry { progress status } } }'
+const SAVE_PROGRESS = 'mutation ($id: Int, $progress: Int, $status: MediaListStatus) { SaveMediaListEntry(mediaId: $id, progress: $progress, status: $status) { progress status } }'
+const CANDIDATES = 'query ($search: String) { Page(perPage: 8) { media(search: $search, type: ANIME) { id title { romaji english } seasonYear format episodes coverImage { large } } } }'
+const CANDIDATE_LIMIT = 8
 const BY_ID = `query ($id: Int) { Media(id: $id, type: ANIME) { ${FIELDS} } }`
 
 const norm = (s) => String(s ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
@@ -97,6 +102,13 @@ const NOT_FOUND_TTL_MS = 7 * 24 * 3600 * 1000
 // remembered by older logic are retried right after an update instead of waiting out the 7 days.
 export const SEARCH_VERSION = 2
 
+export class AniListAuthError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = 'AniListAuthError'
+  }
+}
+
 const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, now = Date.now }) {
@@ -119,20 +131,25 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
     return Number.isFinite(after) && after > 0 ? clampWait(after * 1000) : resetWait(res)
   }
 
-  function gql(query, variables) {
+  // Error messages never carry the token or the request body.
+  function gql(query, variables, { token } = {}) {
     return enqueue(async () => {
       for (let attempt = 1; ; attempt++) {
-        const res = await fetchImpl(ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ query, variables }),
-        })
+        const headers = { 'Content-Type': 'application/json', Accept: 'application/json' }
+        if (token) headers.Authorization = `Bearer ${token}`
+        const res = await fetchImpl(ENDPOINT, { method: 'POST', headers, body: JSON.stringify({ query, variables }) })
         if (res.status === 429 && attempt < MAX_ATTEMPTS) {
           await sleep(retryWait(res))
           continue
         }
+        const body = await res.json().catch(() => null)
+        const errors = Array.isArray(body?.errors) ? body.errors : []
+        if (res.status === 401 || errors.some((e) => e?.status === 401 || /invalid token/i.test(String(e?.message ?? '')))) {
+          throw new AniListAuthError(`AniList rejected the login (HTTP ${res.status})`)
+        }
         if (!res.ok) throw new Error(`AniList HTTP ${res.status}`)
-        const data = (await res.json()).data
+        if (body?.data == null && errors.length) throw new Error('AniList returned a GraphQL error')
+        const data = body?.data
         if (res.headers.get('X-RateLimit-Remaining') === '0') await sleep(resetWait(res))
         return data
       }
@@ -250,5 +267,37 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
     return result
   }
 
-  return { search, getForTitle, getCached, refreshAiring }
+  async function viewer(token) {
+    const v = (await gql(VIEWER, {}, { token })).Viewer
+    return { id: v.id, name: v.name }
+  }
+
+  async function listEntry(mediaId, token) {
+    const m = (await gql(LIST_ENTRY, { id: mediaId }, { token })).Media
+    const e = m?.mediaListEntry
+    return { episodes: m?.episodes ?? null, entry: e ? { progress: e.progress, status: e.status } : null }
+  }
+
+  async function saveProgress(mediaId, { progress, status }, token) {
+    const variables = { id: mediaId, progress }
+    if (status !== undefined) variables.status = status
+    const r = (await gql(SAVE_PROGRESS, variables, { token })).SaveMediaListEntry
+    return { progress: r.progress, status: r.status }
+  }
+
+  // Candidates for the manual "link to AniList" picker: no description (no spoilers), posters best-effort.
+  async function candidates(searchText) {
+    const media = (await gql(CANDIDATES, { search: searchText })).Page.media.slice(0, CANDIDATE_LIMIT)
+    return Promise.all(media.map(async (m) => ({
+      id: m.id,
+      title: m.title.english ?? m.title.romaji,
+      romaji: m.title.romaji,
+      year: m.seasonYear ?? null,
+      format: m.format ?? null,
+      episodes: m.episodes ?? null,
+      poster: await posterDataUrl(m.coverImage?.large).catch(() => null),
+    })))
+  }
+
+  return { search, getForTitle, getCached, refreshAiring, viewer, listEntry, saveProgress, candidates }
 }
