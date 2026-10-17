@@ -5,7 +5,8 @@ const b64url = (obj) => btoa(JSON.stringify(obj)).replace(/\+/g, '-').replace(/\
 
 describe('anilistAuth', () => {
   it('exports constants', () => {
-    expect(ANILIST_CLIENT_ID).toBeNull()
+    expect(ANILIST_CLIENT_ID).toBe(54128)
+    expect(authorizeUrl(ANILIST_CLIENT_ID)).toBe('https://anilist.co/api/v2/oauth/authorize?client_id=54128&response_type=token')
     expect(APPS_URL).toBe('https://anilist.co/settings/apps')
     expect(EXPIRY_WARN_MS).toBe(14 * 24 * 3600 * 1000)
   })

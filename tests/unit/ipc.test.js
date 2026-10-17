@@ -279,13 +279,14 @@ describe('ipc anilist login and sync', () => {
     expect(h[INVOKE.anilistAuthDisconnect]()).toEqual({ ok: false })
     expect(s.aniListSync.reset).toHaveBeenCalledTimes(1)
   })
-  it('status is forwarded; authorize does not open anything without a client id', () => {
+  it('status is forwarded; authorize opens only the fixed AniList authorize URL', () => {
     const s = services()
     s.electron.openExternal = vi.fn()
     const h = createHandlers(s)
     expect(h[INVOKE.anilistAuthStatus]()).toEqual({ connected: false, name: null, expiresAt: null, state: 'none' })
-    expect(h[INVOKE.anilistAuthOpenAuthorize]()).toBe(false)
-    expect(s.electron.openExternal).not.toHaveBeenCalled()
+    expect(h[INVOKE.anilistAuthOpenAuthorize]()).toBe(true)
+    expect(s.electron.openExternal).toHaveBeenCalledWith('https://anilist.co/api/v2/oauth/authorize?client_id=54128&response_type=token')
+    s.electron.openExternal.mockClear()
     h[INVOKE.anilistAuthOpenApps]()
     expect(s.electron.openExternal).toHaveBeenCalledWith('https://anilist.co/settings/apps')
   })

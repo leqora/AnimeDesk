@@ -1,7 +1,7 @@
 // AniList login helpers (pure). The token itself never leaves main; only its expiry is derived here.
 
-// Public OAuth client id (implicit grant). Stays null until the app is registered on AniList.
-export const ANILIST_CLIENT_ID = null
+// Public OAuth client id (implicit grant, PIN redirect https://anilist.co/api/v2/oauth/pin), registered by leqora.
+export const ANILIST_CLIENT_ID = 54128
 
 export const APPS_URL = 'https://anilist.co/settings/apps'
 
