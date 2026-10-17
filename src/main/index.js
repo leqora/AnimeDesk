@@ -54,12 +54,31 @@ const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) app.quit()
 
 let win = null
+let pendingShow = false // a second launch (without --hidden) that arrived before the window existed
 let quitting = false
 let tray = null
 const liveNotifications = new Set() // Windows GC drops click handlers of unreferenced Notification objects
 const send = (channel, payload) => { if (win && !win.isDestroyed()) win.webContents.send(channel, payload) }
 
 let fullscreen = null
+
+function showWindow() {
+  if (!win || win.isDestroyed()) return
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+  fullscreen?.afterShow()
+}
+
+// Registered right after the lock: main() awaits several things before the window exists, and a second launch
+// during that time would otherwise be lost.
+if (gotLock) {
+  app.on('second-instance', (_e, argv) => {
+    if (startHidden(argv)) return
+    if (win) showWindow()
+    else pendingShow = true
+  })
+}
 
 function createWindow(settings) {
   win = new BrowserWindow({
@@ -82,7 +101,10 @@ function createWindow(settings) {
   })
   hardenWindow(win.webContents, { devUrl: process.env.ELECTRON_RENDERER_URL ?? null })
   fullscreen = attachFullscreen({ win, settings, send })
-  win.once('ready-to-show', () => { if (!startHidden(process.argv)) win.show() })
+  win.once('ready-to-show', () => {
+    if (pendingShow) showWindow()
+    else if (!startHidden(process.argv)) win.show()
+  })
   if (process.env.ELECTRON_RENDERER_URL) win.loadURL(process.env.ELECTRON_RENDERER_URL)
   else win.loadFile(path.join(__dirname, '../renderer/index.html'))
 }
@@ -154,12 +176,6 @@ async function main() {
     } catch { return [] }
   }
   const iconPath = app.isPackaged ? path.join(process.resourcesPath, 'icon.ico') : path.join(app.getAppPath(), 'build', 'icon.ico')
-  const showWindow = () => {
-    if (!win || win.isDestroyed()) return
-    if (win.isMinimized()) win.restore()
-    win.show()
-    win.focus()
-  }
   // OS toast; the object is kept referenced until it is clicked, closed or failed (Windows GC drops handlers otherwise).
   const osNotify = (kind, data, onClick) => {
     if (!Notification.isSupported()) return
@@ -232,6 +248,7 @@ async function main() {
   win.on('close', (e) => {
     if (!shouldHideOnClose({ closeToTray: settings.get().closeToTray, quitting })) return
     e.preventDefault()
+    fullscreen?.beforeHide()
     win.hide()
     releasePlayback()
     if (!settings.get().trayHintShown) {
@@ -243,7 +260,6 @@ async function main() {
   win.on('query-session-end', () => { quitting = true })
   win.on('session-end', () => { quitting = true; app.quit() })
   tray = createTray({ Tray, Menu, iconPath, labels: trayLabels(settings.get().language), onOpen: showWindow, onQuit: () => app.quit() })
-  app.on('second-instance', (_e, argv) => { if (!startHidden(argv)) showWindow() })
   powerMonitor.on('resume', () => airingWatcher.refresh())
   airingWatcher.start()
   updater.start()

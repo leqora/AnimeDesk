@@ -42,6 +42,11 @@ describe('App', () => {
         retry: (episode) => act(() => retry({ title: 'Show', episode, state: 'reconnecting', sessionId: 's2' })),
       }
     }
+    // The shortcut handler is attached by an effect after the lazy player mounts; press `]` until the speed flash proves it was handled.
+    const speedUp = () => waitFor(() => {
+      fireEvent.keyDown(window, { key: ']', code: 'BracketRight' })
+      expect(screen.getByText(/(Brzina|Speed): 1[.,]25×/)).toBeInTheDocument()
+    }, { timeout: 5000 })
     const pressedRate = () => {
       fireEvent.click(screen.getByRole('button', { name: 'Podešavanja plejera' }))
       const pressed = within(screen.getByRole('dialog')).getAllByRole('button').find((b) => b.getAttribute('aria-pressed') === 'true')
@@ -50,7 +55,7 @@ describe('App', () => {
     it('keeps the speed when the same episode reconnects after a stall', async () => {
       const s = await start()
       await s.open(ep('p1', '3'))
-      fireEvent.keyDown(window, { key: ']', code: 'BracketRight' })
+      await speedUp()
       s.close()
       s.retry('3')
       await s.open(ep('p2', '3'))
@@ -59,7 +64,7 @@ describe('App', () => {
     it('starts a different episode, or the same one opened again normally, at 1×', async () => {
       const s = await start()
       await s.open(ep('p1', '3'))
-      fireEvent.keyDown(window, { key: ']', code: 'BracketRight' })
+      await speedUp()
       s.close()
       await s.open(ep('p2', '4'))
       expect(pressedRate()).toBe('1×')
@@ -74,7 +79,7 @@ describe('App', () => {
     it('does not carry the speed into a reconnect of another episode', async () => {
       const s = await start()
       await s.open(ep('p1', '3'))
-      fireEvent.keyDown(window, { key: ']', code: 'BracketRight' })
+      await speedUp()
       s.close()
       s.retry('4')
       await s.open(ep('p2', '4'))
@@ -199,20 +204,27 @@ describe('App', () => {
     let onFs
     const api = makeFakeApi({ window: { onFullscreen: vi.fn((cb) => { onFs = cb; return () => {} }) } })
     const add = vi.spyOn(window, 'addEventListener')
+    const remove = vi.spyOn(window, 'removeEventListener')
+    const keydown = (spy) => spy.mock.calls.filter(([type]) => type === 'keydown').map(([, fn]) => fn)
     try {
       render(<App api={api} />)
       await screen.findByRole('button', { name: 'Ceo ekran (F11)' })
-      const before = add.mock.calls.filter(([type]) => type === 'keydown').length
+      // Only the listeners that exist before the toggles matter; listeners other components add later (under load) must not fail this test.
+      const registered = keydown(add)
+      expect(registered.length).toBeGreaterThan(0)
+      remove.mockClear()
       act(() => onFs(true))
       await screen.findByRole('button', { name: 'Izađi iz celog ekrana (Esc)' })
       act(() => onFs(false))
       await screen.findByRole('button', { name: 'Ceo ekran (F11)' })
-      expect(add.mock.calls.filter(([type]) => type === 'keydown').length).toBe(before)
+      const removed = keydown(remove)
+      expect(registered.filter((fn) => removed.includes(fn))).toEqual([])
       act(() => onFs(true))
       fireEvent.keyDown(window, { key: 'Escape' })
       expect(api.window.setFullscreen).toHaveBeenCalledWith(false)
     } finally {
       add.mockRestore()
+      remove.mockRestore()
     }
   })
   it('shows the player over the app and keeps pages mounted', async () => {
@@ -228,6 +240,16 @@ describe('App', () => {
     act(() => closePlayer({ playbackId: 'p1' }))
     expect(document.querySelector('.player')).not.toBeInTheDocument()
     expect(api.player.closed).not.toHaveBeenCalled()
+  })
+  it('closes the bell panel when playback starts', async () => {
+    let openPlayer
+    const api = makeFakeApi({ player: { onOpen: vi.fn((cb) => { openPlayer = cb; return () => {} }) } })
+    render(<App api={api} />)
+    fireEvent.click(await screen.findByRole('button', { name: /Obaveštenja/ }))
+    expect(await screen.findByRole('dialog', { name: 'Obaveštenja' })).toBeInTheDocument()
+    act(() => openPlayer({ playbackId: 'p1', title: 'Show', episode: '3', kind: 'hls', src: 'http://127.0.0.1:9/x', subtitleUrl: null, resumeAt: null, totalEpisodes: 12 }))
+    expect(document.querySelector('.player')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Obaveštenja' })).toBeNull()
   })
   it('starts the next episode through the normal continue path', async () => {
     let openPlayer

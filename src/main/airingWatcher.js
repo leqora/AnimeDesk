@@ -111,37 +111,92 @@ export function createAiringWatcher({
     graceTimer = setT(() => { graceTimer = null; refresh() }, AIRED_GRACE_MS)
   }
 
+  // Highest episode announced per aniListId, so one cycle never announces the same episode twice.
+  const announced = new Map()
+
+  function announce(item) {
+    announced.set(item.aniListId, Math.max(announced.get(item.aniListId) ?? 0, item.episode))
+    try { notify(item) } catch (err) { console.warn('airingWatcher: notify failed', err?.message) }
+  }
+
+  // After a successful confirming refresh the cache-found candidates are only SUPPRESSED when the fresh data
+  // positively says the episode has not aired yet (a delay). Anything else (next episode already listed,
+  // no next episode at all after a finale) means it did air, so it is announced as the cache check would have.
+  function confirmCandidates(candidates) {
+    const t = now()
+    const toAnnounce = []
+    let stillWatched = new Set()
+    try { stillWatched = new Set(watched(library.list()).map((e) => `${e.id}:${e.aniListId}`)) } catch (err) { console.warn('airingWatcher: library failed', err?.message) }
+    for (const item of candidates) {
+      if (!stillWatched.has(`${item.animeId}:${item.aniListId}`)) continue // left "watching" during the refresh
+      if ((announced.get(item.aniListId) ?? 0) >= item.episode) continue // the fresh check already announced it
+      const na = anilist.getCached(null, { aniListId: item.aniListId })?.nextAiring
+      if (na && na.episode <= item.episode && na.airingAt > t) continue // delayed: the re-armed timer handles it
+      const prev = state.notified[item.aniListId]
+      state.notified[item.aniListId] = { episode: Math.max(prev?.episode ?? 0, item.episode), freshAt: prev?.freshAt ?? null }
+      toAnnounce.push(item)
+    }
+    if (!toAnnounce.length) return
+    persist()
+    for (const item of toAnnounce) announce(item)
+    armGrace()
+  }
+
   // `fresh`: the cache was just refreshed, so per-series freshAt may advance. Plain timer checks work from
   // possibly stale cache and must not vouch for the 24 h window.
-  function check({ fresh = false } = {}) {
+  // `confirmed`: internal, a cache check run after a failed confirming refresh; it announces from cache.
+  // A check that is neither fresh nor confirmed never announces: if something is due it asks for fresh data
+  // first (an episode AniList has since delayed must not be announced), and keeps the memory of the due
+  // series untouched so the confirming fresh check still sees them as new.
+  function check({ fresh = false, confirmed = false } = {}) {
     if (stopped) return
     const t = now()
     let entries = []
     try { entries = library.list() } catch (err) { console.warn('airingWatcher: library failed', err?.message) }
     const infoById = infoMap(entries)
     const { due, notified } = dueNotifications({ entries, infoById, notified: state.notified, now: t, fresh })
+    const needsConfirm = !fresh && !confirmed && due.length > 0
+    if (needsConfirm) {
+      // Persist memory for series that are not due; keep the previous entry for the due ones.
+      const merged = { ...notified }
+      for (const item of due) {
+        const prev = state.notified[item.aniListId]
+        merged[item.aniListId] = prev // a due candidate always has a previous entry (unseen series are seeded, never due)
+      }
+      state.notified = merged
+      persist()
+      armCheck(entries, infoById, t)
+      const candidates = due
+      refresh().then((ok) => {
+        if (stopped) return
+        if (ok) confirmCandidates(candidates)
+        else check({ confirmed: true }) // refresh failed: announce from cache, once
+      })
+      return
+    }
     state.notified = notified
     persist()
-    for (const item of due) {
-      try { notify(item) } catch (err) { console.warn('airingWatcher: notify failed', err?.message) }
-    }
+    for (const item of due) announce(item)
     if (due.length) armGrace()
     armCheck(entries, infoById, t)
   }
 
+  // Resolves true when fresh data was applied and checked, false when the refresh failed or the watcher stopped.
   function refresh() {
     if (inflight) return inflight
     inflight = (async () => {
       try {
         const ids = [...new Set(watched(library.list()).map((e) => e.aniListId))]
         if (ids.length) await anilist.refreshAiring(ids)
-        if (stopped) return
-        check({ fresh: true })
       } catch (err) {
         console.warn('airingWatcher: refresh failed', err?.message) // scheduled runs retry; no retry loop here
+        return false
       } finally {
         inflight = null
       }
+      if (stopped) return false
+      check({ fresh: true })
+      return true
     })()
     return inflight
   }

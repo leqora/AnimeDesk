@@ -9,7 +9,17 @@ function fakeWin(initial = false) {
   let fs = initial
   win.isFullScreen = () => fs
   win.setFullScreen = vi.fn((v) => { if (v !== fs) { fs = v; win.emit(v ? 'enter-full-screen' : 'leave-full-screen') } })
+  win.hide = vi.fn(() => { if (fs) { fs = false; win.emit('leave-full-screen') } })
   return win
+}
+
+function setup(initial) {
+  const win = fakeWin(initial)
+  const state = { fullscreen: initial }
+  const settings = { get: () => state, update: vi.fn((patch) => Object.assign(state, patch)) }
+  const send = vi.fn()
+  const fs = attachFullscreen({ win, settings, send })
+  return { win, settings, send, fs }
 }
 
 describe('fullscreen', () => {
@@ -35,5 +45,55 @@ describe('fullscreen', () => {
     expect(send).toHaveBeenLastCalledWith(EVENTS.fullscreen, false)
     win.webContents.emit('before-input-event', { preventDefault: vi.fn() }, { type: 'keyDown', key: 'a' })
     expect(fs.get()).toBe(false)
+  })
+  it('keeps the fullscreen setting when the window is hidden to the tray', () => {
+    const { win, settings, send, fs } = setup(true)
+    fs.beforeHide()
+    win.hide()
+    expect(settings.update).not.toHaveBeenCalledWith({ fullscreen: false })
+    expect(send).not.toHaveBeenCalledWith(EVENTS.fullscreen, false)
+  })
+  it('returns to fullscreen when shown again', () => {
+    const { win, send, fs } = setup(true)
+    fs.beforeHide()
+    win.hide()
+    fs.afterShow()
+    expect(win.setFullScreen).toHaveBeenCalledWith(true)
+    expect(fs.get()).toBe(true)
+    expect(send).toHaveBeenCalledWith(EVENTS.fullscreen, true)
+  })
+  it('afterShow without beforeHide restores fullscreen from settings', () => {
+    const on = setup(false)
+    on.settings.get().fullscreen = true // --hidden start: window never shown, not fullscreen yet
+    on.fs.afterShow()
+    expect(on.win.setFullScreen).toHaveBeenCalledWith(true)
+    expect(on.fs.get()).toBe(true)
+    const off = setup(false)
+    off.fs.afterShow()
+    expect(off.win.setFullScreen).not.toHaveBeenCalled()
+  })
+  it('does not enter fullscreen on show when it was off', () => {
+    const { win, fs } = setup(false)
+    fs.beforeHide()
+    win.hide()
+    fs.afterShow()
+    expect(win.setFullScreen).not.toHaveBeenCalledWith(true)
+  })
+  it('remembers leaving fullscreen with Esc before hiding', () => {
+    const { win, settings, fs } = setup(true)
+    fs.set(false)
+    fs.beforeHide()
+    win.hide()
+    fs.afterShow()
+    expect(fs.get()).toBe(false)
+    expect(settings.update).toHaveBeenLastCalledWith({ fullscreen: false })
+  })
+  it('saves leaving fullscreen again after the window is shown', () => {
+    const { win, settings, fs } = setup(true)
+    fs.beforeHide()
+    win.hide()
+    fs.afterShow()
+    fs.set(false)
+    expect(settings.update).toHaveBeenLastCalledWith({ fullscreen: false })
   })
 })
