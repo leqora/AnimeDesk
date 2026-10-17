@@ -22,6 +22,7 @@ function fakeAniCli() {
         }
         finish(ok ? { ok: true, error: null } : { ok: false, error: 'unknown' })
       }
+      s.fail = (error) => finish({ ok: false, error })
       sessions.push(s)
       return s
     }),
@@ -244,5 +245,242 @@ describe('downloads onFinished', () => {
     d.enqueue({ title: 'Show', aniCliTitle: 'Show', episodes: ['1'], dir: base })
     sessions[0].finish(true); await flush()
     expect(d.queueItems()[0].status).toBe('done')
+  })
+})
+
+describe('downloads waiting and timed retries', () => {
+  const MIN = 60 * 1000
+  const DAY = 24 * 60 * MIN
+  let t, timers, onFinished, file, nextId
+  const fakeSetTimeout = (fn, ms) => { const h = { fn, at: t + ms, cleared: false }; timers.push(h); return h }
+  const fakeClearTimeout = (h) => { if (h) h.cleared = true }
+  const advance = (ms) => {
+    t += ms
+    for (const h of [...timers].sort((a, b) => a.at - b.at)) {
+      if (!h.cleared && !h.fired && h.at <= t) { h.fired = true; h.fn() }
+    }
+  }
+  const live = () => timers.filter((h) => !h.cleared && !h.fired)
+  const mk = (extra = {}) => createDownloads({
+    file, aniCli, onChange: () => {}, onFinished, uuid: () => `w${++nextId}`, now: () => '2026-10-01T00:00:00Z',
+    clock: () => t, setTimeout: fakeSetTimeout, clearTimeout: fakeClearTimeout, ...extra,
+  })
+  const add = (d, opts = {}) => d.enqueue({ title: 'Show', aniCliTitle: 'Show', episodes: ['1'], dir: base, auto: true, ...opts })
+  const failWith = async (error) => { sessions.at(-1).fail(error); await flush() }
+  let w
+  beforeEach(() => {
+    t = 1_000_000_000_000
+    timers = []
+    nextId = 0
+    onFinished = vi.fn()
+    file = path.join(base, 'wait.json')
+    w = mk()
+  })
+
+  it('puts an auto item that hit a retryable error into waiting and starts the next one', async () => {
+    add(w, { episodes: ['1', '2'] })
+    await failWith('episode-not-released')
+    expect(w.queueItems()[0]).toMatchObject({ status: 'waiting', auto: true, attempts: 1, firstTriedAt: t, retryAt: t + 30 * MIN })
+    expect(w.queueItems()[1].status).toBe('downloading')
+    expect(onFinished).not.toHaveBeenCalled()
+  })
+  it('re-queues when retryAt passes, then backs off to one hour', async () => {
+    add(w)
+    await failWith('no-sources')
+    expect(aniCli.startSession).toHaveBeenCalledTimes(1)
+    advance(30 * MIN)
+    expect(aniCli.startSession).toHaveBeenCalledTimes(2)
+    expect(w.queueItems()[0].status).toBe('downloading')
+    await failWith('no-sources')
+    expect(w.queueItems()[0]).toMatchObject({ status: 'waiting', attempts: 2, retryAt: t + 60 * MIN })
+    expect(onFinished).not.toHaveBeenCalled()
+  })
+  it('does not wake up before retryAt', async () => {
+    add(w)
+    await failWith('blocked')
+    advance(29 * MIN)
+    expect(w.queueItems()[0].status).toBe('waiting')
+    expect(aniCli.startSession).toHaveBeenCalledTimes(1)
+  })
+  it('gives up as error after three days and notifies once', async () => {
+    add(w)
+    await failWith('unknown')
+    const first = w.queueItems()[0].firstTriedAt
+    t = first + 3 * DAY
+    w.resume(w.queueItems()[0].id)
+    await failWith('episode-not-released')
+    expect(w.queueItems()[0]).toMatchObject({ status: 'error', error: 'episode-not-released' })
+    expect(onFinished).toHaveBeenCalledTimes(1)
+    expect(onFinished).toHaveBeenCalledWith({ title: 'Show', episode: '1', status: 'error' })
+  })
+  it('does not retry when the anime is not found or the error is permanent', async () => {
+    add(w, { episodes: ['1', '2'] })
+    expect(await sessions[0].opts.onMenu({ prompt: 'Select anime: ', lines: ['1 Other'] })).toBeNull()
+    await failWith('unknown')
+    expect(w.queueItems()[0]).toMatchObject({ status: 'error', error: 'not-found' })
+    await failWith('tools-missing')
+    expect(w.queueItems()[1]).toMatchObject({ status: 'error', error: 'tools-missing' })
+    expect(onFinished).toHaveBeenCalledTimes(2)
+  })
+  it('keeps manual items on the old behaviour', async () => {
+    add(w, { auto: false })
+    await failWith('unknown')
+    expect(w.queueItems()[0]).toMatchObject({ status: 'error', error: 'unknown' })
+    expect(w.queueItems()[0].auto).toBeUndefined()
+    expect(onFinished).toHaveBeenCalledTimes(1)
+  })
+  it('keeps a waiting item across a restart and re-queues a past retryAt on its own', async () => {
+    add(w)
+    await failWith('unknown')
+    t += 40 * MIN // app was closed past retryAt
+    w.dispose() // the old process is gone
+    const again = mk()
+    expect(again.queueItems()[0]).toMatchObject({ status: 'waiting', retryAt: expect.any(Number) })
+    expect(aniCli.startSession).toHaveBeenCalledTimes(1)
+    advance(0)
+    expect(again.queueItems()[0].status).toBe('downloading')
+    expect(aniCli.startSession).toHaveBeenCalledTimes(2)
+  })
+  it('keeps a future retryAt waiting after a restart until the timer fires', async () => {
+    add(w)
+    await failWith('unknown')
+    advance(10 * MIN)
+    w.dispose()
+    const again = mk()
+    advance(0)
+    expect(again.queueItems()[0].status).toBe('waiting')
+    advance(20 * MIN)
+    expect(again.queueItems()[0].status).toBe('downloading')
+  })
+  it('resume turns waiting into queued and starts it', async () => {
+    add(w)
+    await failWith('unknown')
+    w.resume(w.queueItems()[0].id)
+    expect(w.queueItems()[0].status).toBe('downloading')
+    expect(aniCli.startSession).toHaveBeenCalledTimes(2)
+  })
+  it('retryFailed leaves waiting items alone', async () => {
+    add(w, { episodes: ['1', '2'] })
+    await failWith('unknown')
+    sessions.at(-1).fail('tools-missing')
+    await flush()
+    w.retryFailed()
+    expect(w.queueItems().map((i) => i.status)).toEqual(['waiting', 'downloading'])
+  })
+  it('cancel removes a waiting item and its timer never revives it', async () => {
+    add(w)
+    await failWith('unknown')
+    w.cancel(w.queueItems()[0].id)
+    expect(w.queueItems()).toEqual([])
+    advance(DAY)
+    expect(aniCli.startSession).toHaveBeenCalledTimes(1)
+  })
+  it('dispose stops the retry timer', async () => {
+    add(w)
+    await failWith('unknown')
+    w.dispose()
+    expect(live()).toEqual([])
+    advance(DAY)
+    expect(w.queueItems()[0].status).toBe('waiting')
+    expect(aniCli.startSession).toHaveBeenCalledTimes(1)
+  })
+  it('enqueueing an episode that is already waiting changes nothing', async () => {
+    add(w)
+    await failWith('unknown')
+    const before = w.queueItems()
+    add(w)
+    expect(w.queueItems()).toEqual(before)
+    expect(aniCli.startSession).toHaveBeenCalledTimes(1)
+  })
+  it('an auto item interrupted by quitting comes back waiting for two minutes, a manual one paused', async () => {
+    add(w, { episodes: ['1', '2'] })
+    w.enqueue({ title: 'Other', aniCliTitle: 'Other', episodes: ['1'], dir: base })
+    await failWith('unknown') // auto 1 waits with attempts 1
+    const cycle = w.queueItems()[0]
+    w.resume(cycle.id) // auto 1 is queued again behind auto 2, which is downloading; Other is queued
+    expect(w.queueItems().map((i) => i.status)).toEqual(['queued', 'downloading', 'queued'])
+    w.dispose()
+    const again = mk()
+    expect(again.queueItems()).toEqual([
+      expect.objectContaining({ episode: '1', auto: true, status: 'waiting', retryAt: t + 2 * MIN, attempts: 1, firstTriedAt: cycle.firstTriedAt }),
+      expect.objectContaining({ episode: '2', auto: true, status: 'waiting', retryAt: t + 2 * MIN }),
+      expect.objectContaining({ title: 'Other', status: 'paused' }),
+    ])
+    expect(again.queueItems()[1].attempts).toBeUndefined()
+    advance(2 * MIN - 1)
+    expect(aniCli.startSession).toHaveBeenCalledTimes(2)
+    advance(1)
+    expect(aniCli.startSession).toHaveBeenCalledTimes(3)
+    expect(again.queueItems().map((i) => i.status)).toEqual(['downloading', 'queued', 'paused'])
+  })
+  it('a session ending after dispose does not start the next item', async () => {
+    add(w, { episodes: ['1', '2'] })
+    w.dispose()
+    sessions[0].finish(true)
+    await flush()
+    expect(aniCli.startSession).toHaveBeenCalledTimes(1)
+    expect(w.queueItems()[1].status).toBe('queued')
+  })
+  it('the user resuming a failed auto item starts a new full waiting cycle', async () => {
+    add(w)
+    await failWith('unknown')
+    t += 3 * 24 * 60 * MIN
+    advance(0)
+    await failWith('unknown') // gave up
+    expect(w.queueItems()[0]).toMatchObject({ status: 'error', attempts: 2 })
+    w.resume(w.queueItems()[0].id)
+    expect(w.queueItems()[0]).toMatchObject({ status: 'downloading', attempts: 0, firstTriedAt: null })
+    await failWith('unknown')
+    expect(w.queueItems()[0]).toMatchObject({ status: 'waiting', attempts: 1, firstTriedAt: t, retryAt: t + 30 * MIN })
+  })
+  it('retryFailed also starts a new full waiting cycle for a failed auto item', async () => {
+    add(w)
+    await failWith('unknown')
+    t += 3 * 24 * 60 * MIN
+    advance(0)
+    await failWith('unknown')
+    expect(w.queueItems()[0].status).toBe('error')
+    w.retryFailed()
+    expect(w.queueItems()[0]).toMatchObject({ status: 'downloading', attempts: 0, firstTriedAt: null })
+    await failWith('unknown')
+    expect(w.queueItems()[0]).toMatchObject({ status: 'waiting', attempts: 1, firstTriedAt: t })
+  })
+  it('resuming a waiting auto item keeps its waiting cycle', async () => {
+    add(w)
+    await failWith('unknown')
+    const first = w.queueItems()[0].firstTriedAt
+    t += 5 * MIN
+    w.resume(w.queueItems()[0].id)
+    await failWith('unknown')
+    expect(w.queueItems()[0]).toMatchObject({ status: 'waiting', attempts: 2, firstTriedAt: first })
+  })
+  it('an auto enqueue leaves an episode the user paused alone; a manual one re-queues it', () => {
+    add(w, { episodes: ['1', '2'] })
+    const second = w.queueItems()[1]
+    w.pause(second.id)
+    add(w, { episodes: ['2'] })
+    expect(w.queueItems()[1].status).toBe('paused')
+    w.enqueue({ title: 'Show', aniCliTitle: 'Show', episodes: ['2'], dir: base })
+    expect(w.queueItems()[1].status).toBe('queued')
+  })
+  it('rearm() re-arms the retry timer from the current state', async () => {
+    add(w)
+    await failWith('unknown')
+    for (const h of live()) h.cleared = true // a timer lost while the computer slept
+    t += 40 * MIN
+    w.rearm()
+    expect(live()).toHaveLength(1)
+    advance(0)
+    expect(w.queueItems()[0].status).toBe('downloading')
+  })
+  it('pausing or killing an active item never turns it into waiting', async () => {
+    add(w)
+    w.pause(w.queueItems()[0].id)
+    await flush()
+    expect(w.queueItems()[0].status).toBe('paused')
+    w.resume(w.queueItems()[0].id)
+    w.cancel(w.queueItems()[0].id)
+    await flush()
+    expect(w.queueItems()).toEqual([])
   })
 })

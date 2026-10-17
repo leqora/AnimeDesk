@@ -59,6 +59,7 @@ contextBridge.exposeInMainWorld('animedesk', {
     openFolder: invoke(INVOKE.downloadsOpenFolder),
     onChange: on(EVENTS.downloads),
   },
+  autoDownload: { set: invoke(INVOKE.autoDownloadSet) },
   stats: { get: invoke(INVOKE.statsGet), onLevelUp: on(EVENTS.levelUp), onSeriesCompleted: on(EVENTS.seriesCompleted) },
   update: {
     getState: invoke(INVOKE.updateGetState),

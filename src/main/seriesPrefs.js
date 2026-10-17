@@ -13,6 +13,17 @@ const readReveal = (raw) => {
   const episodes = Array.isArray(r.episodes) ? [...new Set(r.episodes.map((e) => String(e ?? '').trim()).filter(Boolean))] : []
   return { all: r.all === true, episodes }
 }
+const isAfter = (n) => Number.isInteger(n) && n >= 0
+const isNext = (n) => n !== null && typeof n === 'object' && Number.isInteger(n.episode) && n.episode > 0 && Number.isFinite(n.airingAt)
+// { after, next?: { episode, airingAt } (the schedule last seen), pending?: true (no schedule known yet) }
+const readAuto = (raw) => {
+  if (raw === null || typeof raw !== 'object' || !isAfter(raw.after)) return null
+  return {
+    after: raw.after,
+    ...(isNext(raw.next) ? { next: { episode: raw.next.episode, airingAt: raw.next.airingAt } } : {}),
+    ...(raw.pending === true ? { pending: true } : {}),
+  }
+}
 
 // Quality, sub/dub, the subtitle offset per mode and the spoiler reveals, remembered per series
 // (also for series not in the watchlist).
@@ -26,7 +37,13 @@ export function createSeriesPrefs(file) {
       quality: QUALITIES.includes(raw.quality) ? raw.quality : null,
       mode: MODES.includes(raw.mode) ? raw.mode : null,
       subOffset: readOffsets(raw.subOffset),
+      autoDownload: readAuto(raw.autoDownload) !== null,
     }
+  }
+
+  // The auto-download boundary: episodes up to `after` are never fetched automatically.
+  function getAutoDownload(title) {
+    return readAuto((db.series[key(title)] ?? {}).autoDownload)
   }
 
   function getSpoilers(title) {
@@ -35,7 +52,7 @@ export function createSeriesPrefs(file) {
   }
 
   // One writer for both halves, so changing one never drops the other.
-  function persist(k, prefs, spoilers) {
+  function persist(k, prefs, spoilers, auto) {
     const stored = {}
     if (prefs.quality !== null) stored.quality = prefs.quality
     if (prefs.mode !== null) stored.mode = prefs.mode
@@ -44,6 +61,7 @@ export function createSeriesPrefs(file) {
     const { all, episodes } = spoilers.reveal
     if (all || episodes.length) stored.reveal = { ...(all ? { all: true } : {}), ...(episodes.length ? { episodes } : {}) }
     if (spoilers.metaOff) stored.metaOff = true
+    if (auto) stored.autoDownload = readAuto(auto)
     if (Object.keys(stored).length) db.series[k] = stored
     else delete db.series[k]
     writeJsonAtomic(file, db)
@@ -63,8 +81,18 @@ export function createSeriesPrefs(file) {
         else if (typeof v === 'number' && Number.isFinite(v)) next.subOffset[m] = clampOffset(v)
       }
     }
-    persist(k, next, getSpoilers(title))
+    persist(k, next, getSpoilers(title), getAutoDownload(title))
     return get(title)
+  }
+
+  // value: { after: integer >= 0, next?, pending? } (stored exactly, malformed next/pending dropped) to switch it
+  // on or update it, null to switch it off; anything else changes nothing.
+  function setAutoDownload(title, value) {
+    const k = key(title)
+    if (!k) return null
+    if (value === null) persist(k, get(title), getSpoilers(title), null)
+    else if (typeof value === 'object' && isAfter(value.after)) persist(k, get(title), getSpoilers(title), readAuto(value))
+    return getAutoDownload(title)
   }
 
   function setSpoilers(title, action = {}) {
@@ -79,7 +107,7 @@ export function createSeriesPrefs(file) {
     if (action.all === true && !next.reveal.all) { next.reveal.all = true; changed = true }
     if (action.reset === true) { next.reveal = { all: false, episodes: [] }; changed = true }
     if (typeof action.metaOff === 'boolean' && action.metaOff !== next.metaOff) { next.metaOff = action.metaOff; changed = true }
-    if (changed) persist(k, get(title), next)
+    if (changed) persist(k, get(title), next, getAutoDownload(title))
     return getSpoilers(title)
   }
 
@@ -88,5 +116,5 @@ export function createSeriesPrefs(file) {
     return { quality: p.quality ?? settings.quality, mode: p.mode ?? settings.mode }
   }
 
-  return { get, set, resolve, getSpoilers, setSpoilers }
+  return { get, set, resolve, getSpoilers, setSpoilers, getAutoDownload, setAutoDownload }
 }

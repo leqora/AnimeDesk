@@ -26,6 +26,25 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const [noteEp, setNoteEp] = useState(null)
   const [noteText, setNoteText] = useState('')
   const toast = useToast()
+  // Auto-download switch: needs a series identity (aniCliTitle + aniListId) and a download folder.
+  const canAuto = Boolean(entry.aniCliTitle && entry.aniListId != null)
+  const [auto, setAuto] = useState(false)
+  const [downloadDir, setDownloadDir] = useState(undefined)
+  useEffect(() => {
+    if (!canAuto) return undefined
+    let live = true
+    api.seriesPrefs.get(entry.aniCliTitle).then((p) => { if (live) setAuto(Boolean(p?.autoDownload)) }).catch((err) => console.error(err))
+    // A failed read must not lock the switch: main validates the folder again on set().
+    api.settings.get().then((s) => { if (live) setDownloadDir(s?.downloadDir ?? null) }).catch((err) => { console.error(err); if (live) setDownloadDir('') })
+    return () => { live = false }
+  }, [api, canAuto, entry.aniCliTitle])
+  const toggleAuto = async (enabled) => {
+    let r = null
+    try { r = await api.autoDownload.set(entry.id, enabled) } catch (err) { console.error(err) }
+    if (!mounted.current) return
+    if (r?.ok) setAuto(r.enabled)
+    else toast.show({ message: t('detail.autoDownloadFailed') })
+  }
 
   // Patch aniListId/totalEpisodes into the library once per entry id, when its info first arrives.
   const patchedFor = useRef(null)
@@ -183,6 +202,20 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
               </select>
             </label>
           </div>
+          {canAuto && (
+            <div className="check-group">
+              <label className="check">
+                <input
+                  type="checkbox" checked={auto} disabled={downloadDir == null && !auto}
+                  aria-describedby="auto-download-hint" onChange={(e) => toggleAuto(e.target.checked)}
+                />
+                {t('detail.autoDownload')}
+              </label>
+              <p id="auto-download-hint" className="check-hint muted">
+                {downloadDir === null ? t('detail.autoDownloadNoDir') : auto && `${t('detail.autoDownloadOn')}${entry.status === 'watching' ? '' : ` ${t('detail.autoDownloadNotWatching')}`}`}
+              </p>
+            </div>
+          )}
           <label className="field">
             <span>{t('detail.comment')}</span>
             <textarea aria-label={t('detail.comment')} value={comment} onChange={(e) => setComment(e.target.value)} onBlur={() => { if (comment !== entry.comment) save({ comment }) }} />

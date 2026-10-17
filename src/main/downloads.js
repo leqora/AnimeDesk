@@ -4,6 +4,7 @@ import crypto from 'node:crypto'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 import { safeDirName } from './paths.js'
 import { autoAnswer, menuKind } from './aniCliBridge.js'
+import { RETRYABLE_ERRORS, retryDelayMs, shouldGiveUp } from '../shared/autoDownload.js'
 
 export function parseProgress(line) {
   const m = /\[download\]\s+([\d.]+)%/.exec(line)
@@ -25,12 +26,21 @@ function findEpisodeFile(dir, episode) {
   return null
 }
 
-export function createDownloads({ file, aniCli, onChange = () => {}, onFinished = () => {}, now =() => new Date().toISOString(), uuid = () => crypto.randomUUID(), resolvePrefs = null, episodeLists = null }) {
+export function createDownloads({ file, aniCli, onChange = () => {}, onFinished = () => {}, now =() => new Date().toISOString(), uuid = () => crypto.randomUUID(), resolvePrefs = null, episodeLists = null, clock = Date.now, setTimeout: setTimer = setTimeout, clearTimeout: clearTimer = clearTimeout }) {
   const db = readJson(file, { version: 1, items: [] }).data
   const save = () => writeJsonAtomic(file, db)
-  // Unfinished items survive an app restart; whatever was running or waiting comes back paused.
-  let queue = (db.queue ?? []).map((i) => ({ ...i, status: ['queued', 'downloading'].includes(i.status) ? 'paused' : i.status }))
+  // Unfinished items survive an app restart; whatever was running or queued comes back paused, except
+  // auto items: nobody would resume those by hand, so they wait a short while and then try again.
+  // Items waiting for a retry keep their status and retryAt, so the timer picks them up again.
+  const RESTART_RETRY_MS = 2 * 60 * 1000
+  let queue = (db.queue ?? []).map((i) => {
+    if (!['queued', 'downloading'].includes(i.status)) return { ...i }
+    return i.auto ? { ...i, status: 'waiting', retryAt: clock() + RESTART_RETRY_MS } : { ...i, status: 'paused' }
+  })
   let active = null // { item, session }
+  let retryTimer = null
+  let disposed = false
+  const MAX_TIMER_MS = 2 ** 31 - 1 // setTimeout overflows beyond this
 
   // Called once per item that ends as done or error (never for cancelled/paused).
   const finished = (item) => {
@@ -40,7 +50,44 @@ export function createDownloads({ file, aniCli, onChange = () => {}, onFinished 
   const emit = () => {
     db.queue = queue.filter((i) => !['done', 'cancelled'].includes(i.status))
     save()
+    armRetryTimer()
     onChange()
+  }
+
+  // One timer, set for the earliest retryAt among waiting items; emit() re-arms it after every change.
+  function armRetryTimer() {
+    if (retryTimer != null) { clearTimer(retryTimer); retryTimer = null }
+    if (disposed) return
+    let earliest = null
+    for (const i of queue) if (i.status === 'waiting' && (earliest == null || i.retryAt < earliest)) earliest = i.retryAt
+    if (earliest == null) return
+    retryTimer = setTimer(onRetryTimer, Math.min(Math.max(0, earliest - clock()), MAX_TIMER_MS))
+  }
+
+  function onRetryTimer() {
+    retryTimer = null
+    if (disposed) return
+    const nowMs = clock()
+    for (const i of queue) {
+      if (i.status === 'waiting' && i.retryAt <= nowMs) { i.status = 'queued'; i.retryAt = null }
+    }
+    emit()
+    pump()
+  }
+
+  // An auto item with a retryable error waits for its next attempt until it has been tried for too long.
+  // Returns true when the item went to waiting.
+  function scheduleRetry(item, error) {
+    if (!item.auto || !RETRYABLE_ERRORS.includes(error)) return false
+    const nowMs = clock()
+    item.attempts = (item.attempts ?? 0) + 1
+    item.firstTriedAt = item.firstTriedAt ?? nowMs
+    if (shouldGiveUp({ firstTriedAt: item.firstTriedAt, now: nowMs })) return false
+    item.status = 'waiting'
+    item.error = error
+    item.percent = 0
+    item.retryAt = nowMs + retryDelayMs(item.attempts)
+    return true
   }
 
   function start(item) {
@@ -101,13 +148,16 @@ export function createDownloads({ file, aniCli, onChange = () => {}, onFinished 
             item.error = 'file-not-found'
           }
         } else {
-          item.status = 'error'
-          item.error = notFound ? 'not-found' : (r.error ?? 'unknown')
+          const error = notFound ? 'not-found' : (r.error ?? 'unknown')
+          if (!scheduleRetry(item, error)) {
+            item.status = 'error'
+            item.error = error
+          }
         }
       }
       emit()
-      if (wasDownloading) finished(item)
-      pump()
+      if (wasDownloading && item.status !== 'waiting') finished(item)
+      if (!disposed) pump() // a session ending while the app quits must not start the next item
     })
   }
 
@@ -119,25 +169,29 @@ export function createDownloads({ file, aniCli, onChange = () => {}, onFinished 
 
   const isDownloaded = (title, episode) => db.items.some((e) => e.title === title && e.episode === episode && fs.existsSync(e.path))
 
-  function enqueue({ title, aniCliTitle, episodes, dir }) {
+  function enqueue({ title, aniCliTitle, episodes, dir, auto = false }) {
     for (const ep of episodes) {
       const episode = String(ep)
       const existing = queue.find((i) => i.aniCliTitle === aniCliTitle && i.episode === episode && !['done', 'cancelled'].includes(i.status))
       if (existing) {
-        // asking again for a stopped episode means "try again", never a second copy
-        if (['paused', 'error'].includes(existing.status)) existing.status = 'queued'
+        // asking again for a stopped episode means "try again", never a second copy; an episode the
+        // user paused stays paused when only the auto-downloader asks
+        if (existing.status === 'error' || (existing.status === 'paused' && !auto)) existing.status = 'queued'
         continue
       }
       if (isDownloaded(title, episode)) continue
-      queue.push({ id: uuid(), title, aniCliTitle, episode, dir, status: 'queued', percent: 0, error: null })
+      queue.push({ id: uuid(), title, aniCliTitle, episode, dir, status: 'queued', percent: 0, error: null, ...(auto ? { auto: true } : {}) })
     }
     emit()
     pump()
     return queueItems()
   }
 
+  // The user retrying a failed auto item starts a new full waiting cycle.
+  const restartCycle = (item) => { if (item.auto) { item.attempts = 0; item.firstTriedAt = null } }
+
   function retryFailed() {
-    for (const i of queue) if (i.status === 'error') i.status = 'queued'
+    for (const i of queue) if (i.status === 'error') { restartCycle(i); i.status = 'queued' }
     emit()
     pump()
   }
@@ -156,8 +210,10 @@ export function createDownloads({ file, aniCli, onChange = () => {}, onFinished 
 
   function resume(id) {
     const item = queue.find((i) => i.id === id)
-    if (!item || !['paused', 'error'].includes(item.status)) return
+    if (!item || !['paused', 'error', 'waiting'].includes(item.status)) return
+    if (item.status === 'error') restartCycle(item) // a waiting item keeps its cycle
     item.status = 'queued'
+    item.retryAt = null
     emit()
     pump()
   }
@@ -176,7 +232,12 @@ export function createDownloads({ file, aniCli, onChange = () => {}, onFinished 
   const queueItems = () => queue.map((i) => ({ ...i }))
   const withMissing = (e) => ({ ...e, missing: !fs.existsSync(e.path) })
 
+  armRetryTimer() // a retryAt that passed while the app was closed fires right away
+
   return {
+    dispose() { disposed = true; if (retryTimer != null) { clearTimer(retryTimer); retryTimer = null } },
+    // After the computer wakes up, timers may have slept through retryAt.
+    rearm: armRetryTimer,
     enqueue, retryFailed, pause, resume, cancel, queueItems,
     listDownloaded: () => db.items.map(withMissing),
     getDownloaded: (id) => { const e = db.items.find((x) => x.id === id); return e ? withMissing(e) : null },

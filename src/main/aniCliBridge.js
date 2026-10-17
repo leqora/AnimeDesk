@@ -11,7 +11,8 @@ export function stripAnsi(s) {
 export function mapError(stderr) {
   const s = stripAnsi(stderr)
   if (/No results found/i.test(s)) return 'no-results'
-  if (/Episode not released|Out of range/i.test(s)) return 'episode-not-released'
+  // "Invalid episode!" = the episode list lacks the number; "Invalid episode selection" (no "!") is not that.
+  if (/Episode not released|Out of range|Invalid episode!/i.test(s)) return 'episode-not-released'
   if (/Blocked by cloudflare/i.test(s)) return 'blocked'
   if (/No sources found for dub/i.test(s)) return 'no-dub'
   if (/no valid sources/i.test(s)) return 'no-sources'
