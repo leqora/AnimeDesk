@@ -199,20 +199,26 @@ describe('App', () => {
     let onFs
     const api = makeFakeApi({ window: { onFullscreen: vi.fn((cb) => { onFs = cb; return () => {} }) } })
     const add = vi.spyOn(window, 'addEventListener')
+    const remove = vi.spyOn(window, 'removeEventListener')
+    const keydown = (spy) => spy.mock.calls.filter(([type]) => type === 'keydown').map(([, fn]) => fn)
     try {
       render(<App api={api} />)
       await screen.findByRole('button', { name: 'Ceo ekran (F11)' })
-      const before = add.mock.calls.filter(([type]) => type === 'keydown').length
+      // Only the listeners that exist before the toggles matter; listeners other components add later (under load) must not fail this test.
+      const registered = keydown(add)
+      remove.mockClear()
       act(() => onFs(true))
       await screen.findByRole('button', { name: 'Izađi iz celog ekrana (Esc)' })
       act(() => onFs(false))
       await screen.findByRole('button', { name: 'Ceo ekran (F11)' })
-      expect(add.mock.calls.filter(([type]) => type === 'keydown').length).toBe(before)
+      const removed = keydown(remove)
+      expect(registered.filter((fn) => removed.includes(fn))).toEqual([])
       act(() => onFs(true))
       fireEvent.keyDown(window, { key: 'Escape' })
       expect(api.window.setFullscreen).toHaveBeenCalledWith(false)
     } finally {
       add.mockRestore()
+      remove.mockRestore()
     }
   })
   it('shows the player over the app and keeps pages mounted', async () => {
