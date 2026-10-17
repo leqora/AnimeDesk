@@ -309,6 +309,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .bell__item:hover:not(:disabled) { background: var(--glass-strong); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
 .bell__item:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 .bell__item:disabled { opacity: .5; cursor: default; }
+.bell__item-time { font-size: 12px; white-space: nowrap; }
 
 /* AniList account section + bulk confirm */
 .anilist-account { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
@@ -325,7 +326,6 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .anilist-match { display: flex; flex-direction: column; gap: 6px; }
 .anilist-match .row { align-items: center; }
 .anilist-match__state { font-size: 13px; }
-.bell__item-time { font-size: 12px; white-space: nowrap; }
 
 /* narrow window: icon-only sidebar */
 @media (max-width: 960px) {

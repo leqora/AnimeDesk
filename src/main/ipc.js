@@ -116,8 +116,11 @@ export function createHandlers(s) {
     [INVOKE.skipGet]: (title, episode, duration) => s.skipLookup(title, episode, duration),
     [INVOKE.anilistAuthStatus]: () => s.aniListAuth.status(),
     [INVOKE.anilistAuthConnect]: async (token) => {
+      if (typeof token !== 'string') return { ok: false, error: 'empty' }
       const r = await s.aniListAuth.connect(token)
       if (!r?.ok) return { ok: false, error: r?.error ?? 'network' }
+      // reset() must run synchronously right after the await above, before any other await: auth.onChange
+      // already called sync.resume(), which armed a 0 ms timer that only this reset() can cancel.
       s.aniListSync.reset()
       s.aniListSync.check()
       return { ok: true, status: r.status } // never the token
@@ -157,10 +160,14 @@ export function createHandlers(s) {
       return value
     },
     [INVOKE.anilistSyncCandidates]: (search) => s.anilist.candidates(search),
-    [INVOKE.anilistSyncPendingConfirm]: () =>
-      s.library.list()
-        .filter((e) => e.aniListId != null && !e.aniListConfirmed)
-        .map((e) => ({ id: e.id, title: e.title, aniListId: e.aniListId })),
+    [INVOKE.anilistSyncPendingConfirm]: () => {
+      const all = s.library.list()
+      // A media id already confirmed on another entry can never be confirmed here ('taken').
+      const taken = new Set(all.filter((e) => e.aniListConfirmed === true && e.aniListId != null).map((e) => e.aniListId))
+      return all
+        .filter((e) => e.aniListId != null && !e.aniListConfirmed && !taken.has(e.aniListId))
+        .map((e) => ({ id: e.id, title: e.title, aniListId: e.aniListId }))
+    },
   }
 }
 

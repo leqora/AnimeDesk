@@ -253,6 +253,22 @@ describe('ipc anilist login and sync', () => {
     expect(s.aniListSync.reset).not.toHaveBeenCalled()
     expect(s.aniListSync.check).not.toHaveBeenCalled()
   })
+  it('a non-string token is rejected as empty without touching auth', async () => {
+    const s = services()
+    const h = createHandlers(s)
+    expect(await h[INVOKE.anilistAuthConnect](undefined)).toEqual({ ok: false, error: 'empty' })
+    expect(await h[INVOKE.anilistAuthConnect]({ x: 1 })).toEqual({ ok: false, error: 'empty' })
+    expect(s.aniListAuth.connect).not.toHaveBeenCalled()
+  })
+  it('pendingConfirm leaves out entries whose AniList series is confirmed on another entry', () => {
+    const s = services()
+    s.library.list = vi.fn(() => [
+      { id: 'a', title: 'A', aniListId: 5, aniListConfirmed: false },
+      { id: 'b', title: 'B', aniListId: 5, aniListConfirmed: true },
+      { id: 'c', title: 'C', aniListId: 7, aniListConfirmed: false },
+    ])
+    expect(createHandlers(s)[INVOKE.anilistSyncPendingConfirm]()).toEqual([{ id: 'c', title: 'C', aniListId: 7 }])
+  })
   it('disconnect resets sync only when the auth store really disconnected', () => {
     const s = services()
     const h = createHandlers(s)

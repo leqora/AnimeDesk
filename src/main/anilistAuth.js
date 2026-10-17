@@ -24,9 +24,16 @@ function validAccount(a) {
   )
 }
 
-export function createAniListAuth({ file, crypt, anilist, now = Date.now }) {
+const MAX_TIMER_MS = 24 * 3600 * 1000
+
+export function createAniListAuth({
+  file, crypt, anilist, now = Date.now,
+  setTimeout: setT = globalThis.setTimeout,
+  clearTimeout: clearT = globalThis.clearTimeout,
+}) {
   let account = null // { token, userId, name, expiresAt }
   let expired = false
+  let expiryTimer = null
   let generation = 0 // bumped by connect/disconnect so an in-flight connect can tell it was superseded
   const listeners = new Set()
 
@@ -62,6 +69,29 @@ export function createAniListAuth({ file, crypt, anilist, now = Date.now }) {
     }
   }
 
+  function clearExpiryTimer() {
+    if (expiryTimer) clearT(expiryTimer)
+    expiryTimer = null
+  }
+
+  // Nothing else notices time passing, so listeners (UI, sync) are told when the 14-day warning window
+  // opens and when the token expires. Waits are capped at 24 h (timer limits, clock changes) and re-armed.
+  function armExpiry() {
+    clearExpiryTimer()
+    if (!account || expired || account.expiresAt == null) return
+    const t = now()
+    const warnAt = account.expiresAt - EXPIRY_WARN_MS + 1 // status() turns 'expiring' just after this
+    const target = t < warnAt ? warnAt : account.expiresAt
+    if (target <= t) return
+    expiryTimer = setT(() => {
+      expiryTimer = null
+      const fired = now() >= target
+      armExpiry()
+      if (fired) emit()
+    }, Math.min(MAX_TIMER_MS, target - t))
+    expiryTimer?.unref?.()
+  }
+
   async function connect(raw) {
     const token = typeof raw === 'string' ? raw.trim() : ''
     if (!token) return { ok: false, error: 'empty' }
@@ -83,6 +113,7 @@ export function createAniListAuth({ file, crypt, anilist, now = Date.now }) {
     }
     account = next
     expired = false
+    armExpiry()
     emit()
     return { ok: true, status: status() }
   }
@@ -91,6 +122,7 @@ export function createAniListAuth({ file, crypt, anilist, now = Date.now }) {
     // A late 401 from a request made with an older token must not invalidate a newer login.
     if (!account || expired || token !== account.token) return
     expired = true
+    clearExpiryTimer()
     // Persist so a revoked token stays unusable after a restart.
     try {
       writeBufferAtomic(file, crypt.encrypt(JSON.stringify({ ...account, invalid: true })))
@@ -108,8 +140,14 @@ export function createAniListAuth({ file, crypt, anilist, now = Date.now }) {
     }
     account = null
     expired = false
+    clearExpiryTimer()
     emit()
     return { ok: true }
+  }
+
+  function dispose() {
+    clearExpiryTimer()
+    listeners.clear()
   }
 
   function onChange(fn) {
@@ -118,7 +156,9 @@ export function createAniListAuth({ file, crypt, anilist, now = Date.now }) {
   }
 
   load()
+  armExpiry()
   return {
+    dispose,
     connect,
     status,
     token: () => (account && !isExpired() ? account.token : null),

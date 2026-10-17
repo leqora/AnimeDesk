@@ -324,6 +324,83 @@ describe('anilistAuth main', () => {
     expect(a.token()).toBe(t2)
   })
 
+  describe('expiry timer', () => {
+    let timers, seq
+    const setT = (fn, ms) => { const id = ++seq; timers.set(id, { fn, at: clock + ms }); return id }
+    const clearT = (id) => { timers.delete(id) }
+    // Moves the clock to `to`, firing due timers in order (a fired timer may arm another).
+    const advanceTo = (to) => {
+      for (;;) {
+        let best = null
+        for (const [id, t] of timers) if (t.at <= to && (!best || t.at < best[1].at)) best = [id, t]
+        if (!best) break
+        timers.delete(best[0])
+        clock = Math.max(clock, best[1].at)
+        best[1].fn()
+      }
+      clock = to
+    }
+    const makeT = () => createAniListAuth({ file, crypt, anilist, now: () => clock, setTimeout: setT, clearTimeout: clearT })
+    beforeEach(() => { timers = new Map(); seq = 0 })
+
+    it('emits when the warning window opens and again at expiry, with the new state', async () => {
+      const a = makeT()
+      const exp = NOW + 20 * DAY
+      await a.connect(jwt(exp))
+      const fn = vi.fn()
+      a.onChange(fn)
+      advanceTo(exp - 14 * DAY - 1)
+      expect(fn).not.toHaveBeenCalled()
+      advanceTo(exp - 14 * DAY + 1000)
+      expect(fn).toHaveBeenCalledTimes(1)
+      expect(fn.mock.calls[0][0].state).toBe('expiring')
+      advanceTo(exp + 1000)
+      expect(fn).toHaveBeenCalledTimes(2)
+      expect(fn.mock.calls[1][0].state).toBe('expired')
+      expect(timers.size).toBe(0)
+    })
+
+    it('caps a single wait at 24 h and re-arms without emitting early', async () => {
+      const a = makeT()
+      await a.connect(jwt(NOW + 40 * DAY))
+      const fn = vi.fn()
+      a.onChange(fn)
+      const delays = [...timers.values()].map((t) => t.at - clock)
+      expect(delays).toEqual([DAY])
+      advanceTo(NOW + 5 * DAY)
+      expect(fn).not.toHaveBeenCalled()
+      expect(timers.size).toBe(1)
+    })
+
+    it('arms from a stored account on startup, not for a token without expiry', async () => {
+      const a = makeT()
+      await a.connect(jwt(NOW + 20 * DAY))
+      a.dispose()
+      timers.clear()
+      const b = makeT()
+      expect(timers.size).toBe(1)
+      b.dispose()
+      await b.disconnect()
+      anilist.viewer = vi.fn(async () => ({ id: 7, name: 'leqora' }))
+      const c = makeT()
+      await c.connect('opaque-token-no-exp')
+      expect(timers.size).toBe(0)
+    })
+
+    it('disconnect, a new connect and dispose clear the previous timer', async () => {
+      const a = makeT()
+      await a.connect(jwt(NOW + 20 * DAY))
+      expect(timers.size).toBe(1)
+      a.disconnect()
+      expect(timers.size).toBe(0)
+      await a.connect(jwt(NOW + 20 * DAY))
+      await a.connect(jwt(NOW + 30 * DAY))
+      expect(timers.size).toBe(1)
+      a.dispose()
+      expect(timers.size).toBe(0)
+    })
+  })
+
   it('does not log anything while connecting or failing', async () => {
     const spies = ['log', 'warn', 'error', 'info', 'debug'].map((m) => vi.spyOn(console, m).mockImplementation(() => {}))
     const a = make()

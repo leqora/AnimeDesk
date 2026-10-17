@@ -81,7 +81,7 @@ export function createLibrary(file, { now = () => new Date().toISOString(), uuid
   function confirmAniList(id, mediaId) {
     const e = mustGet(id)
     if (!Number.isInteger(mediaId) || mediaId <= 0) throw new Error('invalid aniListId')
-    const other =Object.values(db.anime).find((x) => x.id !== id && x.aniListConfirmed === true && x.aniListId === mediaId)
+    const other = Object.values(db.anime).find((x) => x.id !== id && x.aniListConfirmed === true && x.aniListId === mediaId)
     if (other) return { ok: false, error: 'taken', title: other.title }
     e.aniListId = mediaId
     e.aniListConfirmed = true

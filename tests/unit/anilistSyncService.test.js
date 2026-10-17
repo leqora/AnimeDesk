@@ -426,6 +426,52 @@ describe('anilistSync service', () => {
     expect(listEntry).toHaveBeenCalledTimes(1)
   })
 
+  it('reset also clears the first-run timer', () => {
+    const s = make()
+    s.start()
+    expect(clock.count()).toBe(1)
+    s.reset()
+    expect(clock.count()).toBe(0)
+  })
+
+  it('findConfirmed throwing in run() backs the item off by a minute instead of spinning', async () => {
+    const real = library.findConfirmed
+    let calls = 0
+    library.findConfirmed = (mid) => { calls++; if (calls === 1) throw new Error('boom'); return real(mid) }
+    const s = make()
+    s.check()
+    await clock.advance(30 * S)
+    expect(calls).toBe(1)
+    await clock.advance(59 * S)
+    expect(calls).toBe(1)
+    expect(listEntry).not.toHaveBeenCalled()
+    await clock.advance(1 * S)
+    expect(listEntry).toHaveBeenCalledTimes(1)
+  })
+
+  it('an error escaping run() backs the item off and is logged scrubbed (no spin)', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    fs.writeFileSync(file, JSON.stringify({
+      version: 1, sent: {}, flags: {},
+      pending: { 100: { progress: 3, status: 'CURRENT', attempts: 0, rejected: 4, nextAt: 0, error: null } },
+    }))
+    listEntry.mockRejectedValue(new Error(`AniList HTTP 400 ${'x'.repeat(500)}`))
+    const real = library.findConfirmed
+    let calls = 0
+    library.findConfirmed = (mid) => { calls++; if (calls === 2) throw new Error('y'.repeat(500)); return real(mid) }
+    const s = make()
+    s.start()
+    await clock.advance(60 * S)
+    expect(listEntry).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0][1]).length).toBeLessThanOrEqual(200)
+    await clock.advance(59 * S)
+    expect(listEntry).toHaveBeenCalledTimes(1)
+    await clock.advance(1 * S)
+    expect(listEntry).toHaveBeenCalledTimes(2)
+    warn.mockRestore()
+  })
+
   it('reset during a request: the late result does not write back', async () => {
     let release
     saveProgress.mockImplementation(() => new Promise((r) => { release = () => r({ progress: 3, status: 'CURRENT' }) }))

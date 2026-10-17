@@ -56,14 +56,14 @@ export function createAniListSync({
         }
       }
     } catch (err) {
-      console.warn('anilistSync: load failed', err?.message)
+      console.warn('anilistSync: load failed', scrub(err?.message))
       sent = {}; pending = {}; flags = {}
     }
   }
 
   function persist() {
     try { writeJsonAtomic(file, { version: FILE_VERSION, sent, pending, flags }) } catch (err) {
-      console.warn('anilistSync: save failed', err?.message)
+      console.warn('anilistSync: save failed', scrub(err?.message))
     }
   }
 
@@ -75,7 +75,7 @@ export function createAniListSync({
 
   const listEntries = () => {
     try { return library.list() ?? [] } catch (err) {
-      console.warn('anilistSync: library failed', err?.message)
+      console.warn('anilistSync: library failed', scrub(err?.message))
       return []
     }
   }
@@ -116,8 +116,15 @@ export function createAniListSync({
     if (!pick) { arm(); return }
     if (!auth.token()) return
     busy = true
-    run(pick[0], pick[1]).catch((err) => {
-      console.warn('anilistSync: run failed', err?.message)
+    const [pickId, pickItem] = pick
+    run(pickId, pickItem).catch((err) => {
+      console.warn('anilistSync: run failed', scrub(err?.message))
+      // Whatever escaped must not leave the item due: it would re-fire at 0 ms in a tight loop.
+      if (pending[pickId] === pickItem) {
+        const attempts = pickItem.attempts + 1
+        pending[pickId] = { ...pickItem, attempts, nextAt: now() + retryDelay(attempts) }
+        persist(); notify()
+      }
     }).finally(() => {
       busy = false
       arm()
@@ -217,12 +224,12 @@ export function createAniListSync({
       if (pending[id] === item) { delete pending[id]; persist(); notify() }
     }
 
-    let e = library.findConfirmed(mediaId)
-    if (!eligible(e) || !wantsSync(e, sent[id])) return drop()
-    const token = auth.token()
-    if (!token) return
-
+    let token = null
     try {
+      let e = library.findConfirmed(mediaId)
+      if (!eligible(e) || !wantsSync(e, sent[id])) return drop()
+      token = auth.token()
+      if (!token) return
       const remote = await anilist.listEntry(mediaId, token)
       if (aborted()) return
       // The series may have been unlinked or opted out while the lookup was in flight.
@@ -343,6 +350,8 @@ export function createAniListSync({
     gen++
     sent = {}; pending = {}; flags = {}
     clearTimer()
+    if (firstTimer) clearT(firstTimer)
+    firstTimer = null
     persist()
     notify()
   }

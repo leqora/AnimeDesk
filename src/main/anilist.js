@@ -109,7 +109,7 @@ export class AniListAuthError extends Error {
   }
 }
 
-const realSleep =(ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, now = Date.now }) {
   // AniList allows ~30 requests a minute; a search result grid asks for 25+ posters at once.
