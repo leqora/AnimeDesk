@@ -320,6 +320,8 @@
   "anilist.notConfigured": "AniList klijent još nije podešen.",
   "anilist.expiring": "Prijava ističe {date} — Ponovo poveži",
   "anilist.expired": "Prijava je istekla — ponovo poveži u Podešavanjima",
+  "anilist.validUntil": "Prijava važi do {date}",
+  "anilist.expiredHere": "Prijava je istekla — poveži ponovo ispod.",
   "anilist.disconnect": "Prekini vezu",
   "anilist.disconnectFailed": "Prekid veze nije uspeo — pokušaj ponovo.",
   "anilist.revokeNote": "AniList i dalje pamti da je AnimeDesk odobren — pristup možeš da ukloniš na AniList-u (Settings → Apps).",

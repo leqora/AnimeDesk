@@ -17,6 +17,11 @@ describe('styles.css', () => {
       expect(root, t).toContain(`${t}:`)
     }
   })
+  it('keeps primary buttons red on hover (the generic button:hover is more specific than button.primary)', () => {
+    const rule = /(^|\n)button\.primary:hover:not\(:disabled\) \{([^}]*)\}/.exec(css)?.[2] ?? ''
+    expect(rule).toContain('background: var(--cta)')
+    expect(rule).toContain('border-color: var(--cta)')
+  })
   it('uses no raw hex colors outside :root', () => {
     expect(css.slice(rootEnd).match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull()
   })

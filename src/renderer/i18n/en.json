@@ -320,6 +320,8 @@
   "anilist.notConfigured": "The AniList client is not set up yet.",
   "anilist.expiring": "Login expires {date} — Reconnect",
   "anilist.expired": "Login has expired — reconnect in Settings",
+  "anilist.validUntil": "Login valid until {date}",
+  "anilist.expiredHere": "Login has expired — reconnect below.",
   "anilist.disconnect": "Disconnect",
   "anilist.disconnectFailed": "Disconnecting failed — try again.",
   "anilist.revokeNote": "AniList still remembers that AnimeDesk was authorized — you can remove access on AniList (Settings → Apps).",

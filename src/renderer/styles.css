@@ -64,7 +64,7 @@ button:active:not(:disabled) { transform: translateY(1px); }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 button:disabled { opacity: .45; cursor: not-allowed; }
 button.primary { background: var(--cta); border-color: var(--cta); color: var(--on-accent); font-weight: 600; }
-button.primary:hover:not(:disabled) { box-shadow: 0 0 16px color-mix(in srgb, var(--cta) 55%, transparent); }
+button.primary:hover:not(:disabled) { background: var(--cta); border-color: var(--cta); box-shadow: 0 0 16px color-mix(in srgb, var(--cta) 55%, transparent); }
 button.danger { background: var(--bad); border-color: var(--bad); color: var(--on-accent); }
 input, select, textarea { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 7px 10px; }
 input[type="range"] { padding: 0; accent-color: var(--accent); }

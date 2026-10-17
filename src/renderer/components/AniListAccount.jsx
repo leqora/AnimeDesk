@@ -88,7 +88,8 @@ export function AniListAccount({ onPick = () => {}, refreshKey = 0 }) {
     <div className="anilist-account">
       {!status.connected && <p className="muted">{t('anilist.intro')}</p>}
       {status.connected && status.state !== 'expired' && <p>{t('anilist.connectedAs', { name: status.name ?? '' })}</p>}
-      {status.state === 'expired' && <p role="status">{t('anilist.expired')}</p>}
+      {status.state === 'ok' && status.expiresAt != null && <p className="muted">{t('anilist.validUntil', { date: date(status.expiresAt) })}</p>}
+      {status.state === 'expired' && <p role="status">{t('anilist.expiredHere')}</p>}
       {showConnect && (
         <>
           <div className="row">

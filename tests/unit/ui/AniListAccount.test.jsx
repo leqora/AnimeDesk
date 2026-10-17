@@ -93,7 +93,20 @@ describe('AniListAccount', () => {
     const { pushAuth } = setup({ status: { connected: true, name: 'leqora', expiresAt: Date.UTC(2026, 11, 24), state: 'expiring' } })
     expect(await screen.findByText(/Prijava ističe .*2026.* — Ponovo poveži/)).toBeTruthy()
     pushAuth({ connected: true, name: 'leqora', expiresAt: 1, state: 'expired' })
-    expect(await screen.findByText('Prijava je istekla — ponovo poveži u Podešavanjima')).toBeTruthy()
+    expect(await screen.findByText('Prijava je istekla — poveži ponovo ispod.')).toBeTruthy()
+    expect(screen.queryByText(/u Podešavanjima/)).toBeNull()
+  })
+
+  it('connected shows until when the login is valid', async () => {
+    setup({ status: { connected: true, name: 'leqora', expiresAt: Date.UTC(2027, 9, 17), state: 'ok' } })
+    const line = await screen.findByText(/^Prijava važi do .*2027/)
+    expect(line.textContent).not.toMatch(/\.\.$/) // the Serbian date already ends with a dot
+  })
+
+  it('connected without a known expiry shows no date line', async () => {
+    setup({ status: OK })
+    await screen.findByText('Povezano kao leqora')
+    expect(screen.queryByText(/Prijava važi do/)).toBeNull()
   })
 
   it('onChange re-renders the status', async () => {
