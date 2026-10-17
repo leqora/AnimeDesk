@@ -33,6 +33,7 @@ export const INVOKE = {
   watchCancel: 'watch:cancel',
   menuAnswer: 'menu:answer',
   downloadsEnqueue: 'downloads:enqueue',
+  autoDownloadSet: 'auto-download:set',
   downloadsPause: 'downloads:pause',
   downloadsResume: 'downloads:resume',
   downloadsRetryFailed: 'downloads:retry-failed',

@@ -19,6 +19,7 @@ function services() {
     progress: { snapshot: vi.fn(() => ({ level: 1 })), check: vi.fn() },
     updater: { getState: vi.fn(() => ({ status: 'idle' })), check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(() => true), install: vi.fn(() => true), applySettings: vi.fn() },
     whatsNew: { get: vi.fn(() => null), seen: vi.fn() },
+    autoDownloader: { setEnabled: vi.fn(() => ({ ok: true, enabled: true })) },
     notifications: { list: vi.fn(() => [{ id: 'n1' }]), unreadCount: vi.fn(() => 1), markAllRead: vi.fn() },
     window: { get: vi.fn(() => true), set: vi.fn() },
     positions: { clear: vi.fn(), forSeries: vi.fn((title) => (title === 'Show' ? { 4: { position: 495, duration: 1440 } } : {})) },
@@ -39,6 +40,13 @@ describe('ipc', () => {
     await h[INVOKE.episodesSpoilers](args, { all: true })
     expect(s.seriesEpisodes.spoilers).toHaveBeenCalledWith(args, { all: true })
     expect(INVOKE.episodesForSeries).toBe('episodes:for-series')
+  })
+  it('forwards the auto-download switch to the auto-downloader', () => {
+    const s = services()
+    const r = createHandlers(s)[INVOKE.autoDownloadSet]('a1', true)
+    expect(s.autoDownloader.setEnabled).toHaveBeenCalledWith('a1', true)
+    expect(r).toEqual({ ok: true, enabled: true })
+    expect(INVOKE.autoDownloadSet).toBe('auto-download:set')
   })
   it('retries all failed downloads', () => {
     const s = services()

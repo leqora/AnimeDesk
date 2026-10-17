@@ -41,6 +41,7 @@ import { markdownToText } from '../shared/releaseNotes.js'
 import { EVENTS } from '../shared/channels.js'
 import { createNotificationsStore } from './notificationsStore.js'
 import { createAiringWatcher } from './airingWatcher.js'
+import { createAutoDownloader } from './autoDownloader.js'
 import { createTray } from './tray.js'
 import { shouldHideOnClose, startHidden, notificationText, shouldNotifyDownload, trayLabels } from './background.js'
 
@@ -206,7 +207,7 @@ async function main() {
   // Auto-tracking and IPC both announce library changes through here; a newly "watching" series gets seeded promptly.
   const sendAndWatch = (channel, payload) => {
     send(channel, payload)
-    if (channel === EVENTS.libraryChanged) airingWatcher.check()
+    if (channel === EVENTS.libraryChanged) { airingWatcher.check(); autoDownloader.check() }
   }
   const watch = createWatchService({ mpvExtraArgs, skipsFor: skipLookup, aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: sendAndWatch, seriesPrefs, celebrations, getTotalEpisodes: totalEpisodes, episodeLists })
   const downloads = createDownloads({
@@ -218,12 +219,13 @@ async function main() {
       osNotify(status === 'done' ? 'downloaded' : 'downloadFailed', { title, episode }, () => { showWindow(); send(EVENTS.openPage, { page: 'downloads' }) })
     },
     resolvePrefs: (title) => seriesPrefs.resolve(title, settings.get()), episodeLists })
+  const autoDownloader = createAutoDownloader({ library, anilist, seriesPrefs, settings, downloads })
   const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
 
   registerIpc(ipcMain, createHandlers({
-    settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, updater, whatsNew, notifications: notificationsStore,
+    settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, autoDownloader, updater, whatsNew, notifications: notificationsStore,
     send: sendAndWatch,
-    onLibraryChanged: () => airingWatcher.check(),
+    onLibraryChanged: () => { airingWatcher.check(); autoDownloader.check() },
     onSettingsChanged: (patch) => {
       if (patch && 'launchAtLogin' in patch) applyLoginItem()
       if (patch && 'language' in patch) tray?.setLabels(trayLabels(settings.get().language))
@@ -260,15 +262,16 @@ async function main() {
   win.on('query-session-end', () => { quitting = true })
   win.on('session-end', () => { quitting = true; app.quit() })
   tray = createTray({ Tray, Menu, iconPath, labels: trayLabels(settings.get().language), onOpen: showWindow, onQuit: () => app.quit() })
-  powerMonitor.on('resume', () => airingWatcher.refresh())
+  powerMonitor.on('resume', () => { airingWatcher.refresh(); autoDownloader.check() })
   airingWatcher.start()
+  autoDownloader.start()
   updater.start()
   health.run().then(() => health.dailyUpdate({ enabled: settings.get().autoUpdateTools, now: new Date().toISOString() }))
     .then(() => { if (settings.get().mpvModernUi) return toolManager.installOptional() })
   setInterval(() => { if (health.get().reason === 'source-down') health.run() }, SIX_HOURS)
 
   app.on('window-all-closed', () => { if (!shouldHideOnClose({ closeToTray: settings.get().closeToTray, quitting })) app.quit() })
-  app.on('before-quit', () => { quitting = true; airingWatcher.stop(); tray?.destroy(); stopPositionEvents(); watch.dispose(); server.stop(); streams.stop() })
+  app.on('before-quit', () => { quitting = true; airingWatcher.stop(); autoDownloader.stop(); downloads.dispose(); tray?.destroy(); stopPositionEvents(); watch.dispose(); server.stop(); streams.stop() })
 }
 
 // A failed startup must not leave a silent background process; a stray rejection must not go unnoticed.

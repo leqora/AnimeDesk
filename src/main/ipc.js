@@ -89,6 +89,7 @@ export function createHandlers(s) {
     [INVOKE.watchCancel]: (sessionId) => s.watch.cancel(sessionId),
     [INVOKE.menuAnswer]: (requestId, line) => s.watch.answerMenu(requestId, line),
     [INVOKE.downloadsEnqueue]: (params) => s.downloads.enqueue(params),
+    [INVOKE.autoDownloadSet]: (animeId, enabled) => s.autoDownloader.setEnabled(animeId, enabled),
     [INVOKE.downloadsPause]: (id) => s.downloads.pause(id),
     [INVOKE.downloadsResume]: (id) => s.downloads.resume(id),
     [INVOKE.downloadsRetryFailed]: () => s.downloads.retryFailed(),
