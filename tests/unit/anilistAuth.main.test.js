@@ -213,6 +213,96 @@ describe('anilistAuth main', () => {
     expect(fn).toHaveBeenCalledTimes(3)
   })
 
+  it('expired state survives a restart and a new connect clears it', async () => {
+    const a = make()
+    await a.connect(jwt(NOW + 30 * DAY))
+    a.markExpired()
+    const b = make()
+    expect(b.status()).toMatchObject({ connected: true, state: 'expired' })
+    expect(b.token()).toBeNull()
+    const fresh = jwt(NOW + 40 * DAY)
+    expect((await b.connect(fresh)).ok).toBe(true)
+    expect(b.status().state).toBe('ok')
+    const c = make()
+    expect(c.status().state).toBe('ok')
+    expect(c.token()).toBe(fresh)
+  })
+
+  it('disconnect returns ok true on success', async () => {
+    const a = make()
+    await a.connect(jwt(NOW + 30 * DAY))
+    expect(a.disconnect()).toEqual({ ok: true })
+  })
+
+  it('disconnect that cannot delete returns ok false and keeps state', async () => {
+    const a = make()
+    await a.connect(jwt(NOW + 30 * DAY))
+    const fn = vi.fn()
+    a.onChange(fn)
+    fs.rmSync(file)
+    fs.mkdirSync(file)
+    fs.writeFileSync(path.join(file, 'x'), 'x') // non-empty directory: rmSync without recursive fails
+    expect(a.disconnect()).toEqual({ ok: false })
+    expect(a.status().connected).toBe(true)
+    expect(a.token()).not.toBeNull()
+    expect(fn).not.toHaveBeenCalled()
+  })
+
+  it('disconnect also removes a leftover tmp file', async () => {
+    const a = make()
+    await a.connect(jwt(NOW + 30 * DAY))
+    fs.writeFileSync(`${file}.tmp`, 'leftover')
+    a.disconnect()
+    expect(fs.existsSync(`${file}.tmp`)).toBe(false)
+  })
+
+  it('encrypt failure during connect returns unavailable and keeps the old account', async () => {
+    const old = jwt(NOW + 30 * DAY)
+    const a = make()
+    await a.connect(old)
+    crypt.encrypt = () => { throw new Error('dpapi') }
+    expect(await a.connect(jwt(NOW + 50 * DAY))).toEqual({ ok: false, error: 'unavailable' })
+    expect(a.token()).toBe(old)
+    crypt = fakeCrypt()
+    expect(make().token()).toBe(old)
+  })
+
+  it('failed rename removes the tmp file holding the new token', async () => {
+    const a = make()
+    await a.connect(jwt(NOW + 30 * DAY))
+    fs.rmSync(file)
+    fs.mkdirSync(file) // rename onto a directory fails
+    expect(await a.connect(jwt(NOW + 50 * DAY))).toEqual({ ok: false, error: 'unavailable' })
+    expect(fs.existsSync(`${file}.tmp`)).toBe(false)
+  })
+
+  it('a disconnect during an in-flight connect cancels it', async () => {
+    let release
+    anilist.viewer = vi.fn(() => new Promise((r) => { release = () => r({ id: 7, name: 'leqora' }) }))
+    const a = make()
+    const p = a.connect(jwt(NOW + 30 * DAY))
+    a.disconnect()
+    release()
+    expect(await p).toEqual({ ok: false, error: 'cancelled' })
+    expect(fs.existsSync(file)).toBe(false)
+    expect(a.status().state).toBe('none')
+  })
+
+  it('an older connect is cancelled by a newer one', async () => {
+    const releases = []
+    anilist.viewer = vi.fn(() => new Promise((r) => releases.push(r)))
+    const a = make()
+    const t1 = jwt(NOW + 30 * DAY)
+    const t2 = jwt(NOW + 40 * DAY)
+    const p1 = a.connect(t1)
+    const p2 = a.connect(t2)
+    releases[0]({ id: 1, name: 'one' })
+    releases[1]({ id: 2, name: 'two' })
+    expect(await p1).toEqual({ ok: false, error: 'cancelled' })
+    expect((await p2).ok).toBe(true)
+    expect(a.token()).toBe(t2)
+  })
+
   it('does not log anything while connecting or failing', async () => {
     const spies = ['log', 'warn', 'error', 'info', 'debug'].map((m) => vi.spyOn(console, m).mockImplementation(() => {}))
     const a = make()

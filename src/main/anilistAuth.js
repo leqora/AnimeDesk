@@ -8,8 +8,13 @@ import { tokenExpiry, EXPIRY_WARN_MS } from '../shared/anilistAuth.js'
 function writeBufferAtomic(file, buf) {
   fs.mkdirSync(path.dirname(file), { recursive: true })
   const tmp = `${file}.tmp`
-  fs.writeFileSync(tmp, buf)
-  fs.renameSync(tmp, file)
+  try {
+    fs.writeFileSync(tmp, buf)
+    fs.renameSync(tmp, file)
+  } catch (err) {
+    try { fs.rmSync(tmp, { force: true }) } catch { /* best effort: do not leave the token behind */ }
+    throw err
+  }
 }
 
 function validAccount(a) {
@@ -22,13 +27,17 @@ function validAccount(a) {
 export function createAniListAuth({ file, crypt, anilist, now = Date.now }) {
   let account = null // { token, userId, name, expiresAt }
   let expired = false
+  let generation = 0 // bumped by connect/disconnect so an in-flight connect can tell it was superseded
   const listeners = new Set()
 
   function load() {
     try {
       if (!crypt.isAvailable()) return
       const a = JSON.parse(crypt.decrypt(fs.readFileSync(file)))
-      if (validAccount(a)) account = { token: a.token, userId: a.userId ?? null, name: a.name, expiresAt: a.expiresAt }
+      if (validAccount(a)) {
+        account = { token: a.token, userId: a.userId ?? null, name: a.name, expiresAt: a.expiresAt }
+        expired = a.invalid === true
+      }
     } catch {
       account = null // missing, unreadable or undecryptable: not connected, file left in place
     }
@@ -57,12 +66,15 @@ export function createAniListAuth({ file, crypt, anilist, now = Date.now }) {
     const token = typeof raw === 'string' ? raw.trim() : ''
     if (!token) return { ok: false, error: 'empty' }
     if (!crypt.isAvailable()) return { ok: false, error: 'unavailable' }
+    const mine = ++generation
     let viewer
     try {
       viewer = await anilist.viewer(token)
     } catch (err) {
+      if (mine !== generation) return { ok: false, error: 'cancelled' }
       return { ok: false, error: err instanceof AniListAuthError ? 'rejected' : 'network' }
     }
+    if (mine !== generation) return { ok: false, error: 'cancelled' }
     const next = { token, userId: viewer.id, name: viewer.name, expiresAt: tokenExpiry(token) }
     try {
       writeBufferAtomic(file, crypt.encrypt(JSON.stringify(next)))
@@ -78,14 +90,25 @@ export function createAniListAuth({ file, crypt, anilist, now = Date.now }) {
   function markExpired() {
     if (!account || expired) return
     expired = true
+    // Persist so a revoked token stays unusable after a restart.
+    try {
+      writeBufferAtomic(file, crypt.encrypt(JSON.stringify({ ...account, invalid: true })))
+    } catch { /* still expired in memory; a later 401 will mark it again */ }
     emit()
   }
 
   function disconnect() {
-    try { fs.rmSync(file, { force: true }) } catch { /* nothing to remove */ }
+    generation++
+    try {
+      fs.rmSync(file, { force: true })
+      fs.rmSync(`${file}.tmp`, { force: true })
+    } catch {
+      return { ok: false } // credential may still be on disk: keep state unchanged
+    }
     account = null
     expired = false
     emit()
+    return { ok: true }
   }
 
   function onChange(fn) {
