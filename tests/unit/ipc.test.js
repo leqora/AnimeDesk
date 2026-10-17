@@ -25,6 +25,12 @@ function services() {
     positions: { clear: vi.fn(), forSeries: vi.fn((title) => (title === 'Show' ? { 4: { position: 495, duration: 1440 } } : {})) },
     skipLookup: vi.fn(async () => ({ op: { start: 1, end: 2 }, ed: null, recap: null })),
     send: vi.fn(),
+    aniListAuth: {
+      status: vi.fn(() => ({ connected: false, name: null, expiresAt: null, state: 'none' })),
+      connect: vi.fn(async () => ({ ok: true, status: { connected: true, name: 'leqora', expiresAt: null, state: 'ok' }, token: 'SECRET' })),
+      disconnect: vi.fn(() => ({ ok: true })),
+    },
+    aniListSync: { stateFor: vi.fn(() => ({ state: 'off' })), syncNow: vi.fn(), check: vi.fn(), reset: vi.fn() },
   }
 }
 
@@ -226,6 +232,91 @@ describe('ipc', () => {
     expect(h[INVOKE.windowGetFullscreen]()).toBe(true)
     h[INVOKE.windowSetFullscreen](false)
     expect(s.window.set).toHaveBeenCalledWith(false)
+  })
+})
+
+describe('ipc anilist login and sync', () => {
+  it('connect never returns the token, resets and checks sync on success', async () => {
+    const s = services()
+    const r = await createHandlers(s)[INVOKE.anilistAuthConnect]('tok')
+    expect(s.aniListAuth.connect).toHaveBeenCalledWith('tok')
+    expect(r).toEqual({ ok: true, status: { connected: true, name: 'leqora', expiresAt: null, state: 'ok' } })
+    expect(JSON.stringify(r)).not.toContain('SECRET')
+    expect(s.aniListSync.reset).toHaveBeenCalledTimes(1)
+    expect(s.aniListSync.check).toHaveBeenCalledTimes(1)
+    expect(s.aniListSync.reset.mock.invocationCallOrder[0]).toBeLessThan(s.aniListSync.check.mock.invocationCallOrder[0])
+  })
+  it('a failed connect returns only the error and leaves sync alone', async () => {
+    const s = services()
+    s.aniListAuth.connect.mockResolvedValueOnce({ ok: false, error: 'rejected' })
+    expect(await createHandlers(s)[INVOKE.anilistAuthConnect]('bad')).toEqual({ ok: false, error: 'rejected' })
+    expect(s.aniListSync.reset).not.toHaveBeenCalled()
+    expect(s.aniListSync.check).not.toHaveBeenCalled()
+  })
+  it('disconnect resets sync only when the auth store really disconnected', () => {
+    const s = services()
+    const h = createHandlers(s)
+    expect(h[INVOKE.anilistAuthDisconnect]()).toEqual({ ok: true })
+    expect(s.aniListAuth.disconnect).toHaveBeenCalled()
+    expect(s.aniListSync.reset).toHaveBeenCalledTimes(1)
+    s.aniListAuth.disconnect.mockReturnValueOnce({ ok: false })
+    expect(h[INVOKE.anilistAuthDisconnect]()).toEqual({ ok: false })
+    expect(s.aniListSync.reset).toHaveBeenCalledTimes(1)
+  })
+  it('status is forwarded; authorize does not open anything without a client id', () => {
+    const s = services()
+    s.electron.openExternal = vi.fn()
+    const h = createHandlers(s)
+    expect(h[INVOKE.anilistAuthStatus]()).toEqual({ connected: false, name: null, expiresAt: null, state: 'none' })
+    expect(h[INVOKE.anilistAuthOpenAuthorize]()).toBe(false)
+    expect(s.electron.openExternal).not.toHaveBeenCalled()
+    h[INVOKE.anilistAuthOpenApps]()
+    expect(s.electron.openExternal).toHaveBeenCalledWith('https://anilist.co/settings/apps')
+  })
+  it('confirm calls the library, then syncNow, and emits libraryChanged', () => {
+    const s = services()
+    s.library.confirmAniList = vi.fn(() => ({ ok: true, entry: { id: 'a' } }))
+    const r = createHandlers(s)[INVOKE.anilistSyncConfirm]('a', 99)
+    expect(s.library.confirmAniList).toHaveBeenCalledWith('a', 99)
+    expect(r).toEqual({ ok: true, entry: { id: 'a' } })
+    expect(s.aniListSync.syncNow).toHaveBeenCalledWith('a')
+    expect(s.send).toHaveBeenCalledWith(EVENTS.libraryChanged)
+  })
+  it('confirm turns a taken id into a result and a throw into invalid, without syncing', () => {
+    const s = services()
+    const h = createHandlers(s)
+    s.library.confirmAniList = vi.fn(() => ({ ok: false, error: 'taken', title: 'Other' }))
+    expect(h[INVOKE.anilistSyncConfirm]('a', 99)).toEqual({ ok: false, error: 'taken', title: 'Other' })
+    s.library.confirmAniList = vi.fn(() => { throw new Error('invalid aniListId') })
+    expect(h[INVOKE.anilistSyncConfirm]('a', -1)).toEqual({ ok: false, error: 'invalid' })
+    expect(s.aniListSync.syncNow).not.toHaveBeenCalled()
+    expect(s.send).not.toHaveBeenCalled()
+  })
+  it('setEnabled stores the pref by aniCliTitle ?? title, then checks', () => {
+    const s = services()
+    s.seriesPrefs.setAniListSync = vi.fn((t, e) => e)
+    s.library.get = vi.fn((id) => (id === 'a' ? { id: 'a', title: 'T', aniCliTitle: 'AC' } : id === 'b' ? { id: 'b', title: 'Only' } : null))
+    const h = createHandlers(s)
+    expect(h[INVOKE.anilistSyncSetEnabled]('a', true)).toBe(true)
+    expect(s.seriesPrefs.setAniListSync).toHaveBeenLastCalledWith('AC', true)
+    h[INVOKE.anilistSyncSetEnabled]('b', false)
+    expect(s.seriesPrefs.setAniListSync).toHaveBeenLastCalledWith('Only', false)
+    expect(s.aniListSync.check).toHaveBeenCalledTimes(2)
+    expect(h[INVOKE.anilistSyncSetEnabled]('zzz', true)).toBe(false)
+  })
+  it('stateFor, candidates and pendingConfirm', async () => {
+    const s = services()
+    s.anilist.candidates = vi.fn(async () => [{ id: 1 }])
+    s.library.list = vi.fn(() => [
+      { id: 'a', title: 'A', aniListId: 5, aniListConfirmed: false, extra: 1 },
+      { id: 'b', title: 'B', aniListId: 6, aniListConfirmed: true },
+      { id: 'c', title: 'C', aniListId: null },
+    ])
+    const h = createHandlers(s)
+    expect(h[INVOKE.anilistSyncStateFor]('a')).toEqual({ state: 'off' })
+    expect(s.aniListSync.stateFor).toHaveBeenCalledWith('a')
+    expect(await h[INVOKE.anilistSyncCandidates]('x')).toEqual([{ id: 1 }])
+    expect(h[INVOKE.anilistSyncPendingConfirm]()).toEqual([{ id: 'a', title: 'A', aniListId: 5 }])
   })
 })
 

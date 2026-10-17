@@ -87,8 +87,9 @@ export function createAniListAuth({ file, crypt, anilist, now = Date.now }) {
     return { ok: true, status: status() }
   }
 
-  function markExpired() {
-    if (!account || expired) return
+  function markExpired(token) {
+    // A late 401 from a request made with an older token must not invalidate a newer login.
+    if (!account || expired || token !== account.token) return
     expired = true
     // Persist so a revoked token stays unusable after a restart.
     try {

@@ -47,6 +47,16 @@ export function makeFakeApi(overrides = {}) {
       recover: vi.fn(async () => ({ ok: true, auto: false })), retryAgain: vi.fn(async () => {}),
     },
     notifications: { list: vi.fn(async () => ({ items: [], unread: 0 })), markRead: vi.fn(async () => ({ items: [], unread: 0 })) },
+    anilistAuth: {
+      status: vi.fn(async () => ({ connected: false, name: null, expiresAt: null, state: 'none' })),
+      connect: vi.fn(async () => ({ ok: true, status: { connected: true, name: 'leqora', expiresAt: null, state: 'ok' } })),
+      disconnect: vi.fn(async () => ({ ok: true })),
+      openAuthorize: vi.fn(async () => false), openApps: vi.fn(async () => {}), onChange: sub(),
+    },
+    anilistSync: {
+      stateFor: vi.fn(async () => ({ state: 'off' })), confirm: vi.fn(async () => ({ ok: true, entry: {} })),
+      setEnabled: vi.fn(async () => true), candidates: vi.fn(async () => []), pendingConfirm: vi.fn(async () => []), onChange: sub(),
+    },
     onNotificationsChanged: sub(),
     onOpenAnime: sub(),
     onOpenPage: sub(),
