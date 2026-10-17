@@ -20,9 +20,10 @@ export function knownAired(info, record, now) {
   const fromCache = airedCount(info, now)
   if (fromCache != null) return fromCache
   const next = record?.next
-  if (next && now >= next.airingAt) return next.episode
-  if (info?.status === 'FINISHED' && Number.isInteger(info.episodes)) return info.episodes
-  return null
+  const remembered = next && now >= next.airingAt ? next.episode : null
+  // A series that finished while the app was off has a remembered schedule older than its finale.
+  if (info?.status === 'FINISHED' && Number.isInteger(info.episodes)) return Math.max(info.episodes, remembered ?? 0)
+  return remembered
 }
 
 // Boundary when the switch is turned on: everything aired or watched so far is "old".
