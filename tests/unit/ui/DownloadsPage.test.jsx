@@ -95,7 +95,7 @@ describe('DownloadsPage waiting items', () => {
     const time = new Date(retryAt).toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' })
     expect(await screen.findByText(`Čeka izvor · sledeći pokušaj u ${time}`)).toBeInTheDocument()
     expect(screen.getByText('Auto')).toBeInTheDocument()
-    expect(screen.queryByText(/izvor/i, { selector: '.muted' })).toBeNull()
+    expect(screen.queryByText('Epizoda je izašla, ali trenutno nema ispravnih izvora.')).toBeNull()
   })
   it('Try now resumes, Cancel cancels, there is no Pause', async () => {
     const api = mount()

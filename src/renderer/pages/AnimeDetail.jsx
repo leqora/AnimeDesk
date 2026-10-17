@@ -33,13 +33,17 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   useEffect(() => {
     if (!canAuto) return undefined
     let live = true
-    api.seriesPrefs.get(entry.aniCliTitle).then((p) => { if (live) setAuto(Boolean(p?.autoDownload)) })
-    api.settings.get().then((s) => { if (live) setDownloadDir(s?.downloadDir ?? null) })
+    api.seriesPrefs.get(entry.aniCliTitle).then((p) => { if (live) setAuto(Boolean(p?.autoDownload)) }).catch((err) => console.error(err))
+    // A failed read must not lock the switch: main validates the folder again on set().
+    api.settings.get().then((s) => { if (live) setDownloadDir(s?.downloadDir ?? null) }).catch((err) => { console.error(err); if (live) setDownloadDir('') })
     return () => { live = false }
   }, [api, canAuto, entry.aniCliTitle])
   const toggleAuto = async (enabled) => {
-    const r = await api.autoDownload.set(entry.id, enabled)
-    if (r?.ok && mounted.current) setAuto(r.enabled)
+    let r = null
+    try { r = await api.autoDownload.set(entry.id, enabled) } catch (err) { console.error(err) }
+    if (!mounted.current) return
+    if (r?.ok) setAuto(r.enabled)
+    else toast.show({ message: t('detail.autoDownloadFailed') })
   }
 
   // Patch aniListId/totalEpisodes into the library once per entry id, when its info first arrives.
@@ -202,7 +206,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
             <div className="check-group">
               <label className="check">
                 <input
-                  type="checkbox" checked={auto} disabled={downloadDir == null}
+                  type="checkbox" checked={auto} disabled={downloadDir == null && !auto}
                   aria-describedby="auto-download-hint" onChange={(e) => toggleAuto(e.target.checked)}
                 />
                 {t('detail.autoDownload')}

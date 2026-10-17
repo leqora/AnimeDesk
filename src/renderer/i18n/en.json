@@ -67,6 +67,7 @@
   "detail.autoDownloadOn": "New episodes download by themselves once the source has them. AnimeDesk needs to be running (the tray is fine).",
   "detail.autoDownloadNotWatching": "Only works while the series is in \"Watching\".",
   "detail.autoDownloadNoDir": "Choose a download folder in Settings first.",
+  "detail.autoDownloadFailed": "The auto-download setting was not saved.",
   "detail.status": "Status",
   "detail.rating": "Rating",
   "detail.noRating": "No rating",

@@ -67,6 +67,7 @@
   "detail.autoDownloadOn": "Nove epizode se preuzimaju same kad se pojave na izvoru. AnimeDesk treba da radi (može i u tray-u).",
   "detail.autoDownloadNotWatching": "Radi samo dok je serija u „Gledam”.",
   "detail.autoDownloadNoDir": "Prvo izaberi folder za preuzimanja u Podešavanjima.",
+  "detail.autoDownloadFailed": "Podešavanje automatskog preuzimanja nije sačuvano.",
   "detail.status": "Status",
   "detail.rating": "Ocena",
   "detail.noRating": "Bez ocene",
