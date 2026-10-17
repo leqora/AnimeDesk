@@ -10,7 +10,7 @@ const CONNECT_ERRORS = { rejected: 'anilist.err.rejected', network: 'anilist.err
 
 // Settings section body: connection state, token paste and the bulk "is this the right series" confirmation.
 // onPick(entry) opens the manual candidate picker (wired by the page).
-export function AniListAccount({ onPick = () => {} }) {
+export function AniListAccount({ onPick = () => {}, refreshKey = 0 }) {
   const api = useApi()
   const t = useT()
   const [status, setStatus] = useState(NONE)
@@ -34,7 +34,7 @@ export function AniListAccount({ onPick = () => {} }) {
   useEffect(() => {
     refreshPending()
     return api.anilistSync.onChange(() => { refreshPending() })
-  }, [api, refreshPending])
+  }, [api, refreshPending, refreshKey]) // refreshKey: the page changed a match without a sync event
   useEffect(() => { if (open && pending.length === 0) setOpen(false) }, [open, pending.length])
 
   const authorize = async () => {

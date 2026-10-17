@@ -320,7 +320,11 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .anilist-confirm__poster { width: 44px; flex: none; }
 .anilist-confirm__text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .anilist-confirm__library { font-weight: 600; overflow-wrap: anywhere; }
-.anilist-confirm__modal { min-width: min(640px, 90vw); }
+.anilist-confirm__modal, .anilist-picker { min-width: min(640px, 90vw); }
+.anilist-confirm__poster img { display: block; width: 100%; border-radius: var(--radius-sm); }
+.anilist-match { display: flex; flex-direction: column; gap: 6px; }
+.anilist-match .row { align-items: center; }
+.anilist-match__state { font-size: 13px; }
 .bell__item-time { font-size: 12px; white-space: nowrap; }
 
 /* narrow window: icon-only sidebar */

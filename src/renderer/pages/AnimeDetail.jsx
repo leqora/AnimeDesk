@@ -6,6 +6,7 @@ import { useToast } from '../toast/ToastProvider.jsx'
 import { Poster } from '../components/Poster.jsx'
 import { EpisodePicker } from '../components/EpisodePicker.jsx'
 import { Icon } from '../components/Icon.jsx'
+import { AniListMatch } from '../components/AniListMatch.jsx'
 import { useSeriesEpisodes } from '../episodes/useSeriesEpisodes.js'
 import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
 import { usePosterTint } from '../theme/usePosterTint.js'
@@ -216,6 +217,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
               </p>
             </div>
           )}
+          <AniListMatch entry={entry} info={info} onChanged={onChanged} />
           <label className="field">
             <span>{t('detail.comment')}</span>
             <textarea aria-label={t('detail.comment')} value={comment} onChange={(e) => setComment(e.target.value)} onBlur={() => { if (comment !== entry.comment) save({ comment }) }} />
