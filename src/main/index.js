@@ -262,7 +262,7 @@ async function main() {
   win.on('query-session-end', () => { quitting = true })
   win.on('session-end', () => { quitting = true; app.quit() })
   tray = createTray({ Tray, Menu, iconPath, labels: trayLabels(settings.get().language), onOpen: showWindow, onQuit: () => app.quit() })
-  powerMonitor.on('resume', () => { airingWatcher.refresh().finally(() => autoDownloader.check()) })
+  powerMonitor.on('resume', () => { downloads.rearm(); airingWatcher.refresh().finally(() => autoDownloader.check()) })
   airingWatcher.start()
   autoDownloader.start()
   updater.start()

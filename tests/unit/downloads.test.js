@@ -392,6 +392,87 @@ describe('downloads waiting and timed retries', () => {
     expect(w.queueItems()).toEqual(before)
     expect(aniCli.startSession).toHaveBeenCalledTimes(1)
   })
+  it('an auto item interrupted by quitting comes back waiting for two minutes, a manual one paused', async () => {
+    add(w, { episodes: ['1', '2'] })
+    w.enqueue({ title: 'Other', aniCliTitle: 'Other', episodes: ['1'], dir: base })
+    await failWith('unknown') // auto 1 waits with attempts 1
+    const cycle = w.queueItems()[0]
+    w.resume(cycle.id) // auto 1 is queued again behind auto 2, which is downloading; Other is queued
+    expect(w.queueItems().map((i) => i.status)).toEqual(['queued', 'downloading', 'queued'])
+    w.dispose()
+    const again = mk()
+    expect(again.queueItems()).toEqual([
+      expect.objectContaining({ episode: '1', auto: true, status: 'waiting', retryAt: t + 2 * MIN, attempts: 1, firstTriedAt: cycle.firstTriedAt }),
+      expect.objectContaining({ episode: '2', auto: true, status: 'waiting', retryAt: t + 2 * MIN }),
+      expect.objectContaining({ title: 'Other', status: 'paused' }),
+    ])
+    expect(again.queueItems()[1].attempts).toBeUndefined()
+    advance(2 * MIN - 1)
+    expect(aniCli.startSession).toHaveBeenCalledTimes(2)
+    advance(1)
+    expect(aniCli.startSession).toHaveBeenCalledTimes(3)
+    expect(again.queueItems().map((i) => i.status)).toEqual(['downloading', 'queued', 'paused'])
+  })
+  it('a session ending after dispose does not start the next item', async () => {
+    add(w, { episodes: ['1', '2'] })
+    w.dispose()
+    sessions[0].finish(true)
+    await flush()
+    expect(aniCli.startSession).toHaveBeenCalledTimes(1)
+    expect(w.queueItems()[1].status).toBe('queued')
+  })
+  it('the user resuming a failed auto item starts a new full waiting cycle', async () => {
+    add(w)
+    await failWith('unknown')
+    t += 3 * 24 * 60 * MIN
+    advance(0)
+    await failWith('unknown') // gave up
+    expect(w.queueItems()[0]).toMatchObject({ status: 'error', attempts: 2 })
+    w.resume(w.queueItems()[0].id)
+    expect(w.queueItems()[0]).toMatchObject({ status: 'downloading', attempts: 0, firstTriedAt: null })
+    await failWith('unknown')
+    expect(w.queueItems()[0]).toMatchObject({ status: 'waiting', attempts: 1, firstTriedAt: t, retryAt: t + 30 * MIN })
+  })
+  it('retryFailed also starts a new full waiting cycle for a failed auto item', async () => {
+    add(w)
+    await failWith('unknown')
+    t += 3 * 24 * 60 * MIN
+    advance(0)
+    await failWith('unknown')
+    expect(w.queueItems()[0].status).toBe('error')
+    w.retryFailed()
+    expect(w.queueItems()[0]).toMatchObject({ status: 'downloading', attempts: 0, firstTriedAt: null })
+    await failWith('unknown')
+    expect(w.queueItems()[0]).toMatchObject({ status: 'waiting', attempts: 1, firstTriedAt: t })
+  })
+  it('resuming a waiting auto item keeps its waiting cycle', async () => {
+    add(w)
+    await failWith('unknown')
+    const first = w.queueItems()[0].firstTriedAt
+    t += 5 * MIN
+    w.resume(w.queueItems()[0].id)
+    await failWith('unknown')
+    expect(w.queueItems()[0]).toMatchObject({ status: 'waiting', attempts: 2, firstTriedAt: first })
+  })
+  it('an auto enqueue leaves an episode the user paused alone; a manual one re-queues it', () => {
+    add(w, { episodes: ['1', '2'] })
+    const second = w.queueItems()[1]
+    w.pause(second.id)
+    add(w, { episodes: ['2'] })
+    expect(w.queueItems()[1].status).toBe('paused')
+    w.enqueue({ title: 'Show', aniCliTitle: 'Show', episodes: ['2'], dir: base })
+    expect(w.queueItems()[1].status).toBe('queued')
+  })
+  it('rearm() re-arms the retry timer from the current state', async () => {
+    add(w)
+    await failWith('unknown')
+    for (const h of live()) h.cleared = true // a timer lost while the computer slept
+    t += 40 * MIN
+    w.rearm()
+    expect(live()).toHaveLength(1)
+    advance(0)
+    expect(w.queueItems()[0].status).toBe('downloading')
+  })
   it('pausing or killing an active item never turns it into waiting', async () => {
     add(w)
     w.pause(w.queueItems()[0].id)

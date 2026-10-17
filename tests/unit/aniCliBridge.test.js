@@ -72,6 +72,10 @@ describe('aniCliBridge helpers', () => {
 describe('no sources and quality fallback', () => {
   it('maps "no valid sources" to no-sources', () => {
     expect(mapError('Episode is released, but no valid sources!')).toBe('no-sources')
+    // ani-cli dies with "Invalid episode!" when the episode list lacks the number (not released yet)
+    expect(mapError('\x1b[1;31mInvalid episode!\x1b[0m\n')).toBe('episode-not-released')
+    expect(mapError('Invalid episode selection')).toBe('unknown')
+    expect(mapError('Invalid anime selection')).toBe('unknown')
   })
   it('reads the requested quality from ani-cli fallback lines, with or without colors', () => {
     expect(parseQualityFallback('720 not found, defaulting to best')).toBe('720')

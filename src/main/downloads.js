@@ -29,9 +29,14 @@ function findEpisodeFile(dir, episode) {
 export function createDownloads({ file, aniCli, onChange = () => {}, onFinished = () => {}, now =() => new Date().toISOString(), uuid = () => crypto.randomUUID(), resolvePrefs = null, episodeLists = null, clock = Date.now, setTimeout: setTimer = setTimeout, clearTimeout: clearTimer = clearTimeout }) {
   const db = readJson(file, { version: 1, items: [] }).data
   const save = () => writeJsonAtomic(file, db)
-  // Unfinished items survive an app restart; whatever was running or queued comes back paused.
+  // Unfinished items survive an app restart; whatever was running or queued comes back paused, except
+  // auto items: nobody would resume those by hand, so they wait a short while and then try again.
   // Items waiting for a retry keep their status and retryAt, so the timer picks them up again.
-  let queue = (db.queue ?? []).map((i) => ({ ...i, status: ['queued', 'downloading'].includes(i.status) ? 'paused' : i.status }))
+  const RESTART_RETRY_MS = 2 * 60 * 1000
+  let queue = (db.queue ?? []).map((i) => {
+    if (!['queued', 'downloading'].includes(i.status)) return { ...i }
+    return i.auto ? { ...i, status: 'waiting', retryAt: clock() + RESTART_RETRY_MS } : { ...i, status: 'paused' }
+  })
   let active = null // { item, session }
   let retryTimer = null
   let disposed = false
@@ -152,7 +157,7 @@ export function createDownloads({ file, aniCli, onChange = () => {}, onFinished 
       }
       emit()
       if (wasDownloading && item.status !== 'waiting') finished(item)
-      pump()
+      if (!disposed) pump() // a session ending while the app quits must not start the next item
     })
   }
 
@@ -169,8 +174,9 @@ export function createDownloads({ file, aniCli, onChange = () => {}, onFinished 
       const episode = String(ep)
       const existing = queue.find((i) => i.aniCliTitle === aniCliTitle && i.episode === episode && !['done', 'cancelled'].includes(i.status))
       if (existing) {
-        // asking again for a stopped episode means "try again", never a second copy
-        if (['paused', 'error'].includes(existing.status)) existing.status = 'queued'
+        // asking again for a stopped episode means "try again", never a second copy; an episode the
+        // user paused stays paused when only the auto-downloader asks
+        if (existing.status === 'error' || (existing.status === 'paused' && !auto)) existing.status = 'queued'
         continue
       }
       if (isDownloaded(title, episode)) continue
@@ -181,8 +187,11 @@ export function createDownloads({ file, aniCli, onChange = () => {}, onFinished 
     return queueItems()
   }
 
+  // The user retrying a failed auto item starts a new full waiting cycle.
+  const restartCycle = (item) => { if (item.auto) { item.attempts = 0; item.firstTriedAt = null } }
+
   function retryFailed() {
-    for (const i of queue) if (i.status === 'error') i.status = 'queued'
+    for (const i of queue) if (i.status === 'error') { restartCycle(i); i.status = 'queued' }
     emit()
     pump()
   }
@@ -202,6 +211,7 @@ export function createDownloads({ file, aniCli, onChange = () => {}, onFinished 
   function resume(id) {
     const item = queue.find((i) => i.id === id)
     if (!item || !['paused', 'error', 'waiting'].includes(item.status)) return
+    if (item.status === 'error') restartCycle(item) // a waiting item keeps its cycle
     item.status = 'queued'
     item.retryAt = null
     emit()
@@ -226,6 +236,8 @@ export function createDownloads({ file, aniCli, onChange = () => {}, onFinished 
 
   return {
     dispose() { disposed = true; if (retryTimer != null) { clearTimer(retryTimer); retryTimer = null } },
+    // After the computer wakes up, timers may have slept through retryAt.
+    rearm: armRetryTimer,
     enqueue, retryFailed, pause, resume, cancel, queueItems,
     listDownloaded: () => db.items.map(withMissing),
     getDownloaded: (id) => { const e = db.items.find((x) => x.id === id); return e ? withMissing(e) : null },
