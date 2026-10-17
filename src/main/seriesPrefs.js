@@ -52,7 +52,7 @@ export function createSeriesPrefs(file) {
   }
 
   // One writer for both halves, so changing one never drops the other.
-  function persist(k, prefs, spoilers, auto) {
+  function persist(k, prefs, spoilers, auto, aniListSync) {
     const stored = {}
     if (prefs.quality !== null) stored.quality = prefs.quality
     if (prefs.mode !== null) stored.mode = prefs.mode
@@ -62,6 +62,7 @@ export function createSeriesPrefs(file) {
     if (all || episodes.length) stored.reveal = { ...(all ? { all: true } : {}), ...(episodes.length ? { episodes } : {}) }
     if (spoilers.metaOff) stored.metaOff = true
     if (auto) stored.autoDownload = readAuto(auto)
+    if (aniListSync === false) stored.aniListSync = false
     if (Object.keys(stored).length) db.series[k] = stored
     else delete db.series[k]
     writeJsonAtomic(file, db)
@@ -81,7 +82,7 @@ export function createSeriesPrefs(file) {
         else if (typeof v === 'number' && Number.isFinite(v)) next.subOffset[m] = clampOffset(v)
       }
     }
-    persist(k, next, getSpoilers(title), getAutoDownload(title))
+    persist(k, next, getSpoilers(title), getAutoDownload(title), getAniListSync(title))
     return get(title)
   }
 
@@ -90,9 +91,21 @@ export function createSeriesPrefs(file) {
   function setAutoDownload(title, value) {
     const k = key(title)
     if (!k) return null
-    if (value === null) persist(k, get(title), getSpoilers(title), null)
-    else if (typeof value === 'object' && isAfter(value.after)) persist(k, get(title), getSpoilers(title), readAuto(value))
+    if (value === null) persist(k, get(title), getSpoilers(title), null, getAniListSync(title))
+    else if (typeof value === 'object' && isAfter(value.after)) persist(k, get(title), getSpoilers(title), readAuto(value), getAniListSync(title))
     return getAutoDownload(title)
+  }
+
+  // Whether progress is sent to AniList for this series (default true; only `false` is stored).
+  function getAniListSync(title) {
+    return (db.series[key(title)] ?? {}).aniListSync !== false
+  }
+
+  function setAniListSync(title, enabled) {
+    const k = key(title)
+    if (!k || typeof enabled !== 'boolean') return getAniListSync(title)
+    persist(k, get(title), getSpoilers(title), getAutoDownload(title), enabled)
+    return getAniListSync(title)
   }
 
   function setSpoilers(title, action = {}) {
@@ -107,7 +120,7 @@ export function createSeriesPrefs(file) {
     if (action.all === true && !next.reveal.all) { next.reveal.all = true; changed = true }
     if (action.reset === true) { next.reveal = { all: false, episodes: [] }; changed = true }
     if (typeof action.metaOff === 'boolean' && action.metaOff !== next.metaOff) { next.metaOff = action.metaOff; changed = true }
-    if (changed) persist(k, get(title), next, getAutoDownload(title))
+    if (changed) persist(k, get(title), next, getAutoDownload(title), getAniListSync(title))
     return getSpoilers(title)
   }
 
@@ -116,5 +129,5 @@ export function createSeriesPrefs(file) {
     return { quality: p.quality ?? settings.quality, mode: p.mode ?? settings.mode }
   }
 
-  return { get, set, resolve, getSpoilers, setSpoilers, getAutoDownload, setAutoDownload }
+  return { get, set, resolve, getSpoilers, setSpoilers, getAutoDownload, setAutoDownload, getAniListSync, setAniListSync }
 }
