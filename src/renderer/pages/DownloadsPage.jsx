@@ -37,11 +37,12 @@ export function DownloadsPage() {
           {failed > 1 && <button type="button" onClick={() => api.downloads.retryFailed()}>{t('downloads.retryFailed', { count: failed })}</button>}
           {queue.map((q) => (
             <div key={q.id} className="queue-item">
-              <span className="queue-item__title">{q.title} — {t('downloads.episode', { episode: q.episode })}</span>
+              <span className="queue-item__title">{q.title} — {t('downloads.episode', { episode: q.episode })}{q.auto && <span className="queue-item__auto">{t('downloads.auto')}</span>}</span>
               <div className="progress"><div style={{ width: `${Math.round(q.percent)}%` }} /></div>
-              <span>{t(`dstatus.${q.status}`, { percent: Math.floor(q.percent) })}</span>
+              <span>{t(`dstatus.${q.status}`, { percent: Math.floor(q.percent), time: q.retryAt ? new Date(q.retryAt).toLocaleTimeString(t.locale, { hour: '2-digit', minute: '2-digit' }) : '' })}</span>
               {q.status === 'error' && q.error && <span className="muted">{t(`error.${q.error}`)}</span>}
               {['downloading', 'queued'].includes(q.status) && <button type="button" onClick={() => api.downloads.pause(q.id)}>{t('downloads.pause')}</button>}
+              {q.status === 'waiting' && <button type="button" onClick={() => api.downloads.resume(q.id)}>{t('downloads.retryNow')}</button>}
               {['paused', 'error'].includes(q.status) && <button type="button" onClick={() => api.downloads.resume(q.id)}>{t('downloads.resume')}</button>}
               {q.status !== 'done' && <button type="button" onClick={() => api.downloads.cancel(q.id)}>{t('downloads.cancel')}</button>}
             </div>

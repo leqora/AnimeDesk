@@ -81,3 +81,34 @@ describe('DownloadsPage', () => {
     await waitFor(() => expect(screen.getByText('Nema preuzetih epizoda.')).toBeInTheDocument())
   })
 })
+
+describe('DownloadsPage waiting items', () => {
+  const retryAt = new Date(2026, 9, 17, 14, 35).getTime()
+  const waiting = { id: 'q9', title: 'Show', episode: '5', status: 'waiting', percent: 0, retryAt, auto: true, attempts: 1, error: 'no-sources' }
+  const mount = () => {
+    const api = makeFakeApi({ downloads: { queue: vi.fn(async () => [waiting]) } })
+    renderUi(<DownloadsPage />, { api })
+    return api
+  }
+  it('shows the next try time, the Auto tag and no error text', async () => {
+    mount()
+    const time = new Date(retryAt).toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' })
+    expect(await screen.findByText(`Čeka izvor · sledeći pokušaj u ${time}`)).toBeInTheDocument()
+    expect(screen.getByText('Auto')).toBeInTheDocument()
+    expect(screen.queryByText(/izvor/i, { selector: '.muted' })).toBeNull()
+  })
+  it('Try now resumes, Cancel cancels, there is no Pause', async () => {
+    const api = mount()
+    fireEvent.click(await screen.findByRole('button', { name: 'Pokušaj sada' }))
+    expect(api.downloads.resume).toHaveBeenCalledWith('q9')
+    fireEvent.click(screen.getByRole('button', { name: 'Otkaži' }))
+    expect(api.downloads.cancel).toHaveBeenCalledWith('q9')
+    expect(screen.queryByRole('button', { name: 'Pauza' })).toBeNull()
+  })
+  it('manual items have no Auto tag', async () => {
+    const api = makeFakeApi({ downloads: { queue: vi.fn(async () => [{ ...waiting, status: 'downloading', auto: false, percent: 10 }]) } })
+    renderUi(<DownloadsPage />, { api })
+    await screen.findByText('Preuzima 10%')
+    expect(screen.queryByText('Auto')).toBeNull()
+  })
+})

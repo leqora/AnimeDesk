@@ -270,6 +270,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .tool-row__state { color: var(--text-muted); font-family: var(--font-hud); font-size: 13px; }
 .queue-item, .dl-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); }
 .queue-item__title, .dl-item__title { flex: 1; }
+.queue-item__auto { margin-left: 8px; padding: 1px 6px; font-size: 11px; font-family: var(--font-hud); text-transform: uppercase; letter-spacing: .08em; color: var(--accent-2); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); }
 .progress { width: 160px; height: 6px; background: var(--glass-strong); border-radius: 3px; overflow: hidden; }
 .progress > div { height: 100%; background: var(--accent-2); }
 .confirm { display: inline-flex; gap: 6px; align-items: center; }
