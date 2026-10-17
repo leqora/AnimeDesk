@@ -325,6 +325,10 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .anilist-confirm__poster img { display: block; width: 100%; border-radius: var(--radius-sm); }
 .anilist-match { display: flex; flex-direction: column; gap: 6px; }
 .anilist-match .row { align-items: center; }
+.anilist-match:focus { outline: none; }
+.anilist-match__card { gap: 12px; }
+.anilist-match__poster { width: 44px; flex: none; }
+.anilist-match__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .anilist-match__state { font-size: 13px; }
 
 /* narrow window: icon-only sidebar */

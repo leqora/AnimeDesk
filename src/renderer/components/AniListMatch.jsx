@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { AniListPicker } from './AniListPicker.jsx'
+import { PosterFrame } from './Poster.jsx'
 
 // AniList match card + sync state line for the series detail. Shown only while an AniList account is connected.
-// `info` is the detail's AniList info (title/year/episodes); onChanged refreshes the library entry.
+// `info` is the detail's AniList info (poster/title/year/episodes): undefined = still loading (nothing shown for
+// the match yet), null = nothing found. onChanged refreshes the library entry.
 export function AniListMatch({ entry, info, onChanged = () => {} }) {
   const api = useApi()
   const t = useT()
@@ -13,6 +15,7 @@ export function AniListMatch({ entry, info, onChanged = () => {} }) {
   const [optOut, setOptOut] = useState(false)
   const [picker, setPicker] = useState(false)
   const [error, setError] = useState(null)
+  const cardRef = useRef(null)
   const confirmed = entry.aniListConfirmed === true && entry.aniListId != null
 
   useEffect(() => {
@@ -46,7 +49,10 @@ export function AniListMatch({ entry, info, onChanged = () => {} }) {
   }
   const toggleOptOut = async (checked) => {
     setOptOut(checked)
-    try { await api.anilistSync.setEnabled(entry.id, !checked) } catch { setOptOut(!checked) }
+    try {
+      await api.anilistSync.setEnabled(entry.id, !checked)
+      refresh() // the state line depends on the pref
+    } catch { setOptOut(!checked) }
   }
   const time = (ms) => new Date(ms).toLocaleTimeString(t.locale, { hour: '2-digit', minute: '2-digit' })
 
@@ -63,17 +69,24 @@ export function AniListMatch({ entry, info, onChanged = () => {} }) {
 
   const meta = [info?.year, info?.episodes != null ? t('detail.episodesCount', { n: info.episodes }) : null].filter((x) => x != null).join(' · ')
 
+  // The Modal hands focus back to its opener, which has unmounted by now: park it on the card instead.
+  const picked = () => { setPicker(false); cardRef.current?.focus(); onChanged() }
+
   return (
-    <div className="anilist-match">
-      {!confirmed && (
+    <div className="anilist-match" ref={cardRef} tabIndex={-1}>
+      {!confirmed && info !== undefined && (
         entry.aniListId == null ? (
           <div className="row">
             <span className="muted">{t('anilist.notFound')}</span>
             <button type="button" onClick={() => setPicker(true)}>{t('anilist.choose')}</button>
           </div>
         ) : info && (
-          <div className="row">
-            <span>{t('anilist.matchLabel')} <strong>{info.title}</strong>{meta && <span className="muted"> · {meta}</span>}</span>
+          <div className="row anilist-match__card">
+            <div className="anilist-match__poster"><PosterFrame info={info} /></div>
+            <span className="anilist-match__text">
+              <span>{t('anilist.matchLabel')} <strong>{info.title}</strong>{meta && <span className="muted"> · {meta}</span>}</span>
+              {info.romaji && info.romaji !== info.title && <span className="muted anilist-match__romaji">{info.romaji}</span>}
+            </span>
             <button type="button" className="primary" onClick={confirm}>{t('anilist.confirmYes')}</button>
             <button type="button" onClick={() => setPicker(true)}>{t('anilist.confirmNo')}</button>
           </div>
@@ -92,7 +105,7 @@ export function AniListMatch({ entry, info, onChanged = () => {} }) {
       {error && <p className="anilist-confirm__error" role="alert">{error}</p>}
       <AniListPicker
         open={picker} initialQuery={entry.title} entryId={entry.id}
-        onClose={() => setPicker(false)} onPicked={() => { setPicker(false); onChanged() }}
+        onClose={() => setPicker(false)} onPicked={picked}
       />
     </div>
   )

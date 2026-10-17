@@ -10,6 +10,8 @@ const info = { id: 20, title: 'Naruto', year: 2002, episodes: 220, poster: null 
 const unconfirmed = { id: 'e1', title: 'Naruto', aniListId: 20, aniListConfirmed: false }
 const confirmed = { ...unconfirmed, aniListConfirmed: true }
 
+const LOADING = Symbol('loading') // info prop undefined = AniList info still loading
+
 function setup({ entry = unconfirmed, status = OK, state = { state: 'synced', progress: 3 }, sync = {}, onChanged = vi.fn(), lang = 'sr', infoProp = info } = {}) {
   let pushSync = () => {}
   const api = makeFakeApi({
@@ -17,7 +19,7 @@ function setup({ entry = unconfirmed, status = OK, state = { state: 'synced', pr
     anilistSync: { stateFor: vi.fn(async () => state), ...sync },
   })
   api.anilistSync.onChange = vi.fn((cb) => { pushSync = cb; return () => {} })
-  const view = renderUi(<AniListMatch entry={entry} info={infoProp} onChanged={onChanged} />, { api, lang })
+  const view = renderUi(<AniListMatch entry={entry} info={infoProp === LOADING ? undefined : infoProp} onChanged={onChanged} />, { api, lang })
   return { api, onChanged, pushSync: () => act(() => pushSync()), ...view }
 }
 
@@ -58,6 +60,57 @@ describe('AniListMatch', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Izaberi' }))
     expect(await screen.findByRole('dialog')).toBeTruthy()
     await waitFor(() => expect(api.anilistSync.candidates).toHaveBeenCalledWith('Naruto'))
+  })
+
+  it('while the info is loading nothing is shown for the match (no not-found flash, no confirm)', async () => {
+    const a = setup({ entry: { id: 'e1', title: 'Naruto', aniListId: null }, infoProp: LOADING })
+    await waitFor(() => expect(a.api.anilistAuth.status).toHaveBeenCalled())
+    await act(async () => {})
+    expect(screen.queryByText('Serija nije pronađena na AniList-u.')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Izaberi' })).toBeNull()
+    a.unmount()
+    const b = setup({ infoProp: LOADING })
+    await waitFor(() => expect(b.api.anilistAuth.status).toHaveBeenCalled())
+    await act(async () => {})
+    expect(screen.queryByRole('button', { name: 'To je ta serija' })).toBeNull()
+    expect(screen.queryByText('Serija nije pronađena na AniList-u.')).toBeNull()
+  })
+
+  it('an id without any info (offline) never offers "To je ta serija"', async () => {
+    const { api } = setup({ infoProp: null })
+    await waitFor(() => expect(api.anilistAuth.status).toHaveBeenCalled())
+    await act(async () => {})
+    expect(screen.queryByRole('button', { name: 'To je ta serija' })).toBeNull()
+  })
+
+  it('the card shows the poster and the romaji title when it differs', async () => {
+    const poster = 'data:image/png;base64,AAAA'
+    const { container } = setup({ infoProp: { ...info, poster, title: 'Naruto', romaji: 'Naruto Romaji' } })
+    expect(await screen.findByText('Naruto Romaji')).toBeTruthy()
+    expect(container.querySelector('img').getAttribute('src')).toBe(poster)
+  })
+
+  it('no romaji line when it equals the title', async () => {
+    setup({ infoProp: { ...info, title: 'Naruto', romaji: 'Naruto' } })
+    await screen.findByText(/Na AniList-u:/)
+    expect(screen.getAllByText(/Naruto/)).toHaveLength(1)
+  })
+
+  it('after a successful pick the focus lands on the card, not on the vanished opener', async () => {
+    const { api, container } = setup({ sync: { candidates: vi.fn(async () => [{ id: 7, title: 'Naruto', romaji: null, year: 2002, format: 'TV', episodes: 220, poster: null }]) } })
+    await userEvent.click(await screen.findByRole('button', { name: 'Nije ta' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Izaberi' }))
+    await waitFor(() => expect(api.anilistSync.confirm).toHaveBeenCalledWith('e1', 7))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(document.activeElement).toBe(container.querySelector('.anilist-match'))
+  })
+
+  it('opt-out toggle refreshes the state line afterwards', async () => {
+    const { api } = setup({ entry: confirmed })
+    const box = await screen.findByRole('checkbox', { name: 'Ne šalji za ovu seriju' })
+    const before = api.anilistSync.stateFor.mock.calls.length
+    await userEvent.click(box)
+    await waitFor(() => expect(api.anilistSync.stateFor.mock.calls.length).toBeGreaterThan(before))
   })
 
   it('"Nije ta" opens the picker', async () => {

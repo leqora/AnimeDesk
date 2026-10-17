@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { ConfirmButton } from './ConfirmButton.jsx'
@@ -30,7 +30,20 @@ export function AniListAccount({ onPick = () => {}, refreshKey = 0 }) {
     return () => { active = false; off?.() }
   }, [api])
 
+  const listRef = useRef(null)
+  const openRef = useRef(null)
+  const refocus = useRef(false)
+
   const refreshPending = useCallback(() => api.anilistSync.pendingConfirm().then((list) => setPending(list ?? [])).catch(() => {}), [api])
+  // A manual pick (refreshKey bump) removes the row whose button had focus: once the refreshed list is in,
+  // park focus on the list's first button (or the "Potvrdi serije" button when the modal is gone).
+  useEffect(() => { if (refreshKey > 0) refocus.current = true }, [refreshKey])
+  useEffect(() => {
+    if (!refocus.current) return
+    refocus.current = false
+    const first = listRef.current?.querySelector('button')
+    ;(first ?? openRef.current)?.focus()
+  }, [pending])
   useEffect(() => {
     refreshPending()
     return api.anilistSync.onChange(() => { refreshPending() })
@@ -107,16 +120,16 @@ export function AniListAccount({ onPick = () => {}, refreshKey = 0 }) {
           <button type="button" onClick={() => api.anilistAuth.openApps()}>{t('anilist.openApps')}</button>
         </p>
       )}
-      {pending.length > 0 && (
+      {status.connected && pending.length > 0 && (
         <div className="row">
           <span>{t.n('anilist.pending', pending.length)}</span>
-          <button type="button" onClick={() => setOpen(true)}>{t('anilist.confirmSeries')}</button>
+          <button type="button" ref={openRef} onClick={() => setOpen(true)}>{t('anilist.confirmSeries')}</button>
         </div>
       )}
-      {open && (
+      {open && status.connected && (
         <Modal label={t('anilist.confirmSeries')} className="anilist-confirm__modal" onClose={() => setOpen(false)}>
           <h2>{t('anilist.confirmSeries')}</h2>
-          <AniListConfirmList entries={pending} errors={rowErrors} onConfirm={confirm} onPick={onPick} />
+          <div ref={listRef}><AniListConfirmList entries={pending} errors={rowErrors} onConfirm={confirm} onPick={onPick} /></div>
           <div className="row"><button type="button" onClick={() => setOpen(false)}>{t('update.close')}</button></div>
         </Modal>
       )}

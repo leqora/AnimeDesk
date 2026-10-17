@@ -121,6 +121,15 @@ describe('AniListAccount', () => {
     expect(onPick).toHaveBeenCalledWith(pend[1])
   })
 
+  it('not connected: the pending count and confirm button are hidden', async () => {
+    const { api } = setup({ status: NONE, pending: pend })
+    await waitFor(() => expect(api.anilistSync.pendingConfirm).toHaveBeenCalled())
+    await screen.findByRole('button', { name: 'Poveži' })
+    await act(async () => {})
+    expect(screen.queryByRole('button', { name: 'Potvrdi serije' })).toBeNull()
+    expect(screen.queryByText(/čeka potvrdu|čekaju potvrdu/)).toBeNull()
+  })
+
   it('pendingConfirm refreshes on sync onChange', async () => {
     const pendingConfirm = vi.fn().mockResolvedValueOnce([]).mockResolvedValue([pend[0]])
     const { pushSync } = setup({ status: OK, sync: { pendingConfirm } })
