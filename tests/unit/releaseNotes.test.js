@@ -29,6 +29,12 @@ describe('markdownToText', () => {
       .toBe('Novo\n• Bočni meni\ncode link\n\nkraj')
     expect(markdownToText(null)).toBeNull()
   })
+  it('keeps list items on their own lines with CRLF line endings', () => {
+    const lf = '## Novo\n\n- Prva stavka.\n- Druga stavka.\n* Treća\nkraj'
+    expect(markdownToText(lf)).toBe('Novo\n• Prva stavka.\n• Druga stavka.\n• Treća\nkraj')
+    expect(markdownToText(lf.replace(/\n/g, '\r\n'))).toBe(markdownToText(lf))
+    expect(markdownToText('- a\r- b')).toBe('• a\n• b')
+  })
 })
 
 describe('compareVersions', () => {

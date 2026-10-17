@@ -39,6 +39,8 @@ export function markdownToText(md) {
   if (md == null) return null
   return tidy(
     String(md)
+      // Packaged notes can have CRLF; with a lone \r left behind, `^\s*` eats the \n and items run together.
+      .replace(/\r\n?/g, '\n')
       .replace(/^#{1,6}\s+/gm, '')
       .replace(/^\s*[-*]\s+/gm, '• ')
       .replace(/\*\*([^*]+)\*\*/g, '$1')
