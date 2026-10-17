@@ -56,7 +56,8 @@ export function autoDownloadCandidates({ entries, prefsFor, infoById, now, max =
     // The episode that has just aired is held back until the source has had time to publish it, also when
     // the cache already moved on to the next one (then only the remembered schedule knows its airing time).
     const held = [info?.nextAiring, prefs.next].filter((s) => inLag(s, now))
-    while (last > 0 && held.some((s) => s.episode === last)) last -= 1
+    // Everything from the lowest held episode up waits too: a finished count can already go past it.
+    for (const s of held) if (Number.isInteger(s.episode) && last >= s.episode) last = s.episode - 1
     const episodes = []
     // Everything up to the highest watched episode counts as handled, not just the exact numbers.
     for (let n = Math.max(prefs.after, maxWatched(e)) + 1; n <= last && episodes.length < max; n++) episodes.push(n)

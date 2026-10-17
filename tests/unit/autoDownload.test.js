@@ -72,6 +72,14 @@ describe('knownAired', () => {
     expect(run({ prefs, i, e: entry({ watchedEpisodes: [1, 2, 3, 4, 5, 6, 7, 8, 9] }) }))
       .toEqual([{ animeId: 'a1', aniCliTitle: 'Show', episodes: [10, 11, 12] }])
   })
+  it('still holds a remembered episode in its source lag when a finished count goes past it', () => {
+    // Double finale (EP 11 + 12 at once) and AniList flips to FINISHED within the lag.
+    const prefs = { after: 10, next: { episode: 11, airingAt: now - 5 * MIN } }
+    const i = { status: 'FINISHED', episodes: 12, nextAiring: null }
+    expect(run({ prefs, i, e: entry({ watchedEpisodes: [10] }) })).toEqual([])
+    expect(run({ prefs, i, e: entry({ watchedEpisodes: [10] }), now: now + 16 * MIN }))
+      .toEqual([{ animeId: 'a1', aniCliTitle: 'Show', episodes: [11, 12] }])
+  })
 })
 
 describe('initialRecord', () => {
