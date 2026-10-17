@@ -27,7 +27,7 @@ Windows desktop aplikacija (Electron + React) koja je grafički interfejs za ori
 
 ```bash
 npm run dev        # pokretanje u razvoju
-npm test           # vitest (unit + integration), ~995 testa
+npm test           # vitest (unit + integration), ~1374 testa
 npm run test:e2e   # build + Playwright smoke (izolovan userData preko ANIMEDESK_USER_DATA)
 npm run test:live  # pravi ani-cli self-test (internet)
 npm run dist       # instaler u dist/ (bez objave)
@@ -41,6 +41,7 @@ npm run release    # objava (vidi gore)
   - ani-cli: `aniCliBridge.js`, `bridgeServer.js`, `watchService.js` (čuva pozicije ≥ 10 s i beleži „odgledano” na pragu za oba plejera); `celebrations.js` (drži level-up i „serija završena” dok traje reprodukcija), `playerMonitor.js` (mpv IPC: auto-skip, nastavak sa `--start` + „Nastavljeno od…”, javlja napredak na 5 s), `run.js`;
   - prefetch sledeće epizode (`watchService.js`): od 80 % u ugrađenom plejeru tiha ani-cli sesija za ep+1 parkirana u onPlay, watch() je usvaja (isti naslov plejera/epizoda/kvalitet/režim), rok 10 min od kraja epizode koja ga je pokrenula, dispose na before-quit;
   - automatsko preuzimanje (v0.9.0): `autoDownloader.js` — prekidač po seriji (`series-prefs.json` → `autoDownload: { after }`, IPC `auto-download:set`); provera 90 s posle starta, na 30 min, posle promene biblioteke/povratka iz mirovanja i tajmerom na sledeće emitovanje + 20 min (najviše 6 h); stavke ulaze u `downloads.js` sa `auto: true` i naslovom = ani-cli naslov; `downloads.js` ima status `waiting` + `retryAt` za auto stavke (preživljava restart, `dispose()` na before-quit); čista logika (granica `after`, kašnjenje izvora 20 min, najviše 3 po seriji po proveri, pokušaji 30 min/1 h/2 h/4 h pa 6 h, odustajanje posle 3 dana) je u `shared/autoDownload.js`;
+  - AniList prijava i sinhronizacija napretka (v0.10.0): `anilistAuth.js` — šifrovani token preko `safeStorage` adaptera u `anilist-auth.bin`, stanja none/ok/expiring/expired, `markExpired(token)`; `anilistSync.js` — usklađivanje pri promeni biblioteke (debounce 30 s), samo unapred preko `shared/anilistSync.js` `decide()`, red u `anilist-sync.json` sa ponovnim pokušajima 1/5/15/60 min pa na 6 h, prvo pokretanje +60 s; `anilist.js` ima nove autentifikovane pozive `viewer`/`listEntry`/`saveProgress`/`candidates` i `AniListAuthError`; `library` polje `aniListConfirmed` + `confirmAniList` (greška `'taken'`); `seriesPrefs` `aniListSync` (isključivanje po seriji); `shared/anilistAuth.js` (čista logika stanja tokena); renderer: `AniListAccount.jsx`, `AniListConfirmList.jsx`, `AniListMatch.jsx`, `AniListPicker.jsx`; token nikad ne ide u IPC/log/renderer;
   - alati: `toolManager.js`, `toolSources.js`, `healthCheck.js` (semafor);
   - `seriesPrefs.js` — kvalitet i sub/dub po seriji (`series-prefs.json`), koristi se za gledanje i preuzimanje; `fullscreen.js` — pun ekran (F11, Esc, dugme u meniju; pamti se u `settings.fullscreen`);
   - podaci: `library.js` (watchlist), `settings.js`, `downloads.js`, `watchLog.js`, `progress.js`, `tracker.js`, `jsonStore.js`;
