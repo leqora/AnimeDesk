@@ -18,6 +18,8 @@ export function createPaths(baseDir) {
     episodeLists: path.join(baseDir, 'episode-lists.json'),
     notifications: path.join(baseDir, 'notifications.json'),
     airingNotified: path.join(baseDir, 'airing-notified.json'),
+    anilistAuth: path.join(baseDir, 'anilist-auth.bin'),
+    anilistSync: path.join(baseDir, 'anilist-sync.json'),
   }
 }
 

@@ -16,6 +16,8 @@ describe('paths', () => {
     expect(p.episodeLists).toBe(path.join('C:\\Data\\AnimeDesk', 'episode-lists.json'))
     expect(p.notifications).toBe(path.join('C:\\Data\\AnimeDesk', 'notifications.json'))
     expect(p.airingNotified).toBe(path.join('C:\\Data\\AnimeDesk', 'airing-notified.json'))
+    expect(p.anilistAuth).toBe(path.join('C:\\Data\\AnimeDesk', 'anilist-auth.bin'))
+    expect(p.anilistSync).toBe(path.join('C:\\Data\\AnimeDesk', 'anilist-sync.json'))
   })
   it('converts Windows paths to MSYS paths, keeping spaces and unicode', () => {
     expect(toMsysPath('C:\\Users\\Nikola\\Moji anime\\Šou')).toBe('/c/Users/Nikola/Moji anime/Šou')
