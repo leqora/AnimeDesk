@@ -142,7 +142,9 @@ describe('library', () => {
       const l = createLibrary(file, opts())
       expect(l.get(e.id).aniListConfirmed).toBe(false)
       expect(l.list()[0].aniListConfirmed).toBe(false)
-      expect(l.findByAniCliTitle('A')?.aniListConfirmed ?? false).toBe(false)
+      const found = l.findByAniCliTitle('A')
+      expect(found).not.toBeNull()
+      expect(found.aniListConfirmed).toBe(false)
     })
     it('confirmAniList sets aniListId and aniListConfirmed and persists', () => {
       const e = lib.add({ title: 'A' })
@@ -170,6 +172,25 @@ describe('library', () => {
     })
     it('confirmAniList throws on an unknown id', () => {
       expect(() => lib.confirmAniList('nope', 1)).toThrow('unknown anime id')
+    })
+    it('confirmAniList rejects an invalid media id', () => {
+      const e = lib.add({ title: 'A' })
+      for (const bad of [0, -1, 1.5, '5', null, undefined, NaN]) {
+        expect(() => lib.confirmAniList(e.id, bad)).toThrow('invalid aniListId')
+      }
+      expect(lib.get(e.id).aniListConfirmed).toBe(false)
+    })
+    it('restore drops the confirmation when another entry confirmed the same media id meanwhile', () => {
+      const a = lib.add({ title: 'A', aniCliTitle: 'A' })
+      lib.confirmAniList(a.id, 101)
+      const snapshot = lib.get(a.id)
+      lib.remove(a.id)
+      const b = lib.add({ title: 'B', aniCliTitle: 'B' })
+      lib.confirmAniList(b.id, 101)
+      const restored = lib.restore(snapshot)
+      expect(restored).toMatchObject({ aniListId: 101, aniListConfirmed: false })
+      expect(lib.findConfirmed(101).id).toBe(b.id)
+      expect(lib.list().filter((x) => x.aniListConfirmed && x.aniListId === 101)).toHaveLength(1)
     })
     it('update resets confirmation only when aniListId changes', () => {
       const e = lib.add({ title: 'A' })

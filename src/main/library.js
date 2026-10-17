@@ -80,7 +80,8 @@ export function createLibrary(file, { now = () => new Date().toISOString(), uuid
   // The user confirmed that this entry is AniList media `mediaId`. One media id belongs to one entry.
   function confirmAniList(id, mediaId) {
     const e = mustGet(id)
-    const other = Object.values(db.anime).find((x) => x.id !== id && x.aniListConfirmed === true && x.aniListId === mediaId)
+    if (!Number.isInteger(mediaId) || mediaId <= 0) throw new Error('invalid aniListId')
+    const other =Object.values(db.anime).find((x) => x.id !== id && x.aniListConfirmed === true && x.aniListId === mediaId)
     if (other) return { ok: false, error: 'taken', title: other.title }
     e.aniListId = mediaId
     e.aniListConfirmed = true
@@ -104,6 +105,10 @@ export function createLibrary(file, { now = () => new Date().toISOString(), uuid
   function restore(entry) {
     if (db.anime[entry.id] || findRaw(entry.aniCliTitle ?? entry.title)) throw new Error('conflict')
     const e = structuredClone(entry)
+    // Another entry may have confirmed the same media id while this one was removed.
+    if (e.aniListConfirmed === true && Object.values(db.anime).some((x) => x.aniListConfirmed === true && x.aniListId === e.aniListId)) {
+      e.aniListConfirmed = false
+    }
     if (e.pinnedAt) {
       const pinned = Object.values(db.anime).filter((x) => x.pinnedAt).length
       if (pinned >= MAX_PINNED) e.pinnedAt = null
