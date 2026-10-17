@@ -9,7 +9,7 @@ const entry = (over = {}) => ({
   id: 'a1', title: 'Show', aniCliTitle: 'Show', aniListId: 21, status: 'watching', rating: null, comment: '',
   totalEpisodes: 4, watchedEpisodes: [1], episodeNotes: {}, lastWatchedAt: null, pinnedAt: null, ...over,
 })
-const apiWith = ({ downloadDir = 'D:\Anime', auto = false, set } = {}) => makeFakeApi({
+const apiWith = ({ downloadDir = 'D:\\Anime', auto = false, set } = {}) => makeFakeApi({
   settings: { get: vi.fn(async () => ({ ...DEFAULT_SETTINGS, downloadDir })) },
   seriesPrefs: { get: vi.fn(async () => ({ quality: null, mode: null, subOffset: { sub: 0, dub: 0 }, autoDownload: auto })) },
   ...(set ? { autoDownload: { set } } : {}),
