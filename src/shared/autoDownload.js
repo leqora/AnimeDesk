@@ -20,23 +20,23 @@ export function initialAfter({ entry, info, now }) {
 }
 
 const eligible = (e) => e?.status === 'watching' && e.aniListId && e.aniCliTitle
+// A prefs record without a sane boundary must not make the series fetch everything from episode 1.
+const validAfter = (p) => Number.isInteger(p?.after) && p.after >= 0
 
 export function autoDownloadCandidates({ entries, prefsFor, infoById, now, max = MAX_PER_CHECK }) {
   const out = []
   for (const e of entries ?? []) {
     if (!eligible(e)) continue
     const prefs = prefsFor(e.aniCliTitle)
-    if (!prefs) continue
+    if (!validAfter(prefs)) continue
     const info = infoById?.[e.aniListId]
     let last = airedCount(info, now)
     if (last == null) continue
     // The episode that has just aired is held back until the source has had time to publish it.
     if (last === info.nextAiring.episode && now < info.nextAiring.airingAt + SOURCE_LAG_MS) last -= 1
-    const watched = new Set(e.watchedEpisodes ?? [])
     const episodes = []
-    for (let n = (prefs.after ?? 0) + 1; n <= last && episodes.length < max; n++) {
-      if (!watched.has(n)) episodes.push(n)
-    }
+    // Everything up to the highest watched episode counts as handled, not just the exact numbers.
+    for (let n = Math.max(prefs.after, maxWatched(e)) + 1; n <= last && episodes.length < max; n++) episodes.push(n)
     if (episodes.length) out.push({ animeId: e.id, aniCliTitle: e.aniCliTitle, episodes })
   }
   return out
@@ -46,10 +46,13 @@ export function autoDownloadCandidates({ entries, prefsFor, infoById, now, max =
 export function nextCheckAt({ entries, prefsFor, infoById, now }) {
   let best = null
   for (const e of entries ?? []) {
-    if (!eligible(e) || !prefsFor(e.aniCliTitle)) continue
-    const at = infoById?.[e.aniListId]?.nextAiring?.airingAt
-    if (at == null) continue
-    const t = at + SOURCE_LAG_MS
+    if (!eligible(e)) continue
+    const prefs = prefsFor(e.aniCliTitle)
+    if (!validAfter(prefs)) continue
+    const next = infoById?.[e.aniListId]?.nextAiring
+    // Nothing to wake up for when that episode is already handed over or watched.
+    if (next?.airingAt == null || !(next.episode > Math.max(prefs.after, maxWatched(e)))) continue
+    const t = next.airingAt + SOURCE_LAG_MS
     if (t > now && (best == null || t < best)) best = t
   }
   return best
@@ -61,5 +64,6 @@ export function retryDelayMs(attempts) {
 }
 
 export function shouldGiveUp({ firstTriedAt, now }) {
-  return now - firstTriedAt >= GIVE_UP_MS
+  // Fail closed: a corrupt timestamp must never mean retrying forever.
+  return !Number.isFinite(firstTriedAt) || now - firstTriedAt >= GIVE_UP_MS
 }

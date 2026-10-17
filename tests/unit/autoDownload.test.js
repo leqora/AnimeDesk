@@ -50,6 +50,17 @@ describe('autoDownloadCandidates', () => {
   it('skips watched episodes', () => {
     expect(run({ after: 0 })).toEqual([{ animeId: 'a1', aniCliTitle: 'Show', episodes: [4, 5] }])
   })
+  it('skips every episode up to the highest watched one', () => {
+    expect(run({ after: 0, e: entry({ watchedEpisodes: [1, 3] }) })[0].episodes).toEqual([4, 5])
+  })
+  it('holds episode 6 back at exactly airingAt', () => {
+    expect(run({ after: 5, i: info({ nextAiring: { episode: 6, airingAt: now } }) })).toEqual([])
+  })
+  it('ignores a prefs record without a valid after', () => {
+    expect(run({ prefs: {} })).toEqual([])
+    expect(run({ prefs: { after: -1 } })).toEqual([])
+    expect(run({ prefs: { after: 1.5 } })).toEqual([])
+  })
   it('caps at max, oldest first', () => {
     expect(run({ after: 0, e: entry({ watchedEpisodes: [] }) })[0].episodes).toEqual([1, 2, 3])
     expect(run({ after: 0, e: entry({ watchedEpisodes: [] }), max: 1 })[0].episodes).toEqual([1])
@@ -82,11 +93,21 @@ describe('nextCheckAt', () => {
     expect(next({ e: entry({ status: 'planned' }) })).toBeNull()
     expect(next({ i: info({ nextAiring: { episode: 6, airingAt: now - 20 * MIN } }) })).toBeNull()
   })
+  it('wakes inside the lag window', () => {
+    expect(next({ i: info({ nextAiring: { episode: 6, airingAt: now - 10 * MIN } }) })).toBe(now + 10 * MIN)
+  })
+  it('does not wake for an episode already handed or watched', () => {
+    expect(next({ prefs: { after: 6 } })).toBeNull()
+    expect(next({ e: entry({ watchedEpisodes: [1, 6] }) })).toBeNull()
+  })
+  it('ignores a prefs record without a valid after', () => {
+    expect(next({ prefs: {} })).toBeNull()
+  })
   it('picks the earliest across series', () => {
     const r = nextCheckAt({
       entries: [entry(), entry({ id: 'a2', aniListId: 22 })],
       prefsFor: () => ({ after: 0 }),
-      infoById: { 21: info(), 22: info({ nextAiring: { episode: 2, airingAt: now + 30 * MIN } }) },
+      infoById: { 21: info(), 22: info({ nextAiring: { episode: 5, airingAt: now + 30 * MIN } }) },
       now
     })
     expect(r).toBe(now + 50 * MIN)
@@ -100,5 +121,8 @@ describe('retry', () => {
   it('gives up after exactly 3 days', () => {
     expect(shouldGiveUp({ firstTriedAt: now - GIVE_UP_MS, now })).toBe(true)
     expect(shouldGiveUp({ firstTriedAt: now - GIVE_UP_MS + 1, now })).toBe(false)
+  })
+  it('fails closed on a non-finite firstTriedAt', () => {
+    for (const v of [undefined, null, NaN, Infinity, 'x']) expect(shouldGiveUp({ firstTriedAt: v, now })).toBe(true)
   })
 })
