@@ -3,6 +3,7 @@ import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { TOOL_IDS, OPTIONAL_TOOL_IDS } from '../../shared/domain.js'
+import { AniListAccount } from '../components/AniListAccount.jsx'
 import { SubtitleOverlay } from '../components/SubtitleOverlay.jsx'
 import { DEFAULT_SUBTITLES, SUBTITLE_FONT_STACKS, SUBTITLE_COLORS } from '../../shared/subtitles.js'
 
@@ -101,6 +102,9 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
           <option value="dub">{t('settings.mode.dub')}</option>
         </select>
       </label>
+      <h3>{t('anilist.section')}</h3>
+      {/* Task 8 wires the candidate picker into onPick; until then "Nije ta" keeps the row as it is. */}
+      <AniListAccount onPick={() => {}} />
       <h3>{t('settings.background.section')}</h3>
       <label className="check">
         <input type="checkbox" checked={settings.closeToTray} onChange={(e) => onSettings({ closeToTray: e.target.checked })} />
