@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   SOURCE_LAG_MS, MAX_PER_CHECK, GIVE_UP_MS, RETRYABLE_ERRORS,
-  maxWatched, initialAfter, autoDownloadCandidates, nextCheckAt, retryDelayMs, shouldGiveUp
+  maxWatched, initialAfter, initialRecord, knownAired, autoDownloadCandidates, nextCheckAt, retryDelayMs, shouldGiveUp
 } from '../../src/shared/autoDownload.js'
 
 const now = Date.UTC(2026, 9, 17, 12)
@@ -39,6 +39,59 @@ describe('maxWatched / initialAfter', () => {
     expect(initialAfter({ entry: entry(), info: info(), now })).toBe(5)
     expect(initialAfter({ entry: entry({ watchedEpisodes: [1, 2, 3, 4, 5, 6, 7] }), info: info(), now })).toBe(7)
     expect(initialAfter({ entry: entry(), info: {}, now })).toBe(3)
+  })
+})
+
+describe('knownAired', () => {
+  it('uses the cached schedule first', () => {
+    expect(knownAired(info(), {}, now)).toBe(5)
+    expect(knownAired(info(), { next: { episode: 9, airingAt: now - H } }, now)).toBe(5)
+  })
+  it('falls back to the remembered schedule once its airing time has passed', () => {
+    const rec = { after: 11, next: { episode: 12, airingAt: now - MIN } }
+    expect(knownAired({ nextAiring: null }, rec, now)).toBe(12)
+    expect(knownAired({ nextAiring: null }, { after: 11, next: { episode: 12, airingAt: now + MIN } }, now)).toBeNull()
+    expect(knownAired(undefined, rec, now)).toBe(12)
+  })
+  it('uses the episode count of a finished series', () => {
+    expect(knownAired({ status: 'FINISHED', episodes: 12, nextAiring: null }, {}, now)).toBe(12)
+    expect(knownAired({ status: 'FINISHED', episodes: null, nextAiring: null }, {}, now)).toBeNull()
+    expect(knownAired({ status: 'RELEASING', episodes: 12, nextAiring: null }, {}, now)).toBeNull()
+    expect(knownAired({ nextAiring: null }, null, now)).toBeNull()
+  })
+})
+
+describe('initialRecord', () => {
+  it('is the initial boundary when the aired count is known', () => {
+    expect(initialRecord({ entry: entry(), info: info(), now })).toEqual({ after: 5 })
+    expect(initialRecord({ entry: entry(), info: { status: 'FINISHED', episodes: 12, nextAiring: null }, now })).toEqual({ after: 12 })
+  })
+  it('is pending at the watched boundary when nothing is known', () => {
+    expect(initialRecord({ entry: entry(), info: { status: 'RELEASING', nextAiring: null }, now })).toEqual({ after: 3, pending: true })
+    expect(initialRecord({ entry: entry(), info: null, now })).toEqual({ after: 3, pending: true })
+  })
+})
+
+describe('candidates with a remembered schedule (finale / unknown next)', () => {
+  const T0 = now - 30 * MIN
+  const rec = { after: 11, next: { episode: 12, airingAt: T0 } }
+  const nul = { status: 'RELEASING', nextAiring: null }
+  const at = (t, i = nul, r = rec) => autoDownloadCandidates({ entries: [entry()], prefsFor: () => r, infoById: { 21: i }, now: t })
+  it('hands the finale after its airing plus the lag although the cache lists no next episode', () => {
+    expect(at(T0 + 10 * MIN)).toEqual([])
+    expect(at(T0 + 20 * MIN)).toEqual([{ animeId: 'a1', aniCliTitle: 'Show', episodes: [12] }])
+  })
+  it('still holds the episode when the cache already moved on to the next one', () => {
+    const moved = { status: 'RELEASING', nextAiring: { episode: 13, airingAt: T0 + 7 * 24 * H } }
+    expect(at(T0 + 10 * MIN, moved)).toEqual([])
+    expect(at(T0 + 20 * MIN, moved)[0].episodes).toEqual([12])
+  })
+  it('skips a pending record', () => {
+    expect(at(T0 + 20 * MIN, nul, { ...rec, pending: true })).toEqual([])
+    expect(run({ prefs: { after: 3, pending: true } })).toEqual([])
+  })
+  it('a finished series hands what is left after the boundary', () => {
+    expect(at(now, { status: 'FINISHED', episodes: 12, nextAiring: null }, { after: 10 })[0].episodes).toEqual([11, 12])
   })
 })
 
@@ -102,6 +155,15 @@ describe('nextCheckAt', () => {
   })
   it('ignores a prefs record without a valid after', () => {
     expect(next({ prefs: {} })).toBeNull()
+  })
+  it('also wakes for the remembered schedule', () => {
+    const nul = { status: 'RELEASING', nextAiring: null }
+    expect(next({ prefs: { after: 5, next: { episode: 6, airingAt: now + H } }, i: nul })).toBe(now + H + 20 * MIN)
+    expect(next({ prefs: { after: 6, next: { episode: 6, airingAt: now + H } }, i: nul })).toBeNull()
+    expect(next({ prefs: { after: 5, next: { episode: 6, airingAt: now - 20 * MIN } }, i: nul })).toBeNull()
+  })
+  it('ignores a pending record', () => {
+    expect(next({ prefs: { after: 5, pending: true } })).toBeNull()
   })
   it('picks the earliest across series', () => {
     const r = nextCheckAt({

@@ -71,7 +71,7 @@ describe('autoDownloader.check', () => {
     ad.check()
     expect(downloads.enqueue).toHaveBeenCalledTimes(1)
     expect(downloads.enqueue).toHaveBeenCalledWith({ title: 'Show', aniCliTitle: 'Show', episodes: ['4', '5'], dir: 'D:\\Anime', auto: true })
-    expect(prefs.getAutoDownload('Show')).toEqual({ after: 5 })
+    expect(prefs.getAutoDownload('Show')).toEqual({ after: 5, next: { episode: 6, airingAt: T + H } })
     ad.check()
     expect(downloads.enqueue).toHaveBeenCalledTimes(1)
   })
@@ -80,7 +80,7 @@ describe('autoDownloader.check', () => {
     prefs.setAutoDownload('Show', { after: 3 })
     downloads.enqueue = vi.fn(() => []) // nothing added: already downloaded
     make().check()
-    expect(prefs.getAutoDownload('Show')).toEqual({ after: 5 })
+    expect(prefs.getAutoDownload('Show')).toEqual({ after: 5, next: { episode: 6, airingAt: T + H } })
   })
 
   it('does nothing without a download folder and keeps the boundary (Review Focus 4)', () => {
@@ -88,14 +88,14 @@ describe('autoDownloader.check', () => {
     settingsState = { downloadDir: null }
     make().check()
     expect(downloads.enqueue).not.toHaveBeenCalled()
-    expect(prefs.getAutoDownload('Show')).toEqual({ after: 3 })
+    expect(prefs.getAutoDownload('Show')).toEqual({ after: 3, next: { episode: 6, airingAt: T + H } })
   })
 
   it('keeps the boundary when enqueue throws', () => {
     prefs.setAutoDownload('Show', { after: 3 })
     downloads.enqueue = vi.fn(() => { throw new Error('boom') })
     expect(() => make().check()).not.toThrow()
-    expect(prefs.getAutoDownload('Show')).toEqual({ after: 3 })
+    expect(prefs.getAutoDownload('Show')).toEqual({ after: 3, next: { episode: 6, airingAt: T + H } })
   })
 
   it('one series failing in getCached does not stop another', () => {
@@ -128,7 +128,7 @@ describe('autoDownloader.setEnabled', () => {
     const ad = make()
     ad.start()
     expect(ad.setEnabled('a1', true)).toEqual({ ok: true, enabled: true })
-    expect(prefs.getAutoDownload('Show')).toEqual({ after: 5 })
+    expect(prefs.getAutoDownload('Show')).toEqual({ after: 5, next: { episode: 6, airingAt: T + H } })
     expect(downloads.enqueue).not.toHaveBeenCalled()
     clock.advance(H + 20 * MIN - 1)
     expect(downloads.enqueue).not.toHaveBeenCalled()
@@ -155,6 +155,102 @@ describe('autoDownloader.setEnabled', () => {
     settingsState = { downloadDir: null }
     expect(make().setEnabled('a1', false)).toEqual({ ok: true, enabled: false })
     expect(prefs.getAutoDownload('Show')).toBeNull()
+  })
+})
+
+describe('autoDownloader remembered schedule (finale / unknown next)', () => {
+  const watched11 = () => entry({ watchedEpisodes: [1, 2, 3] })
+  it('hands the finale exactly once after its airing plus the lag, although the refreshed cache lists no next episode', () => {
+    library.list = vi.fn(() => [watched11()])
+    infos[10] = { status: 'RELEASING', nextAiring: { episode: 12, airingAt: T + H } }
+    const ad = make()
+    expect(ad.setEnabled('a1', true)).toEqual({ ok: true, enabled: true })
+    expect(prefs.getAutoDownload('Show')).toEqual({ after: 11, next: { episode: 12, airingAt: T + H } })
+    clock.advance(H)
+    infos[10] = { status: 'RELEASING', nextAiring: null } // airingWatcher's confirming refresh
+    ad.check()
+    clock.advance(10 * MIN)
+    ad.check()
+    expect(downloads.enqueue).not.toHaveBeenCalled()
+    clock.advance(10 * MIN)
+    ad.check()
+    expect(downloads.enqueue).toHaveBeenCalledTimes(1)
+    expect(downloads.enqueue).toHaveBeenCalledWith({ title: 'Show', aniCliTitle: 'Show', episodes: ['12'], dir: 'D:\\Anime', auto: true })
+    expect(prefs.getAutoDownload('Show')).toEqual({ after: 12, next: { episode: 12, airingAt: T + H } })
+    clock.advance(H)
+    ad.check()
+    expect(downloads.enqueue).toHaveBeenCalledTimes(1)
+  })
+
+  it('wakes up for the remembered schedule when the cache has none (split-cour gap)', () => {
+    infos[10] = { status: 'RELEASING', nextAiring: { episode: 6, airingAt: T + H } }
+    const ad = make()
+    ad.start()
+    ad.setEnabled('a1', true)
+    infos[10] = { status: 'RELEASING', nextAiring: null }
+    clock.advance(31 * MIN) // the 30 min check runs with the empty cache
+    clock.advance(H + 20 * MIN - 31 * MIN - 1)
+    expect(downloads.enqueue).not.toHaveBeenCalled()
+    clock.advance(1)
+    expect(downloads.enqueue).toHaveBeenCalledTimes(1)
+    expect(downloads.enqueue).toHaveBeenCalledWith(expect.objectContaining({ episodes: ['6'] }))
+    clock.advance(24 * H)
+    expect(downloads.enqueue).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps holding an episode after the cache moved on to the next one', () => {
+    infos[10] = { status: 'RELEASING', nextAiring: { episode: 6, airingAt: T + H } }
+    const ad = make()
+    ad.setEnabled('a1', true)
+    clock.advance(H + 5 * MIN)
+    infos[10] = { status: 'RELEASING', nextAiring: { episode: 7, airingAt: T + 8 * 24 * H } }
+    ad.check()
+    clock.advance(10 * MIN)
+    ad.check()
+    expect(downloads.enqueue).not.toHaveBeenCalled()
+    clock.advance(5 * MIN)
+    ad.check()
+    expect(downloads.enqueue).toHaveBeenCalledTimes(1)
+    expect(downloads.enqueue).toHaveBeenCalledWith(expect.objectContaining({ episodes: ['6'] }))
+    expect(prefs.getAutoDownload('Show')).toEqual({ after: 6, next: { episode: 7, airingAt: T + 8 * 24 * H } })
+  })
+
+  it('enabling a finished series hands nothing', () => {
+    infos[10] = { status: 'FINISHED', episodes: 12, nextAiring: null }
+    const ad = make()
+    expect(ad.setEnabled('a1', true)).toEqual({ ok: true, enabled: true })
+    expect(prefs.getAutoDownload('Show')).toEqual({ after: 12 })
+    ad.check()
+    expect(downloads.enqueue).not.toHaveBeenCalled()
+  })
+})
+
+describe('autoDownloader pending records (schedule unknown at enable)', () => {
+  it('enabling without a known schedule is pending; the first known schedule moves the boundary and hands nothing', () => {
+    infos[10] = { status: 'RELEASING', nextAiring: null }
+    const ad = make()
+    expect(ad.setEnabled('a1', true)).toEqual({ ok: true, enabled: true })
+    expect(prefs.getAutoDownload('Show')).toEqual({ after: 3, pending: true })
+    expect(prefs.get('Show').autoDownload).toBe(true)
+    ad.check()
+    expect(downloads.enqueue).not.toHaveBeenCalled()
+    // later the cache knows: 12 aired, 13 airs in a day
+    infos[10] = { status: 'RELEASING', nextAiring: { episode: 13, airingAt: T + 24 * H } }
+    ad.check()
+    expect(downloads.enqueue).not.toHaveBeenCalled()
+    expect(prefs.getAutoDownload('Show')).toEqual({ after: 12, next: { episode: 13, airingAt: T + 24 * H } })
+    clock.advance(24 * H + SOURCE_LAG_MS)
+    ad.check()
+    expect(downloads.enqueue).toHaveBeenCalledTimes(1)
+    expect(downloads.enqueue).toHaveBeenCalledWith(expect.objectContaining({ episodes: ['13'] }))
+  })
+
+  it('enabling before the series is cached at all is pending', () => {
+    delete infos[10]
+    const ad = make()
+    expect(ad.setEnabled('a1', true)).toEqual({ ok: true, enabled: true })
+    expect(prefs.getAutoDownload('Show')).toEqual({ after: 3, pending: true })
+    expect(downloads.enqueue).not.toHaveBeenCalled()
   })
 })
 

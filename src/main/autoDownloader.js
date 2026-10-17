@@ -1,4 +1,4 @@
-import { autoDownloadCandidates, nextCheckAt, initialAfter } from '../shared/autoDownload.js'
+import { autoDownloadCandidates, nextCheckAt, initialRecord, knownAired, SOURCE_LAG_MS } from '../shared/autoDownload.js'
 
 const FIRST_CHECK_MS = 90 * 1000
 const CHECK_EVERY_MS = 30 * 60 * 1000
@@ -58,11 +58,45 @@ export function createAutoDownloader({
     wakeTimer = setT(() => { wakeTimer = null; check() }, delay)
   }
 
+  // Remembers the schedule last seen (AniList drops nextAiring after a finale or in a gap) and settles a
+  // pending record once the aired count is known. Never hands anything itself; one write per change.
+  function syncRecords(entries, infoById, t) {
+    for (const e of entries) {
+      if (e?.status !== 'watching' || !e.aniListId || !e.aniCliTitle) continue
+      try {
+        const rec = seriesPrefs.getAutoDownload(e.aniCliTitle)
+        if (!rec) continue
+        const info = infoById[e.aniListId]
+        let next = rec
+        const seen = info?.nextAiring
+        const stored = rec.next
+        const same = stored && seen && stored.episode === seen.episode && stored.airingAt === seen.airingAt
+        // A just-aired episode keeps its own schedule until its lag is over, so it stays held after the
+        // confirming refresh already moved the cache on to the next episode.
+        const keepStored = stored && seen && seen.episode > stored.episode && t < stored.airingAt + SOURCE_LAG_MS
+        if (Number.isInteger(seen?.episode) && Number.isFinite(seen?.airingAt) && !same && !keepStored) {
+          next = { ...next, next: { episode: seen.episode, airingAt: seen.airingAt } }
+        }
+        if (next.pending) {
+          const aired = knownAired(info, next, t)
+          if (aired != null) {
+            const { pending: _pending, ...rest } = next
+            next = { ...rest, after: Math.max(rest.after, aired) }
+          }
+        }
+        if (next !== rec) seriesPrefs.setAutoDownload(e.aniCliTitle, next)
+      } catch (err) {
+        console.warn('autoDownloader: record sync failed', err?.message)
+      }
+    }
+  }
+
   function check() {
     if (stopped) return
     const t = now()
     const entries = listEntries()
     const infoById = infoMap(entries)
+    syncRecords(entries, infoById, t)
     try {
       const dir = settings.get().downloadDir
       // Without a folder nothing is handed over and the boundary stays, so nothing is lost.
@@ -74,7 +108,7 @@ export function createAutoDownloader({
             // Same title as manual downloads (aniCliTitle) so dedup and the folder match.
             // Moves even if enqueue skipped the episodes (already downloaded / queued): never hand them again.
             // If this write fails the next check re-hands the same episodes; enqueue skips queued/downloaded ones.
-            seriesPrefs.setAutoDownload(c.aniCliTitle, { after: Math.max(...c.episodes) })
+            seriesPrefs.setAutoDownload(c.aniCliTitle, { ...prefsFor(c.aniCliTitle), after: Math.max(...c.episodes) })
           } catch (err) {
             console.warn('autoDownloader: enqueue failed', err?.message)
           }
@@ -96,7 +130,8 @@ export function createAutoDownloader({
     }
     if (!settings.get().downloadDir) return { ok: false, error: 'no-dir' }
     // Idempotent: an existing boundary is kept so a repeated enable cannot skip a backlog.
-    if (!seriesPrefs.getAutoDownload(entry.aniCliTitle)) seriesPrefs.setAutoDownload(entry.aniCliTitle, { after: initialAfter({ entry, info: cachedInfo(entry), now: now() }) })
+    // Without a known schedule the record is pending (see syncRecords).
+    if (!seriesPrefs.getAutoDownload(entry.aniCliTitle)) seriesPrefs.setAutoDownload(entry.aniCliTitle, initialRecord({ entry, info: cachedInfo(entry), now: now() }))
     check()
     return { ok: true, enabled: true }
   }

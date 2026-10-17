@@ -150,6 +150,20 @@ describe('seriesPrefs auto-download', () => {
       expect(p.get(t).autoDownload).toBe(false)
     }
   })
+  it('stores the remembered schedule and the pending flag, dropping malformed ones', () => {
+    const p = createSeriesPrefs(file)
+    const rec = { after: 3, next: { episode: 4, airingAt: 1000 }, pending: true }
+    expect(p.setAutoDownload('Show', { ...rec, extra: 1 })).toEqual(rec)
+    expect(createSeriesPrefs(file).getAutoDownload('Show')).toEqual(rec)
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).series).toEqual({ show: { autoDownload: rec } })
+    // exactly the given fields: leaving next/pending out removes them
+    expect(p.setAutoDownload('Show', { after: 4 })).toEqual({ after: 4 })
+    for (const next of [{ episode: 0, airingAt: 1 }, { episode: 1.5, airingAt: 1 }, { episode: 2, airingAt: Infinity }, { episode: 2 }, 'x', null]) {
+      expect(p.setAutoDownload('Show', { after: 4, next, pending: 'yes' })).toEqual({ after: 4 })
+    }
+    fs.writeFileSync(file, JSON.stringify({ version: 1, series: { show: { autoDownload: { after: 2, next: { episode: -1, airingAt: 5 }, pending: 1 } } } }))
+    expect(createSeriesPrefs(file).getAutoDownload('Show')).toEqual({ after: 2 })
+  })
   it('keeps every other field when the switch changes, and the switch when they change', () => {
     const p = createSeriesPrefs(file)
     p.set('Show', { quality: '720', mode: 'dub', subOffset: { sub: 0.5 } })

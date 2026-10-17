@@ -14,7 +14,16 @@ const readReveal = (raw) => {
   return { all: r.all === true, episodes }
 }
 const isAfter = (n) => Number.isInteger(n) && n >= 0
-const readAuto = (raw) => (raw !== null && typeof raw === 'object' && isAfter(raw.after) ? { after: raw.after } : null)
+const isNext = (n) => n !== null && typeof n === 'object' && Number.isInteger(n.episode) && n.episode > 0 && Number.isFinite(n.airingAt)
+// { after, next?: { episode, airingAt } (the schedule last seen), pending?: true (no schedule known yet) }
+const readAuto = (raw) => {
+  if (raw === null || typeof raw !== 'object' || !isAfter(raw.after)) return null
+  return {
+    after: raw.after,
+    ...(isNext(raw.next) ? { next: { episode: raw.next.episode, airingAt: raw.next.airingAt } } : {}),
+    ...(raw.pending === true ? { pending: true } : {}),
+  }
+}
 
 // Quality, sub/dub, the subtitle offset per mode and the spoiler reveals, remembered per series
 // (also for series not in the watchlist).
@@ -52,7 +61,7 @@ export function createSeriesPrefs(file) {
     const { all, episodes } = spoilers.reveal
     if (all || episodes.length) stored.reveal = { ...(all ? { all: true } : {}), ...(episodes.length ? { episodes } : {}) }
     if (spoilers.metaOff) stored.metaOff = true
-    if (auto) stored.autoDownload = { after: auto.after }
+    if (auto) stored.autoDownload = readAuto(auto)
     if (Object.keys(stored).length) db.series[k] = stored
     else delete db.series[k]
     writeJsonAtomic(file, db)
@@ -76,12 +85,13 @@ export function createSeriesPrefs(file) {
     return get(title)
   }
 
-  // value: { after: integer >= 0 } to switch it on, null to switch it off; anything else changes nothing.
+  // value: { after: integer >= 0, next?, pending? } (stored exactly, malformed next/pending dropped) to switch it
+  // on or update it, null to switch it off; anything else changes nothing.
   function setAutoDownload(title, value) {
     const k = key(title)
     if (!k) return null
     if (value === null) persist(k, get(title), getSpoilers(title), null)
-    else if (typeof value === 'object' && isAfter(value.after)) persist(k, get(title), getSpoilers(title), { after: value.after })
+    else if (typeof value === 'object' && isAfter(value.after)) persist(k, get(title), getSpoilers(title), readAuto(value))
     return getAutoDownload(title)
   }
 

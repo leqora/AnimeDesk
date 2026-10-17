@@ -14,26 +14,48 @@ export function maxWatched(entry) {
   return Math.max(0, ...(entry?.watchedEpisodes ?? []).filter(Number.isInteger))
 }
 
+// Highest episode known to have aired. AniList drops nextAiring after a finale, in a split-cour gap or a
+// hiatus, so the schedule last seen (record.next) and a finished series' episode count fill in.
+export function knownAired(info, record, now) {
+  const fromCache = airedCount(info, now)
+  if (fromCache != null) return fromCache
+  const next = record?.next
+  if (next && now >= next.airingAt) return next.episode
+  if (info?.status === 'FINISHED' && Number.isInteger(info.episodes)) return info.episodes
+  return null
+}
+
 // Boundary when the switch is turned on: everything aired or watched so far is "old".
 export function initialAfter({ entry, info, now }) {
-  return Math.max(airedCount(info, now) ?? 0, maxWatched(entry))
+  return Math.max(knownAired(info, null, now) ?? 0, maxWatched(entry))
+}
+
+// The record stored when the switch is turned on. With no known schedule yet it is pending: the boundary
+// moves to the aired count once that is known, so a whole backlog is never fetched later.
+export function initialRecord({ entry, info, now }) {
+  if (knownAired(info, null, now) == null) return { after: maxWatched(entry), pending: true }
+  return { after: initialAfter({ entry, info, now }) }
 }
 
 const eligible = (e) => e?.status === 'watching' && e.aniListId && e.aniCliTitle
 // A prefs record without a sane boundary must not make the series fetch everything from episode 1.
-const validAfter = (p) => Number.isInteger(p?.after) && p.after >= 0
+// A pending record waits for a known schedule and never hands anything.
+const usable = (p) => Number.isInteger(p?.after) && p.after >= 0 && p.pending !== true
+const inLag = (s, now) => s?.airingAt != null && now < s.airingAt + SOURCE_LAG_MS
 
 export function autoDownloadCandidates({ entries, prefsFor, infoById, now, max = MAX_PER_CHECK }) {
   const out = []
   for (const e of entries ?? []) {
     if (!eligible(e)) continue
     const prefs = prefsFor(e.aniCliTitle)
-    if (!validAfter(prefs)) continue
+    if (!usable(prefs)) continue
     const info = infoById?.[e.aniListId]
-    let last = airedCount(info, now)
+    let last = knownAired(info, prefs, now)
     if (last == null) continue
-    // The episode that has just aired is held back until the source has had time to publish it.
-    if (last === info.nextAiring.episode && now < info.nextAiring.airingAt + SOURCE_LAG_MS) last -= 1
+    // The episode that has just aired is held back until the source has had time to publish it, also when
+    // the cache already moved on to the next one (then only the remembered schedule knows its airing time).
+    const held = [info?.nextAiring, prefs.next].filter((s) => inLag(s, now))
+    while (last > 0 && held.some((s) => s.episode === last)) last -= 1
     const episodes = []
     // Everything up to the highest watched episode counts as handled, not just the exact numbers.
     for (let n = Math.max(prefs.after, maxWatched(e)) + 1; n <= last && episodes.length < max; n++) episodes.push(n)
@@ -48,12 +70,13 @@ export function nextCheckAt({ entries, prefsFor, infoById, now }) {
   for (const e of entries ?? []) {
     if (!eligible(e)) continue
     const prefs = prefsFor(e.aniCliTitle)
-    if (!validAfter(prefs)) continue
-    const next = infoById?.[e.aniListId]?.nextAiring
-    // Nothing to wake up for when that episode is already handed over or watched.
-    if (next?.airingAt == null || !(next.episode > Math.max(prefs.after, maxWatched(e)))) continue
-    const t = next.airingAt + SOURCE_LAG_MS
-    if (t > now && (best == null || t < best)) best = t
+    if (!usable(prefs)) continue
+    for (const next of [infoById?.[e.aniListId]?.nextAiring, prefs.next]) {
+      // Nothing to wake up for when that episode is already handed over or watched.
+      if (next?.airingAt == null || !(next.episode > Math.max(prefs.after, maxWatched(e)))) continue
+      const t = next.airingAt + SOURCE_LAG_MS
+      if (t > now && (best == null || t < best)) best = t
+    }
   }
   return best
 }
