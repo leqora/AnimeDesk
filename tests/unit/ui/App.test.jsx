@@ -42,6 +42,11 @@ describe('App', () => {
         retry: (episode) => act(() => retry({ title: 'Show', episode, state: 'reconnecting', sessionId: 's2' })),
       }
     }
+    // The shortcut handler is attached by an effect after the lazy player mounts; press `]` until the speed flash proves it was handled.
+    const speedUp = () => waitFor(() => {
+      fireEvent.keyDown(window, { key: ']', code: 'BracketRight' })
+      expect(screen.getByText(/(Brzina|Speed): 1[.,]25×/)).toBeInTheDocument()
+    }, { timeout: 5000 })
     const pressedRate = () => {
       fireEvent.click(screen.getByRole('button', { name: 'Podešavanja plejera' }))
       const pressed = within(screen.getByRole('dialog')).getAllByRole('button').find((b) => b.getAttribute('aria-pressed') === 'true')
@@ -50,7 +55,7 @@ describe('App', () => {
     it('keeps the speed when the same episode reconnects after a stall', async () => {
       const s = await start()
       await s.open(ep('p1', '3'))
-      fireEvent.keyDown(window, { key: ']', code: 'BracketRight' })
+      await speedUp()
       s.close()
       s.retry('3')
       await s.open(ep('p2', '3'))
@@ -59,7 +64,7 @@ describe('App', () => {
     it('starts a different episode, or the same one opened again normally, at 1×', async () => {
       const s = await start()
       await s.open(ep('p1', '3'))
-      fireEvent.keyDown(window, { key: ']', code: 'BracketRight' })
+      await speedUp()
       s.close()
       await s.open(ep('p2', '4'))
       expect(pressedRate()).toBe('1×')
@@ -74,7 +79,7 @@ describe('App', () => {
     it('does not carry the speed into a reconnect of another episode', async () => {
       const s = await start()
       await s.open(ep('p1', '3'))
-      fireEvent.keyDown(window, { key: ']', code: 'BracketRight' })
+      await speedUp()
       s.close()
       s.retry('4')
       await s.open(ep('p2', '4'))
