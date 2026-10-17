@@ -8,6 +8,19 @@ const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => String(a + i
 const base = (over = {}) => ({ episodes: range(1, 12), selected: [], watched: [], onToggle: vi.fn(), ...over })
 
 describe('EpisodePicker', () => {
+  it('renders no sticky action bar when it would be empty', () => {
+    const { container, unmount } = renderUi(<EpisodePicker {...base()} />)
+    expect(container.querySelector('.episode-bar')).toBeNull()
+    unmount()
+    const empty = renderUi(<EpisodePicker {...base()}>{false}{null}</EpisodePicker>)
+    expect(empty.container.querySelector('.episode-bar')).toBeNull()
+    empty.unmount()
+    const withChild = renderUi(<EpisodePicker {...base()}><button type="button">Akcija</button></EpisodePicker>)
+    expect(withChild.container.querySelector('.episode-bar')).not.toBeNull()
+    withChild.unmount()
+    renderUi(<EpisodePicker {...base({ prefs: {}, onPrefs: vi.fn() })} />)
+    expect(screen.getByLabelText('Kvalitet').closest('.episode-bar')).not.toBeNull()
+  })
   it('shows all episodes without groups or go-to for short series', () => {
     renderUi(<EpisodePicker {...base({ watched: [1], selected: ['3'] })}><button type="button">Akcija</button></EpisodePicker>)
     expect(screen.getAllByRole('button', { name: /^\d+$/ })).toHaveLength(12)

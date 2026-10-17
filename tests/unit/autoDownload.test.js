@@ -59,6 +59,27 @@ describe('knownAired', () => {
     expect(knownAired({ status: 'RELEASING', episodes: 12, nextAiring: null }, {}, now)).toBeNull()
     expect(knownAired({ nextAiring: null }, null, now)).toBeNull()
   })
+  it('lets a finished series count beat an older remembered schedule (app was off during the finale)', () => {
+    const finished = { status: 'FINISHED', episodes: 12, nextAiring: null }
+    expect(knownAired(finished, { after: 9, next: { episode: 10, airingAt: now - 3 * 24 * H } }, now)).toBe(12)
+    expect(knownAired(finished, { after: 9, next: { episode: 10, airingAt: now + H } }, now)).toBe(12)
+    // AniList's count can lag behind a remembered schedule; never go backwards.
+    expect(knownAired({ ...finished, episodes: 11 }, { next: { episode: 12, airingAt: now - H } }, now)).toBe(12)
+  })
+  it('hands the missed finale episodes of a series that finished while the app was off', () => {
+    const prefs = { after: 9, next: { episode: 10, airingAt: now - 3 * 24 * H } }
+    const i = { status: 'FINISHED', episodes: 12, nextAiring: null }
+    expect(run({ prefs, i, e: entry({ watchedEpisodes: [1, 2, 3, 4, 5, 6, 7, 8, 9] }) }))
+      .toEqual([{ animeId: 'a1', aniCliTitle: 'Show', episodes: [10, 11, 12] }])
+  })
+  it('still holds a remembered episode in its source lag when a finished count goes past it', () => {
+    // Double finale (EP 11 + 12 at once) and AniList flips to FINISHED within the lag.
+    const prefs = { after: 10, next: { episode: 11, airingAt: now - 5 * MIN } }
+    const i = { status: 'FINISHED', episodes: 12, nextAiring: null }
+    expect(run({ prefs, i, e: entry({ watchedEpisodes: [10] }) })).toEqual([])
+    expect(run({ prefs, i, e: entry({ watchedEpisodes: [10] }), now: now + 16 * MIN }))
+      .toEqual([{ animeId: 'a1', aniCliTitle: 'Show', episodes: [11, 12] }])
+  })
 })
 
 describe('initialRecord', () => {
