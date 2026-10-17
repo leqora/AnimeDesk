@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Children, useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
 import { EpisodeRow } from './EpisodeRow.jsx'
 import { useEpisodeView } from '../episodes/useEpisodeView.js'
@@ -90,7 +90,8 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
           })}
         </div>
       )}
-      <div className="episode-bar">
+      {/* An empty sticky bar would still cover the last row of episode buttons. */}
+      {((prefs && onPrefs) || Children.toArray(children).length > 0) && <div className="episode-bar">
         {prefs && onPrefs && (
           <>
             <label className="field field--inline">
@@ -111,7 +112,7 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
           </>
         )}
         {children}
-      </div>
+      </div>}
     </div>
   )
 }
