@@ -69,10 +69,11 @@ export function createAutoDownloader({
       if (dir) {
         const candidates = autoDownloadCandidates({ entries, prefsFor, infoById, now: t })
         for (const c of candidates) {
-          const entry = entries.find((e) => e.id === c.animeId)
           try {
-            downloads.enqueue({ title: entry?.title ?? c.aniCliTitle, aniCliTitle: c.aniCliTitle, episodes: c.episodes.map(String), dir, auto: true })
+            downloads.enqueue({ title: c.aniCliTitle, aniCliTitle: c.aniCliTitle, episodes: c.episodes.map(String), dir, auto: true })
+            // Same title as manual downloads (aniCliTitle) so dedup and the folder match.
             // Moves even if enqueue skipped the episodes (already downloaded / queued): never hand them again.
+            // If this write fails the next check re-hands the same episodes; enqueue skips queued/downloaded ones.
             seriesPrefs.setAutoDownload(c.aniCliTitle, { after: Math.max(...c.episodes) })
           } catch (err) {
             console.warn('autoDownloader: enqueue failed', err?.message)
@@ -94,7 +95,8 @@ export function createAutoDownloader({
       return { ok: true, enabled: false }
     }
     if (!settings.get().downloadDir) return { ok: false, error: 'no-dir' }
-    seriesPrefs.setAutoDownload(entry.aniCliTitle, { after: initialAfter({ entry, info: cachedInfo(entry), now: now() }) })
+    // Idempotent: an existing boundary is kept so a repeated enable cannot skip a backlog.
+    if (!seriesPrefs.getAutoDownload(entry.aniCliTitle)) seriesPrefs.setAutoDownload(entry.aniCliTitle, { after: initialAfter({ entry, info: cachedInfo(entry), now: now() }) })
     check()
     return { ok: true, enabled: true }
   }

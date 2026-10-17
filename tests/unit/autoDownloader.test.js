@@ -110,6 +110,20 @@ describe('autoDownloader.check', () => {
 })
 
 describe('autoDownloader.setEnabled', () => {
+  it('enqueues under aniCliTitle, not the display title', () => {
+    library.list = vi.fn(() => [entry({ title: 'Display Name' })])
+    prefs.setAutoDownload('Show', { after: 3 })
+    make().check()
+    expect(downloads.enqueue).toHaveBeenCalledWith({ title: 'Show', aniCliTitle: 'Show', episodes: ['4', '5'], dir: 'D:\\Anime', auto: true })
+  })
+
+  it('enabling again keeps the existing boundary', () => {
+    prefs.setAutoDownload('Show', { after: 3 })
+    downloads.enqueue = vi.fn(() => [])
+    expect(make().setEnabled('a1', true)).toEqual({ ok: true, enabled: true })
+    expect(downloads.enqueue).toHaveBeenCalledWith(expect.objectContaining({ episodes: ['4', '5'] }))
+  })
+
   it('enabling a series whose next episode airs later hands nothing now, then exactly that episode after the lag (Review Focus 3)', () => {
     const ad = make()
     ad.start()
@@ -167,6 +181,15 @@ describe('autoDownloader timers', () => {
     ad.check()
     expect(Math.max(...clock.pending())).toBeLessThanOrEqual(6 * H)
     expect(clock.pending().filter((d) => d === 6 * H)).toHaveLength(1)
+  })
+
+  it('start() after stop() re-arms and checks again', () => {
+    const ad = make()
+    ad.start()
+    ad.stop()
+    ad.start()
+    clock.advance(90_000)
+    expect(library.list).toHaveBeenCalledTimes(1)
   })
 
   it('after stop() nothing fires and check() does nothing', () => {
