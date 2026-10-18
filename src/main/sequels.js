@@ -58,8 +58,12 @@ export function createSequels({
   }
 
   function persist() {
-    try { writeJsonAtomic(file, { version: FILE_VERSION, byId, posters, failedAt }) } catch (err) {
+    try {
+      writeJsonAtomic(file, { version: FILE_VERSION, byId, posters, failedAt })
+      return true
+    } catch (err) {
       console.warn('sequels: save failed', err?.message)
+      return false
     }
   }
 
@@ -110,10 +114,10 @@ export function createSequels({
     if (lastSig === null) lastSig = signature()
     const entries = entriesNow()
     const t = now()
-    const paused = failedAt != null && t - failedAt < RETRY_AFTER_FAIL_MS
+    // Same slack as the TTL: a retry timer that fires a hair early must not find itself still paused.
+    const paused = failedAt != null && t - failedAt + TTL_SLACK_MS < RETRY_AFTER_FAIL_MS
 
     if (!paused) {
-      dirty = false
       const wanted = [...new Set(sourceIds(entries, getCachedId).map((s) => s.prequelId))]
       const stale = wanted.filter((id) => !byId[id] || t - byId[id].at + TTL_SLACK_MS >= TTL_MS)
       if (stale.length) {
@@ -124,7 +128,7 @@ export function createSequels({
           if (stopped) return
           console.warn('sequels: refresh failed', err?.message)
           failedAt = now()
-          persist()
+          if (persist()) dirty = false
           armRetry()
           return
         }
@@ -141,8 +145,10 @@ export function createSequels({
         for (const id of Object.keys(byId)) if (!keep.has(id)) { delete byId[id]; dirty = true }
       }
       if (!(await fetchPosters(entries))) return
-      prunePosters(entries)
-      if (dirty) persist()
+      if (wanted.length) prunePosters(entries) // no sources (unreadable library): keep every poster too
+      if (dirty && persist()) dirty = false
+    } else if (!retryTimer) {
+      armRetry(failedAt + RETRY_AFTER_FAIL_MS - t)
     }
     if (stopped) return
     emitIfChanged()
@@ -171,9 +177,9 @@ export function createSequels({
   }
 
   // One shot at failedAt + 1 h so an offline start does not wait for the daily timer.
-  function armRetry() {
+  function armRetry(delay = RETRY_AFTER_FAIL_MS) {
     clearRetry()
-    retryTimer = setT(() => { retryTimer = null; fire() }, RETRY_AFTER_FAIL_MS)
+    retryTimer = setT(() => { retryTimer = null; fire() }, Math.max(1000, delay))
   }
 
   function refresh() {

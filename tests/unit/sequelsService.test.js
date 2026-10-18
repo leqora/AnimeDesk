@@ -17,10 +17,11 @@ const sequel = (id, over = {}) => ({
   year: 2020, episodes: 12, coverUrl: `http://img/${id}.jpg`, ...over,
 })
 
+let libThrows = false
 let dir, file, entries, rel, anilist, hidden, settings, svc
 
 function build() {
-  svc = createSequels({ file, library: { list: () => entries }, anilist, settings })
+  svc = createSequels({ file, library: { list: () => { if (libThrows) throw new Error('library down'); return entries } }, anilist, settings })
 }
 
 function setup() {
@@ -35,6 +36,7 @@ function setup() {
     poster: vi.fn(async (url) => `data:${url}`),
   }
   hidden = []
+  libThrows = false
   settings = {
     get: () => ({ hiddenSequels: [...hidden] }),
     update: vi.fn((patch) => { hidden = [...patch.hiddenSequels]; return { hiddenSequels: [...hidden] } }),
@@ -413,6 +415,46 @@ describe('createSequels', () => {
     await advance(TTL_MS + MIN)
     await svc.refresh()
     expect(cb).toHaveBeenCalledTimes(1)
+  })
+
+  it('an unreadable library keeps posters and byId on disk and does not rewrite the file', async () => {
+    await svc.refresh()
+    const before = fs.readFileSync(file, 'utf8')
+    expect(Object.keys(disk().posters).sort()).toEqual(['101', '201'])
+    libThrows = true
+    const spy = vi.spyOn(fs, 'renameSync')
+    await advance(TTL_MS + MIN)
+    await svc.refresh()
+    expect(spy).not.toHaveBeenCalled()
+    spy.mockRestore()
+    expect(fs.readFileSync(file, 'utf8')).toBe(before)
+  })
+
+  it('a retry timer firing 500 ms early still makes the request', async () => {
+    anilist.relations.mockRejectedValueOnce(new Error('offline'))
+    svc.start()
+    await advance(FIRST_RUN_MS)
+    expect(anilist.relations).toHaveBeenCalledTimes(1)
+    vi.setSystemTime(Date.now() - 500) // the clock reads 500 ms short when the timer fires
+    await advance(RETRY_AFTER_FAIL_MS)
+    expect(anilist.relations).toHaveBeenCalledTimes(2)
+    expect(disk().failedAt).toBeNull()
+  })
+
+  it('a failure stored by a previous run: paused at +90 s, then exactly one retry at failedAt + 1 h', async () => {
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, JSON.stringify({ version: 1, byId: {}, posters: {}, failedAt: T0 - 30 * MIN }))
+    build()
+    svc.start()
+    await advance(FIRST_RUN_MS)
+    expect(anilist.relations).not.toHaveBeenCalled()
+    await advance(30 * MIN - FIRST_RUN_MS - 1)
+    expect(anilist.relations).not.toHaveBeenCalled()
+    await advance(1)
+    expect(anilist.relations).toHaveBeenCalledTimes(1)
+    await advance(RETRY_AFTER_FAIL_MS * 2)
+    expect(anilist.relations).toHaveBeenCalledTimes(1)
+    expect(disk().failedAt).toBeNull()
   })
 
   it('tolerates a corrupt cache file', async () => {
