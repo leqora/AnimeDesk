@@ -58,11 +58,17 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
     return api.onLibraryChanged(load)
   }, [api])
 
-  // The list is computed in main (cache + hidden); the push event carries the new list, so hide/undo need no refetch.
+  // The list is computed in main (cache + hidden); the change event has no payload, so every call re-fetches.
+  // A stale response (an older list() resolving after a newer one) is ignored.
   useEffect(() => {
     let alive = true
-    api.sequels.list().then((list) => { if (alive) setSequels(list) }).catch(() => {})
-    const off = api.sequels.onChanged((list) => { if (alive) setSequels(list) })
+    let seq = 0
+    const load = () => {
+      const mine = ++seq
+      api.sequels.list().then((list) => { if (alive && mine === seq && Array.isArray(list)) setSequels(list) }).catch(() => {})
+    }
+    load()
+    const off = api.sequels.onChanged(load)
     return () => { alive = false; off() }
   }, [api])
 

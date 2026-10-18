@@ -77,17 +77,46 @@ describe('missed sequels rail', () => {
 
   it('undo restores the card', async () => {
     let onChanged
-    const list = vi.fn(async () => [item()])
+    let hidden = false
+    const list = vi.fn(async () => (hidden ? [] : [item()]))
     const api = makeFakeApi({ sequels: { list, onChanged: vi.fn((cb) => { onChanged = cb; return () => {} }) } })
     home(api)
     fireEvent.click(await screen.findByRole('button', { name: 'Sakrij Attack on Titan Season 2' }))
     await waitFor(() => expect(api.sequels.hide).toHaveBeenCalledWith(101))
-    await act(async () => { onChanged([]) })
+    hidden = true
+    await act(async () => { onChanged() })
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Propušteni nastavci' })).toBeNull())
     fireEvent.click(await screen.findByRole('button', { name: 'Poništi' }))
     await waitFor(() => expect(api.sequels.unhide).toHaveBeenCalledWith(101))
-    await act(async () => { onChanged([item()]) })
+    hidden = false
+    await act(async () => { onChanged() })
     expect(await screen.findByRole('button', { name: 'Potraži Attack on Titan Season 2' })).toBeInTheDocument()
+  })
+
+  it('onChanged without a payload re-fetches and never crashes', async () => {
+    let onChanged
+    const list = vi.fn(async () => [item()])
+    const api = makeFakeApi({ sequels: { list, onChanged: vi.fn((cb) => { onChanged = cb; return () => {} }) } })
+    home(api)
+    await screen.findByRole('region', { name: 'Propušteni nastavci' })
+    const before = list.mock.calls.length
+    await act(async () => { onChanged() })
+    await waitFor(() => expect(list.mock.calls.length).toBe(before + 1))
+    expect(screen.getByRole('region', { name: 'Propušteni nastavci' })).toBeInTheDocument()
+  })
+
+  it('ignores a stale list that resolves after a newer one', async () => {
+    let onChanged
+    const resolvers = []
+    const list = vi.fn(() => new Promise((r) => resolvers.push(r)))
+    const api = makeFakeApi({ sequels: { list, onChanged: vi.fn((cb) => { onChanged = cb; return () => {} }) } })
+    home(api)
+    await waitFor(() => expect(resolvers).toHaveLength(1))
+    await act(async () => { onChanged() })
+    await waitFor(() => expect(resolvers).toHaveLength(2))
+    await act(async () => { resolvers[1]([]) })
+    await act(async () => { resolvers[0]([item()]) })
+    expect(screen.queryByRole('region', { name: 'Propušteni nastavci' })).toBeNull()
   })
 
   it('hide button is reachable by Tab and has an accessible name', async () => {
