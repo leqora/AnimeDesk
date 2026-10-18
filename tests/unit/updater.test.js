@@ -136,7 +136,8 @@ describe('updater', () => {
     expect(updater.install()).toBe(true)
     expect(updater.install()).toBe(false)
     expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1)
-    expect(autoUpdater.quitAndInstall).toHaveBeenCalledWith(false, true)
+    // silent (/S) so the assisted NSIS wizard never waits for Next/Finish; force-run restarts the app
+    expect(autoUpdater.quitAndInstall).toHaveBeenCalledWith(true, true)
   })
   it('install can be retried after quitAndInstall fails', () => {
     const { updater, autoUpdater } = setup()

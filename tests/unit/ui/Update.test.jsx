@@ -29,6 +29,15 @@ describe('UpdateBanner', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Restartuj i ažuriraj' }))
     expect(api.update.install).toHaveBeenCalled()
   })
+  it('says the app closes and restarts on its own (silent install, no wizard)', () => {
+    renderUi(<UpdateBanner state={st({ status: 'ready' })} onWhatsNew={() => {}} />)
+    const hint = screen.getByText('AnimeDesk će se zatvoriti i sam ponovo pokrenuti za oko minut.')
+    expect(screen.getByRole('button', { name: 'Restartuj i ažuriraj' })).toHaveAttribute('aria-describedby', hint.id)
+  })
+  it('shows the restart hint only when ready', () => {
+    renderUi(<UpdateBanner state={st({ status: 'available' })} onWhatsNew={() => {}} />)
+    expect(screen.queryByText(/sam ponovo pokrenuti/)).not.toBeInTheDocument()
+  })
   it('hides on error and in every other state', () => {
     for (const status of ['idle', 'checking', 'none', 'error', 'disabled']) {
       const { container, unmount } = renderUi(<UpdateBanner state={st({ status })} onWhatsNew={() => {}} />)
@@ -44,6 +53,8 @@ describe('WhatsNewDialog', () => {
     const { api } = renderUi(<WhatsNewDialog mode="before" version="0.3.1" notes={'Prvi red\nDrugi red'} status="ready" onClose={onClose} />)
     expect(screen.getByRole('dialog', { name: 'Šta je novo u 0.3.1' })).toBeInTheDocument()
     expect(screen.getByText(/Prvi red/)).toHaveTextContent('Prvi red Drugi red')
+    const hint = screen.getByText('AnimeDesk će se zatvoriti i sam ponovo pokrenuti za oko minut.')
+    expect(screen.getByRole('button', { name: 'Restartuj i ažuriraj' })).toHaveAttribute('aria-describedby', hint.id)
     fireEvent.click(screen.getByRole('button', { name: 'Restartuj i ažuriraj' }))
     expect(api.update.install).toHaveBeenCalled()
   })
@@ -51,6 +62,7 @@ describe('WhatsNewDialog', () => {
     const { api } = renderUi(<WhatsNewDialog mode="before" version="0.3.1" notes="x" status="available" onClose={() => {}} />)
     fireEvent.click(screen.getByRole('button', { name: 'Preuzmi' }))
     expect(api.update.download).toHaveBeenCalled()
+    expect(screen.queryByText(/sam ponovo pokrenuti/)).not.toBeInTheDocument()
   })
   it('after an update only offers close, and Escape closes', () => {
     const onClose = vi.fn()
