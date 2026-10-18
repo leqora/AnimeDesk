@@ -62,7 +62,9 @@ export function createUpdater({
   function install() {
     if (state.status !== 'ready' || installing) return false
     installing = true
-    autoUpdater.quitAndInstall(false, true)
+    // Silent (/S): the assisted NSIS installer (oneClick: false) would otherwise stop on "Choose Installation
+    // Options" and "Finish". It reuses the registered install folder; force-run starts the app afterwards.
+    autoUpdater.quitAndInstall(true, true)
     return true
   }
 

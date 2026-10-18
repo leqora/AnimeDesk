@@ -213,6 +213,7 @@
   "update.whatsNew": "Šta je novo",
   "update.download": "Preuzmi",
   "update.install": "Restartuj i ažuriraj",
+  "update.restartHint": "AnimeDesk će se zatvoriti i sam ponovo pokrenuti za oko minut.",
   "update.close": "Zatvori",
   "update.titleBefore": "Šta je novo u {version}",
   "update.titleAfter": "Ažurirano na {version}",

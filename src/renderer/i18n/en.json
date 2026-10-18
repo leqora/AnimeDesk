@@ -213,6 +213,7 @@
   "update.whatsNew": "What's new",
   "update.download": "Download",
   "update.install": "Restart and update",
+  "update.restartHint": "AnimeDesk will close and restart on its own in about a minute.",
   "update.close": "Close",
   "update.titleBefore": "What's new in {version}",
   "update.titleAfter": "Updated to {version}",

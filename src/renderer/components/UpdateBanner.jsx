@@ -4,6 +4,7 @@ import { Icon } from './Icon.jsx'
 import { XpBar } from './XpBar.jsx'
 
 const VISIBLE = ['available', 'downloading', 'ready']
+const HINT_ID = 'update-banner-hint'
 
 export function UpdateBanner({ state, onWhatsNew }) {
   const api = useApi()
@@ -18,11 +19,14 @@ export function UpdateBanner({ state, onWhatsNew }) {
   return (
     <div className="update-banner" role="status">
       <Icon name="downloads" />
-      <span className="update-banner__text">{text}</span>
+      <span className="update-banner__text">
+        {text}
+        {state.status === 'ready' && <span id={HINT_ID} className="update-banner__hint">{t('update.restartHint')}</span>}
+      </span>
       {state.status === 'downloading' && <XpBar into={state.percent ?? 0} total={100} />}
       {state.status !== 'downloading' && <button type="button" onClick={onWhatsNew}>{t('update.whatsNew')}</button>}
       {state.status === 'available' && <button type="button" className="primary" onClick={() => api.update.download()}>{t('update.download')}</button>}
-      {state.status === 'ready' && <button type="button" className="primary" onClick={() => api.update.install()}>{t('update.install')}</button>}
+      {state.status === 'ready' && <button type="button" className="primary" aria-describedby={HINT_ID} onClick={() => api.update.install()}>{t('update.install')}</button>}
     </div>
   )
 }
