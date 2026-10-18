@@ -5,15 +5,10 @@ import { useToast } from '../toast/ToastProvider.jsx'
 import { MediaCard } from '../components/MediaCard.jsx'
 import { AnimeDetail } from './AnimeDetail.jsx'
 import { STATUSES } from '../../shared/domain.js'
+import { sortItems } from '../../shared/watchlistFilter.js'
 import { useRouteState } from '../nav/useNavigation.js'
 
-export function sortItems(items, sort) {
-  const copy = [...items]
-  if (sort === 'rating') copy.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-  else if (sort === 'lastWatched') copy.sort((a, b) => String(b.lastWatchedAt ?? '').localeCompare(String(a.lastWatchedAt ?? '')))
-  else copy.sort((a, b) => a.title.localeCompare(b.title))
-  return copy
-}
+export { sortItems }
 
 export function WatchlistPage({ ready, onContinue, animeId = null, onOpen, onBack, onRemoved }) {
   const api = useApi()
