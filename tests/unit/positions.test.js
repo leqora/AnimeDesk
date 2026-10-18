@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createPositions } from '../../src/main/positions.js'
+import { createPositions, sanitizePositions } from '../../src/main/positions.js'
 
 let file
 beforeEach(() => { file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-pos-')), 'positions.json') })
@@ -102,5 +102,51 @@ describe('positions', () => {
     expect(ok).toHaveBeenCalledWith('save')
     expect(p.get('A b', 1)).not.toBeNull()
     warn.mockRestore()
+  })
+})
+
+describe('sanitizePositions', () => {
+  it('keeps valid items and drops invalid ones', () => {
+    const r = sanitizePositions({ version: 1, items: {
+      'show#1': { position: 600, duration: 1400, at: 5, extra: 1 },
+      'show#2': { position: 600, duration: 0, at: 5 },
+      'show#3': { position: NaN, duration: 1400, at: 5 },
+      'nohash': { position: 600, duration: 1400, at: 5 },
+      'show#4': { position: 600, duration: 1400 },
+      'show#5': null,
+    } })
+    expect(r).toEqual({ version: 1, items: { 'show#1': { position: 600, duration: 1400, at: 5 } } })
+  })
+  it('returns empty when not an object', () => {
+    expect(sanitizePositions([])).toEqual({ version: 1, items: {} })
+    expect(sanitizePositions(null)).toEqual({ version: 1, items: {} })
+  })
+})
+
+describe('positions snapshot / replaceAll', () => {
+  it('replaceAll swaps data, persists, fires clear and does not alias', () => {
+    const p = createPositions(file, { now: () => 1000 })
+    p.save('Old', 1, { position: 600, duration: 1400 })
+    const cb = vi.fn()
+    p.onChange(cb)
+    const snap = p.snapshot()
+    snap.items['old#1'].position = 1
+    expect(p.get('Old', 1).position).toBe(600)
+    const db = { version: 1, items: { 'new#2': { position: 700, duration: 1400, at: 5 } } }
+    p.replaceAll(db)
+    expect(cb).toHaveBeenCalledWith('clear')
+    expect(p.get('Old', 1)).toBeNull()
+    expect(p.get('New', 2)).toEqual({ position: 700, duration: 1400 })
+    expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual(db)
+    db.items['new#2'].position = 1
+    expect(p.get('New', 2).position).toBe(700)
+  })
+  it('replaceAll throws when the write fails (and does not emit)', () => {
+    const p = createPositions(file)
+    const cb = vi.fn()
+    p.onChange(cb)
+    fs.mkdirSync(`${file}.tmp`)
+    expect(() => p.replaceAll({ version: 1, items: {} })).toThrow()
+    expect(cb).not.toHaveBeenCalled()
   })
 })

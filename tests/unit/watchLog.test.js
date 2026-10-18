@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createWatchLog } from '../../src/main/watchLog.js'
+import { createWatchLog, sanitizeWatchLog } from '../../src/main/watchLog.js'
 
 let file, log, n
 beforeEach(() => {
@@ -58,5 +58,45 @@ describe('watchLog', () => {
     const l = createWatchLog(file)
     expect(l.list()).toEqual([])
     expect(() => l.append({ animeId: 'a', episode: 1, source: 'auto' })).not.toThrow()
+  })
+})
+
+describe('sanitizeWatchLog', () => {
+  const ids = new Set(['a'])
+  it('keeps valid entries, drops invalid, assigns uuid, sorts by at', () => {
+    const r = sanitizeWatchLog({ entries: [
+      { id: 'x2', animeId: 'a', episode: 2, at: '2026-10-02T00:00:00Z', source: 'auto' },
+      { animeId: 'a', episode: 1, at: '2026-10-01T00:00:00Z', source: 'manual' },
+      { id: 'u', animeId: 'zzz', episode: 1, at: '2026-10-01T00:00:00Z', source: 'auto' },
+      { id: 'n', animeId: 'a', episode: Infinity, at: '2026-10-01T00:00:00Z', source: 'auto' },
+      { id: 'm', animeId: 'a', episode: 3, source: 'auto' },
+      null,
+    ] }, ids, { uuid: () => 'new-id' })
+    expect(r).toEqual({ version: 1, entries: [
+      { id: 'new-id', animeId: 'a', episode: 1, at: '2026-10-01T00:00:00Z', source: 'manual' },
+      { id: 'x2', animeId: 'a', episode: 2, at: '2026-10-02T00:00:00Z', source: 'auto' },
+    ] })
+  })
+  it('returns empty for non-object input', () => {
+    expect(sanitizeWatchLog(undefined, ids, { uuid: () => 'u' })).toEqual({ version: 1, entries: [] })
+  })
+})
+
+describe('watchLog snapshot / replaceAll', () => {
+  it('snapshot is a deep copy', () => {
+    log.append({ animeId: 'a', episode: 1, source: 'auto' })
+    const s = log.snapshot()
+    s.entries[0].episode = 99
+    expect(log.list()[0].episode).toBe(1)
+  })
+  it('replaceAll swaps entries, persists, and does not alias', () => {
+    log.append({ animeId: 'a', episode: 1, source: 'auto' })
+    const db = { version: 1, entries: [{ id: 'z', animeId: 'b', episode: 4, at: '2026-10-05T00:00:00Z', source: 'auto' }] }
+    log.replaceAll(db)
+    expect(log.list()).toEqual(db.entries)
+    expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual(db)
+    db.entries[0].episode = 7
+    expect(log.list()[0].episode).toBe(4)
+    expect(log.removeAnime('b')).toBe(1)
   })
 })

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createLibrary } from '../../src/main/library.js'
+import { createLibrary, sanitizeEntry, sanitizeLibrary } from '../../src/main/library.js'
 
 let file, lib, n
 const opts = () => ({ now: () => `2026-10-01T00:00:0${n}Z`, uuid: () => `id-${++n}` })
@@ -216,5 +216,91 @@ describe('library', () => {
       lib.remove(f.id)
       expect(lib.restore(snap2).aniListConfirmed).toBe(false)
     })
+  })
+})
+
+describe('sanitizeEntry', () => {
+  const now = () => '2026-10-19T00:00:00Z'
+  const base = { id: 'a', title: 'Show', status: 'watching' }
+  it('keeps comment, drops unknown fields and fills defaults', () => {
+    const e = sanitizeEntry({ ...base, comment: 'nice', foo: 1 }, { now })
+    expect(e.comment).toBe('nice')
+    expect(e).not.toHaveProperty('foo')
+    expect(e).toMatchObject({ id: 'a', title: 'Show', rating: null, totalEpisodes: null, watchedEpisodes: [], episodeNotes: {}, aniCliTitle: null, aniListId: null, aniListConfirmed: false, lastWatchedAt: null, pinnedAt: null })
+    expect(sanitizeEntry(base, { now }).comment).toBe('')
+  })
+  it('rejects invalid entries', () => {
+    expect(() => sanitizeEntry({ ...base, status: 'bad' }, { now })).toThrow()
+    expect(() => sanitizeEntry({ ...base, title: '  ' }, { now })).toThrow()
+    expect(() => sanitizeEntry({ ...base, rating: 11 }, { now })).toThrow()
+    expect(() => sanitizeEntry({ ...base, id: 5 }, { now })).toThrow()
+    expect(() => sanitizeEntry(null, { now })).toThrow()
+  })
+  it('keeps only numeric-string episode note keys with non-empty text', () => {
+    expect(sanitizeEntry({ ...base, episodeNotes: { x: 'a', 3: '' } }, { now }).episodeNotes).toEqual({})
+    expect(sanitizeEntry({ ...base, episodeNotes: { 4: 'ok', x: 'a', 5: 7 } }, { now }).episodeNotes).toEqual({ 4: 'ok' })
+  })
+  it('uses now() for a missing addedAt/updatedAt and keeps valid dates', () => {
+    expect(sanitizeEntry(base, { now })).toMatchObject({ addedAt: now(), updatedAt: now() })
+    const e = sanitizeEntry({ ...base, addedAt: '2026-01-01T00:00:00Z', pinnedAt: '2026-02-01T00:00:00Z', aniListId: 5, aniListConfirmed: true, watchedEpisodes: [3, 1, 1] }, { now })
+    expect(e).toMatchObject({ addedAt: '2026-01-01T00:00:00Z', updatedAt: now(), pinnedAt: '2026-02-01T00:00:00Z', aniListId: 5, aniListConfirmed: true, watchedEpisodes: [1, 3] })
+  })
+})
+
+describe('sanitizeLibrary', () => {
+  const now = () => '2026-10-19T00:00:00Z'
+  const mk = (id, extra = {}) => [id, { id, title: `T${id}`, status: 'planned', ...extra }]
+  it('skips key/id mismatch and counts accepted/skipped', () => {
+    const r = sanitizeLibrary({ anime: Object.fromEntries([mk('a'), ['zzz', { id: 'b', title: 'B', status: 'planned' }], ['c', { id: 'c', title: '', status: 'planned' }]]) }, { now })
+    expect(Object.keys(r.db.anime)).toEqual(['a'])
+    expect(r).toMatchObject({ accepted: 1, skipped: 2 })
+    expect(r.db.version).toBe(1)
+  })
+  it('skips a later duplicate title', () => {
+    const r = sanitizeLibrary({ anime: { a: { id: 'a', title: 'Naruto', status: 'planned' }, b: { id: 'b', title: 'naruto', status: 'planned' } } }, { now })
+    expect(Object.keys(r.db.anime)).toEqual(['a'])
+    expect(r.skipped).toBe(1)
+  })
+  it('unconfirms later entries sharing a confirmed aniListId', () => {
+    const r = sanitizeLibrary({ anime: Object.fromEntries([mk('a', { aniListId: 5, aniListConfirmed: true }), mk('b', { aniListId: 5, aniListConfirmed: true })]) }, { now })
+    expect(r.db.anime.a.aniListConfirmed).toBe(true)
+    expect(r.db.anime.b.aniListConfirmed).toBe(false)
+    expect(r.accepted).toBe(2)
+  })
+  it('keeps only the MAX_PINNED oldest pins', () => {
+    const entries = Array.from({ length: 7 }, (_, i) => mk(`p${i}`, { pinnedAt: `2026-03-0${7 - i}T00:00:00Z` }))
+    const r = sanitizeLibrary({ anime: Object.fromEntries(entries) }, { now })
+    const pinned = Object.values(r.db.anime).filter((e) => e.pinnedAt).map((e) => e.id).sort()
+    expect(pinned).toEqual(['p2', 'p3', 'p4', 'p5', 'p6'])
+  })
+  it('returns an empty library for a non-object', () => {
+    expect(sanitizeLibrary(null, { now })).toEqual({ db: { version: 1, anime: {} }, accepted: 0, skipped: 0 })
+  })
+})
+
+describe('library snapshot / replaceAll', () => {
+  it('snapshot is a deep copy', () => {
+    const e = lib.add({ title: 'A' })
+    const snap = lib.snapshot()
+    expect(snap.version).toBe(1)
+    snap.anime[e.id].title = 'changed'
+    snap.anime[e.id].watchedEpisodes.push(9)
+    expect(lib.get(e.id).title).toBe('A')
+    expect(lib.get(e.id).watchedEpisodes).toEqual([])
+  })
+  it('replaceAll swaps data in memory and on disk, without aliasing the argument', () => {
+    lib.add({ title: 'Old' })
+    const { db } = sanitizeLibrary({ anime: { x: { id: 'x', title: 'New', status: 'planned' } } }, { now: () => '2026-10-19T00:00:00Z' })
+    lib.replaceAll(db)
+    expect(lib.list().map((e) => e.title)).toEqual(['New'])
+    expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual(db)
+    db.anime.x.title = 'mutated'
+    expect(lib.get('x').title).toBe('New')
+    lib.update('x', { rating: 4 })
+    expect(createLibrary(file).get('x').rating).toBe(4)
+  })
+  it('replaceAll throws when the write fails', () => {
+    fs.mkdirSync(`${file}.tmp`)
+    expect(() => lib.replaceAll({ version: 1, anime: {} })).toThrow()
   })
 })

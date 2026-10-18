@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { DEFAULT_SETTINGS, sanitizeSettings, createSettings } from '../../src/main/settings.js'
+import { DEFAULT_SETTINGS, LOCAL_SETTINGS, sanitizeSettings, createSettings } from '../../src/main/settings.js'
 
 let file
 beforeEach(() => { file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-set-')), 'settings.json') })
@@ -141,5 +141,33 @@ describe('settings', () => {
     expect(s.get().isPackaged).toBe(true)
     expect(s.update({ language: 'en' }).isPackaged).toBe(true)
     expect(JSON.parse(fs.readFileSync(file, 'utf8'))).not.toHaveProperty('isPackaged')
+  })
+})
+
+describe('settings snapshot / replace', () => {
+  it('snapshot omits local settings and view-only fields', () => {
+    const s = createSettings(file, { systemName: 'X', isPackaged: true })
+    s.update({ language: 'en', lastSeenVersion: '1.2.3', trayHintShown: true, fullscreen: true })
+    const snap = s.snapshot()
+    expect(snap.language).toBe('en')
+    for (const k of [...LOCAL_SETTINGS, 'systemName', 'isPackaged']) expect(snap).not.toHaveProperty(k)
+  })
+  it('replace keeps local settings, drops a missing downloadDir and persists', () => {
+    const s = createSettings(file)
+    s.update({ lastSeenVersion: '1.2.3', trayHintShown: true, fullscreen: true })
+    const v = s.replace({ language: 'en', quality: '720', lastSeenVersion: '9.9.9', trayHintShown: false, fullscreen: false, downloadDir: 'Z:\\nope' }, { dirExists: () => false })
+    expect(v).toMatchObject({ language: 'en', quality: '720', lastSeenVersion: '1.2.3', trayHintShown: true, fullscreen: true, downloadDir: null })
+    expect(createSettings(file).get()).toMatchObject({ language: 'en', lastSeenVersion: '1.2.3', downloadDir: null })
+  })
+  it('replace keeps downloadDir when it exists, else the current one', () => {
+    const s = createSettings(file)
+    s.update({ downloadDir: 'C:\\cur' })
+    expect(s.replace({ downloadDir: 'D:\\new' }, { dirExists: () => true }).downloadDir).toBe('D:\\new')
+    expect(s.replace({ downloadDir: 'E:\\gone' }, { dirExists: () => false }).downloadDir).toBe('D:\\new')
+  })
+  it('replace throws when the write fails', () => {
+    const s = createSettings(file)
+    fs.mkdirSync(`${file}.tmp`)
+    expect(() => s.replace({ language: 'en' })).toThrow()
   })
 })

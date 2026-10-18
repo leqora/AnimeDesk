@@ -95,3 +95,23 @@ describe('progress', () => {
     expect(progress.snapshot()).toEqual({ level: 7, title: 'rookie', xp: 700 })
   })
 })
+
+describe('progress.rebase', () => {
+  it('writes a lower level without notifying', () => {
+    progress.init()
+    level = 3
+    progress.rebase()
+    expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual({ version: 1, lastLevel: 3 })
+    expect(events).toEqual([])
+    level = 4
+    progress.check()
+    expect(events.map((e) => e[0])).toEqual([EVENTS.levelUp])
+  })
+  it('logs instead of throwing when the snapshot fails', () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const p = createProgress({ file, computeSnapshot: () => { throw new Error('boom') }, notify: () => {} })
+    expect(() => p.rebase()).not.toThrow()
+    expect(err).toHaveBeenCalled()
+    err.mockRestore()
+  })
+})

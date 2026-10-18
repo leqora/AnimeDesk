@@ -61,5 +61,8 @@ export function createTracker({ library, watchLog, progress, now = Date.now }) {
     return { ok: true, entry }
   }
 
-  return { recordWatched, update, remove, restore }
+  // After a data import the removed series belong to the old library; undo no longer makes sense.
+  const clearTrash = () => { trash.clear() }
+
+  return { recordWatched, update, remove, restore, clearTrash }
 }

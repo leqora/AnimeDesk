@@ -103,3 +103,12 @@ describe('tracker', () => {
     })
   })
 })
+
+describe('tracker.clearTrash', () => {
+  it('makes a removed series unrestorable', () => {
+    const e = tracker.recordWatched({ aniCliTitle: 'Show', episode: 1 })
+    tracker.remove(e.id)
+    tracker.clearTrash()
+    expect(tracker.restore(e.id)).toEqual({ ok: false, error: 'expired' })
+  })
+})

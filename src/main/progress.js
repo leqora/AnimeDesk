@@ -46,5 +46,14 @@ export function createProgress({ file, computeSnapshot, notify }) {
     return stats
   }
 
-  return { init, check, snapshot: () => safeSnapshot() ?? EMPTY_STATS }
+  // After a data import: the level of the imported data becomes the baseline (even when lower), silently.
+  function rebase() {
+    try {
+      remember(computeSnapshot().level)
+    } catch (err) {
+      console.error('progress: rebase failed', err)
+    }
+  }
+
+  return { init, check, rebase, snapshot: () => safeSnapshot() ?? EMPTY_STATS }
 }

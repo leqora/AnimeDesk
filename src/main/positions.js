@@ -4,9 +4,22 @@ import { shouldOfferResume } from '../shared/player.js'
 
 const DAY_MS = 86400000
 
+// Validates imported positions: key `<title>#<episode>`, finite position, duration > 0, finite `at`.
+export function sanitizePositions(raw) {
+  const items = {}
+  const src = raw !== null && typeof raw === 'object' && !Array.isArray(raw) && raw.items !== null && typeof raw.items === 'object' && !Array.isArray(raw.items) ? raw.items : {}
+  for (const [k, v] of Object.entries(src)) {
+    if (k.indexOf('#') < 1 || k.endsWith('#')) continue
+    if (v === null || typeof v !== 'object') continue
+    if (!Number.isFinite(v.position) || !Number.isFinite(v.duration) || v.duration <= 0 || !Number.isFinite(v.at)) continue
+    items[k] = { position: v.position, duration: v.duration, at: v.at }
+  }
+  return { version: 1, items }
+}
+
 export function createPositions(file, { now = () => Date.now() } = {}) {
   const loaded = readJson(file, { version: 1, items: {} }).data
-  const db = loaded && !Array.isArray(loaded) && typeof loaded.items === 'object' && loaded.items !== null ? loaded : { version: 1, items: {} }
+  let db = loaded &&!Array.isArray(loaded) && typeof loaded.items === 'object' && loaded.items !== null ? loaded : { version: 1, items: {} }
   const key = (title, episode) => `${normalizeTitle(String(title ?? '')).toLowerCase()}#${String(Number(episode))}`
   const persist = () => {
     try { writeJsonAtomic(file, db) } catch (err) { console.warn('positions: write failed', err?.message) } // a disk error must not break playback; in-memory state stays valid
@@ -53,6 +66,14 @@ export function createPositions(file, { now = () => Date.now() } = {}) {
         if (k.startsWith(prefix) && v && shouldOfferResume(v.position, v.duration)) out[k.slice(prefix.length)] = { position: v.position, duration: v.duration }
       }
       return out
+    },
+    snapshot: () => ({ version: 1, items: structuredClone(db.items) }),
+    // `next` is already sanitized. Unlike `persist`, a failed write throws (before anything changes).
+    replaceAll(next) {
+      const fresh = { version: 1, items: structuredClone(next.items) }
+      writeJsonAtomic(file, fresh)
+      db = fresh
+      emit('clear')
     },
     onChange(cb) {
       listeners.add(cb)
