@@ -176,6 +176,11 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .media-card:hover .badge--new:not(.badge--inline), .media-card:focus-within .badge--new:not(.badge--inline) { opacity: 0; }
 .media-card__actions button { padding: 6px; border-radius: 50%; }
 .media-card__pin[aria-pressed="true"] { color: var(--accent-2); }
+/* missed sequels card (Home) */
+.sequel-card .media-card__open:disabled { opacity: .6; cursor: not-allowed; }
+.sequel-card .card__meta { line-height: 1.5; }
+.sequel-card__badge { color: var(--accent-2); }
+.sequel-card__hide { min-width: 28px; line-height: 1; font-size: 16px; }
 .reduce-motion .media-card:hover, .reduce-motion .card.media-card:active, .reduce-motion .media-card:focus-within, .reduce-motion .media-card:hover .poster--in, .reduce-motion .media-card:focus-within .poster--in { transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .card.media-card:hover, .card.media-card:active, .media-card:hover, .media-card:focus-within, .media-card:hover .poster--in, .media-card:focus-within .poster--in { transform: none; }

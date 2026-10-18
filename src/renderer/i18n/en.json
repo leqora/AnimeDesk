@@ -381,5 +381,14 @@
   "airing.status.HIATUS": "Hiatus",
   "airing.status.CANCELLED": "Cancelled",
   "detail.episodesCount": "{n} EP",
-  "detail.duration": "{min} min"
+  "detail.duration": "{min} min",
+  "sequels.title": "Missed sequels",
+  "sequels.after": "After: {title}",
+  "sequels.releasing": "Airing",
+  "sequels.episodes_one": "{n} ep.",
+  "sequels.episodes_few": "{n} ep.",
+  "sequels.episodes_other": "{n} ep.",
+  "sequels.hide": "Hide {title}",
+  "sequels.hidden": "Hidden: {title}",
+  "sequels.open": "Search for {title}"
 }
