@@ -93,6 +93,8 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     live.current.lastParams = params
     live.current.lastEpisode = params.episode ?? null
     live.current.startedMode = null
+    // Until the new session answers, nothing from the previous one (e.g. a late probed title) may land here.
+    live.current.sessionId = null
     const seq = ++live.current.startSeq
     setError(null)
     setShowDetails(false)

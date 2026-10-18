@@ -120,7 +120,7 @@ export function createAniCliBridge({ toolManager, server, bridges, getSettings, 
   // ani-cli picks a lone search result itself (nth() skips the menu), so its title never reaches ANI_CLI_MENU;
   // the only place it leaves ani-cli is the player's --force-media-title. A quiet second run of the same search
   // with -S 1 hands it to a "player" that only reads the title and plays nothing. Resolves to the title or null.
-  function probeTitle({ query, episode, quality = null, mode = null, timeoutMs = 60000 }) {
+  function probeTitle({ query, episode, quality = null, mode = null, timeoutMs = 30000 }) {
     let title = null
     let s
     try {

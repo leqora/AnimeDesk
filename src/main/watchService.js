@@ -322,5 +322,11 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     return r.recorded ? 'watched' : afterPlayback({ title, episode: String(episode), maxPercent: r.maxPercent })
   }
 
-  return { watch, answerMenu, cancel, playLocal, afterPlayback, recover, retryAgain, dispose: discardPrefetch }
+  // App quit: the prepared link and any title probe go; a probe would otherwise keep fetching after the bridge is gone.
+  function dispose() {
+    discardPrefetch()
+    for (const entry of sessions.values()) entry.probe?.kill()
+  }
+
+  return { watch, answerMenu, cancel, playLocal, afterPlayback, recover, retryAgain, dispose }
 }

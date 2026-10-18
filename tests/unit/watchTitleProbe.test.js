@@ -94,4 +94,11 @@ describe('watchService: title of a lone search result', () => {
     await flush()
     expect(titles(events)).toEqual([])
   })
+  it('dispose (app quit) kills a running probe', () => {
+    const { svc, sessions, probes } = setup()
+    svc.watch({ query: 'lone show' })
+    sessions[0].opts.onMenu({ prompt: 'Select episode: ', lines: ['1'] })
+    svc.dispose()
+    expect(probes[0].kill).toHaveBeenCalled()
+  })
 })
