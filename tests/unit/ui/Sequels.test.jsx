@@ -28,7 +28,7 @@ describe('missed sequels rail', () => {
     home(api)
     const rail = await screen.findByRole('region', { name: 'Propušteni nastavci' })
     expect(rail).toHaveTextContent('Attack on Titan Season 2')
-    expect(rail).toHaveTextContent('TV SHORT · 2017 · 12 ep.')
+    expect(rail).toHaveTextContent('Kratka TV · 2017 · 12 ep.')
     expect(rail).toHaveTextContent('Posle: Attack on Titan')
     expect(rail).toHaveTextContent('Emituje se')
     expect(rail).not.toHaveTextContent('SECRET PLOT')
@@ -127,5 +127,61 @@ describe('missed sequels rail', () => {
     await userEvent.tab()
     const hide = screen.getByRole('button', { name: 'Sakrij Attack on Titan Season 2' })
     expect(hide).toHaveFocus()
+  })
+
+  it('formats go through t(), unknown formats fall back to the raw value without underscores', async () => {
+    const api = apiWith([item({ id: 1, title: 'A', format: 'MOVIE' }), item({ id: 2, title: 'B', format: 'ONA' }), item({ id: 3, title: 'C', format: 'NEW_KIND' })])
+    home(api)
+    const rail = await screen.findByRole('region', { name: 'Propušteni nastavci' })
+    expect(rail).toHaveTextContent('Film · 2017')
+    expect(rail).toHaveTextContent('ONA · 2017')
+    expect(rail).toHaveTextContent('NEW KIND · 2017')
+    expect(rail).not.toHaveTextContent('MOVIE')
+  })
+
+  it('the airing badge is part of the accessible description', async () => {
+    const api = apiWith([item({ status: 'RELEASING' })])
+    home(api)
+    const open = await screen.findByRole('button', { name: /Potraži/ })
+    expect(open).toHaveAccessibleDescription(/Emituje se/)
+    expect(open).toHaveAccessibleDescription(/Posle: Attack on Titan/)
+  })
+
+  it('no airing text in the description for finished sequels', async () => {
+    const api = apiWith([item()])
+    home(api)
+    expect(await screen.findByRole('button', { name: /Potraži/ })).not.toHaveAccessibleDescription(/Emituje se/)
+  })
+
+  it('keyboard hide moves focus to the undo action', async () => {
+    const api = apiWith([item()])
+    home(api)
+    const open = await screen.findByRole('button', { name: /Potraži/ })
+    open.focus()
+    await userEvent.tab()
+    expect(screen.getByRole('button', { name: 'Sakrij Attack on Titan Season 2' })).toHaveFocus()
+    await userEvent.keyboard('{Enter}')
+    const undo = await screen.findByRole('button', { name: 'Poništi' })
+    await waitFor(() => expect(undo).toHaveFocus())
+  })
+
+  it('mouse hide does not move focus to the undo action', async () => {
+    const api = apiWith([item()])
+    home(api)
+    await userEvent.click(await screen.findByRole('button', { name: 'Sakrij Attack on Titan Season 2' }))
+    const undo = await screen.findByRole('button', { name: 'Poništi' })
+    expect(undo).not.toHaveFocus()
+  })
+
+  it('a failing hide shows no toast and logs only the message', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const api = apiWith([item()], { hide: vi.fn(async () => { throw new Error('boom') }) })
+    home(api)
+    fireEvent.click(await screen.findByRole('button', { name: 'Sakrij Attack on Titan Season 2' }))
+    await waitFor(() => expect(warn).toHaveBeenCalled())
+    expect(warn.mock.calls[0].join(' ')).toContain('boom')
+    expect(warn.mock.calls[0].every((a) => typeof a === 'string')).toBe(true)
+    expect(screen.queryByText(/Sakriveno/)).toBeNull()
+    warn.mockRestore()
   })
 })

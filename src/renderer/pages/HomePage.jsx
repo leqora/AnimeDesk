@@ -72,12 +72,20 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
     return () => { alive = false; off() }
   }, [api])
 
-  const hideSequel = async (item) => {
-    await api.sequels.hide(item.id)
+  const hideSequel = async (item, viaKeyboard = false) => {
+    try {
+      await api.sequels.hide(item.id)
+    } catch (err) {
+      console.warn('sequels: hide failed', err?.message)
+      return
+    }
+    // The card unmounts; for a keyboard user focus would fall to body, so it goes to "Undo" (a mouse click keeps the old behavior).
+    if (viaKeyboard && document.activeElement?.classList.contains('sequel-card__hide')) document.activeElement.blur()
     // Only the sequel title goes in the toast; it is already on the card.
     toast.show({
       message: t('sequels.hidden', { title: item.title }),
       action: { label: t('toast.undo'), onAction: () => api.sequels.unhide(item.id) },
+      focusAction: viaKeyboard,
     })
   }
 
