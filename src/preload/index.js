@@ -90,6 +90,12 @@ contextBridge.exposeInMainWorld('animedesk', {
     pendingConfirm: invoke(INVOKE.anilistSyncPendingConfirm),
     onChange: on(EVENTS.anilistSyncChanged),
   },
+  sequels: {
+    list: invoke(INVOKE.sequelsList),
+    hide: invoke(INVOKE.sequelsHide),
+    unhide: invoke(INVOKE.sequelsUnhide),
+    onChanged: on(EVENTS.sequelsChanged),
+  },
   onNotificationsChanged: on(EVENTS.notificationsChanged),
   onOpenAnime: on(EVENTS.openAnime),
   onOpenPage: on(EVENTS.openPage),

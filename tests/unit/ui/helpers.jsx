@@ -57,6 +57,7 @@ export function makeFakeApi(overrides = {}) {
       stateFor: vi.fn(async () => ({ state: 'off' })), confirm: vi.fn(async () => ({ ok: true, entry: {} })),
       setEnabled: vi.fn(async () => true), candidates: vi.fn(async () => []), pendingConfirm: vi.fn(async () => []), onChange: sub(),
     },
+    sequels: { list: vi.fn(async () => []), hide: vi.fn(async () => ({ ok: true })), unhide: vi.fn(async () => ({ ok: true })), onChanged: vi.fn(() => () => {}) },
     onNotificationsChanged: sub(),
     onOpenAnime: sub(),
     onOpenPage: sub(),
