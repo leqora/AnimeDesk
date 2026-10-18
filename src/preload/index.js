@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('animedesk', {
     onAsk: on(EVENTS.ask),
     onPlaying: on(EVENTS.playing),
     onSessionEnd: on(EVENTS.sessionEnd),
+    onTitle: on(EVENTS.watchTitle),
   },
   downloads: {
     enqueue: invoke(INVOKE.downloadsEnqueue),

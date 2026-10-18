@@ -37,6 +37,8 @@
   "search.addToWatchlist": "Dodaj u watchlist",
   "search.cancel": "Otkaži",
   "search.searching": "Pretraga…",
+  "search.titlePending": "Tražim naslov…",
+  "search.titleUnknown": "„{query}”",
   "search.playing": "Pušta se: {title} — epizoda {episode}",
   "search.queued": "Dodato u red za preuzimanje: {count}",
   "search.added": "Dodato u watchlist",

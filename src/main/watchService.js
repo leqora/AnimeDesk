@@ -96,13 +96,34 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
   // One ani-cli session. `resume` marks a recovery: it answers menus only automatically and reports its own failure.
   function spawn(params, resume = null, { quiet = false } = {}) {
     let sessionId = null
-    const entry = { session: null, params, playing: false, cancelled: false, retrying: false, opened: false, animeLine: null, qualityFallback: null, failure: null, quiet, gate: quiet ? makeGate() : null, prefetchKey: null, prefetchFor: null, parked: false, adopted: false, freeRetryUsed: false, ended: false }
+    const entry = { session: null, params, playing: false, cancelled: false, retrying: false, opened: false, animeLine: null, qualityFallback: null, failure: null, quiet, gate: quiet ? makeGate() : null, prefetchKey: null, prefetchFor: null, parked: false, adopted: false, freeRetryUsed: false, ended: false, probe: null, probed: false, probedTitle: null }
     const remember = (prompt, line) => { if (line != null && menuKind(prompt) === 'anime') entry.animeLine = line }
     // Remember the real episode list for the series page; a failed write must never stop ani-cli.
     const saveList = (lines) => {
-      const title = entry.animeLine != null ? normalizeTitle(animeLineTitle(entry.animeLine)) : params.anime
+      const title = entry.animeLine != null ? normalizeTitle(animeLineTitle(entry.animeLine)) : params.anime ?? entry.probedTitle
       if (!episodeLists || !title) return
       try { episodeLists.set(title, params.mode ?? settings.get().mode, lines) } catch (err) { console.warn('watch: saving the episode list failed', err?.message) }
+    }
+    // An episode menu with no series picked yet: ani-cli chose a lone search result itself and its title is
+    // unknown here. Ask a quiet probe session for it, once; the search page waits for the event.
+    const probeTitle = (lines) => {
+      if (entry.probed || resume || entry.quiet || params.anime || entry.animeLine != null || !aniCli.probeTitle) return
+      const episode = lines.map((l) => String(l).trim()).find(Boolean)
+      if (!episode) return
+      entry.probed = true
+      try {
+        entry.probe = aniCli.probeTitle({ query: params.query, episode, quality: params.quality, mode: params.mode })
+      } catch (err) {
+        console.warn('watch: title probe failed to start', err?.message)
+        return
+      }
+      entry.probe.done.then((raw) => {
+        entry.probe = null
+        if (entry.ended || entry.cancelled) return
+        const title = raw ? normalizeTitle(raw) : null
+        if (title) { entry.probedTitle = title; saveList(lines) }
+        notify(EVENTS.watchTitle, { sessionId, title })
+      })
     }
     const session = aniCli.startSession({
       query: params.query,
@@ -112,7 +133,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
       mode: params.mode,
       onLine: (line) => { entry.qualityFallback ??= parseQualityFallback(line) },
       onMenu: ({ prompt, lines }) => {
-        if (menuKind(prompt) === 'episode') saveList(lines)
+        if (menuKind(prompt) === 'episode') { probeTitle(lines); saveList(lines) }
         const auto = autoAnswer(prompt, lines, { anime: params.anime, episode: params.episode })
         if (auto) { remember(prompt, auto); return Promise.resolve(auto) }
         // Nobody is on the search page to answer for a recovery; give up instead of showing an orphan menu.
@@ -163,6 +184,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     session.done.then((result) => {
       sessions.delete(sessionId)
       entry.ended = true
+      entry.probe?.kill()
       if (prefetch === entry) { clearTimer(prefetchTimer); prefetchTimer = null; prefetch = null }
       // Nobody asked for this session (yet): nothing to report.
       if (entry.quiet) {

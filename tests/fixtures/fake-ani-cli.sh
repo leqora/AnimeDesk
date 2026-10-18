@@ -14,8 +14,12 @@ while [ $# -gt 0 ]; do
 done
 if [ "$query" = "nothing" ]; then printf '\033[1;31mNo results found!\033[0m\n' >&2; exit 1; fi
 list=$(printf '1\tid1\t%s\n2\tid2\tOther Show' "${FAKE_ANIME_TITLE:-Fake Anime}")
+# One search result: real ani-cli's nth() picks it itself, without calling the menu.
+[ "$query" = "single show" ] && list=$(printf '1\tid9\tSingle Show: Part 2')
 if [ -n "$index" ]; then
   result=$(printf '%s\n' "$list" | sed -n "${index}p")
+elif [ "$(printf '%s\n' "$list" | wc -l)" -eq 1 ]; then
+  result=$list
 else
   choice=$(printf '%s\n' "$list" | cut -f 1,3 | tr '\t' ' ' | "$ANI_CLI_MENU" "Select anime: " | cut -d ' ' -f 1)
   result=$(printf '%s\n' "$list" | awk -F '\t' -v n="$choice" '$1 == n')
