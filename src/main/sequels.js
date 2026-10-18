@@ -30,6 +30,8 @@ export function createSequels({
   let firstTimer = null
   let dailyTimer = null
   let debounceTimer = null
+  let retryTimer = null
+  let dirty = false
   let lastSig = null
   const listeners = new Set()
 
@@ -84,7 +86,10 @@ export function createSequels({
     }))
   }
 
-  const signature = () => JSON.stringify(list().map((s) => [s.id, s.poster, s.fromId]))
+  // What the rail renders, minus the data URLs (only whether a poster exists): any visible change must emit.
+  const signature = () => JSON.stringify(visible(entriesNow()).map((s) => [
+    s.id, s.fromId, s.title, s.format, s.status, s.year, s.episodes, s.coverUrl, !!posters[s.id],
+  ]))
 
   function notify() {
     for (const fn of [...listeners]) {
@@ -108,6 +113,7 @@ export function createSequels({
     const paused = failedAt != null && t - failedAt < RETRY_AFTER_FAIL_MS
 
     if (!paused) {
+      dirty = false
       const wanted = [...new Set(sourceIds(entries, getCachedId).map((s) => s.prequelId))]
       const stale = wanted.filter((id) => !byId[id] || t - byId[id].at + TTL_SLACK_MS >= TTL_MS)
       if (stale.length) {
@@ -119,15 +125,24 @@ export function createSequels({
           console.warn('sequels: refresh failed', err?.message)
           failedAt = now()
           persist()
+          armRetry()
           return
         }
         if (stopped) return
         // Ids AniList did not answer (deleted/unknown media) are cached as empty too, so they are not re-queried every refresh.
         for (const id of stale) byId[id] = { at: t, sequels: answer?.get(id) ?? [] }
-        failedAt = null
+        dirty = true
+      }
+      if (failedAt != null) { failedAt = null; dirty = true }
+      clearRetry()
+      // Prequels that are no longer completed library entries drop out of the cache (an unreadable library must not wipe it).
+      if (wanted.length) {
+        const keep = new Set(wanted.map(String))
+        for (const id of Object.keys(byId)) if (!keep.has(id)) { delete byId[id]; dirty = true }
       }
       if (!(await fetchPosters(entries))) return
-      pruneAndPersist()
+      prunePosters(entries)
+      if (dirty) persist()
     }
     if (stopped) return
     emitIfChanged()
@@ -139,16 +154,26 @@ export function createSequels({
       if (!s.coverUrl || posters[s.id]?.coverUrl === s.coverUrl) continue
       const dataUrl = await anilist.poster(s.coverUrl)
       if (stopped) return false
-      if (dataUrl) posters[s.id] = { coverUrl: s.coverUrl, dataUrl }
+      if (dataUrl) { posters[s.id] = { coverUrl: s.coverUrl, dataUrl }; dirty = true }
     }
     return true
   }
 
-  function pruneAndPersist() {
-    const known = new Set()
-    for (const v of Object.values(byId)) for (const s of v.sequels) known.add(String(s.id))
-    for (const id of Object.keys(posters)) if (!known.has(id)) delete posters[id]
-    persist()
+  // Posters are kept only for what is shown now plus hidden ids (so "undo" works offline).
+  function prunePosters(entries) {
+    const keep = new Set([...visible(entries).map((s) => String(s.id)), ...hiddenNow().map(String)])
+    for (const id of Object.keys(posters)) if (!keep.has(id)) { delete posters[id]; dirty = true }
+  }
+
+  function clearRetry() {
+    if (retryTimer) clearT(retryTimer)
+    retryTimer = null
+  }
+
+  // One shot at failedAt + 1 h so an offline start does not wait for the daily timer.
+  function armRetry() {
+    clearRetry()
+    retryTimer = setT(() => { retryTimer = null; fire() }, RETRY_AFTER_FAIL_MS)
   }
 
   function refresh() {
@@ -192,8 +217,8 @@ export function createSequels({
   function stop() {
     stopped = true
     again = false
-    for (const t of [firstTimer, dailyTimer, debounceTimer]) if (t) clearT(t)
-    firstTimer = dailyTimer = debounceTimer = null
+    for (const t of [firstTimer, dailyTimer, debounceTimer, retryTimer]) if (t) clearT(t)
+    firstTimer = dailyTimer = debounceTimer = retryTimer = null
   }
 
   function setHidden(next) {

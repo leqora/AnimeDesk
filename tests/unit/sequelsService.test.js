@@ -341,6 +341,80 @@ describe('createSequels', () => {
     expect(ok).toHaveBeenCalledTimes(1)
   })
 
+  it('drops the poster of a sequel the user added to the library, and prequels no longer in the library', async () => {
+    await svc.refresh()
+    expect(disk().posters['101']).toBeDefined()
+    entries = [entry('a1', 100), entry('a2', 200), entry('s1', 101, { status: 'watching' })]
+    await svc.refresh()
+    expect(disk().posters['101']).toBeUndefined()
+    expect(disk().posters['201']).toBeDefined()
+    entries = [entry('a1', 100)]
+    await svc.refresh()
+    expect(Object.keys(disk().byId)).toEqual(['100'])
+    expect(disk().posters['201']).toBeUndefined()
+  })
+
+  it('keeps the poster of a hidden sequel so unhide works offline', async () => {
+    await svc.refresh()
+    svc.hide(101)
+    await svc.refresh()
+    expect(disk().posters['101']).toBeDefined()
+  })
+
+  it('a refresh with nothing stale and nothing changed does not rewrite the file', async () => {
+    await svc.refresh()
+    const before = fs.statSync(file).mtimeMs
+    const spy = vi.spyOn(fs, 'renameSync')
+    svc.check()
+    await advance(DEBOUNCE_MS)
+    await svc.refresh()
+    expect(spy).not.toHaveBeenCalled()
+    spy.mockRestore()
+    expect(fs.statSync(file).mtimeMs).toBe(before)
+  })
+
+  it('retries one hour after a failed first run without any check()', async () => {
+    anilist.relations.mockRejectedValueOnce(new Error('offline'))
+    svc.start()
+    await advance(FIRST_RUN_MS)
+    expect(anilist.relations).toHaveBeenCalledTimes(1)
+    await advance(RETRY_AFTER_FAIL_MS - 1)
+    expect(anilist.relations).toHaveBeenCalledTimes(1)
+    await advance(1)
+    expect(anilist.relations).toHaveBeenCalledTimes(2)
+    expect(disk().failedAt).toBeNull()
+    await advance(RETRY_AFTER_FAIL_MS * 2) // success cleared the retry: no more requests until the daily one
+    expect(anilist.relations).toHaveBeenCalledTimes(2)
+  })
+
+  it('a second failure replaces the retry timer and stop() clears it', async () => {
+    anilist.relations.mockRejectedValue(new Error('offline'))
+    svc.start()
+    await advance(FIRST_RUN_MS)
+    await advance(RETRY_AFTER_FAIL_MS)
+    expect(anilist.relations).toHaveBeenCalledTimes(2)
+    await advance(RETRY_AFTER_FAIL_MS)
+    expect(anilist.relations).toHaveBeenCalledTimes(3)
+    svc.stop()
+    await advance(RETRY_AFTER_FAIL_MS * 3)
+    expect(anilist.relations).toHaveBeenCalledTimes(3)
+  })
+
+  it('a status change of a visible sequel emits onChange once', async () => {
+    rel.set(100, [sequel(101, { status: 'RELEASING', episodes: null })])
+    await svc.refresh()
+    const cb = vi.fn()
+    svc.onChange(cb)
+    await advance(TTL_MS + MIN)
+    rel.set(100, [sequel(101, { status: 'FINISHED', episodes: 12 })])
+    await svc.refresh()
+    expect(cb).toHaveBeenCalledTimes(1)
+    expect(svc.list().find((x) => x.id === 101)).toMatchObject({ status: 'FINISHED', episodes: 12 })
+    await advance(TTL_MS + MIN)
+    await svc.refresh()
+    expect(cb).toHaveBeenCalledTimes(1)
+  })
+
   it('tolerates a corrupt cache file', async () => {
     fs.mkdirSync(path.dirname(file), { recursive: true })
     fs.writeFileSync(file, '{not json')
