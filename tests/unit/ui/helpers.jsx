@@ -25,7 +25,7 @@ export function makeFakeApi(overrides = {}) {
     health: { get: vi.fn(async () => ({ light: 'green', reason: 'ok' })), recheck: vi.fn(async () => ({})), onChange: sub() },
     watch: {
       start: vi.fn(async () => ({ sessionId: 's1' })), cancel: vi.fn(async () => {}), answerMenu: vi.fn(async () => {}),
-      onMenu: sub(), onAsk: sub(), onPlaying: sub(), onSessionEnd: sub(),
+      onMenu: sub(), onAsk: sub(), onPlaying: sub(), onSessionEnd: sub(), onTitle: sub(),
     },
     downloads: {
       enqueue: vi.fn(async () => []), pause: vi.fn(), resume: vi.fn(), retryFailed: vi.fn(async () => {}), cancel: vi.fn(), queue: vi.fn(async () => []), list: vi.fn(async () => []),

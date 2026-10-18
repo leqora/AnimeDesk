@@ -117,6 +117,25 @@ export function createAniCliBridge({ toolManager, server, bridges, getSettings, 
     return { sessionId, done, kill: () => { cancelled = true; proc.kill() } }
   }
 
+  // ani-cli picks a lone search result itself (nth() skips the menu), so its title never reaches ANI_CLI_MENU;
+  // the only place it leaves ani-cli is the player's --force-media-title. A quiet second run of the same search
+  // with -S 1 hands it to a "player" that only reads the title and plays nothing. Resolves to the title or null.
+  function probeTitle({ query, episode, quality = null, mode = null, timeoutMs = 30000 }) {
+    let title = null
+    let s
+    try {
+      s = startSession({
+        query, index: 1, episodes: episode, quality, mode, timeoutMs,
+        // a menu here means ani-cli did not take the lone-result path: give up rather than guess
+        onMenu: async () => null,
+        onPlay: async ({ args }) => { title = parsePlayerArgs(args).title || null; return 1 },
+      })
+    } catch {
+      return { done: Promise.resolve(null), kill: () => {} }
+    }
+    return { done: s.done.then(() => title, () => title), kill: s.kill }
+  }
+
   async function selfTest({ timeoutMs = 30000 } = {}) {
     try {
       const s = startSession({ query: 'one piece', player: 'debug', index: 1, episodes: 1, onMenu: async ({ lines }) => lines[0] ?? null, timeoutMs })
@@ -127,5 +146,5 @@ export function createAniCliBridge({ toolManager, server, bridges, getSettings, 
     }
   }
 
-  return { startSession, selfTest }
+  return { startSession, probeTitle, selfTest }
 }

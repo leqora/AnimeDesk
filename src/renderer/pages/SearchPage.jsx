@@ -25,6 +25,8 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const [showDetails, setShowDetails] = useState(false)
   const [remember, setRemember] = useState(false)
   const [notice, setNotice] = useState(null)
+  // A lone search result is picked by ani-cli itself; main probes its title and reports null when it cannot.
+  const [titleMissing, setTitleMissing] = useState(false)
   const episodeMenu = phase === 'episode' && menu ? menu.lines.map((l) => l.trim()) : null
   const { series, update: updateSpoilers, thumb } = useSeriesEpisodes({ title: episodeMenu ? anime : null, list: episodeMenu })
   const posterInfo = usePosterInfo(episodeMenu ? anime : null)
@@ -59,6 +61,15 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
         setPhase('idle')
         if (!result.ok && result.error !== 'cancelled' && !retry) setError(result)
       }),
+      api.watch.onTitle(async ({ sessionId, title }) => {
+        if (sessionId !== live.current.sessionId) return
+        if (!title) { setTitleMissing(true); return }
+        setAnime((a) => a ?? title)
+        if (live.current.phase !== 'episode') return
+        // Same as picking it in the anime menu: saved prefs of this series need a fresh start.
+        const p = await api.seriesPrefs.get(title).catch(() => null)
+        if ((p?.quality || p?.mode) && live.current.sessionId === sessionId && live.current.phase === 'episode') restartFor(title)
+      }),
     ]
     return () => {
       offs.forEach((off) => off())
@@ -82,10 +93,13 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     live.current.lastParams = params
     live.current.lastEpisode = params.episode ?? null
     live.current.startedMode = null
+    // Until the new session answers, nothing from the previous one (e.g. a late probed title) may land here.
+    live.current.sessionId = null
     const seq = ++live.current.startSeq
     setError(null)
     setShowDetails(false)
     setNotice(null)
+    setTitleMissing(false)
     setPhase('busy')
     api.watch.start(params)
       .then((r) => {
@@ -102,6 +116,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     if (old) { live.current.ignore.add(old); api.watch.cancel(old) }
     live.current.sessionId = null
     setMenu(null)
+    setAnime(title)
     start({ query: title, anime: title })
   }
 
@@ -229,18 +244,18 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
       {phase === 'episode' && menu && (
         <div className="page">
           <div className="row"><button type="button" onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button></div>
-          <h2>{anime} — {t('search.selectEpisode')}</h2>
-          <EpisodePicker episodes={episodeMenu} selected={selected} watched={watched} onToggle={toggle} prefs={prefs} onPrefs={changePrefs}
+          <h2>{anime ?? (titleMissing ? t('search.titleUnknown', { query: live.current.lastParams?.query ?? '' }) : t('search.titlePending'))} — {t('search.selectEpisode')}</h2>
+          <EpisodePicker episodes={episodeMenu} selected={selected} watched={watched} onToggle={toggle} prefs={prefs} onPrefs={anime ? changePrefs : null}
             series={series} poster={posterInfo?.poster ?? null} onReveal={(ep) => updateSpoilers({ episode: ep })} loadThumb={thumb} progress={progress}>
             <button type="button" className="primary" disabled={!ready || selected.length === 0} onClick={watchSelected}>{t('search.watch')}</button>
-            <button type="button" disabled={!ready || selected.length === 0} onClick={downloadSelected}>{t('search.download')}</button>
+            <button type="button" disabled={!ready || selected.length === 0 || !anime} onClick={downloadSelected}>{t('search.download')}</button>
             {!settings.downloadDir && (
               <label className="check">
                 <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
                 {t('downloads.rememberFolder')}
               </label>
             )}
-            <button type="button" onClick={addToWatchlist}>{t('search.addToWatchlist')}</button>
+            <button type="button" disabled={!anime} onClick={addToWatchlist}>{t('search.addToWatchlist')}</button>
             <button type="button" onClick={() => answer(null)}>{t('search.cancel')}</button>
           </EpisodePicker>
         </div>

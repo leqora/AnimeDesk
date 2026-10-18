@@ -73,6 +73,16 @@ describeBash('AniCliBridge with fake ani-cli', () => {
     const r = await bridge.startSession({ query: 'nothing' }).done
     expect(r).toMatchObject({ ok: false, error: 'no-results' })
   })
+  it('a lone search result skips the anime menu, and the title probe reads its title from the player args', async () => {
+    const menus = []
+    const s = bridge.startSession({ query: 'single show', onMenu: async ({ prompt }) => { menus.push(prompt); return null } })
+    await s.done
+    expect(menus).toEqual(['Select episode: '])
+    expect(await bridge.probeTitle({ query: 'single show', episode: '1' }).done).toBe('Single Show: Part 2')
+  })
+  it('the title probe answers null when ani-cli finds nothing', async () => {
+    expect(await bridge.probeTitle({ query: 'nothing', episode: '1' }).done).toBeNull()
+  })
   it('downloads into a folder with spaces and non-ASCII characters', async () => {
     const lines = []
     const dir = path.join(tmp, 'Moji anime', 'Fake Anime')

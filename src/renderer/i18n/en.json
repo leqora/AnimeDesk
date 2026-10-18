@@ -37,6 +37,8 @@
   "search.addToWatchlist": "Add to watchlist",
   "search.cancel": "Cancel",
   "search.searching": "Searching…",
+  "search.titlePending": "Finding the title…",
+  "search.titleUnknown": "“{query}”",
   "search.playing": "Playing: {title} — episode {episode}",
   "search.queued": "Added to download queue: {count}",
   "search.added": "Added to watchlist",

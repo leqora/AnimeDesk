@@ -77,6 +77,7 @@ export const EVENTS = {
   ask: 'event:ask',
   playing: 'event:playing',
   sessionEnd: 'event:session-end',
+  watchTitle: 'event:watch-title',
   libraryChanged: 'event:library-changed',
   positionsChanged: 'event:positions-changed',
   downloads: 'event:downloads',
