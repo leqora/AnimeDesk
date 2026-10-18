@@ -457,6 +457,60 @@ describe('createSequels', () => {
     expect(disk().failedAt).toBeNull()
   })
 
+  it('a persisted failedAt far in the future does not busy-loop: bounded timers, one request within 1 h', async () => {
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, JSON.stringify({ version: 1, byId: {}, posters: {}, failedAt: T0 + 30 * 24 * H }))
+    build()
+    svc.start()
+    await advance(FIRST_RUN_MS)
+    expect(anilist.relations).not.toHaveBeenCalled() // still paused
+    expect(vi.getTimerCount()).toBeLessThanOrEqual(2) // daily + one retry, nothing re-arming in a loop
+    await advance(5000)
+    expect(vi.getTimerCount()).toBeLessThanOrEqual(2)
+    await advance(RETRY_AFTER_FAIL_MS - 5000 + 1000)
+    expect(anilist.relations).toHaveBeenCalledTimes(1) // a request no later than 1 h after the first run
+    await advance(RETRY_AFTER_FAIL_MS)
+    expect(anilist.relations).toHaveBeenCalledTimes(1)
+    expect(disk().failedAt).toBeNull()
+  })
+
+  it('a failedAt that ends up in the future between runs is clamped: retry delay never exceeds 1 h', async () => {
+    const timers = [] // manual timer table: the retry callback is fired by hand after the clock jump
+    const fakeSet = (fn, ms) => { timers.push({ fn, ms }); return timers.length }
+    svc = createSequels({ file, library: { list: () => entries }, anilist, settings, setTimeout: fakeSet, clearTimeout: () => {} })
+    anilist.relations.mockRejectedValueOnce(new Error('offline'))
+    await svc.refresh()
+    expect(disk().failedAt).toBe(T0)
+    expect(timers).toHaveLength(1)
+    vi.setSystemTime(T0 - 40 * 24 * H) // clock corrected backwards: the in-memory failedAt is 40 days ahead
+    timers[0].fn() // retry timer fires -> runOnce takes the "paused" path with a future failedAt
+    await flush()
+    expect(timers).toHaveLength(2) // exactly one re-arm, not a loop
+    expect(timers[1].ms).toBeLessThanOrEqual(RETRY_AFTER_FAIL_MS)
+    expect(anilist.relations).toHaveBeenCalledTimes(1)
+  })
+
+  it('a cached entry stamped in the future is re-queried', async () => {
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, JSON.stringify({ version: 1, byId: { 100: { at: T0 + 30 * 24 * H, sequels: [] } }, posters: {}, failedAt: null }))
+    build()
+    await svc.refresh()
+    expect([...anilist.relations.mock.calls[0][0]]).toContain(100)
+    expect(ids()).toContain(101)
+  })
+
+  it('unhide schedules a debounced check so a newly revealed card gets its poster', async () => {
+    hidden = [101]
+    await svc.refresh()
+    expect(anilist.poster).not.toHaveBeenCalledWith('http://img/101.jpg')
+    anilist.poster.mockClear()
+    svc.unhide(101)
+    expect(anilist.poster).not.toHaveBeenCalled()
+    await advance(DEBOUNCE_MS)
+    expect(anilist.poster).toHaveBeenCalledWith('http://img/101.jpg')
+    expect(svc.list().find((s) => s.id === 101).poster).toBe('data:http://img/101.jpg')
+  })
+
   it('tolerates a corrupt cache file', async () => {
     fs.mkdirSync(path.dirname(file), { recursive: true })
     fs.writeFileSync(file, '{not json')

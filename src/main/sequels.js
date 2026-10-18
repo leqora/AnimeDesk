@@ -114,12 +114,15 @@ export function createSequels({
     if (lastSig === null) lastSig = signature()
     const entries = entriesNow()
     const t = now()
+    // A stored failure stamp from the future (clock corrected, damaged file) counts as "just now": it must never push
+    // the retry beyond 1 h (an overflowing setTimeout delay fires at once and would loop).
+    if (failedAt != null && failedAt > t) { failedAt = t; dirty = true }
     // Same slack as the TTL: a retry timer that fires a hair early must not find itself still paused.
     const paused = failedAt != null && t - failedAt + TTL_SLACK_MS < RETRY_AFTER_FAIL_MS
 
     if (!paused) {
       const wanted = [...new Set(sourceIds(entries, getCachedId).map((s) => s.prequelId))]
-      const stale = wanted.filter((id) => !byId[id] || t - byId[id].at + TTL_SLACK_MS >= TTL_MS)
+      const stale = wanted.filter((id) => !byId[id] || byId[id].at > t || t - byId[id].at + TTL_SLACK_MS >= TTL_MS)
       if (stale.length) {
         let answer
         try {
@@ -179,7 +182,7 @@ export function createSequels({
   // One shot at failedAt + 1 h so an offline start does not wait for the daily timer.
   function armRetry(delay = RETRY_AFTER_FAIL_MS) {
     clearRetry()
-    retryTimer = setT(() => { retryTimer = null; fire() }, Math.max(1000, delay))
+    retryTimer = setT(() => { retryTimer = null; fire() }, Math.min(RETRY_AFTER_FAIL_MS, Math.max(1000, delay)))
   }
 
   function refresh() {
@@ -232,6 +235,7 @@ export function createSequels({
     settings.update({ hiddenSequels: next })
     lastSig = signature()
     notify()
+    check() // a card that just became visible (e.g. the 21st candidate) needs its poster
     return { ok: true }
   }
 
