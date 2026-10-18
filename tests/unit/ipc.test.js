@@ -337,6 +337,26 @@ describe('ipc anilist login and sync', () => {
   })
 })
 
+describe('sequels handlers', () => {
+  it('sequels handlers delegate and reject invalid ids', () => {
+    const s = services()
+    s.sequels = { list: vi.fn(() => [{ id: 9 }]), hide: vi.fn(() => ({ ok: true })), unhide: vi.fn(() => ({ ok: true })) }
+    const h = createHandlers(s)
+    expect(h[INVOKE.sequelsList]()).toEqual([{ id: 9 }])
+    expect(h[INVOKE.sequelsHide](5)).toEqual({ ok: true })
+    expect(s.sequels.hide).toHaveBeenCalledWith(5)
+    expect(h[INVOKE.sequelsUnhide](5)).toEqual({ ok: true })
+    expect(s.sequels.unhide).toHaveBeenCalledWith(5)
+    s.sequels.hide.mockClear(); s.sequels.unhide.mockClear()
+    for (const bad of ['5', -1, 0, 1.5, null, undefined, NaN]) {
+      expect(h[INVOKE.sequelsHide](bad)).toEqual({ ok: false })
+      expect(h[INVOKE.sequelsUnhide](bad)).toEqual({ ok: false })
+    }
+    expect(s.sequels.hide).not.toHaveBeenCalled()
+    expect(s.sequels.unhide).not.toHaveBeenCalled()
+  })
+})
+
 describe('ipc background hooks', () => {
   it('calls onSettingsChanged with the updated settings', () => {
     const s = services()

@@ -17,6 +17,7 @@ describe('settings', () => {
       playerMode: 'internal', autoSkip: false, autoNext: true, subtitles: { enabled: { sub: true, dub: false }, size: 25, lineSpacing: 0, font: 'default', color: 'white', box: true, boxOpacity: 60 }, mpvModernUi: true,
       playerVolume: 1, playerMuted: false, hideSpoilers: true, episodeView: 'numbers',
       closeToTray: true, launchAtLogin: false, notifyNewEpisodes: true, notifyDownloads: true, trayHintShown: false,
+      hiddenSequels: [],
     })
   })
   it('clamps the threshold and ignores invalid values', () => {
@@ -114,6 +115,16 @@ describe('settings', () => {
     expect(sanitizeSettings({ hideSpoilers: 'no' }).hideSpoilers).toBe(true)
     expect(sanitizeSettings({ episodeView: 'list' }).episodeView).toBe('list')
     expect(sanitizeSettings({ episodeView: 'grid' }).episodeView).toBe('numbers')
+  })
+  it('hiddenSequels sanitizes to unique positive ints', () => {
+    expect(sanitizeSettings({}).hiddenSequels).toEqual([])
+    expect(sanitizeSettings({ hiddenSequels: [3, 3, 5, -1, 0, 2.5, '7', null, 9] }).hiddenSequels).toEqual([3, 5, 9])
+    expect(sanitizeSettings({ hiddenSequels: 'x' }).hiddenSequels).toEqual([])
+    const many = Array.from({ length: 600 }, (_, i) => i + 1)
+    expect(sanitizeSettings({ hiddenSequels: many }).hiddenSequels).toHaveLength(500)
+    const s = createSettings(file)
+    s.update({ hiddenSequels: [4, 4, 8] })
+    expect(createSettings(file).get().hiddenSequels).toEqual([4, 8])
   })
   it('sanitizes the background and notification switches', () => {
     const defaults = { closeToTray: true, launchAtLogin: false, notifyNewEpisodes: true, notifyDownloads: true, trayHintShown: false }

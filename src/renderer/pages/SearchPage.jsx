@@ -11,7 +11,7 @@ import { animeLineTitle, normalizeTitle } from '../../shared/domain.js'
 
 const byNumber = (a, b) => Number(a) - Number(b)
 
-export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, onFocusChange = () => {} }) {
+export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, pendingSearch = null, onPendingSearchHandled = () => {}, onFocusChange = () => {} }) {
   const api = useApi()
   const t = useT()
   const [query, setQuery] = useState('')
@@ -115,11 +115,23 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     }
   }, [pendingWatch, ready])
 
+  const search = (text) => {
+    setAnime(null)
+    start({ query: text.trim() })
+  }
+  // A search request from outside (e.g. a Home card): fill the input and run the same path as Enter.
+  useEffect(() => {
+    if (pendingSearch && ready) {
+      setQuery(pendingSearch.query)
+      if (pendingSearch.query.trim()) search(pendingSearch.query)
+      onPendingSearchHandled()
+    }
+  }, [pendingSearch, ready])
+
   const submit = (e) => {
     e.preventDefault()
     if (!query.trim()) return
-    setAnime(null)
-    start({ query: query.trim() })
+    search(query)
   }
   const answer = (line) => {
     api.watch.answerMenu(menu.requestId, line)

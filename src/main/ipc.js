@@ -168,6 +168,9 @@ export function createHandlers(s) {
         .filter((e) => e.aniListId != null && !e.aniListConfirmed && !taken.has(e.aniListId))
         .map((e) => ({ id: e.id, title: e.title, aniListId: e.aniListId }))
     },
+    [INVOKE.sequelsList]: () => s.sequels.list(),
+    [INVOKE.sequelsHide]: (id) => (Number.isInteger(id) && id > 0 ? s.sequels.hide(id) : { ok: false }),
+    [INVOKE.sequelsUnhide]: (id) => (Number.isInteger(id) && id > 0 ? s.sequels.unhide(id) : { ok: false }),
   }
 }
 

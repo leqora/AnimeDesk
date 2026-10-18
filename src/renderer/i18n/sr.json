@@ -381,5 +381,20 @@
   "airing.status.HIATUS": "Pauza",
   "airing.status.CANCELLED": "Otkazana",
   "detail.episodesCount": "{n} EP",
-  "detail.duration": "{min} min"
+  "detail.duration": "{min} min",
+  "sequels.title": "Propušteni nastavci",
+  "sequels.after": "Posle: {title}",
+  "sequels.releasing": "Emituje se",
+  "sequels.episodes_one": "{n} ep.",
+  "sequels.episodes_few": "{n} ep.",
+  "sequels.episodes_other": "{n} ep.",
+  "sequels.format.TV": "TV",
+  "sequels.format.TV_SHORT": "Kratka TV",
+  "sequels.format.MOVIE": "Film",
+  "sequels.format.SPECIAL": "Specijal",
+  "sequels.format.OVA": "OVA",
+  "sequels.format.ONA": "ONA",
+  "sequels.hide": "Sakrij {title}",
+  "sequels.hidden": "Sakriveno: {title}",
+  "sequels.open": "Potraži {title}"
 }

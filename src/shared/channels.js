@@ -65,6 +65,9 @@ export const INVOKE = {
   anilistSyncSetEnabled: 'anilist-sync:set-enabled',
   anilistSyncCandidates: 'anilist-sync:candidates',
   anilistSyncPendingConfirm: 'anilist-sync:pending-confirm',
+  sequelsList: 'sequels:list',
+  sequelsHide: 'sequels:hide',
+  sequelsUnhide: 'sequels:unhide',
 }
 
 export const EVENTS = {
@@ -89,4 +92,5 @@ export const EVENTS = {
   openPage: 'event:open-page',
   anilistAuthChanged: 'event:anilist-auth-changed',
   anilistSyncChanged: 'event:anilist-sync-changed',
+  sequelsChanged: 'event:sequels-changed',
 }

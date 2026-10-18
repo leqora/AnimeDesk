@@ -381,5 +381,20 @@
   "airing.status.HIATUS": "Hiatus",
   "airing.status.CANCELLED": "Cancelled",
   "detail.episodesCount": "{n} EP",
-  "detail.duration": "{min} min"
+  "detail.duration": "{min} min",
+  "sequels.title": "Missed sequels",
+  "sequels.after": "After: {title}",
+  "sequels.releasing": "Airing",
+  "sequels.episodes_one": "{n} ep.",
+  "sequels.episodes_few": "{n} ep.",
+  "sequels.episodes_other": "{n} ep.",
+  "sequels.format.TV": "TV",
+  "sequels.format.TV_SHORT": "TV short",
+  "sequels.format.MOVIE": "Movie",
+  "sequels.format.SPECIAL": "Special",
+  "sequels.format.OVA": "OVA",
+  "sequels.format.ONA": "ONA",
+  "sequels.hide": "Hide {title}",
+  "sequels.hidden": "Hidden: {title}",
+  "sequels.open": "Search for {title}"
 }

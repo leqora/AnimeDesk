@@ -3,6 +3,8 @@ import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Hero } from '../components/Hero.jsx'
 import { MediaCard } from '../components/MediaCard.jsx'
+import { SequelCard } from '../components/SequelCard.jsx'
+import { useToast } from '../toast/ToastProvider.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { SearchPage } from './SearchPage.jsx'
 
@@ -44,7 +46,10 @@ function Rail({ title, count, children }) {
 export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, onContinue, onOpenAnime }) {
   const api = useApi()
   const t = useT()
+  const toast = useToast()
   const [entries, setEntries] = useState([])
+  const [sequels, setSequels] = useState([])
+  const [pendingSearch, setPendingSearch] = useState(null)
   const [focused, setFocused] = useState(false)
 
   useEffect(() => {
@@ -52,6 +57,37 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
     load()
     return api.onLibraryChanged(load)
   }, [api])
+
+  // The list is computed in main (cache + hidden); the change event has no payload, so every call re-fetches.
+  // A stale response (an older list() resolving after a newer one) is ignored.
+  useEffect(() => {
+    let alive = true
+    let seq = 0
+    const load = () => {
+      const mine = ++seq
+      api.sequels.list().then((list) => { if (alive && mine === seq && Array.isArray(list)) setSequels(list) }).catch(() => {})
+    }
+    load()
+    const off = api.sequels.onChanged(load)
+    return () => { alive = false; off() }
+  }, [api])
+
+  const hideSequel = async (item, viaKeyboard = false) => {
+    try {
+      await api.sequels.hide(item.id)
+    } catch (err) {
+      console.warn('sequels: hide failed', err?.message)
+      return
+    }
+    // The card unmounts; for a keyboard user focus would fall to body, so it goes to "Undo" (a mouse click keeps the old behavior).
+    if (viaKeyboard && document.activeElement?.classList.contains('sequel-card__hide')) document.activeElement.blur()
+    // Only the sequel title goes in the toast; it is already on the card.
+    toast.show({
+      message: t('sequels.hidden', { title: item.title }),
+      action: { label: t('toast.undo'), onAction: () => api.sequels.unhide(item.id) },
+      focusAction: viaKeyboard,
+    })
+  }
 
   const pinned = pinnedEntries(entries)
   const rail = watchingNow(entries)
@@ -63,9 +99,14 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
           <Hero entry={pickHeroEntry(entries)} ready={ready} onContinue={onContinue} onDetails={onOpenAnime} onSearch={() => document.getElementById('search-input')?.focus()} />
           {pinned.length > 0 && <Rail title={t('home.favorites')} count={pinned.length}>{pinned.map(card)}</Rail>}
           {rail.length > 0 && <Rail title={t('home.continueWatching')} count={rail.length}>{rail.map(card)}</Rail>}
+          {sequels.length > 0 && (
+            <Rail title={t('sequels.title')} count={sequels.length}>
+              {sequels.map((s) => <SequelCard key={s.id} item={s} ready={ready} onSearch={(query) => setPendingSearch({ query })} onHide={hideSequel} />)}
+            </Rail>
+          )}
         </>
       )}
-      <SearchPage ready={ready} settings={settings} onSettings={onSettings} onOpenWizard={onOpenWizard} pendingWatch={pendingWatch} onPendingHandled={onPendingHandled} onFocusChange={setFocused} />
+      <SearchPage ready={ready} settings={settings} onSettings={onSettings} onOpenWizard={onOpenWizard} pendingWatch={pendingWatch} onPendingHandled={onPendingHandled} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onFocusChange={setFocused} />
     </div>
   )
 }
