@@ -670,3 +670,60 @@ describe('anilist authenticated calls', () => {
     expect(maxInFlight).toBe(1)
   })
 })
+
+describe('anilist relations and poster', () => {
+  const node = (id, extra = {}) => ({
+    id, type: 'ANIME', format: 'TV', status: 'FINISHED', seasonYear: 2021, episodes: 12,
+    title: { romaji: `R${id}`, english: `E${id}` }, coverImage: { large: `https://img/${id}.jpg` }, ...extra,
+  })
+  const mk = (handler) => createAniList({ cacheDir, fetchImpl: vi.fn(handler), sleep: async () => {} })
+  const apiCalls = (f) => f.mock.calls.filter(([url]) => !url.startsWith('https://img/'))
+
+  it('relations batches by 50 and maps sequels', async () => {
+    const f = vi.fn(async (url, init) => {
+      const { ids } = JSON.parse(init.body).variables
+      return Response.json({ data: { Page: { media: ids.map((id) => ({
+        id, relations: { edges: [{ relationType: 'SEQUEL', node: node(id + 1000) }, { relationType: 'PREQUEL', node: node(id + 2000) }] },
+      })) } } })
+    })
+    const al = createAniList({ cacheDir, fetchImpl: f, sleep: async () => {} })
+    const ids = Array.from({ length: 120 }, (_, i) => i + 1)
+    const map = await al.relations([...ids, 1, 2])
+    expect(apiCalls(f)).toHaveLength(3)
+    expect(JSON.parse(apiCalls(f)[0][1].body).query).toContain('relations')
+    expect(map.size).toBe(120)
+    expect(map.get(5).map((s) => s.id)).toEqual([1005])
+    expect(fs.readdirSync(cacheDir)).toEqual([])
+  })
+
+  it('tolerates missing relations and null nodes', async () => {
+    const al = mk(async () => Response.json({ data: { Page: { media: [
+      { id: 1 },
+      { id: 2, relations: { edges: [{ relationType: 'SEQUEL', node: null }] } },
+      { id: 3, relations: { edges: [{ relationType: 'SEQUEL', node: node(30) }] } },
+      { id: 4, relations: null },
+    ] } } }))
+    const map = await al.relations([1, 2, 3, 4])
+    expect([...map.keys()]).toEqual([1, 2, 3, 4])
+    expect(map.get(1)).toEqual([])
+    expect(map.get(2)).toEqual([])
+    expect(map.get(4)).toEqual([])
+    expect(map.get(3).map((s) => s.id)).toEqual([30])
+  })
+
+  it('a failing chunk rejects', async () => {
+    let n = 0
+    const al = mk(async () => (++n === 2 ? new Response('busy', { status: 500 }) : Response.json({ data: { Page: { media: [] } } })))
+    await expect(al.relations(Array.from({ length: 60 }, (_, i) => i + 1))).rejects.toThrow(/HTTP 500/)
+  })
+
+  it('poster returns null on HTTP error and on a thrown fetch', async () => {
+    const al = mk(async (url) => {
+      if (url === 'https://img/boom.jpg') throw new Error('offline')
+      return new Response('', { status: 404 })
+    })
+    expect(await al.poster('https://img/x.jpg')).toBeNull()
+    expect(await al.poster('https://img/boom.jpg')).toBeNull()
+    expect(await al.poster(null)).toBeNull()
+  })
+})

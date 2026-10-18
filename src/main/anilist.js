@@ -2,12 +2,14 @@ import path from 'node:path'
 import crypto from 'node:crypto'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 import { AIRED_GRACE_MS } from '../shared/airing.js'
+import { sequelsFromMedia } from '../shared/sequels.js'
 
 const ENDPOINT = 'https://graphql.anilist.co'
 const FIELDS = 'id idMal status title { romaji english native } coverImage { large } genres seasonYear episodes duration description(asHtml: false) nextAiringEpisode { episode airingAt }'
 const SEARCH = `query ($search: String) { Page(perPage: 10) { media(search: $search, type: ANIME) { ${FIELDS} } } }`
 const AIRING_BATCH = 'query ($ids: [Int], $page: Int) { Page(page: $page, perPage: 50) { media(id_in: $ids, type: ANIME) { id status episodes nextAiringEpisode { episode airingAt } } } }'
 const AIRING_CHUNK = 50
+const RELATIONS_BATCH = 'query ($ids: [Int], $page: Int) { Page(page: $page, perPage: 50) { media(id_in: $ids, type: ANIME) { id relations { edges { relationType node { id type format status seasonYear episodes title { romaji english } coverImage { large } } } } } } }'
 const VIEWER = 'query { Viewer { id name } }'
 const LIST_ENTRY = 'query ($id: Int) { Media(id: $id, type: ANIME) { episodes mediaListEntry { progress status } } }'
 const SAVE_PROGRESS = 'mutation ($id: Int, $progress: Int, $status: MediaListStatus) { SaveMediaListEntry(mediaId: $id, progress: $progress, status: $status) { progress status } }'
@@ -299,5 +301,19 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
     })))
   }
 
-  return { search, getForTitle, getCached, refreshAiring, viewer, listEntry, saveProgress, candidates }
+  // One batched query per 50 unique ids; never touches the cache dir. Every answered id is a key (empty array = no sequel).
+  // A failed chunk rejects the whole call.
+  async function relations(ids) {
+    const result = new Map()
+    const unique = [...new Set(ids)]
+    for (let i = 0; i < unique.length; i += AIRING_CHUNK) {
+      const data = await gql(RELATIONS_BATCH, { ids: unique.slice(i, i + AIRING_CHUNK), page: 1 })
+      for (const m of data?.Page?.media ?? []) result.set(m.id, sequelsFromMedia(m))
+    }
+    return result
+  }
+
+  const poster = (url) => posterDataUrl(url).catch(() => null)
+
+  return { search, getForTitle, getCached, refreshAiring, relations, poster, viewer, listEntry, saveProgress, candidates }
 }
