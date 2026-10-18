@@ -20,6 +20,7 @@ export function createPaths(baseDir) {
     airingNotified: path.join(baseDir, 'airing-notified.json'),
     anilistAuth: path.join(baseDir, 'anilist-auth.bin'),
     anilistSync: path.join(baseDir, 'anilist-sync.json'),
+    sequels: path.join(baseDir, 'cache', 'sequels.json'),
   }
 }
 
