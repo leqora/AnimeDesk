@@ -101,13 +101,13 @@ function Celebrations({ levelUp, toast, stats, motionOff, onLevelUpDone, onToast
 }
 
 // AniList asked us to slow down: say so, so the empty posters make sense. Only while the user can see it.
-function RateLimitNotice({ api }) {
+function RateLimitNotice({ api, overlay }) {
   const t = useT()
   const { show } = useToast()
   const latest = useRef({})
-  latest.current = { t, show }
+  latest.current = { t, show, overlay }
   useEffect(() => api.anilist.onRateLimited(({ seconds, until }) => {
-    if (document.visibilityState === 'hidden' || Date.now() > until) return
+    if (document.visibilityState === 'hidden' || Date.now() > until || latest.current.overlay) return
     const { t, show } = latest.current
     show({ message: t('toast.anilistRateLimited', { seconds }), icon: 'alert' })
   }), [api])
@@ -406,7 +406,7 @@ export default function App({ api, sound: injectedSound }) {
         {wizardOpen && <SetupWizard health={health} onClose={() => setWizardOpen(false)} />}
         {asks.length > 0 && <AskDialog ask={asks[0]} onDone={() => setAsks((q) => q.slice(1))} />}
         <Celebrations levelUp={levelUp} toast={toast} stats={stats} motionOff={motionOff} onLevelUpDone={() => setLevelUp(null)} onToastDone={() => setToast(null)} />
-        <RateLimitNotice api={api} />
+        <RateLimitNotice api={api} overlay={overlay} />
         {whatsNew && <WhatsNewDialog mode={whatsNew.mode} version={whatsNew.version} notes={whatsNew.notes} status={updateState.status} onClose={closeWhatsNew} />}
         </ToastProvider>
       </I18nProvider>

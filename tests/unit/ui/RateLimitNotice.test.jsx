@@ -39,6 +39,28 @@ describe('RateLimitNotice', () => {
     expect(screen.queryByText(TEXT)).toBeNull()
   })
 
+  it('stays silent while the player overlay is open and does not resubscribe', async () => {
+    let openPlayer
+    let closePlayer
+    const state = { handler: null, unsub: vi.fn() }
+    const api = makeFakeApi({ anilist: { onRateLimited: vi.fn((cb) => { state.handler = cb; return state.unsub }) }, player: {
+      onOpen: vi.fn((cb) => { openPlayer = cb; return () => {} }),
+      onClose: vi.fn((cb) => { closePlayer = cb; return () => {} }),
+    } })
+    api.settings.get.mockResolvedValue({ ...DEFAULT_SETTINGS, language: 'sr' })
+    render(<App api={api} sound={{ play: vi.fn(() => true) }} />)
+    await waitFor(() => expect(state.handler && openPlayer).toBeTruthy())
+    act(() => openPlayer({ playbackId: 'p1', title: 'Show', episode: '3', kind: 'hls', src: 'http://127.0.0.1:9/x', subtitleUrl: null, resumeAt: null, totalEpisodes: 12 }))
+    expect(document.querySelector('.player')).toBeInTheDocument()
+    act(() => state.handler({ seconds: 42, until: Date.now() + 42000 }))
+    expect(screen.queryByText(TEXT)).toBeNull()
+    act(() => closePlayer())
+    act(() => state.handler({ seconds: 42, until: Date.now() + 42000 }))
+    expect(await screen.findByText(TEXT)).toBeInTheDocument()
+    expect(api.anilist.onRateLimited).toHaveBeenCalledTimes(1)
+    expect(state.unsub).not.toHaveBeenCalled()
+  })
+
   it('unsubscribes on unmount', async () => {
     const { state, view } = setup()
     await waitFor(() => expect(state.handler).toBeTruthy())

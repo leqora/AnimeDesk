@@ -188,7 +188,7 @@ export function createAniList({
   const gql = (query, variables, opts) => enqueue(() => request(query, variables, opts))
 
   // Title and id lookups made within a short window go out together (id_in / aliased searches).
-  const batcher = createAniListBatcher({ enqueue, request, setTimeoutFn, clearTimeoutFn, windowMs: batchWindowMs })
+  const batcher = createAniListBatcher({ enqueue, request, setTimeoutFn, clearTimeoutFn, windowMs: batchWindowMs, waitGate: () => pause })
 
   async function posterDataUrl(url) {
     if (!url) return null

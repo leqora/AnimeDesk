@@ -166,6 +166,37 @@ describe('createAniListBatcher', () => {
     expect(request).not.toHaveBeenCalled()
   })
 
+  it('ids above the GraphQL Int range resolve null without a request and do not poison the wave', async () => {
+    const { request, batcher } = setup()
+    const ps = [2147483648, Number.MAX_SAFE_INTEGER, 5, 6].map((x) => batcher.byId(x))
+    await tick()
+    const res = await Promise.all(ps)
+    expect(res.map((r) => r && r.id)).toEqual([null, null, 5, 6])
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(request).toHaveBeenCalledWith(ID_BATCH, { ids: [5, 6] })
+    const top = batcher.byId(2147483647) // the largest valid Int still goes out
+    await tick()
+    expect((await top).id).toBe(2147483647)
+  })
+
+  it('waits for waitGate between the ids part and the searches part of one task', async () => {
+    let release
+    const gate = new Promise((r) => { release = r })
+    const waitGate = vi.fn(() => gate)
+    const { request, batcher } = setup({}, { waitGate })
+    const ids = [batcher.byId(1), batcher.byId(2)]
+    const searches = [batcher.search('a'), batcher.search('b')]
+    await tick()
+    await Promise.all(ids)
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(request).toHaveBeenCalledWith(ID_BATCH, { ids: [1, 2] })
+    expect(waitGate).toHaveBeenCalledTimes(1)
+    release()
+    await Promise.all(searches)
+    expect(request).toHaveBeenCalledTimes(2)
+    expect(request).toHaveBeenLastCalledWith(searchBatchQuery(2), { s0: 'a', s1: 'b' })
+  })
+
   it('blank text resolves [] without a request', async () => {
     const { request, batcher } = setup()
     const res = await Promise.all(['', '   ', '\n\t', null, undefined].map((x) => batcher.search(x)))

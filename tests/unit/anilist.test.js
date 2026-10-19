@@ -592,14 +592,42 @@ describe('anilist lookup batching', () => {
     let release
     const gate = new Promise((r) => { release = r })
     const sleep = vi.fn(() => gate)
-    const al = createAniList({ cacheDir, fetchImpl: f, sleep, now: () => NOW })
+    const al = createAniList({ cacheDir, fetchImpl: f, sleep, now: () => NOW, batchWindowMs: 0 })
     const all = Promise.all(list.map((m) => al.getForTitle(m.title.english)))
-    await new Promise((r) => setTimeout(r, 80))
+    await vi.waitFor(() => expect(sleep).toHaveBeenCalledWith(5000))
+    await new Promise((r) => setTimeout(r, 20)) // give a (wrongly) ungated second request time to appear
     expect(apiBodies(f).length).toBe(1)
-    expect(sleep).toHaveBeenCalledWith(5000)
     release()
     const res = await all
     expect(res.map((r) => r.id)).toEqual(list.map((m) => m.id))
+    expect(apiBodies(f).length).toBe(2)
+  })
+
+  it('holds the searches of the same wave while the ids request left the rate limit exhausted', async () => {
+    const idList = [media(501, 'Gate Id A', 'Gate Id A', { status: 'FINISHED' }), media(502, 'Gate Id B', 'Gate Id B', { status: 'FINISHED' })]
+    const titled = media(503, 'Gate Title', 'Gate Title', { status: 'FINISHED' })
+    const inner = mkFetch([...idList, titled])
+    let apiCalls = 0
+    const f = vi.fn(async (url, init) => {
+      const res = await inner(url, init)
+      if (isImg(url) || ++apiCalls > 1) return res
+      return new Response(await res.text(), { headers: { 'Content-Type': 'application/json', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': String(NOW / 1000 + 5) } })
+    })
+    let release
+    const gate = new Promise((r) => { release = r })
+    const sleep = vi.fn(() => gate)
+    const al = createAniList({ cacheDir, fetchImpl: f, sleep, now: () => NOW, batchWindowMs: 0 })
+    const all = Promise.all([
+      ...idList.map((m) => al.getForTitle('whatever', { aniListId: m.id })),
+      al.getForTitle('Gate Title'),
+    ])
+    await vi.waitFor(() => expect(sleep).toHaveBeenCalledWith(5000))
+    await new Promise((r) => setTimeout(r, 20)) // give a (wrongly) ungated search time to appear
+    expect(apiBodies(f).length).toBe(1)
+    expect(apiBodies(f)[0].variables.ids).toEqual([501, 502])
+    release()
+    const res = await all
+    expect(res.map((r) => r.id)).toEqual([501, 502, 503])
     expect(apiBodies(f).length).toBe(2)
   })
 })
@@ -859,7 +887,7 @@ describe('anilist queue and errors', () => {
     let release
     const gate = new Promise((r) => { release = r })
     const sleep = vi.fn(() => gate)
-    const { f, apiCalls, al } = mkApi([() => json(page([hit]), { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': String(1_000_000 / 1000 + 5) })], { sleep, now })
+    const { f, apiCalls, al } = mkApi([() => json(page([hit]), { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': String(1_000_000 / 1000 + 5) })], { sleep, now, batchWindowMs: 0 })
     const first = await al.getForTitle('Show Five')
     expect(first.id).toBe(5)
     expect(sleep).toHaveBeenCalledWith(5000)
@@ -894,8 +922,7 @@ describe('anilist queue and errors', () => {
     await tick()
     expect(apiCalls()).toBe(1)
     gates[0]() // first pause ends -> second task runs, sees Remaining: 0 and starts its own pause
-    await tick()
-    expect(apiCalls()).toBe(2)
+    await vi.waitFor(() => expect(apiCalls()).toBe(2))
     expect(sleep).toHaveBeenCalledTimes(2)
     gates[1]()
     await all
@@ -944,8 +971,7 @@ describe('anilist queue and errors', () => {
       expect(onRateLimited).toHaveBeenLastCalledWith({ waitMs: 7000, until: t + 7000 })
       t += 30_000
       await al.getForTitle('Other Show')
-      await tick()
-      expect(onRateLimited).toHaveBeenCalledTimes(2)
+      await vi.waitFor(() => expect(onRateLimited).toHaveBeenCalledTimes(2))
       expect(onRateLimited).toHaveBeenLastCalledWith({ waitMs: 5000, until: t + 5000 })
     })
     it('is not called for a 1 s pause or the final 429', async () => {

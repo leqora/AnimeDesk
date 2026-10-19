@@ -3,6 +3,8 @@ import { ID_BATCH, BY_ID, SEARCH, searchBatchQuery } from './anilistQueries.js'
 // Collects byId / search lookups for a short window and sends them as one id_in request and/or one aliased search
 // request. A wave is ONE task on the shared queue (ids first, then searches); the task takes the pending members only
 // when it starts running, so whatever piles up while the queue is blocked goes out together.
+const MAX_INT = 2147483647 // GraphQL Int; a larger id would 400 the whole id_in request
+
 export function createAniListBatcher({
   enqueue,
   request,
@@ -11,6 +13,7 @@ export function createAniListBatcher({
   windowMs = 40,
   maxSearches = 10,
   maxIds = 50,
+  waitGate = () => Promise.resolve(), // resolves when the queue's rate-limit pause (if any) is over
 } = {}) {
   const pendingIds = new Map() // id -> { promise, resolve, reject }
   const pendingSearches = new Map() // exact text -> { promise, resolve, reject }
@@ -102,6 +105,8 @@ export function createAniListBatcher({
       queueTask()
     }
     await runIds(ids)
+    // The ids request may have exhausted the budget; the queue only checks its gate between tasks, so wait here.
+    if (ids.length > 0 && searches.length > 0) await waitGate()
     await runSearches(searches)
   }
 
@@ -122,7 +127,7 @@ export function createAniListBatcher({
   }
 
   function byId(id) {
-    if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) return Promise.resolve(null)
+    if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0 || id > MAX_INT) return Promise.resolve(null)
     let m = pendingIds.get(id)
     if (!m) { m = member(); pendingIds.set(id, m); schedule() }
     return m.promise
