@@ -1,13 +1,14 @@
 import { watchedMax, episodeVisibility, redactEpisode } from '../shared/spoilers.js'
 import { normalizeTitle } from '../shared/domain.js'
 import { metaKey, metaReliability, mapEpisode } from '../shared/episodeMap.js'
+import { markEpisodes } from '../shared/episodeMarks.js'
 
 const AIRING = new Set(['RELEASING', 'NOT_YET_RELEASED'])
 const NO_SPOILERS = { reveal: { all: false, episodes: [] }, metaOff: false }
 
 // The one place that decides what the renderer may know about a series' episodes: every episode goes through
 // redactEpisode here, so a hidden episode's title, picture or summary never leaves the main process.
-export function createSeriesEpisodes({ library, seriesPrefs, settings, anilist, episodeMeta, episodeLists }) {
+export function createSeriesEpisodes({ library, seriesPrefs, settings, anilist, episodeMeta, episodeLists, fillerInfo, onMarksChanged = () => {} }) {
   async function resolve({ title = '', aniListId = null, mode = null, list = null } = {}) {
     const t = String(title ?? '').trim()
     const s = settings.get()
@@ -33,29 +34,47 @@ export function createSeriesEpisodes({ library, seriesPrefs, settings, anilist, 
     let meta = 'none'
     let anizip = null
     let id = null
+    let info = null
     if (spoilers.metaOff) meta = 'off'
     else if (t || aniListId) {
       const knownId = aniListId ?? entry?.aniListId ?? null
       const at = normalizeTitle(t)
       // With a known id only the cached AniList record is read (for the airing status): per-row thumbnail
       // requests must never queue network calls behind AniList's rate limit.
-      const info = knownId
+      info = knownId
         ? (anilist.getCached(at, { aniListId: knownId }) ?? null)
         : await anilist.getForTitle(at, { aniListId: null }).catch(() => null)
       id = knownId ?? info?.id ?? null
       anizip = id ? await episodeMeta.get(id, { airing: AIRING.has(info?.status) }) : null
       if (anizip && Object.keys(anizip.episodes ?? {}).length) meta = metaReliability(episodes, anizip)
     }
-    return { episodes, source, meta, anizip, id, rule }
+    return { episodes, source, meta, anizip, id, rule, info, metaOff: spoilers.metaOff }
   }
 
   async function forSeries(args = {}) {
     const r = await resolve(args)
+    const m = marksFor(r)
     return {
       source: r.source,
       meta: r.meta,
-      episodes: r.episodes.map((n) => redactEpisode(n, r.meta === 'ok' ? mapEpisode(n, r.anizip) : null, episodeVisibility(n, r.rule))),
+      marks: m.marks,
+      markCounts: m.counts,
+      episodes: r.episodes.map((n) => redactEpisode(n, r.meta === 'ok' ? mapEpisode(n, r.anizip) : null, episodeVisibility(n, r.rule), m.kinds[n])),
     }
+  }
+
+  // Filler/recap marks (Jikan) are not story content, so they ignore the spoiler rule; they follow the settings
+  // switch and the series' "no episode data" choice. The lookup never blocks the answer: a missing or expired cache
+  // refreshes in the background and onMarksChanged tells the renderer to ask again.
+  function marksFor(r) {
+    if (settings.get().episodeMarks === false || r.metaOff) return { marks: 'off', kinds: {}, counts: { filler: 0, recap: 0 } }
+    const malId = r.info?.malId ?? null
+    if (!malId) return { marks: 'none', kinds: {}, counts: { filler: 0, recap: 0 } }
+    const airing = AIRING.has(r.info?.status)
+    const rec = fillerInfo.cached(malId, { airing })
+    const m = markEpisodes(r.episodes, rec && !rec.missing ? rec : null, { airing })
+    if (!rec || rec.expired) fillerInfo.ensure(malId, { airing }).then((ok) => { if (ok) onMarksChanged() }, () => {})
+    return m
   }
 
   // Checked again here, not trusted from the renderer: a hidden episode's picture is never even downloaded.

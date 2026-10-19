@@ -6,7 +6,7 @@ import { GROUP_SIZE, episodeGroups, findEpisodeIndex, firstUnwatchedIndex } from
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 
-export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, children }) {
+export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, hideMarked = false, onHideMarked = null, children }) {
   const t = useT()
   const groups = episodeGroups(episodes)
   const [group, setGroup] = useState(() => Math.floor(firstUnwatchedIndex(episodes, watched) / GROUP_SIZE))
@@ -18,13 +18,21 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
   const hasMeta = series?.meta === 'ok'
   const asList = hasMeta && view === 'list'
   const rows = new Map((series?.episodes ?? []).map((r) => [r.number, r]))
+  // Marks come from main only when they are trustworthy; 'unreliable', 'none' and 'off' show nothing at all.
+  const marksOn = series?.marks === 'ok'
+  const kindOf = (ep) => (marksOn ? rows.get(ep)?.kind ?? null : null)
+  const counts = series?.markCounts ?? { filler: 0, recap: 0 }
+  const showLegend = marksOn && counts.filler + counts.recap > 0
+  const hiding = showLegend && hideMarked
 
   useEffect(() => {
     if (focus) buttons.current[focus.ep]?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
   }, [focus])
 
   const current = groups[group] ?? groups[0]
-  const visible = current ? episodes.slice(current.from, current.to + 1) : []
+  const inGroup = current ? episodes.slice(current.from, current.to + 1) : []
+  const visible = hiding ? inGroup.filter((ep) => !kindOf(ep)) : inGroup
+  const hiddenCount = inGroup.length - visible.length
 
   const jump = (e) => {
     e.preventDefault()
@@ -33,6 +41,7 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
     setMissing(false)
     const ep = episodes[i]
     setGroup(Math.floor(i / GROUP_SIZE))
+    if (hiding && kindOf(ep)) onHideMarked?.(false)
     if (!selected.includes(ep)) onToggle(ep)
     setFocus((f) => ({ ep, n: (f?.n ?? 0) + 1 }))
   }
@@ -58,6 +67,16 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
           <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>{t('episodes.viewList')}</button>
         </div>
       )}
+      {showLegend && (
+        <div className="ep-legend">
+          <span>{t('episodes.marksLegend')}</span>
+          {counts.filler > 0 && <span>{t('episodes.fillerCount', { n: counts.filler })}</span>}
+          {counts.recap > 0 && <span>{t('episodes.recapCount', { n: counts.recap })}</span>}
+          <span className="muted">{t('episodes.marksSource')}</span>
+          {onHideMarked && <button type="button" className="ep-legend__toggle" aria-pressed={hideMarked} onClick={() => onHideMarked(!hideMarked)}>{t('episodes.hideMarked')}</button>}
+          {hiding && hiddenCount > 0 && <span className="muted">{t('episodes.hiddenCount', { n: hiddenCount })}</span>}
+        </div>
+      )}
       {asList ? (
         <div className="ep-list">
           {visible.map((ep) => (
@@ -68,6 +87,7 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
               watched={watched.includes(Number(ep))}
               selected={selected.includes(ep)}
               noted={noted.includes(ep)}
+              kind={kindOf(ep)}
               onToggle={onToggle}
               onReveal={onReveal}
               loadThumb={loadThumb}
@@ -81,9 +101,12 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
           {visible.map((ep) => {
             const cls = ['ep', selected.includes(ep) && 'ep--selected', watched.includes(Number(ep)) && 'ep--watched', noted.includes(ep) && 'ep--note'].filter(Boolean).join(' ')
             const saved = progress[String(Number(ep))]
+            const kind = kindOf(ep)
+            const title = [saved && t('episodes.remaining', { min: saved.remaining }), kind && t(kind === 'filler' ? 'episodes.kindFiller' : 'episodes.kindRecap')].filter(Boolean).join(' · ')
             return (
-              <button type="button" key={ep} ref={(el) => { buttons.current[ep] = el }} className={cls} aria-pressed={selected.includes(ep)} title={saved ? t('episodes.remaining', { min: saved.remaining }) : undefined} onClick={() => onToggle(ep)}>
+              <button type="button" key={ep} ref={(el) => { buttons.current[ep] = el }} className={cls} aria-pressed={selected.includes(ep)} aria-label={kind ? t(kind === 'filler' ? 'episodes.markFiller' : 'episodes.markRecap', { n: ep }) : undefined} title={title || undefined} onClick={() => onToggle(ep)}>
                 {ep}
+                {kind && <span className={`ep__mark ep__mark--${kind}`} aria-hidden="true">{kind === 'filler' ? 'F' : 'R'}</span>}
                 {saved && <span className="ep__progress" aria-hidden="true" style={{ '--ratio': saved.ratio }} />}
               </button>
             )

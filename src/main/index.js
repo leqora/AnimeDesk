@@ -23,6 +23,7 @@ import { createAniList } from './anilist.js'
 import { createEpisodeMeta } from './episodeMeta.js'
 import { createEpisodeLists } from './episodeLists.js'
 import { createSeriesEpisodes } from './seriesEpisodes.js'
+import { createFillerInfo } from './fillerInfo.js'
 import { createAniSkip } from './aniskip.js'
 import { createSkipLookup, createTotalEpisodes } from './skipLookup.js'
 import { createWatchLog } from './watchLog.js'
@@ -128,7 +129,8 @@ async function main() {
   const anilist = createAniList({ cacheDir: paths.cache })
   const episodeMeta = createEpisodeMeta({ cacheDir: paths.anizipCache })
   const episodeLists = createEpisodeLists(paths.episodeLists)
-  const seriesEpisodes = createSeriesEpisodes({ library, seriesPrefs, settings, anilist, episodeMeta, episodeLists })
+  const fillerInfo = createFillerInfo({ cacheDir: paths.jikanCache })
+  const seriesEpisodes = createSeriesEpisodes({ library, seriesPrefs, settings, anilist, episodeMeta, episodeLists, fillerInfo, onMarksChanged: () => send(EVENTS.episodesChanged) })
   const aniskip = createAniSkip({ cacheDir: path.join(paths.base, 'cache', 'aniskip') })
   const skipLookup = createSkipLookup({ anilist, aniskip, findAniListId: (title) => library.findByAniCliTitle(title)?.aniListId })
   const positions = createPositions(paths.positions)
@@ -246,7 +248,7 @@ async function main() {
   const settingsEffects = createSettingsEffects({ updater, toolManager, send, onSettingsChanged })
   const dataBackup = createDataBackup({
     paths, library, watchLog, seriesPrefs, positions, settings, tracker, progress, appVersion: app.getVersion(),
-    cacheDirs: [paths.cache, paths.anizipCache, path.join(paths.base, 'cache', 'aniskip')],
+    cacheDirs: [paths.cache, paths.anizipCache, path.join(paths.base, 'cache', 'aniskip'), paths.jikanCache],
     isCorrupt: () => library.wasCorrupt || watchLog.wasCorrupt,
     onImported: (keys) => {
       const now = settings.get()
@@ -260,7 +262,7 @@ async function main() {
     send: sendAndWatch,
     onLibraryChanged: () => { airingWatcher.check(); autoDownloader.check(); aniListSync.check(); sequels.check() },
     onSettingsChanged,
-    onCacheCleared: () => { airingWatcher.refresh().catch(() => {}).finally(() => { autoDownloader.check(); sequels.check() }) },
+    onCacheCleared: () => { fillerInfo.forget(); airingWatcher.refresh().catch(() => {}).finally(() => { autoDownloader.check(); sequels.check() }) },
     window: { get: () => fullscreen?.get() ?? false, set: (v) => fullscreen?.set(v) },
     electron: {
       pickFolder: async () => {

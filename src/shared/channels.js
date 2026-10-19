@@ -101,4 +101,5 @@ export const EVENTS = {
   anilistAuthChanged: 'event:anilist-auth-changed',
   anilistSyncChanged: 'event:anilist-sync-changed',
   sequelsChanged: 'event:sequels-changed',
+  episodesChanged: 'event:episodes-changed',
 }

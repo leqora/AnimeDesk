@@ -165,3 +165,100 @@ describe('seriesEpisodes.spoilers', () => {
     expect(r.episodes).toHaveLength(6)
   })
 })
+
+describe('seriesEpisodes marks', () => {
+  const REC = { filler: [2, 5], recap: [3], count: 6, fetchedAt: 1, expired: false }
+  function markDeps({ rec = REC, status = 'FINISHED', malId = 21, ensure, ...rest } = {}) {
+    const d = deps(rest)
+    d.anilist.getCached = vi.fn(() => ({ id: 77, malId, status }))
+    d.fillerInfo = { cached: vi.fn(() => rec), ensure: ensure ?? vi.fn(async () => false) }
+    d.onMarksChanged = vi.fn()
+    return d
+  }
+  const run = (d, args = { title: 'Show' }) => createSeriesEpisodes(d).forSeries(args)
+
+  it('marks ok: kind on rows (also hidden) and markCounts', async () => {
+    const r = await run(markDeps())
+    expect(r.marks).toBe('ok')
+    expect(r.markCounts).toEqual({ filler: 2, recap: 1 })
+    expect(r.episodes.map((e) => e.kind)).toEqual([undefined, 'filler', 'recap', undefined, 'filler', undefined])
+    expect(r.episodes[4]).toEqual({ number: '5', runtime: 24, visibility: 'hidden', kind: 'filler' })
+  })
+  it('settings.episodeMarks false: marks off, fillerInfo untouched', async () => {
+    const d = markDeps({ settings: { episodeMarks: false } })
+    const r = await run(d)
+    expect(r.marks).toBe('off')
+    expect(r.markCounts).toEqual({ filler: 0, recap: 0 })
+    expect(r.episodes.some((e) => 'kind' in e)).toBe(false)
+    expect(d.fillerInfo.cached).not.toHaveBeenCalled()
+    expect(d.fillerInfo.ensure).not.toHaveBeenCalled()
+  })
+  it('metaOff: marks off', async () => {
+    const d = markDeps({ spoilers: { reveal: { all: false, episodes: [] }, metaOff: true } })
+    expect((await run(d)).marks).toBe('off')
+    expect(d.fillerInfo.cached).not.toHaveBeenCalled()
+    expect(d.fillerInfo.ensure).not.toHaveBeenCalled()
+  })
+  it('Search path: no id, not in library, AniList by title supplies the malId', async () => {
+    const d = markDeps({ inLibrary: false })
+    d.anilist.getForTitle.mockResolvedValue({ id: 5, malId: 21, status: 'FINISHED' })
+    const r = await run(d, { title: 'Show', list: ['1', '2', '3', '4', '5', '6'] })
+    expect(d.fillerInfo.cached).toHaveBeenCalledWith(21, { airing: false })
+    expect(r.marks).toBe('ok')
+    expect(r.markCounts).toEqual({ filler: 2, recap: 1 })
+  })
+  it('a RELEASING series asks the cache as airing', async () => {
+    const d = markDeps({ status: 'RELEASING' })
+    await run(d)
+    expect(d.fillerInfo.cached).toHaveBeenCalledWith(21, { airing: true })
+  })
+  it('no malId: none, ensure not called', async () => {
+    const d = markDeps({ malId: null })
+    expect((await run(d)).marks).toBe('none')
+    expect(d.fillerInfo.ensure).not.toHaveBeenCalled()
+  })
+  it('missing or expired cache: ensure called once with { airing }', async () => {
+    const d = markDeps({ rec: null, status: 'RELEASING' })
+    const r = await run(d)
+    expect(r.marks).toBe('none')
+    expect(d.fillerInfo.ensure).toHaveBeenCalledTimes(1)
+    expect(d.fillerInfo.ensure).toHaveBeenCalledWith(21, { airing: true })
+    const e = markDeps({ rec: { ...REC, expired: true } })
+    const r2 = await run(e)
+    expect(r2.marks).toBe('ok') // stale data is still shown while it refreshes
+    expect(e.fillerInfo.ensure).toHaveBeenCalledWith(21, { airing: false })
+    const m = markDeps({ rec: { missing: true, filler: [], recap: [], count: 0, expired: false } })
+    expect((await run(m)).marks).toBe('none')
+    expect(m.fillerInfo.ensure).not.toHaveBeenCalled()
+    const x = markDeps({ rec: { missing: true, filler: [], recap: [], count: 0, expired: true } })
+    expect((await run(x)).marks).toBe('none')
+    expect(x.fillerInfo.ensure).toHaveBeenCalledWith(21, { airing: false })
+  })
+  it('forSeries does not wait for ensure', async () => {
+    const d = markDeps({ rec: null, ensure: vi.fn(() => new Promise(() => {})) })
+    expect((await run(d)).marks).toBe('none')
+  })
+  it('ensure true calls onMarksChanged once; false does not', async () => {
+    const yes = markDeps({ rec: null, ensure: vi.fn(async () => true) })
+    await run(yes)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(yes.onMarksChanged).toHaveBeenCalledTimes(1)
+    const no = markDeps({ rec: null, ensure: vi.fn(async () => false) })
+    await run(no)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(no.onMarksChanged).not.toHaveBeenCalled()
+  })
+  it('thumb never calls cached or ensure', async () => {
+    const d = markDeps({ watched: [1, 2, 3] })
+    await createSeriesEpisodes(d).thumb({ title: 'Show', episode: '2' })
+    expect(d.fillerInfo.cached).not.toHaveBeenCalled()
+    expect(d.fillerInfo.ensure).not.toHaveBeenCalled()
+  })
+  it('unreliable: no kind on any row', async () => {
+    const d = markDeps({ rec: { ...REC, count: 3 } })
+    const r = await run(d)
+    expect(r.marks).toBe('unreliable')
+    expect(r.markCounts).toEqual({ filler: 0, recap: 0 })
+    expect(r.episodes.some((e) => 'kind' in e)).toBe(false)
+  })
+})

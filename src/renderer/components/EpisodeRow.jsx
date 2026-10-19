@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
 
 // One episode in the list view. What it may show was decided in main: a hidden row only ever has number + runtime.
-export function EpisodeRow({ row, poster = null, watched = false, selected = false, noted = false, onToggle, onReveal = null, loadThumb = null, rowRef = null, progress = null }) {
+export function EpisodeRow({ row, poster = null, watched = false, selected = false, noted = false, onToggle, onReveal = null, loadThumb = null, rowRef = null, progress = null, kind = null }) {
   const t = useT()
   const ref = useRef(null)
   const [src, setSrc] = useState(null)
@@ -45,6 +45,7 @@ export function EpisodeRow({ row, poster = null, watched = false, selected = fal
             {row.runtime ? t('episodes.minutes', { n: row.runtime }) : null}
             {progress && <span className="ep-row__left">{t('episodes.remaining', { min: progress.remaining })}</span>}
             {watched && <span className="ep-row__done">{t('episodes.watchedMark')}</span>}
+            {kind && <span className={`ep-row__kind ep-row__kind--${kind}`}>{t(kind === 'filler' ? 'episodes.kindFiller' : 'episodes.kindRecap')}</span>}
           </span>
         </span>
       </button>

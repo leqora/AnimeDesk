@@ -28,6 +28,7 @@ const readAuto = (raw) => {
 // The one stored shape of a series record (empty fields left out); `{}` means nothing to store.
 function buildStored(prefs, spoilers, auto, aniListSync) {
   const stored = {}
+  if (prefs.hideFiller === true) stored.hideFiller = true
   if (prefs.quality !== null) stored.quality = prefs.quality
   if (prefs.mode !== null) stored.mode = prefs.mode
   const offsets = Object.fromEntries(MODES.filter((m) => prefs.subOffset[m] !== 0).map((m) => [m, prefs.subOffset[m]]))
@@ -48,7 +49,7 @@ export function sanitizeSeriesPrefs(raw) {
     const k = key(name)
     if (!k || k in series || rec === null || typeof rec !== 'object') continue
     const stored = buildStored(
-      { quality: QUALITIES.includes(rec.quality) ? rec.quality : null, mode: MODES.includes(rec.mode) ? rec.mode : null, subOffset: readOffsets(rec.subOffset) },
+      { quality: QUALITIES.includes(rec.quality) ? rec.quality : null, mode: MODES.includes(rec.mode) ? rec.mode : null, subOffset: readOffsets(rec.subOffset), hideFiller: rec.hideFiller === true },
       { reveal: readReveal(rec.reveal), metaOff: rec.metaOff === true },
       readAuto(rec.autoDownload),
       rec.aniListSync,
@@ -71,6 +72,7 @@ export function createSeriesPrefs(file) {
       mode: MODES.includes(raw.mode) ? raw.mode : null,
       subOffset: readOffsets(raw.subOffset),
       autoDownload: readAuto(raw.autoDownload) !== null,
+      hideFiller: raw.hideFiller === true,
     }
   }
 
@@ -98,6 +100,7 @@ export function createSeriesPrefs(file) {
     const next = get(title)
     if ('quality' in patch && (patch.quality === null || QUALITIES.includes(patch.quality))) next.quality = patch.quality
     if ('mode' in patch && (patch.mode === null || MODES.includes(patch.mode))) next.mode = patch.mode
+    if (typeof patch.hideFiller === 'boolean') next.hideFiller = patch.hideFiller
     if (patch.subOffset !== null && typeof patch.subOffset === 'object') {
       for (const m of MODES) {
         if (!(m in patch.subOffset)) continue

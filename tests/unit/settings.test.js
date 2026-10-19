@@ -15,7 +15,7 @@ describe('settings', () => {
       profileName: null, soundKey: true, soundUi: false, soundVolume: 60, animations: true,
       autoDownloadUpdates: true, lastSeenVersion: null, fullscreen: false,
       playerMode: 'internal', autoSkip: false, autoNext: true, subtitles: { enabled: { sub: true, dub: false }, size: 25, lineSpacing: 0, font: 'default', color: 'white', box: true, boxOpacity: 60 }, mpvModernUi: true,
-      playerVolume: 1, playerMuted: false, hideSpoilers: true, episodeView: 'numbers',
+      playerVolume: 1, playerMuted: false, hideSpoilers: true, episodeMarks: true, episodeView: 'numbers',
       closeToTray: true, launchAtLogin: false, notifyNewEpisodes: true, notifyDownloads: true, trayHintShown: false,
       hiddenSequels: [],
     })
@@ -115,6 +115,19 @@ describe('settings', () => {
     expect(sanitizeSettings({ hideSpoilers: 'no' }).hideSpoilers).toBe(true)
     expect(sanitizeSettings({ episodeView: 'list' }).episodeView).toBe('list')
     expect(sanitizeSettings({ episodeView: 'grid' }).episodeView).toBe('numbers')
+  })
+  it('episodeMarks defaults to true; an invalid (non-boolean) value falls back to the default', () => {
+    expect(DEFAULT_SETTINGS.episodeMarks).toBe(true)
+    const s = createSettings(file)
+    expect(s.get().episodeMarks).toBe(true)
+    s.update({ episodeMarks: false })
+    expect(createSettings(file).get().episodeMarks).toBe(false)
+    s.update({ episodeMarks: 1 })
+    expect(s.get().episodeMarks).toBe(true)
+    s.replace({ episodeMarks: 'no' })
+    expect(s.get().episodeMarks).toBe(true)
+    s.replace({ episodeMarks: false })
+    expect(s.get().episodeMarks).toBe(false)
   })
   it('hiddenSequels sanitizes to unique positive ints', () => {
     expect(sanitizeSettings({}).hiddenSequels).toEqual([])

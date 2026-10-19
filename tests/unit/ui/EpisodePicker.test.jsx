@@ -195,3 +195,92 @@ describe('EpisodePicker list view', () => {
     expect(screen.queryByText(/Naslov/)).not.toBeInTheDocument()
   })
 })
+
+describe('EpisodePicker marks', () => {
+  const marked = (over = {}) => ({
+    meta: 'none', marks: 'ok', markCounts: { filler: 2, recap: 1 },
+    episodes: [
+      { number: '3', runtime: null, visibility: 'hidden', kind: 'filler' },
+      { number: '4', runtime: null, visibility: 'hidden', kind: 'recap' },
+      { number: '5', runtime: null, visibility: 'hidden' },
+      { number: '6', runtime: null, visibility: 'hidden', kind: 'filler' },
+    ],
+    ...over,
+  })
+  const eps = ['1', '2', '3', '4', '5', '6']
+
+  it('grid button shows F or R with an accessible name and keeps plain ones plain', () => {
+    renderUi(<EpisodePicker {...base({ episodes: eps })} series={marked()} />)
+    const f = screen.getByRole('button', { name: '3, filler' })
+    expect(f).toHaveTextContent('F')
+    expect(screen.getByRole('button', { name: '4, recap' })).toHaveTextContent('R')
+    expect(screen.getByRole('button', { name: '5' })).toBeInTheDocument()
+    expect(f.querySelector('[aria-hidden="true"]')).not.toBeNull()
+  })
+  it('title keeps the remaining time and adds the mark', () => {
+    renderUi(<EpisodePicker {...base({ episodes: eps, progress: { 3: { ratio: 0.5, remaining: 12 } } })} series={marked()} />)
+    const title = screen.getByRole('button', { name: '3, filler' }).getAttribute('title')
+    expect(title).toContain('ostalo 12 min')
+    expect(title).toContain('Filler')
+  })
+  it('legend shows counts and source', () => {
+    renderUi(<EpisodePicker {...base({ episodes: eps })} series={marked()} />)
+    expect(screen.getByText('F = filler · R = recap')).toBeInTheDocument()
+    expect(screen.getByText('Filler: 2')).toBeInTheDocument()
+    expect(screen.getByText('Recap: 1')).toBeInTheDocument()
+    expect(screen.getByText('(MyAnimeList)')).toBeInTheDocument()
+  })
+  it.each(['unreliable', 'none', 'off'])('renders no marks and no legend when marks is %s', (marks) => {
+    renderUi(<EpisodePicker {...base({ episodes: eps })} series={marked({ marks })} onHideMarked={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: '3, filler' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '3' })).toBeInTheDocument()
+    expect(screen.queryByText('F = filler · R = recap')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Sakrij filler i recap' })).not.toBeInTheDocument()
+  })
+  it('renders no legend when counts are zero', () => {
+    renderUi(<EpisodePicker {...base({ episodes: eps })} series={marked({ markCounts: { filler: 0, recap: 0 }, episodes: [] })} />)
+    expect(screen.queryByText('F = filler · R = recap')).not.toBeInTheDocument()
+  })
+  it('hide toggle reports the new state', () => {
+    const onHideMarked = vi.fn()
+    renderUi(<EpisodePicker {...base({ episodes: eps })} series={marked()} onHideMarked={onHideMarked} />)
+    const toggle = screen.getByRole('button', { name: 'Sakrij filler i recap' })
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(toggle)
+    expect(onHideMarked).toHaveBeenCalledWith(true)
+  })
+  it('has no toggle without onHideMarked', () => {
+    renderUi(<EpisodePicker {...base({ episodes: eps })} series={marked()} />)
+    expect(screen.queryByRole('button', { name: 'Sakrij filler i recap' })).not.toBeInTheDocument()
+  })
+  it('hiding removes marked buttons and shows the hidden count of the group', () => {
+    renderUi(<EpisodePicker {...base({ episodes: eps })} series={marked()} hideMarked onHideMarked={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Sakrij filler i recap' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('button', { name: /^3/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^4/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '5' })).toBeInTheDocument()
+    expect(screen.getByText('Sakriveno: 3')).toBeInTheDocument()
+  })
+  it('hiding keeps the groups computed over the full list', () => {
+    renderUi(<EpisodePicker {...base({ episodes: range(1, 150) })} series={marked()} hideMarked onHideMarked={vi.fn()} />)
+    expect(screen.getByRole('button', { name: '1–100' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '101–150' })).toBeInTheDocument()
+  })
+  it('going to a hidden episode turns hiding off and selects it', () => {
+    const onHideMarked = vi.fn()
+    const p = base({ episodes: range(1, 150) })
+    renderUi(<EpisodePicker {...p} series={marked()} hideMarked onHideMarked={onHideMarked} />)
+    fireEvent.change(screen.getByLabelText('Idi na epizodu'), { target: { value: '3' } })
+    fireEvent.submit(screen.getByLabelText('Idi na epizodu'))
+    expect(onHideMarked).toHaveBeenCalledWith(false)
+    expect(p.onToggle).toHaveBeenCalledWith('3')
+  })
+  it('list view shows the chip, also on a hidden row', async () => {
+    const series = marked({ meta: 'ok' })
+    renderUi(<EpisodePicker {...base({ episodes: eps })} series={series} />, { api: listApi() })
+    await waitFor(() => expect(screen.getAllByText('Filler').length).toBeGreaterThan(0))
+    expect(screen.getByText('Epizoda 3').closest('.ep-row')).toHaveTextContent('Filler')
+    expect(screen.getByText('Epizoda 4').closest('.ep-row')).toHaveTextContent('Recap')
+    expect(screen.getByText('Epizoda 5').closest('.ep-row')).not.toHaveTextContent(/Filler|Recap/)
+  })
+})

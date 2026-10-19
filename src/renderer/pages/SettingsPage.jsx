@@ -141,6 +141,10 @@ export function SettingsPage({ settings, onSettings, onImported = () => {}, focu
         <input type="checkbox" checked={settings.hideSpoilers} onChange={(e) => onSettings({ hideSpoilers: e.target.checked })} />
         {t('settings.hideSpoilers')}
       </label>
+      <label className="check">
+        <input type="checkbox" checked={settings.episodeMarks} onChange={(e) => onSettings({ episodeMarks: e.target.checked })} />
+        {t('settings.episodeMarks')}
+      </label>
       <h3>{t('settings.playerSection')}</h3>
       <label className="field">
         <span>{t('settings.playerMode')}</span>

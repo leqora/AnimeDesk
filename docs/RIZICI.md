@@ -21,6 +21,15 @@ Rizici koji se posebno prate tokom razvoja. Svaki ima test koji ga „zakucava�
 | DMCA zahtev prema GitHub repozitorijumu | napomena u README; aplikacija ne sadrži kod za pristup sajtu |
 | Slična aplikacija (Hayase/Miru) je 2025. skinuta zbog DMCA | isto kao gore; pratiti, ne ugrađivati sajtove u aplikaciju |
 
+## Filler/recap oznake (v0.13.0)
+
+| Rizik | Šta bi se desilo | Kako je rešeno |
+|---|---|---|
+| jikan-edge (nezvaničan, jedna osoba) nestane ili počne da odbija zahteve — kao javni Jikan 1. 10. 2026. | nema oznaka | tiho `marks: 'none'`, lista se nikad ne čeka, pauza 1 h po seriji i 10 min za ceo modul; keš 30 dana i dalje služi; izvor je jedna konstanta (`JIKAN_URL`) |
+| Izvor vrati pogrešne/preuveličane brojeve ili druga numeracija | pogrešne oznake | `unreliable` kad ani-cli ima više celih epizoda od MAL-a; brojevi > 5000 i > 200 stavki po strani se odbacuju; na disk samo brojevi |
+| Pretraga upari pogrešan AniList zapis po naslovu | oznake druge serije | isti model poverenja kao ani.zip; isključivo po seriji preko „Isključi metapodatke” |
+| Servis vidi IP i koje serije korisnik otvara | privatnost | samo `malId`, bez naloga/tokena; prekidač „Prikaži filler i recap oznake” isključuje sve zahteve |
+
 ## Automatsko ažuriranje i AniList (v0.3)
 
 | Rizik | Šta bi se desilo | Kako je rešeno |

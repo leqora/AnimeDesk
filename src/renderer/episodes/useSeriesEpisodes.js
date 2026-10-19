@@ -22,7 +22,9 @@ export function useSeriesEpisodes({ title, aniListId = null, mode = null, list =
 
   useEffect(() => {
     load()
-    return api.onLibraryChanged(load)
+    const offLibrary = api.onLibraryChanged(load)
+    const offMarks = api.episodes.onChanged?.(load)
+    return () => { offLibrary?.(); offMarks?.() }
   }, [load])
 
   const update = useCallback(async (action) => {
