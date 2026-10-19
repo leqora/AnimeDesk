@@ -41,7 +41,8 @@ export function WatchlistPage({ ready, onContinue, animeId = null, onOpen, onBac
     const onKey = (e) => {
       if (e.repeat || document.querySelector('[role="dialog"]')) return
       const field = searchRef.current
-      if (!field) return
+      // the player overlay is not a dialog: it makes the app shell inert instead
+      if (!field || field.closest('[inert]')) return
       if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'f') {
         e.preventDefault()
         field.focus()
@@ -118,9 +119,12 @@ export function WatchlistPage({ ready, onContinue, animeId = null, onOpen, onBac
             {genres.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
         )}
-        <select aria-label={t('watchlist.sort')} value={sort} onChange={(e) => setSort(e.target.value)}>
-          {['title', 'rating', 'lastWatched', 'added'].map((s) => <option key={s} value={s}>{t(`sort.${s}`)}</option>)}
-        </select>
+        <label className="field field--inline">
+          <span>{t('watchlist.sort')}</span>
+          <select aria-label={t('watchlist.sort')} value={sort} onChange={(e) => setSort(e.target.value)}>
+            {['title', 'rating', 'lastWatched', 'added'].map((s) => <option key={s} value={s}>{t(`sort.${s}`)}</option>)}
+          </select>
+        </label>
         <form className="row watchlist-add" onSubmit={addManual}>
           <input aria-label={t('watchlist.titlePrompt')} placeholder={t('watchlist.titlePrompt')} value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
           <button type="submit">{t('watchlist.addManual')}</button>

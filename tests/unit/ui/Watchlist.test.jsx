@@ -188,7 +188,7 @@ describe('WatchlistPage toolbar', () => {
     await screen.findByText('Naruto')
     const manual = screen.getByLabelText('Naziv animea')
     manual.focus()
-    fireEvent.keyDown(manual, { key: '/' })
+    expect(fireEvent.keyDown(manual, { key: '/' })).toBe(true)
     fireEvent.change(manual, { target: { value: '/' } })
     expect(manual).toHaveValue('/')
     expect(search()).not.toHaveFocus()
@@ -221,6 +221,64 @@ describe('WatchlistPage toolbar', () => {
     } finally {
       dlg.remove()
     }
+  })
+  it('shortcuts do nothing while the app shell is inert (player open)', async () => {
+    const { container } = setup()
+    await screen.findByText('Naruto')
+    container.setAttribute('inert', '')
+    expect(fireEvent.keyDown(window, { key: '/' })).toBe(true)
+    expect(search()).not.toHaveFocus()
+    expect(fireEvent.keyDown(window, { key: 'f', ctrlKey: true })).toBe(true)
+    expect(search()).not.toHaveFocus()
+    container.removeAttribute('inert')
+    expect(fireEvent.keyDown(window, { key: '/' })).toBe(false)
+    expect(search()).toHaveFocus()
+  })
+  it('ignores auto-repeat', async () => {
+    setup()
+    await screen.findByText('Naruto')
+    expect(fireEvent.keyDown(window, { key: '/', repeat: true })).toBe(true)
+    expect(fireEvent.keyDown(window, { key: 'f', ctrlKey: true, repeat: true })).toBe(true)
+    expect(search()).not.toHaveFocus()
+  })
+  it('slash is left alone in a textarea, a select and a contenteditable', async () => {
+    setup()
+    await screen.findByText('Naruto')
+    const ta = document.createElement('textarea')
+    const sel = document.createElement('select')
+    const ce = document.createElement('div')
+    ce.setAttribute('contenteditable', 'true')
+    const inner = document.createElement('span')
+    ce.appendChild(inner)
+    document.body.append(ta, sel, ce)
+    try {
+      for (const el of [ta, sel, ce, inner]) {
+        expect(fireEvent.keyDown(el, { key: '/' })).toBe(true)
+        expect(search()).not.toHaveFocus()
+      }
+    } finally {
+      ta.remove(); sel.remove(); ce.remove()
+    }
+  })
+  it('shortcuts are off in the detail view and the listener is removed on unmount', async () => {
+    const api = makeFakeApi({ library: { list: vi.fn(async () => lib()), facets: vi.fn(async () => facets) } })
+    const detail = renderUi(<WatchlistPage ready onContinue={() => {}} animeId="a" />, { api })
+    await screen.findByRole('button', { name: /Nazad/ })
+    expect(fireEvent.keyDown(window, { key: '/' })).toBe(true)
+    expect(fireEvent.keyDown(window, { key: 'f', ctrlKey: true })).toBe(true)
+    detail.unmount()
+    const grid = setup()
+    await screen.findByText('Naruto')
+    expect(fireEvent.keyDown(window, { key: '/' })).toBe(false)
+    grid.unmount()
+    expect(fireEvent.keyDown(window, { key: '/' })).toBe(true)
+    expect(fireEvent.keyDown(window, { key: 'f', ctrlKey: true })).toBe(true)
+  })
+  it('sort keeps a visible caption', async () => {
+    const { container } = setup()
+    await screen.findByText('Naruto')
+    expect(container.querySelector('label.field > span')).toHaveTextContent('Sortiraj')
+    expect(screen.getByLabelText('Sortiraj').tagName).toBe('SELECT')
   })
   it('facets reload on library change', async () => {
     const { api } = setup()
