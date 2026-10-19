@@ -3,7 +3,8 @@ import crypto from 'node:crypto'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 import { AIRED_GRACE_MS } from '../shared/airing.js'
 import { sequelsFromMedia } from '../shared/sequels.js'
-import { SEARCH, AIRING_BATCH, RELATIONS_BATCH, VIEWER, LIST_ENTRY, SAVE_PROGRESS, CANDIDATES, BY_ID } from './anilistQueries.js'
+import { SEARCH, AIRING_BATCH, RELATIONS_BATCH, VIEWER, LIST_ENTRY, SAVE_PROGRESS, CANDIDATES } from './anilistQueries.js'
+import { createAniListBatcher } from './anilistBatch.js'
 
 const ENDPOINT = 'https://graphql.anilist.co'
 const AIRING_CHUNK = 50
@@ -107,7 +108,16 @@ export class AniListAuthError extends Error {
 
 const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, now = Date.now, onRateLimited = null }) {
+export function createAniList({
+  cacheDir,
+  fetchImpl = fetch,
+  sleep = realSleep,
+  now = Date.now,
+  onRateLimited = null,
+  batchWindowMs = 40,
+  setTimeoutFn = setTimeout,
+  clearTimeoutFn = clearTimeout,
+}) {
   // AniList allows ~30 requests a minute; a search result grid asks for 25+ posters at once.
   // Requests go through one queue; a 429 pauses the request itself, an exhausted budget pauses the queue.
   let queue = Promise.resolve()
@@ -177,6 +187,9 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
 
   const gql = (query, variables, opts) => enqueue(() => request(query, variables, opts))
 
+  // Title and id lookups made within a short window go out together (id_in / aliased searches).
+  const batcher = createAniListBatcher({ enqueue, request, setTimeoutFn, clearTimeoutFn, windowMs: batchWindowMs })
+
   async function posterDataUrl(url) {
     if (!url) return null
     const res = await fetchImpl(url)
@@ -209,10 +222,11 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
     let complete = true
     for (const query of searchCandidates(title)) {
       try {
-        const m = bestMatch(title, (await gql(SEARCH, { search: query })).Page.media)
+        const m = bestMatch(title, await batcher.search(query))
         if (m) return { m, complete }
-      } catch {
-        complete = false // one failing query (rate limit, network) should not stop the next one
+      } catch (err) {
+        complete = false // one failing query (network, server error) should not stop the next one
+        if (err?.status === 429) break // rate-limited for good: more candidates would only add load
       }
     }
     return { m: null, complete }
@@ -245,7 +259,7 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
     const run = (async () => {
       try {
         let m
-        if (aniListId) m = (await gql(BY_ID, { id: aniListId })).Media
+        if (aniListId) m = await batcher.byId(aniListId)
         else {
           const found = await findByTitle(title)
           m = found.m
