@@ -304,3 +304,21 @@ describe('library snapshot / replaceAll', () => {
     expect(() => lib.replaceAll({ version: 1, anime: {} })).toThrow()
   })
 })
+
+describe('sanitizeEntry titles', () => {
+  const now = () => '2026-10-19T00:00:00Z'
+  const base = { id: 'a', title: 'Show', status: 'planned' }
+  const c = (n) => String.fromCharCode(n)
+  it('strips control characters and caps length at 300', () => {
+    const e = sanitizeEntry({ ...base, title: `  Sh${c(0)}o${c(10)}w${c(127)}  `, aniCliTitle: `A${c(9)}B` }, { now })
+    expect(e.title).toBe('Show')
+    expect(e.aniCliTitle).toBe('AB')
+    const long = sanitizeEntry({ ...base, title: 'x'.repeat(400), aniCliTitle: 'y'.repeat(400) }, { now })
+    expect(long.title).toHaveLength(300)
+    expect(long.aniCliTitle).toHaveLength(300)
+  })
+  it('an aniCliTitle that becomes empty is null; an empty title is invalid', () => {
+    expect(sanitizeEntry({ ...base, aniCliTitle: `${c(1)}${c(2)} ` }, { now }).aniCliTitle).toBeNull()
+    expect(() => sanitizeEntry({ ...base, title: `${c(1)}${c(10)}` }, { now })).toThrow()
+  })
+})

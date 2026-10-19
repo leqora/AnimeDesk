@@ -105,7 +105,9 @@ export function createAniCliBridge({ toolManager, server, bridges, getSettings, 
     const args = [toMsysPath(tools.aniCli)]
     if (index != null) args.push('-S', String(index))
     if (episodes != null) args.push('-e', String(episodes))
-    args.push(...String(query).trim().split(/\s+/))
+    // ani-cli parses options anywhere in argv: a query word starting with '-' must never reach it as one
+    const words = String(query).trim().split(/\s+/).filter((w) => !w.startsWith('-'))
+    args.push(...(words.length ? words : ['']))
     const env = buildEnv({ baseEnv, tools, bridges, server, sessionId, player, downloadDir, settings: getSettings(), historyDir, quality, mode })
     const proc = runImpl(tools.bash, args, { env, onLine, timeoutMs })
     const done = proc.done.then((r) => {

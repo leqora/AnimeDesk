@@ -40,12 +40,16 @@ function validatePatch(patch) {
 const isIso = (v) => typeof v === 'string' && v !== '' && Number.isFinite(Date.parse(v))
 const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
 
+// Titles end up in ani-cli arguments and the UI: no control characters, bounded length.
+const MAX_TITLE = 300
+const cleanTitle = (v) => [...String(v ?? '')].filter((ch) => { const n = ch.charCodeAt(0); return n > 31 && n !== 127 }).join('').trim().slice(0, MAX_TITLE).trim()
+
 // Validates one imported entry; throws when it is unusable. Unknown fields are dropped.
 export function sanitizeEntry(raw, { now }) {
   if (!isPlainObject(raw)) throw new Error('entry must be an object')
   if (typeof raw.id !== 'string' || !raw.id) throw new Error('id required')
   const clean = validatePatch({
-    title: raw.title,
+    title: cleanTitle(raw.title),
     status: raw.status,
     rating: raw.rating ?? null,
     totalEpisodes: raw.totalEpisodes ?? null,
@@ -62,7 +66,7 @@ export function sanitizeEntry(raw, { now }) {
   return {
     id: raw.id,
     title: clean.title,
-    aniCliTitle: typeof raw.aniCliTitle === 'string' && raw.aniCliTitle.trim() ? raw.aniCliTitle : null,
+    aniCliTitle: typeof raw.aniCliTitle === 'string' ? cleanTitle(raw.aniCliTitle) || null : null,
     aniListId: Number.isInteger(raw.aniListId) && raw.aniListId > 0 ? raw.aniListId : null,
     aniListConfirmed: raw.aniListConfirmed === true,
     status: clean.status,

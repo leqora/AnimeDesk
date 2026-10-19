@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -169,5 +169,24 @@ describe('settings snapshot / replace', () => {
     const s = createSettings(file)
     fs.mkdirSync(`${file}.tmp`)
     expect(() => s.replace({ language: 'en' })).toThrow()
+  })
+})
+
+describe('settings.replace downloadDir safety', () => {
+  const BS = String.fromCharCode(92)
+  const bad = [`${BS}${BS}host${BS}share`, '//host/share', `${BS}${BS}?${BS}C:${BS}x`, `${BS}${BS}.${BS}pipe`, `relative${BS}dir`, '/unix/abs']
+  it.each(bad)('rejects %s without touching the disk', (dir) => {
+    const s = createSettings(file)
+    s.update({ downloadDir: 'C:/cur' })
+    const dirExists = vi.fn(() => true)
+    expect(s.replace({ downloadDir: dir }, { dirExists }).downloadDir).toBe('C:/cur')
+    expect(dirExists).not.toHaveBeenCalled()
+  })
+  it('accepts a local drive path that exists', () => {
+    const s = createSettings(file)
+    const dirExists = vi.fn(() => true)
+    expect(s.replace({ downloadDir: 'D:/anime' }, { dirExists }).downloadDir).toBe('D:/anime')
+    expect(s.replace({ downloadDir: `E:${BS}anime` }, { dirExists }).downloadDir).toBe(`E:${BS}anime`)
+    expect(dirExists).toHaveBeenCalledWith('D:/anime')
   })
 })

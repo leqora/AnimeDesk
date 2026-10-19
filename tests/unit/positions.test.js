@@ -150,3 +150,22 @@ describe('positions snapshot / replaceAll', () => {
     expect(cb).not.toHaveBeenCalled()
   })
 })
+
+describe('positions with a #-prefixed title', () => {
+  it('sanitizePositions keeps it and it round-trips through the store', () => {
+    const p = createPositions(file, { now: () => 1000 })
+    p.save('#Compass 2.0', 1, { position: 600, duration: 1400 })
+    const snap = p.snapshot()
+    expect(Object.keys(snap.items)).toEqual(['#compass 2.0#1'])
+    const clean = sanitizePositions(snap)
+    expect(clean).toEqual(snap)
+    const q = createPositions(path.join(path.dirname(file), 'other.json'))
+    q.replaceAll(clean)
+    expect(q.get('#Compass 2.0', 1)).toEqual({ position: 600, duration: 1400 })
+  })
+  it('requires a canonical episode part', () => {
+    const v = { position: 600, duration: 1400, at: 5 }
+    const r = sanitizePositions({ items: { 'a#1': v, 'a#01': v, 'a#x': v, 'a#12.5': v, 'a#': v, '#1': v } })
+    expect(Object.keys(r.items).sort()).toEqual(['a#1', 'a#12.5'])
+  })
+})

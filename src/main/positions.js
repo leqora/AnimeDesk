@@ -9,7 +9,10 @@ export function sanitizePositions(raw) {
   const items = {}
   const src = raw !== null && typeof raw === 'object' && !Array.isArray(raw) && raw.items !== null && typeof raw.items === 'object' && !Array.isArray(raw.items) ? raw.items : {}
   for (const [k, v] of Object.entries(src)) {
-    if (k.indexOf('#') < 1 || k.endsWith('#')) continue
+    // the title may itself contain '#': the episode is whatever follows the last one
+    const cut = k.lastIndexOf('#')
+    const ep = k.slice(cut + 1)
+    if (cut < 1 || ep === '' || String(Number(ep)) !== ep) continue
     if (v === null || typeof v !== 'object') continue
     if (!Number.isFinite(v.position) || !Number.isFinite(v.duration) || v.duration <= 0 || !Number.isFinite(v.at)) continue
     items[k] = { position: v.position, duration: v.duration, at: v.at }
