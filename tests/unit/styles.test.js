@@ -22,6 +22,10 @@ describe('styles.css', () => {
     expect(rule).toContain('background: var(--cta)')
     expect(rule).toContain('border-color: var(--cta)')
   })
+  it('reserves a stable scrollbar gutter on .content so the layout does not jump', () => {
+    const rule = /(^|\n)\.content \{([^}]*)\}/.exec(css)?.[2] ?? ''
+    expect(rule).toContain('scrollbar-gutter: stable')
+  })
   it('uses no raw hex colors outside :root', () => {
     expect(css.slice(rootEnd).match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull()
   })
