@@ -105,3 +105,48 @@ describe('startSession query tokens', () => {
     expect((await run('-d --dub')).slice(1)).toEqual([''])
   })
 })
+
+describe('activeSessions', () => {
+  const ok = { code: 0, stdout: '', stderr: '' }
+  const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b }); return { promise, resolve, reject } }
+  const make = (runImpl, tools = { bash: 'bash', aniCli: 'ani-cli' }) => createAniCliBridge({
+    toolManager: { toolPaths: () => tools },
+    server: { registerSession() {}, unregisterSession() {}, port: 1, token: 't' },
+    bridges: { menu: 'm', player: 'p' }, getSettings: () => DEFAULT_SETTINGS, historyDir: 'h', runImpl,
+  })
+  it('counts running sessions and releases on fulfil and on reject', async () => {
+    const ds = []
+    const bridge = make(() => { const d = deferred(); ds.push(d); return { done: d.promise, kill() {} } })
+    expect(bridge.activeSessions()).toBe(0)
+    const a = bridge.startSession({ query: 'a' })
+    expect(bridge.activeSessions()).toBe(1)
+    const b = bridge.startSession({ query: 'b' })
+    expect(bridge.activeSessions()).toBe(2)
+    ds[0].resolve(ok)
+    await a.done
+    expect(bridge.activeSessions()).toBe(1)
+    ds[1].reject(new Error('boom'))
+    await expect(b.done).rejects.toThrow('boom')
+    expect(bridge.activeSessions()).toBe(0)
+  })
+  it('does not count when tools are missing or runImpl throws synchronously', () => {
+    expect(() => { const b = make(() => ({ done: Promise.resolve(ok), kill() {} }), {}); b.startSession({ query: 'a' }) }).toThrow('tools-missing')
+    const bridge = make(() => { throw new Error('spawn') })
+    expect(() => bridge.startSession({ query: 'a' })).toThrow('spawn')
+    expect(bridge.activeSessions()).toBe(0)
+  })
+  it('counts probeTitle and selfTest sessions while running', async () => {
+    const ds = []
+    const bridge = make(() => { const d = deferred(); ds.push(d); return { done: d.promise, kill() {} } })
+    const p = bridge.probeTitle({ query: 'a', episode: 1 })
+    expect(bridge.activeSessions()).toBe(1)
+    ds[0].resolve(ok)
+    await p.done
+    expect(bridge.activeSessions()).toBe(0)
+    const t = bridge.selfTest()
+    expect(bridge.activeSessions()).toBe(1)
+    ds[1].resolve(ok)
+    await t
+    expect(bridge.activeSessions()).toBe(0)
+  })
+})

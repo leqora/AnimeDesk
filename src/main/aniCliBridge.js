@@ -86,6 +86,7 @@ export function buildEnv({ baseEnv, tools, bridges, server, sessionId, player, d
 }
 
 export function createAniCliBridge({ toolManager, server, bridges, getSettings, historyDir, runImpl = run, baseEnv = process.env }) {
+  let active = 0
   function startSession({
     query, player = 'play', episodes = null, index = null, downloadDir = null,
     onMenu = async () => null, onPlay = async () => 0, onLine, timeoutMs, quality = null, mode = null,
@@ -110,6 +111,9 @@ export function createAniCliBridge({ toolManager, server, bridges, getSettings, 
     args.push(...(words.length ? words : ['']))
     const env = buildEnv({ baseEnv, tools, bridges, server, sessionId, player, downloadDir, settings: getSettings(), historyDir, quality, mode })
     const proc = runImpl(tools.bash, args, { env, onLine, timeoutMs })
+    // counted only once runImpl returned (a sync throw must not leak); released once, on fulfil or reject
+    active++
+    proc.done.then(() => { active-- }, () => { active-- })
     const done = proc.done.then((r) => {
       server.unregisterSession(sessionId)
       const ok = r.code === 0
@@ -148,5 +152,5 @@ export function createAniCliBridge({ toolManager, server, bridges, getSettings, 
     }
   }
 
-  return { startSession, probeTitle, selfTest }
+  return { startSession, probeTitle, selfTest, activeSessions: () => active }
 }
