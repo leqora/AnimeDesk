@@ -1,5 +1,5 @@
 import { AUTO_UPDATE_TOOLS } from './toolSources.js'
-import { toolFingerprint, trustLastCheck } from '../shared/health.js'
+import { HEALTH_TOOLS, toolFingerprint, trustLastCheck } from '../shared/health.js'
 
 const LIGHT = {
   ok: 'green',
@@ -52,6 +52,17 @@ export function createHealthCheck({
   // Never update tools while an ani-cli session is alive.
   const waitIdle = async () => { while (isBusy()) await sleep(BUSY_POLL_MS) }
 
+  // One update lock: updates never overlap; a rejection does not poison the chain.
+  let updateChain = Promise.resolve()
+  function updateTools({ waitForIdle = true, onProgress } = {}) {
+    const job = updateChain.then(async () => {
+      if (waitForIdle) await waitIdle()
+      return onProgress ? toolManager.updateAll(AUTO_UPDATE_TOOLS, onProgress) : toolManager.updateAll(AUTO_UPDATE_TOOLS)
+    })
+    updateChain = job.catch(() => {})
+    return job
+  }
+
   async function check(optimistic) {
     const missing = toolManager.missing()
     if (missing.length) return set(healthState('missing-tools', { missing }))
@@ -65,10 +76,10 @@ export function createHealthCheck({
     }
     set(healthState('updating'))
     try {
-      await waitIdle()
-      const updated = await toolManager.updateAll(AUTO_UPDATE_TOOLS)
-      if (updated.length) {
-        const after = fingerprint()
+      const updated = await updateTools()
+      // Someone else may have updated while we waited.
+      const after = fingerprint()
+      if (updated.length > 0 || HEALTH_TOOLS.some((id) => after[id] !== before[id])) {
         if (await safeTest()) {
           writeRecord(after)
           return set(healthState('ok'))
@@ -90,12 +101,11 @@ export function createHealthCheck({
     if (!enabled || !shouldDailyCheck(toolManager.lastUpdateCheck(), at)) return []
     toolManager.markUpdateCheck(at)
     try {
-      await waitIdle()
-      return await toolManager.updateAll(AUTO_UPDATE_TOOLS)
+      return await updateTools()
     } catch {
       return []
     }
   }
 
-  return { run, get: () => state, dailyUpdate }
+  return { run, get: () => state, dailyUpdate, updateTools, whenIdle: waitIdle }
 }

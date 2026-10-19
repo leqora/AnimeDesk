@@ -119,7 +119,7 @@ export function createHandlers(s) {
       return errors
     },
     [INVOKE.toolsCheckUpdates]: async () => {
-      const updated = await s.toolManager.updateAll(undefined, progress)
+      const updated = await s.health.updateTools({ waitForIdle: false, onProgress: progress })
       s.health.run()
       return updated
     },

@@ -318,6 +318,7 @@ async function main() {
   autoDownloader.start()
   updater.start()
   health.run({ optimistic: true }).then(() => health.dailyUpdate({ enabled: settings.get().autoUpdateTools, now: new Date().toISOString() }))
+    .then(() => health.whenIdle())
     .then(() => { if (settings.get().mpvModernUi) return toolManager.installOptional() })
   setInterval(() => { if (health.get().reason === 'source-down') health.run() }, SIX_HOURS)
 

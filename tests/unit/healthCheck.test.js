@@ -3,10 +3,9 @@ import { createHealthCheck, healthState, shouldDailyCheck } from '../../src/main
 
 function setup({ missing = [], online = true, tests = [true], updates = [], version, store, now, isBusy, sleep } = {}) {
   const states = []
-  const calls = []
   const toolManager = {
     missing: () => missing,
-    updateAll: vi.fn(async () => { calls.push('updateAll'); return updates }),
+    updateAll: vi.fn(async () => updates),
     lastUpdateCheck: vi.fn(() => null),
     markUpdateCheck: vi.fn(),
   }
@@ -18,7 +17,7 @@ function setup({ missing = [], online = true, tests = [true], updates = [], vers
   if (isBusy) opts.isBusy = isBusy
   if (sleep) opts.sleep = sleep
   const hc = createHealthCheck(opts)
-  return { hc, states, toolManager, aniCli, calls }
+  return { hc, states, toolManager, aniCli }
 }
 
 const NOW = Date.parse('2026-10-19T12:00:00Z')
@@ -126,8 +125,9 @@ describe('healthCheck', () => {
       expect(store.write).toHaveBeenCalledWith({ okAt: new Date(NOW).toISOString(), tools: { bash: '5.2', 'ani-cli': '4.11' } })
     })
     it('source-down clears the record', async () => {
-      const { hc, store } = mk(okRecord(), { tests: [false], updates: [] })
+      const { hc, store, states } = mk(okRecord(), { tests: [false], updates: [] })
       expect((await hc.run({ optimistic: true })).reason).toBe('source-down')
+      expect(states).toEqual(['ok*', 'updating', 'source-down'])
       expect(store.clear).toHaveBeenCalledTimes(1)
     })
     it('reads versions before the self-test', async () => {
@@ -141,13 +141,17 @@ describe('healthCheck', () => {
     it('waits while an ani-cli session is busy before updating', async () => {
       let polls = 3
       const calls = []
-      const sleep = vi.fn(async (ms) => { calls.push('sleep' + ms) })
+      const seen = []
+      let hcRef
+      const sleep = vi.fn(async (ms) => { calls.push('sleep' + ms); seen.push(hcRef.get().reason) })
       const s = mk(okRecord(), { tests: [false, true], updates: ['ani-cli'], isBusy: () => polls-- > 0, sleep })
+      hcRef = s.hc
       s.toolManager.updateAll.mockImplementation(async () => { calls.push('updateAll'); return ['ani-cli'] })
       const states = s.states
       await s.hc.run({ optimistic: true })
       expect(calls).toEqual(['sleep5000', 'sleep5000', 'sleep5000', 'updateAll'])
       expect(states).toEqual(['ok*', 'updating', 'ok'])
+      expect(seen).toEqual(['updating', 'updating', 'updating'])
     })
     it('daily update waits while busy', async () => {
       let polls = 2
@@ -157,6 +161,46 @@ describe('healthCheck', () => {
       s.toolManager.updateAll.mockImplementation(async () => { calls.push('updateAll'); return ['yt-dlp'] })
       await s.hc.dailyUpdate({ enabled: true, now: '2026-10-01T00:00:00Z' })
       expect(calls).toEqual(['sleep5000', 'sleep5000', 'updateAll'])
+    })
+    it('serializes updates: check and dailyUpdate released together never overlap', async () => {
+      let busy = true
+      let running = 0
+      let max = 0
+      const s = mk(okRecord(), { tests: [false, true], isBusy: () => busy, sleep: async () => { busy = false } })
+      s.toolManager.updateAll.mockImplementation(async () => {
+        running++; max = Math.max(max, running)
+        await new Promise((r) => setTimeout(r, 5))
+        running--
+        return ['ani-cli']
+      })
+      await Promise.all([s.hc.run({ optimistic: true }), s.hc.dailyUpdate({ enabled: true, now: '2026-10-01T00:00:00Z' })])
+      expect(s.toolManager.updateAll).toHaveBeenCalledTimes(2)
+      expect(max).toBe(1)
+    })
+    it('a rejected update does not block the next one', async () => {
+      const s = setup({})
+      s.toolManager.updateAll.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(['yt-dlp'])
+      const first = s.hc.updateTools()
+      const second = s.hc.updateTools()
+      await expect(first).rejects.toThrow('boom')
+      expect(await second).toEqual(['yt-dlp'])
+    })
+    it('retests when versions changed meanwhile even if own update returned nothing', async () => {
+      let v = '4.10'
+      const store = fakeStore(okRecord())
+      const s = setup({ version: (id) => (id === 'ani-cli' ? v : '5.2'), store, now: () => NOW, tests: [false, true], updates: [] })
+      s.toolManager.updateAll.mockImplementation(async () => { v = '4.11'; return [] })
+      expect((await s.hc.run({ optimistic: true })).reason).toBe('ok')
+      expect(store.write).toHaveBeenCalledWith({ okAt: new Date(NOW).toISOString(), tools: { bash: '5.2', 'ani-cli': '4.11' } })
+      expect(store.clear).not.toHaveBeenCalled()
+    })
+    it('updateTools without idle wait runs even when busy', async () => {
+      const sleep = vi.fn()
+      const s = setup({ isBusy: () => true, sleep, updates: ['ani-cli'] })
+      const onProgress = () => {}
+      expect(await s.hc.updateTools({ waitForIdle: false, onProgress })).toEqual(['ani-cli'])
+      expect(sleep).not.toHaveBeenCalled()
+      expect(s.toolManager.updateAll).toHaveBeenCalledWith(['ani-cli', 'yt-dlp'], onProgress)
     })
     it('store failures never change the state', async () => {
       const w = mk(null)

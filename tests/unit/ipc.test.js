@@ -10,7 +10,7 @@ function services() {
     anilist: { getForTitle: vi.fn(), search: vi.fn() },
     seriesEpisodes: { forSeries: vi.fn(async () => ({ episodes: [], source: 'menu', meta: 'none' })), thumb: vi.fn(async () => null), spoilers: vi.fn(async () => ({ episodes: [] })) },
     toolManager: { status: vi.fn(), installMissing: vi.fn(async (cb) => { cb({ id: 'mpv', phase: 'done' }); return {} }), updateAll: vi.fn(async () => []), installOptional: vi.fn(async () => {}) },
-    health: { get: vi.fn(), run: vi.fn() },
+    health: { get: vi.fn(), run: vi.fn(), updateTools: vi.fn(async () => ['ani-cli']) },
     internalPlayer: { progress: vi.fn(), closed: vi.fn() },
     watch: { watch: vi.fn(), cancel: vi.fn(), answerMenu: vi.fn(), playLocal: vi.fn(async () => 'watched'), recover: vi.fn(() => ({ ok: true })), retryAgain: vi.fn() },
     downloads: { enqueue: vi.fn(), pause: vi.fn(), resume: vi.fn(), cancel: vi.fn(), queueItems: vi.fn(), listDownloaded: vi.fn(), removeDownloaded: vi.fn(), getDownloaded: vi.fn((id) => (id === 'd1' ? { path: 'D:\\A\\A Episode 1.mp4', title: 'A', episode: '1', mode: 'dub' } : null)) },
@@ -171,6 +171,12 @@ describe('ipc', () => {
     const s = services()
     await createHandlers(s)[INVOKE.toolsInstallMissing]()
     expect(s.send).toHaveBeenCalledWith(EVENTS.toolProgress, { id: 'mpv', phase: 'done' })
+    expect(s.health.run).toHaveBeenCalled()
+  })
+  it('checkUpdates goes through health.updateTools without the idle wait', async () => {
+    const s = services()
+    expect(await createHandlers(s)[INVOKE.toolsCheckUpdates]()).toEqual(['ani-cli'])
+    expect(s.health.updateTools).toHaveBeenCalledWith({ waitForIdle: false, onProgress: expect.any(Function) })
     expect(s.health.run).toHaveBeenCalled()
   })
   it('plays and opens downloaded files by id', async () => {
