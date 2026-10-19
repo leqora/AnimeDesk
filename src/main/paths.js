@@ -21,6 +21,7 @@ export function createPaths(baseDir) {
     anilistAuth: path.join(baseDir, 'anilist-auth.bin'),
     anilistSync: path.join(baseDir, 'anilist-sync.json'),
     sequels: path.join(baseDir, 'cache', 'sequels.json'),
+    backups: path.join(baseDir, 'backups'),
   }
 }
 
