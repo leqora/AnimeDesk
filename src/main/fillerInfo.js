@@ -11,24 +11,29 @@ export const AIRING_TTL_MS = 7 * DAY
 export const MISSING_TTL_MS = 7 * DAY
 // After a failed refresh Jikan is left alone for this long.
 export const RETRY_AFTER_MS = HOUR
-// Jikan allows about 3 requests per second and 60 per minute; one request every 1.1 s stays well below.
+// jikan-edge allows 60 requests per minute per IP (30 per 10 s burst); a 1.1 s gap is about 54 per minute.
 export const GAP_MS = 1100
+// After a network failure (no answer at all) no malId is requested for this long.
+export const NETWORK_PAUSE_MS = 10 * 60 * 1000
 export const RATE_PAUSE_MS = 60000
 export const MAX_RATE_RETRIES = 2
 const MAX_RETRY_AFTER_MS = 5 * 60 * 1000
 export const MAX_PAGES = 30
+const MAX_EPISODE_NUMBER = 5000
+const MAX_ITEMS_PER_PAGE = 200
 export const TIMEOUT_MS = 15000
 
 const validId = (id) => Number.isInteger(id) && id > 0
+const httpError = (status) => Object.assign(new Error(`Jikan HTTP ${status}`), { http: true })
 const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // Keep only the episode number and its kind, so no other Jikan field (titles, scores, dates) is ever stored.
 export function slimJikanPage(raw) {
   const episodes = []
-  for (const e of Array.isArray(raw?.data) ? raw.data : []) {
+  for (const e of (Array.isArray(raw?.data) ? raw.data : []).slice(0, MAX_ITEMS_PER_PAGE)) {
     if (e === null || typeof e !== 'object') continue
     const n = e.number ?? e.mal_id
-    if (!Number.isInteger(n) || n < 1) continue
+    if (!Number.isInteger(n) || n < 1 || n > MAX_EPISODE_NUMBER) continue
     episodes.push({ n, kind: e.recap === true ? 'recap' : e.filler === true ? 'filler' : null })
   }
   return { episodes, hasNext: raw?.meta?.pagination?.hasNextPage === true || raw?.pagination?.has_next_page === true }
@@ -38,6 +43,7 @@ export function createFillerInfo({ cacheDir, fetchImpl = fetch, now = Date.now, 
   const file = (id) => path.join(cacheDir, `${id}.json`)
   const inflight = new Map()
   const failedAt = new Map()
+  let networkDownAt = -Infinity // module-wide: set when a request got no HTTP answer at all
   const parsed = new Map() // malId -> { sig, data }: the cache file is parsed again only when it changed on disk
 
   // One queue for every malId: a single request in flight, each start at least GAP_MS after the previous start.
@@ -75,7 +81,7 @@ export function createFillerInfo({ cacheDir, fetchImpl = fetch, now = Date.now, 
       for (let attempt = 0; ; attempt++) {
         const out = await requestOnce(url)
         if (out.status !== 429) return out
-        if (attempt >= MAX_RATE_RETRIES) throw new Error('Jikan HTTP 429')
+        if (attempt >= MAX_RATE_RETRIES) throw httpError(429)
         const pause = Number.isFinite(out.retryAfter) && out.retryAfter > 0
           ? Math.min(MAX_RETRY_AFTER_MS, Math.max(RATE_PAUSE_MS, out.retryAfter * 1000))
           : RATE_PAUSE_MS
@@ -125,6 +131,7 @@ export function createFillerInfo({ cacheDir, fetchImpl = fetch, now = Date.now, 
     const rec = readCache(id)
     if (rec && now() - rec.fetchedAt < ttlFor(rec, airing)) return false
     if (now() - (failedAt.get(id) ?? -Infinity) < RETRY_AFTER_MS) return false
+    if (now() - networkDownAt < NETWORK_PAUSE_MS) return false
     const good = rec && !rec.missing
     try {
       const filler = []
@@ -140,7 +147,7 @@ export function createFillerInfo({ cacheDir, fetchImpl = fetch, now = Date.now, 
           failedAt.delete(id)
           return false
         }
-        if (!res.ok) throw new Error(`Jikan HTTP ${res.status}`)
+        if (!res.ok) throw httpError(res.status)
         const slim = slimJikanPage(res.body)
         for (const e of slim.episodes) {
           seen++
@@ -164,6 +171,7 @@ export function createFillerInfo({ cacheDir, fetchImpl = fetch, now = Date.now, 
     } catch (err) {
       console.warn('fillerInfo: Jikan request failed', err?.message)
       failedAt.set(id, now())
+      if (!err?.http) networkDownAt = now()
       return false
     }
   }
@@ -179,6 +187,7 @@ export function createFillerInfo({ cacheDir, fetchImpl = fetch, now = Date.now, 
   function forget() {
     parsed.clear()
     failedAt.clear()
+    networkDownAt = -Infinity
   }
 
   return { cached, ensure, forget }

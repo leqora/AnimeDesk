@@ -262,6 +262,37 @@ describe('SearchPage', () => {
     expect(screen.getByRole('button', { name: '2' })).toBeInTheDocument()
   })
 
+  it('a failing prefs save changes nothing and rejects nothing; a failing load is swallowed', async () => {
+    const { api, handlers } = withEvents()
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    api.seriesPrefs.get.mockResolvedValue({ quality: null, mode: null })
+    api.seriesPrefs.set.mockRejectedValue(new Error('disk'))
+    api.watch.start.mockResolvedValueOnce({ sessionId: 's1' })
+    renderUi(<SearchPage {...props()} />, { api })
+    search()
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(1))
+    await toEpisodes(api, handlers)
+    await waitFor(() => expect(api.seriesPrefs.get).toHaveBeenCalledWith('Show'))
+    fireEvent.change(screen.getByLabelText('Režim'), { target: { value: 'dub' } })
+    await waitFor(() => expect(err).toHaveBeenCalled())
+    expect(screen.getByLabelText('Režim').value).toBe('')
+    expect(api.watch.cancel).not.toHaveBeenCalled()
+    err.mockRestore()
+  })
+
+  it('a prefs load that fails is logged, not thrown', async () => {
+    const { api, handlers } = withEvents()
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    api.seriesPrefs.get.mockRejectedValue(new Error('disk'))
+    api.watch.start.mockResolvedValueOnce({ sessionId: 's1' })
+    renderUi(<SearchPage {...props()} />, { api })
+    search()
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(1))
+    await toEpisodes(api, handlers)
+    await waitFor(() => expect(err).toHaveBeenCalled())
+    err.mockRestore()
+  })
+
   it('restarts with the picked title when it has saved prefs, ignoring the old session', async () => {
     const { api, handlers } = withEvents()
     api.seriesPrefs.get.mockImplementation(async (title) => (title === 'Show' ? { quality: null, mode: 'dub' } : { quality: null, mode: null }))

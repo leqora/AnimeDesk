@@ -197,6 +197,20 @@ describe('seriesEpisodes marks', () => {
     const d = markDeps({ spoilers: { reveal: { all: false, episodes: [] }, metaOff: true } })
     expect((await run(d)).marks).toBe('off')
     expect(d.fillerInfo.cached).not.toHaveBeenCalled()
+    expect(d.fillerInfo.ensure).not.toHaveBeenCalled()
+  })
+  it('Search path: no id, not in library, AniList by title supplies the malId', async () => {
+    const d = markDeps({ inLibrary: false })
+    d.anilist.getForTitle.mockResolvedValue({ id: 5, malId: 21, status: 'FINISHED' })
+    const r = await run(d, { title: 'Show', list: ['1', '2', '3', '4', '5', '6'] })
+    expect(d.fillerInfo.cached).toHaveBeenCalledWith(21, { airing: false })
+    expect(r.marks).toBe('ok')
+    expect(r.markCounts).toEqual({ filler: 2, recap: 1 })
+  })
+  it('a RELEASING series asks the cache as airing', async () => {
+    const d = markDeps({ status: 'RELEASING' })
+    await run(d)
+    expect(d.fillerInfo.cached).toHaveBeenCalledWith(21, { airing: true })
   })
   it('no malId: none, ensure not called', async () => {
     const d = markDeps({ malId: null })
@@ -216,6 +230,9 @@ describe('seriesEpisodes marks', () => {
     const m = markDeps({ rec: { missing: true, filler: [], recap: [], count: 0, expired: false } })
     expect((await run(m)).marks).toBe('none')
     expect(m.fillerInfo.ensure).not.toHaveBeenCalled()
+    const x = markDeps({ rec: { missing: true, filler: [], recap: [], count: 0, expired: true } })
+    expect((await run(x)).marks).toBe('none')
+    expect(x.fillerInfo.ensure).toHaveBeenCalledWith(21, { airing: false })
   })
   it('forSeries does not wait for ensure', async () => {
     const d = markDeps({ rec: null, ensure: vi.fn(() => new Promise(() => {})) })

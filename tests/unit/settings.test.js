@@ -116,7 +116,7 @@ describe('settings', () => {
     expect(sanitizeSettings({ episodeView: 'list' }).episodeView).toBe('list')
     expect(sanitizeSettings({ episodeView: 'grid' }).episodeView).toBe('numbers')
   })
-  it('episodeMarks defaults to true and accepts only a boolean', () => {
+  it('episodeMarks defaults to true; an invalid (non-boolean) value falls back to the default', () => {
     expect(DEFAULT_SETTINGS.episodeMarks).toBe(true)
     const s = createSettings(file)
     expect(s.get().episodeMarks).toBe(true)

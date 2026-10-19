@@ -81,12 +81,14 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
   useEffect(() => {
     if (!anime) return
-    api.seriesPrefs.get(anime).then(setPrefs)
+    let stale = false
+    api.seriesPrefs.get(anime).then((p) => { if (!stale) setPrefs(p) }).catch((e) => console.error('seriesPrefs.get failed', e))
     api.library.list().then((list) => {
       const key = normalizeTitle(anime).toLowerCase()
       const e = list.find((x) => normalizeTitle(x.aniCliTitle ?? x.title).toLowerCase() === key)
       setWatched(e?.watchedEpisodes ?? [])
     })
+    return () => { stale = true }
   }, [api, anime])
 
   const start = (params) => {
@@ -169,7 +171,8 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
   const changePrefs = async (patch) => {
     const started = live.current.startedMode ?? prefs.mode ?? settings.mode
-    const next = await api.seriesPrefs.set(anime, patch)
+    let next
+    try { next = await api.seriesPrefs.set(anime, patch) } catch (e) { console.error('seriesPrefs.set failed', e); return }
     setPrefs(next)
     if ('mode' in patch && (next.mode ?? settings.mode) !== started && live.current.phase === 'episode') restartFor(anime)
   }

@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {
   createFillerInfo, slimJikanPage, JIKAN_URL, TTL_MS, AIRING_TTL_MS, MISSING_TTL_MS, RETRY_AFTER_MS,
-  GAP_MS, RATE_PAUSE_MS, MAX_PAGES, TIMEOUT_MS,
+  GAP_MS, RATE_PAUSE_MS, MAX_PAGES, TIMEOUT_MS, NETWORK_PAUSE_MS,
 } from '../../src/main/fillerInfo.js'
 
 const res = (body, status = 200, headers = {}) => ({
@@ -58,6 +58,13 @@ describe('slimJikanPage', () => {
       hasNext: true,
     })
     expect(slimJikanPage({ data: [{ number: 0 }, { number: '3' }], meta: { pagination: { hasNextPage: false } } })).toEqual({ episodes: [], hasNext: false })
+  })
+  it('drops absurd episode numbers and keeps at most 200 items', () => {
+    expect(slimJikanPage({ data: [{ number: 1e9, filler: true }, { number: 5001 }, { number: 5000, filler: true }] }).episodes).toEqual([{ n: 5000, kind: 'filler' }])
+    const many = { data: Array.from({ length: 250 }, (_, i) => ({ number: i + 1 })) }
+    const out = slimJikanPage(many).episodes
+    expect(out).toHaveLength(200)
+    expect(out[199].n).toBe(200)
   })
   it('survives a bad body', () => {
     expect(slimJikanPage(null)).toEqual({ episodes: [], hasNext: false })
@@ -133,6 +140,34 @@ describe('fillerInfo.ensure', () => {
     clock += 2
     expect(await info.ensure(21)).toBe(true)
     expect(fetchImpl).toHaveBeenCalledTimes(4)
+  })
+
+  it('a network failure pauses every malId for 10 minutes; a 500 does not', async () => {
+    fetchImpl.mockRejectedValue(new Error('offline'))
+    expect(await info.ensure(1)).toBe(false)
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+    fetchImpl.mockImplementation(async (url) => (url.endsWith('page=2') ? res(P2) : res(P1)))
+    clock += NETWORK_PAUSE_MS - 1
+    expect(await info.ensure(2)).toBe(false)
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+    clock += 2
+    expect(await info.ensure(2)).toBe(true)
+    expect(fetchImpl).toHaveBeenCalledTimes(3)
+
+    const other = make()
+    fetchImpl.mockReset()
+    fetchImpl.mockResolvedValue(res({}, 500))
+    expect(await other.ensure(3)).toBe(false)
+    fetchImpl.mockResolvedValue(res(page([[1, 'filler']], false)))
+    expect(await other.ensure(4)).toBe(true)
+  })
+
+  it('forget clears the module-wide network pause', async () => {
+    fetchImpl.mockRejectedValue(new Error('offline'))
+    await info.ensure(1)
+    info.forget()
+    fetchImpl.mockResolvedValue(res(page([[1, 'filler']], false)))
+    expect(await info.ensure(2)).toBe(true)
   })
 
   it('a non-ok status other than 404 is a failure with a pause', async () => {
