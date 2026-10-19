@@ -5,6 +5,7 @@ import { Icon } from '../components/Icon.jsx'
 import { TOOL_IDS, OPTIONAL_TOOL_IDS } from '../../shared/domain.js'
 import { AniListAccount } from '../components/AniListAccount.jsx'
 import { AniListPicker } from '../components/AniListPicker.jsx'
+import { DataSection } from '../components/DataSection.jsx'
 import { SubtitleOverlay } from '../components/SubtitleOverlay.jsx'
 import { DEFAULT_SUBTITLES, SUBTITLE_FONT_STACKS, SUBTITLE_COLORS } from '../../shared/subtitles.js'
 
@@ -12,7 +13,7 @@ const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 const FONT_NAMES = { segoe: 'Segoe UI', arial: 'Arial', verdana: 'Verdana', trebuchet: 'Trebuchet MS', georgia: 'Georgia', exo2: 'Exo 2' }
 const SLIDE_SAVE_MS = 250
 
-export function SettingsPage({ settings, onSettings, onTestSound = () => {}, updateState = { status: 'disabled', currentVersion: '' } }) {
+export function SettingsPage({ settings, onSettings, onImported = () => {}, onTestSound = () => {}, updateState = { status: 'disabled', currentVersion: '' } }) {
   const api = useApi()
   const t = useT()
   const [tools, setTools] = useState({})
@@ -262,6 +263,7 @@ export function SettingsPage({ settings, onSettings, onTestSound = () => {}, upd
           )}
         </div>
       )}
+      <DataSection onImported={onImported} />
       <h3>{t('settings.tools')}</h3>
       <ul className="tool-list">
         {[...TOOL_IDS, ...OPTIONAL_TOOL_IDS].map((id) => (
