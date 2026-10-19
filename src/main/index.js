@@ -34,6 +34,7 @@ import { createDataBackup } from './dataBackup.js'
 import { createSettingsEffects } from './settingsEffects.js'
 import { computeStats } from '../shared/stats.js'
 import { createHealthCheck } from './healthCheck.js'
+import { createHealthStore } from './healthStore.js'
 import { createHandlers, registerIpc } from './ipc.js'
 import { hardenWindow } from './windowSecurity.js'
 import { attachFullscreen } from './fullscreen.js'
@@ -238,7 +239,12 @@ async function main() {
     },
     resolvePrefs: (title) => seriesPrefs.resolve(title, settings.get()), episodeLists })
   const autoDownloader = createAutoDownloader({ library, anilist, seriesPrefs, settings, downloads })
-  const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
+  const health = createHealthCheck({
+    toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s),
+    store: createHealthStore({ file: paths.health }),
+    isBusy: () => aniCli.activeSessions() > 0,
+    onWaitIdle: () => watch.discardPrefetch(),
+  })
 
   const onSettingsChanged = (patch) => {
     if (patch && 'launchAtLogin' in patch) applyLoginItem()
@@ -312,7 +318,8 @@ async function main() {
   aniListSync.start()
   autoDownloader.start()
   updater.start()
-  health.run().then(() => health.dailyUpdate({ enabled: settings.get().autoUpdateTools, now: new Date().toISOString() }))
+  health.run({ optimistic: true }).then(() => health.dailyUpdate({ enabled: settings.get().autoUpdateTools, now: new Date().toISOString() }))
+    .then(() => health.whenIdle())
     .then(() => { if (settings.get().mpvModernUi) return toolManager.installOptional() })
   setInterval(() => { if (health.get().reason === 'source-down') health.run() }, SIX_HOURS)
 

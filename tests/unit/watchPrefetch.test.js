@@ -221,6 +221,18 @@ describe('watchService prefetch — quiet and parked', () => {
     t.svc.watch({ query: 'Show', anime: 'Show', episode: '3' })
     expect(t.sessions[1].kill).toHaveBeenCalled()
   })
+  it('discardPrefetch() kills a parked prefetch and is a no-op without one', async () => {
+    const t = prefetchSetup()
+    t.svc.discardPrefetch() // nothing to discard
+    await t.playEpisode3()
+    t.progress(85)
+    t.sessions[1].opts.onPlay({ args: argsFor(4) })
+    await flush()
+    t.svc.discardPrefetch()
+    expect(t.sessions[1].kill).toHaveBeenCalledTimes(1)
+    t.svc.discardPrefetch()
+    expect(t.sessions[1].kill).toHaveBeenCalledTimes(1)
+  })
   it('dispose kills the prefetch', async () => {
     const t = prefetchSetup()
     await t.playEpisode3()

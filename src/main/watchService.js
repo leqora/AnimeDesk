@@ -328,5 +328,5 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     for (const entry of sessions.values()) entry.probe?.kill()
   }
 
-  return { watch, answerMenu, cancel, playLocal, afterPlayback, recover, retryAgain, dispose }
+  return { watch, answerMenu, cancel, playLocal, afterPlayback, recover, retryAgain, dispose, discardPrefetch }
 }
