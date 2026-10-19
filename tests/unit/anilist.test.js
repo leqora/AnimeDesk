@@ -727,3 +727,115 @@ describe('anilist relations and poster', () => {
     expect(await al.poster(null)).toBeNull()
   })
 })
+
+describe('anilist queue and errors', () => {
+  const hit = media(5, 'Show Five', 'Show Five')
+  const json = (body, headers = {}) => Response.json(body, { headers })
+  const page = (list) => ({ data: { Page: { media: list } } })
+  const isImg = (url) => url.startsWith('https://img/')
+  const img = () => new Response(new Uint8Array([1]), { headers: { 'content-type': 'image/jpeg' } })
+  const tick = () => new Promise((r) => setTimeout(r, 15))
+  // Scripted API answers (images are always fine); `script` entries are Responses or functions returning one.
+  const mkApi = (script, extra = {}) => {
+    const queue = [...script]
+    const f = vi.fn(async (url) => (isImg(url) ? img() : (queue.length > 1 ? queue.shift() : queue[0])()))
+    const apiCalls = () => f.mock.calls.filter(([u]) => !isImg(u)).length
+    return { f, apiCalls, al: createAniList({ cacheDir, fetchImpl: f, sleep: async () => {}, ...extra }) }
+  }
+  const ok = () => json(page([hit]))
+  const limited = (retryAfter) => () => new Response('', { status: 429, headers: { 'Retry-After': String(retryAfter) } })
+
+  it('returns data before the Remaining: 0 pause and delays the next request', async () => {
+    const now = () => 1_000_000
+    let release
+    const gate = new Promise((r) => { release = r })
+    const sleep = vi.fn(() => gate)
+    const { f, apiCalls, al } = mkApi([() => json(page([hit]), { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': String(1_000_000 / 1000 + 5) })], { sleep, now })
+    const first = await al.getForTitle('Show Five')
+    expect(first.id).toBe(5)
+    expect(sleep).toHaveBeenCalledWith(5000)
+    const second = al.getForTitle('Other Show')
+    await tick()
+    expect(apiCalls()).toBe(1)
+    release()
+    expect((await second).id).toBe(5)
+    expect(apiCalls()).toBe(2)
+    expect(f).toHaveBeenCalled()
+  })
+  it('a failing pause never leaves the queue rejected', async () => {
+    const sleep = vi.fn(async () => { throw new Error('sleep broke') })
+    const { al } = mkApi([() => json(page([hit]), { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '2000000000' })], { sleep, now: () => 1_000_000 })
+    expect((await al.getForTitle('Show Five')).id).toBe(5)
+    expect((await al.getForTitle('Other Show')).id).toBe(5)
+  })
+
+  it('tags HTTP errors with status', async () => {
+    const { al } = mkApi([() => new Response('boom', { status: 500 })])
+    expect(await al.getForTitle('Show Five')).toBeNull()
+    const err = await al.search('x').catch((e) => e)
+    expect(err.status).toBe(500)
+    expect(err.message).toBe('AniList HTTP 500')
+    expect(err.graphql).toBeUndefined()
+  })
+  it('tags a final 429 with status 429', async () => {
+    const { al } = mkApi([limited(1)])
+    const err = await al.search('x').catch((e) => e)
+    expect(err.status).toBe(429)
+  })
+  it('tags errors-without-data as graphql', async () => {
+    const { al } = mkApi([() => json({ errors: [{ message: 'bad' }] })])
+    const err = await al.search('x').catch((e) => e)
+    expect(err.graphql).toBe(true)
+    expect(err.message).toBe('AniList returned a GraphQL error')
+  })
+  it('treats 200 without data as a graphql error', async () => {
+    const { al } = mkApi([() => json({})])
+    const err = await al.search('x').catch((e) => e)
+    expect(err.graphql).toBe(true)
+  })
+
+  describe('onRateLimited', () => {
+    it('is called for a 429 pause of 7 s and a Remaining: 0 pause of 5 s', async () => {
+      let t = 1_000_000
+      const onRateLimited = vi.fn()
+      const sleep = vi.fn(async () => {})
+      const remaining0 = () => json(page([hit]), { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': String(t / 1000 + 5) })
+      const { al } = mkApi([limited(7), ok, remaining0, ok], { onRateLimited, sleep, now: () => t })
+      await al.getForTitle('Show Five')
+      expect(onRateLimited).toHaveBeenCalledTimes(1)
+      expect(onRateLimited).toHaveBeenLastCalledWith({ waitMs: 7000, until: t + 7000 })
+      t += 30_000
+      await al.getForTitle('Other Show')
+      await tick()
+      expect(onRateLimited).toHaveBeenCalledTimes(2)
+      expect(onRateLimited).toHaveBeenLastCalledWith({ waitMs: 5000, until: t + 5000 })
+    })
+    it('is not called for a 1 s pause or the final 429', async () => {
+      let t = 0
+      const onRateLimited = vi.fn()
+      const small = mkApi([limited(1), ok], { onRateLimited, now: () => t })
+      await small.al.getForTitle('Show Five')
+      expect(onRateLimited).not.toHaveBeenCalled()
+      // Three 429s: two pauses (notified, clock jumps past the throttle each time), the third attempt has no pause.
+      const final = mkApi([limited(7)], { onRateLimited, now: () => (t += 30_000), sleep: async () => {} })
+      expect(await final.al.getForTitle('Show Six')).toBeNull()
+      expect(onRateLimited).toHaveBeenCalledTimes(2)
+    })
+    it('is called at most once per 30 s', async () => {
+      let t = 5_000_000
+      const onRateLimited = vi.fn()
+      const { al } = mkApi([limited(7), limited(7), ok, limited(7), ok], { onRateLimited, now: () => t })
+      await al.getForTitle('Show Five')
+      expect(onRateLimited).toHaveBeenCalledTimes(1)
+      t += 30_000
+      await al.getForTitle('Other Show')
+      expect(onRateLimited).toHaveBeenCalledTimes(2)
+    })
+    it('a throwing callback does not break the request', async () => {
+      const onRateLimited = vi.fn(() => { throw new Error('ui gone') })
+      const { al } = mkApi([limited(7), ok], { onRateLimited })
+      expect((await al.getForTitle('Show Five')).id).toBe(5)
+      expect(onRateLimited).toHaveBeenCalled()
+    })
+  })
+})

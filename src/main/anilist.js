@@ -3,19 +3,11 @@ import crypto from 'node:crypto'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 import { AIRED_GRACE_MS } from '../shared/airing.js'
 import { sequelsFromMedia } from '../shared/sequels.js'
+import { SEARCH, AIRING_BATCH, RELATIONS_BATCH, VIEWER, LIST_ENTRY, SAVE_PROGRESS, CANDIDATES, BY_ID } from './anilistQueries.js'
 
 const ENDPOINT = 'https://graphql.anilist.co'
-const FIELDS = 'id idMal status title { romaji english native } coverImage { large } genres seasonYear episodes duration description(asHtml: false) nextAiringEpisode { episode airingAt }'
-const SEARCH = `query ($search: String) { Page(perPage: 10) { media(search: $search, type: ANIME) { ${FIELDS} } } }`
-const AIRING_BATCH = 'query ($ids: [Int], $page: Int) { Page(page: $page, perPage: 50) { media(id_in: $ids, type: ANIME) { id status episodes nextAiringEpisode { episode airingAt } } } }'
 const AIRING_CHUNK = 50
-const RELATIONS_BATCH = 'query ($ids: [Int], $page: Int) { Page(page: $page, perPage: 50) { media(id_in: $ids, type: ANIME) { id relations { edges { relationType node { id type format status seasonYear episodes title { romaji english } coverImage { large } } } } } } }'
-const VIEWER = 'query { Viewer { id name } }'
-const LIST_ENTRY = 'query ($id: Int) { Media(id: $id, type: ANIME) { episodes mediaListEntry { progress status } } }'
-const SAVE_PROGRESS = 'mutation ($id: Int, $progress: Int, $status: MediaListStatus) { SaveMediaListEntry(mediaId: $id, progress: $progress, status: $status) { progress status } }'
-const CANDIDATES = 'query ($search: String) { Page(perPage: 8) { media(search: $search, type: ANIME) { id title { romaji english } seasonYear format episodes coverImage { large } } } }'
 const CANDIDATE_LIMIT = 8
-const BY_ID = `query ($id: Int) { Media(id: $id, type: ANIME) { ${FIELDS} } }`
 
 const norm = (s) => String(s ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
 
@@ -99,6 +91,8 @@ export function isFresh(info, nowMs) {
 
 const MAX_ATTEMPTS = 3
 const MAX_WAIT_MS = 65_000
+const NOTIFY_MIN_WAIT_MS = 3000
+const NOTIFY_EVERY_MS = 30_000
 const NOT_FOUND_TTL_MS = 7 * 24 * 3600 * 1000
 // Stored with every "not found" entry. Bump it whenever searchCandidates/bestMatch change, so misses
 // remembered by older logic are retried right after an update instead of waiting out the 7 days.
@@ -113,14 +107,20 @@ export class AniListAuthError extends Error {
 
 const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, now = Date.now }) {
+export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, now = Date.now, onRateLimited = null }) {
   // AniList allows ~30 requests a minute; a search result grid asks for 25+ posters at once.
-  // Requests go through one queue, and a 429 or an exhausted budget pauses the whole queue.
+  // Requests go through one queue; a 429 pauses the request itself, an exhausted budget pauses the queue.
   let queue = Promise.resolve()
   const enqueue = (task) => {
     const run = queue.then(task)
     queue = run.catch(() => {})
     return run
+  }
+  // Called from inside the running task: the result returns at once, the NEXT task waits. A failed sleep must not
+  // leave the queue rejected.
+  const pauseQueue = (ms) => {
+    notifyRateLimited(ms)
+    queue = queue.then(() => sleep(ms)).catch(() => {})
   }
 
   const clampWait = (ms) => Math.min(MAX_WAIT_MS, Math.max(1000, ms))
@@ -133,30 +133,46 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
     return Number.isFinite(after) && after > 0 ? clampWait(after * 1000) : resetWait(res)
   }
 
-  // Error messages never carry the token or the request body.
-  function gql(query, variables, { token } = {}) {
-    return enqueue(async () => {
-      for (let attempt = 1; ; attempt++) {
-        const headers = { 'Content-Type': 'application/json', Accept: 'application/json' }
-        if (token) headers.Authorization = `Bearer ${token}`
-        const res = await fetchImpl(ENDPOINT, { method: 'POST', headers, body: JSON.stringify({ query, variables }) })
-        if (res.status === 429 && attempt < MAX_ATTEMPTS) {
-          await sleep(retryWait(res))
-          continue
-        }
-        const body = await res.json().catch(() => null)
-        const errors = Array.isArray(body?.errors) ? body.errors : []
-        if (res.status === 401 || errors.some((e) => e?.status === 401 || /invalid token/i.test(String(e?.message ?? '')))) {
-          throw new AniListAuthError(`AniList rejected the login (HTTP ${res.status})`)
-        }
-        if (!res.ok) throw new Error(`AniList HTTP ${res.status}`)
-        if (body?.data == null && errors.length) throw new Error('AniList returned a GraphQL error')
-        const data = body?.data
-        if (res.headers.get('X-RateLimit-Remaining') === '0') await sleep(resetWait(res))
-        return data
-      }
-    })
+  // Tells the UI about a noticeable pause, at most once per NOTIFY_EVERY_MS.
+  let lastNotified = null
+  function notifyRateLimited(waitMs) {
+    if (!onRateLimited || waitMs < NOTIFY_MIN_WAIT_MS) return
+    const t = now()
+    if (lastNotified != null && t - lastNotified < NOTIFY_EVERY_MS) return
+    lastNotified = t
+    try {
+      onRateLimited({ waitMs, until: t + waitMs })
+    } catch { /* a broken listener must not break requests */ }
   }
+
+  const httpError = (status) => Object.assign(new Error(`AniList HTTP ${status}`), { status })
+  const graphqlError = (message) => Object.assign(new Error(message), { graphql: true })
+
+  // One HTTP request (429 is retried after its wait), no queue. Error messages never carry the token or the request body.
+  async function request(query, variables, { token } = {}) {
+    for (let attempt = 1; ; attempt++) {
+      const headers = { 'Content-Type': 'application/json', Accept: 'application/json' }
+      if (token) headers.Authorization = `Bearer ${token}`
+      const res = await fetchImpl(ENDPOINT, { method: 'POST', headers, body: JSON.stringify({ query, variables }) })
+      if (res.status === 429 && attempt < MAX_ATTEMPTS) {
+        const wait = retryWait(res)
+        notifyRateLimited(wait)
+        await sleep(wait)
+        continue
+      }
+      const body = await res.json().catch(() => null)
+      const errors = Array.isArray(body?.errors) ? body.errors : []
+      if (res.status === 401 || errors.some((e) => e?.status === 401 || /invalid token/i.test(String(e?.message ?? '')))) {
+        throw new AniListAuthError(`AniList rejected the login (HTTP ${res.status})`)
+      }
+      if (!res.ok) throw httpError(res.status)
+      if (body?.data == null) throw graphqlError(errors.length ? 'AniList returned a GraphQL error' : 'AniList returned no data')
+      if (res.headers.get('X-RateLimit-Remaining') === '0') pauseQueue(resetWait(res))
+      return body.data
+    }
+  }
+
+  const gql = (query, variables, opts) => enqueue(() => request(query, variables, opts))
 
   async function posterDataUrl(url) {
     if (!url) return null
