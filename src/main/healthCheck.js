@@ -30,6 +30,7 @@ export function createHealthCheck({
   now = () => Date.now(),
   isBusy = () => false,
   sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+  onWaitIdle = () => {},
 }) {
   let state = healthState('checking')
   let running = null
@@ -54,9 +55,11 @@ export function createHealthCheck({
 
   // One update lock: updates never overlap; a rejection does not poison the chain.
   let updateChain = Promise.resolve()
-  function updateTools({ waitForIdle = true, onProgress } = {}) {
+  async function updateTools({ waitForIdle = true, onProgress } = {}) {
+    // Wait before joining the lock so a user-triggered (no-wait) update never queues behind a waiter.
+    if (waitForIdle) await waitIdle()
     const job = updateChain.then(async () => {
-      if (waitForIdle) await waitIdle()
+      if (waitForIdle) await waitIdle() // guards a session started meanwhile
       return onProgress ? toolManager.updateAll(AUTO_UPDATE_TOOLS, onProgress) : toolManager.updateAll(AUTO_UPDATE_TOOLS)
     })
     updateChain = job.catch(() => {})
@@ -76,6 +79,9 @@ export function createHealthCheck({
     }
     set(healthState('updating'))
     try {
+      if (isBusy()) {
+        try { onWaitIdle() } catch (e) { warn('onWaitIdle', e) }
+      }
       const updated = await updateTools()
       // Someone else may have updated while we waited.
       const after = fingerprint()

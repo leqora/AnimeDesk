@@ -243,6 +243,7 @@ async function main() {
     toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s),
     store: createHealthStore({ file: paths.health }),
     isBusy: () => aniCli.activeSessions() > 0,
+    onWaitIdle: () => watch.discardPrefetch(),
   })
 
   const onSettingsChanged = (patch) => {
