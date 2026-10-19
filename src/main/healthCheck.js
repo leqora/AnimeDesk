@@ -51,15 +51,21 @@ export function createHealthCheck({
     try { store.clear() } catch (e) { warn('record clear', e) }
   }
   // Never update tools while an ani-cli session is alive.
-  const waitIdle = async () => { while (isBusy()) await sleep(BUSY_POLL_MS) }
+  // onBusy runs on every busy poll (before each sleep).
+  const waitIdle = async (onBusy) => {
+    while (isBusy()) {
+      if (onBusy) onBusy()
+      await sleep(BUSY_POLL_MS)
+    }
+  }
 
   // One update lock: updates never overlap; a rejection does not poison the chain.
   let updateChain = Promise.resolve()
-  async function updateTools({ waitForIdle = true, onProgress } = {}) {
+  async function updateTools({ waitForIdle = true, onProgress, onBusy } = {}) {
     // Wait before joining the lock so a user-triggered (no-wait) update never queues behind a waiter.
-    if (waitForIdle) await waitIdle()
+    if (waitForIdle) await waitIdle(onBusy)
     const job = updateChain.then(async () => {
-      if (waitForIdle) await waitIdle() // guards a session started meanwhile
+      if (waitForIdle) await waitIdle(onBusy) // guards a session started meanwhile
       return onProgress ? toolManager.updateAll(AUTO_UPDATE_TOOLS, onProgress) : toolManager.updateAll(AUTO_UPDATE_TOOLS)
     })
     updateChain = job.catch(() => {})
@@ -79,10 +85,7 @@ export function createHealthCheck({
     }
     set(healthState('updating'))
     try {
-      if (isBusy()) {
-        try { onWaitIdle() } catch (e) { warn('onWaitIdle', e) }
-      }
-      const updated = await updateTools()
+      const updated = await updateTools({ onBusy: () => { try { onWaitIdle() } catch (e) { warn('onWaitIdle', e) } } })
       // Someone else may have updated while we waited.
       const after = fingerprint()
       if (updated.length > 0 || HEALTH_TOOLS.some((id) => after[id] !== before[id])) {

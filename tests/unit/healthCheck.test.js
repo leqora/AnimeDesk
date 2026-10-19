@@ -202,19 +202,35 @@ describe('healthCheck', () => {
       expect(sleep).not.toHaveBeenCalled()
       expect(s.toolManager.updateAll).toHaveBeenCalledWith(['ani-cli', 'yt-dlp'], onProgress)
     })
-    it('onWaitIdle fires once when check waits, never when idle or from dailyUpdate', async () => {
+    it('onWaitIdle fires on every busy poll of check, never when idle or from dailyUpdate', async () => {
       let polls = 2
       const onWaitIdle = vi.fn()
       const s = mk(okRecord(), { tests: [false, true], updates: ['ani-cli'], isBusy: () => polls-- > 0, sleep: async () => {}, onWaitIdle })
       await s.hc.run({ optimistic: true })
-      expect(onWaitIdle).toHaveBeenCalledTimes(1)
+      expect(onWaitIdle).toHaveBeenCalledTimes(2)
       const idle = mk(okRecord(), { tests: [false, true], updates: ['ani-cli'], onWaitIdle })
       await idle.hc.run({ optimistic: true })
-      expect(onWaitIdle).toHaveBeenCalledTimes(1)
+      expect(onWaitIdle).toHaveBeenCalledTimes(2)
       let p2 = 2
       const d = setup({ updates: ['yt-dlp'], isBusy: () => p2-- > 0, sleep: async () => {}, onWaitIdle })
       await d.hc.dailyUpdate({ enabled: true, now: '2026-10-01T00:00:00Z' })
-      expect(onWaitIdle).toHaveBeenCalledTimes(1)
+      await d.hc.updateTools({ waitForIdle: false })
+      expect(onWaitIdle).toHaveBeenCalledTimes(2)
+    })
+    it('onWaitIdle is called once per busy poll (3 polls -> 3 calls)', async () => {
+      let sleeps = 0
+      const onWaitIdle = vi.fn()
+      const s = mk(okRecord(), { tests: [false, true], updates: ['ani-cli'], isBusy: () => sleeps < 3, sleep: async () => { sleeps++ }, onWaitIdle })
+      await s.hc.run({ optimistic: true })
+      expect(onWaitIdle).toHaveBeenCalledTimes(3)
+    })
+    it('onWaitIdle still fires when a session (prefetch) starts after the first idle poll', async () => {
+      const seq = [false, true, true, false] // idle at the pre-lock check, then busy twice in the in-lock guard
+      let i = 0
+      const onWaitIdle = vi.fn()
+      const s = mk(okRecord(), { tests: [false, true], updates: ['ani-cli'], isBusy: () => seq[Math.min(i++, 3)], sleep: async () => {}, onWaitIdle })
+      await s.hc.run({ optimistic: true })
+      expect(onWaitIdle).toHaveBeenCalledTimes(2)
     })
     it('a throwing onWaitIdle does not change the outcome', async () => {
       let polls = 1
