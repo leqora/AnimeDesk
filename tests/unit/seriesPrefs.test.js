@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createSeriesPrefs } from '../../src/main/seriesPrefs.js'
+import { createSeriesPrefs, sanitizeSeriesPrefs } from '../../src/main/seriesPrefs.js'
 import { DEFAULT_SETTINGS } from '../../src/main/settings.js'
 
 let file
@@ -231,5 +231,44 @@ describe('seriesPrefs aniListSync', () => {
     expect(again.getSpoilers('Show').reveal.episodes).toEqual(['3'])
     expect(again.getAutoDownload('Show')).toEqual({ after: 2 })
     expect(again.getAniListSync('Show')).toBe(false)
+  })
+})
+
+describe('sanitizeSeriesPrefs', () => {
+  it('produces the stored shape, re-normalizes keys and drops empty records', () => {
+    const r = sanitizeSeriesPrefs({ version: 1, series: {
+      'Naruto ': { quality: '720', mode: 'xx', subOffset: { sub: 0, dub: 1.5 }, autoDownload: { after: 3 }, junk: 1 },
+      x: {},
+      '   ': { quality: '720' },
+      y: { reveal: { all: true, episodes: [' 3 ', ''] }, metaOff: true, aniListSync: false },
+      z: 'nope',
+    } })
+    expect(r).toEqual({ version: 1, series: {
+      naruto: { quality: '720', subOffset: { dub: 1.5 }, autoDownload: { after: 3 } },
+      y: { reveal: { all: true, episodes: ['3'] }, metaOff: true, aniListSync: false },
+    } })
+  })
+  it('returns empty when not an object', () => {
+    expect(sanitizeSeriesPrefs(null)).toEqual({ version: 1, series: {} })
+    expect(sanitizeSeriesPrefs({ series: [] })).toEqual({ version: 1, series: {} })
+  })
+})
+
+describe('seriesPrefs snapshot / replaceAll', () => {
+  it('snapshot is a deep copy; replaceAll swaps and persists', () => {
+    const p = createSeriesPrefs(file)
+    p.set('A', { quality: '720' })
+    const s = p.snapshot()
+    s.series.a.quality = '480'
+    expect(p.get('A').quality).toBe('720')
+    const db = { version: 1, series: { b: { mode: 'dub' } } }
+    p.replaceAll(db)
+    expect(p.get('A').quality).toBeNull()
+    expect(p.get('B').mode).toBe('dub')
+    db.series.b.mode = 'sub'
+    expect(p.get('B').mode).toBe('dub')
+    expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual({ version: 1, series: { b: { mode: 'dub' } } })
+    p.setAniListSync('B', false)
+    expect(p.getAniListSync('B')).toBe(false)
   })
 })

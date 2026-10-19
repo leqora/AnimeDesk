@@ -37,9 +37,91 @@ function validatePatch(patch) {
   return out
 }
 
+const isIso = (v) => typeof v === 'string' && v !== '' && Number.isFinite(Date.parse(v))
+const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
+
+// Titles end up in ani-cli arguments and the UI: no control characters, bounded length.
+const MAX_TITLE = 300
+const cleanTitle = (v) => [...String(v ?? '')].filter((ch) => { const n = ch.charCodeAt(0); return n > 31 && n !== 127 }).join('').trim().slice(0, MAX_TITLE).trim()
+
+// Validates one imported entry; throws when it is unusable. Unknown fields are dropped.
+export function sanitizeEntry(raw, { now }) {
+  if (!isPlainObject(raw)) throw new Error('entry must be an object')
+  if (typeof raw.id !== 'string' || !raw.id) throw new Error('id required')
+  const clean = validatePatch({
+    title: cleanTitle(raw.title),
+    status: raw.status,
+    rating: raw.rating ?? null,
+    totalEpisodes: raw.totalEpisodes ?? null,
+    comment: raw.comment ?? '',
+    watchedEpisodes: raw.watchedEpisodes ?? [],
+  })
+  const notes = {}
+  if (isPlainObject(raw.episodeNotes)) {
+    for (const [k, v] of Object.entries(raw.episodeNotes)) {
+      if (Number.isFinite(Number(k)) && k.trim() !== '' && typeof v === 'string' && v !== '') notes[k] = v
+    }
+  }
+  const ts = now()
+  return {
+    id: raw.id,
+    title: clean.title,
+    aniCliTitle: typeof raw.aniCliTitle === 'string' ? cleanTitle(raw.aniCliTitle) || null : null,
+    aniListId: Number.isInteger(raw.aniListId) && raw.aniListId > 0 ? raw.aniListId : null,
+    aniListConfirmed: raw.aniListConfirmed === true,
+    status: clean.status,
+    rating: clean.rating,
+    comment: clean.comment,
+    totalEpisodes: clean.totalEpisodes,
+    watchedEpisodes: clean.watchedEpisodes,
+    episodeNotes: notes,
+    addedAt: isIso(raw.addedAt) ? raw.addedAt : ts,
+    updatedAt: isIso(raw.updatedAt) ? raw.updatedAt : ts,
+    lastWatchedAt: isIso(raw.lastWatchedAt) ? raw.lastWatchedAt : null,
+    pinnedAt: isIso(raw.pinnedAt) ? raw.pinnedAt : null,
+  }
+}
+
+// Validates an imported library: bad entries are skipped, then duplicates, shared AniList ids and extra pins are fixed.
+export function sanitizeLibrary(raw, { now }) {
+  const anime = {}
+  let accepted = 0
+  let skipped = 0
+  const seenTitles = new Set()
+  const confirmedIds = new Set()
+  const src = isPlainObject(raw) && isPlainObject(raw.anime) ? raw.anime : {}
+  for (const [k, value] of Object.entries(src)) {
+    let entry
+    try {
+      entry = sanitizeEntry(value, { now })
+      if (entry.id !== k) throw new Error('key must equal id')
+    } catch {
+      skipped++
+      continue
+    }
+    const titleKey = normalizeTitle(entry.aniCliTitle ?? entry.title).toLowerCase()
+    if (seenTitles.has(titleKey)) {
+      skipped++
+      continue
+    }
+    seenTitles.add(titleKey)
+    if (entry.aniListConfirmed && entry.aniListId !== null) {
+      if (confirmedIds.has(entry.aniListId)) entry.aniListConfirmed = false
+      else confirmedIds.add(entry.aniListId)
+    } else if (entry.aniListConfirmed) {
+      entry.aniListConfirmed = false
+    }
+    anime[k] = entry
+    accepted++
+  }
+  const pinned = Object.values(anime).filter((e) => e.pinnedAt).sort((a, b) => Date.parse(a.pinnedAt) - Date.parse(b.pinnedAt))
+  for (const e of pinned.slice(MAX_PINNED)) e.pinnedAt = null
+  return { db: { version: 1, anime }, accepted, skipped }
+}
+
 export function createLibrary(file, { now = () => new Date().toISOString(), uuid = () => crypto.randomUUID() } = {}) {
   const loaded = readJson(file, { version: 1, anime: {} })
-  const db = loaded.data
+  let db = loaded.data
   const save = () => writeJsonAtomic(file, db)
   const copy = (e) => (e ? { ...structuredClone(e), aniListConfirmed: e.aniListConfirmed === true } : null)
   const key = (t) => normalizeTitle(t).toLowerCase()
@@ -163,5 +245,12 @@ export function createLibrary(file, { now = () => new Date().toISOString(), uuid
     get: (id) => copy(db.anime[id]),
     findByAniCliTitle: (title) => copy(findRaw(title)),
     add, update, confirmAniList, findConfirmed, remove, restore, setEpisodeNote, recordWatched, setPinned,
+    snapshot: () => ({ version: 1, anime: structuredClone(db.anime) }),
+    // `next` is already sanitized; written first so a failed write leaves the current data untouched.
+    replaceAll(next) {
+      const fresh = { version: 1, anime: structuredClone(next.anime) }
+      writeJsonAtomic(file, fresh)
+      db = fresh
+    },
   }
 }

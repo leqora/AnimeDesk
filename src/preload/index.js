@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('animedesk', {
   settings: { get: invoke(INVOKE.settingsGet), update: invoke(INVOKE.settingsUpdate) },
   library: {
     list: invoke(INVOKE.libraryList),
+    facets: invoke(INVOKE.libraryFacets),
     add: invoke(INVOKE.libraryAdd),
     update: invoke(INVOKE.libraryUpdate),
     remove: invoke(INVOKE.libraryRemove),
@@ -25,6 +26,14 @@ contextBridge.exposeInMainWorld('animedesk', {
     recordWatched: invoke(INVOKE.libraryRecord),
     wasCorrupt: invoke(INVOKE.libraryWasCorrupt),
     setPinned: invoke(INVOKE.librarySetPinned),
+  },
+  data: {
+    export: invoke(INVOKE.dataExport),
+    importPick: invoke(INVOKE.dataImportPick),
+    importApply: invoke(INVOKE.dataImportApply),
+    info: invoke(INVOKE.dataInfo),
+    clearCache: invoke(INVOKE.dataClearCache),
+    openFolder: invoke(INVOKE.dataOpenFolder),
   },
   seriesPrefs: { get: invoke(INVOKE.seriesPrefsGet), set: invoke(INVOKE.seriesPrefsSet) },
   anilist: { forTitle: invoke(INVOKE.anilistForTitle), search: invoke(INVOKE.anilistSearch) },

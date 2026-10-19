@@ -136,6 +136,16 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .rail__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .search-bar { display: flex; gap: 8px; }
 .search-bar input { flex: 1; }
+.watchlist-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.watchlist-search { flex: 1 1 260px; min-width: 0; }
+.watchlist-add { margin-left: auto; }
+.status-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-btn { border-radius: 999px; padding: 4px 12px; font-size: 13px; }
+.chip-btn[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 28%, transparent); border-color: var(--accent); }
+.chip-btn__count { margin-left: 4px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.chip-btn[aria-pressed="true"] .chip-btn__count { color: var(--text); }
+.chip-btn[aria-pressed="true"]:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 28%, transparent); border-color: var(--accent); }
+.watchlist-nomatch { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr)); gap: 14px; }
 .card { display: flex; flex-direction: column; gap: 6px; padding: 8px; text-align: left; background: var(--glass); border-radius: var(--radius); transition: transform 180ms var(--ease), opacity 180ms var(--ease); }
 .card:hover { transform: translateY(-2px); box-shadow: var(--glow); }
@@ -272,6 +282,8 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 /* modals, wizard, lists */
 .modal { position: fixed; inset: 0; background: var(--scrim); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 20; }
 .modal__box { background: color-mix(in srgb, var(--bg-elev) 92%, transparent); border: 1px solid var(--glass-border); padding: 22px; border-radius: var(--radius); min-width: 400px; max-width: 580px; display: flex; flex-direction: column; gap: 12px; }
+.data-import { display: flex; flex-direction: column; gap: 8px; }
+.data-import > h3, .data-import > p { margin: 0; }
 .tool-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .tool-row { display: flex; align-items: center; gap: 10px; }
 .tool-row__name { flex: 1; }

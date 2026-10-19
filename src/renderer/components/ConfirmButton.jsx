@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
 
-export function ConfirmButton({ label, confirmLabel, onConfirm, className = '' }) {
+export function ConfirmButton({ label, confirmLabel, onConfirm, className = '', disabled = false }) {
   const t = useT()
   const [armed, setArmed] = useState(false)
-  if (!armed) return <button type="button" className={className} onClick={() => setArmed(true)}>{label}</button>
+  if (!armed) return <button type="button" className={className} disabled={disabled} onClick={() => setArmed(true)}>{label}</button>
   return (
     <span className="confirm">
       <span>{confirmLabel}</span>

@@ -25,11 +25,44 @@ const readAuto = (raw) => {
   }
 }
 
+// The one stored shape of a series record (empty fields left out); `{}` means nothing to store.
+function buildStored(prefs, spoilers, auto, aniListSync) {
+  const stored = {}
+  if (prefs.quality !== null) stored.quality = prefs.quality
+  if (prefs.mode !== null) stored.mode = prefs.mode
+  const offsets = Object.fromEntries(MODES.filter((m) => prefs.subOffset[m] !== 0).map((m) => [m, prefs.subOffset[m]]))
+  if (Object.keys(offsets).length) stored.subOffset = offsets
+  const { all, episodes } = spoilers.reveal
+  if (all || episodes.length) stored.reveal = { ...(all ? { all: true } : {}), ...(episodes.length ? { episodes } : {}) }
+  if (spoilers.metaOff) stored.metaOff = true
+  if (auto) stored.autoDownload = readAuto(auto)
+  if (aniListSync === false) stored.aniListSync = false
+  return stored
+}
+
+// Validates imported series prefs into exactly what `persist` writes; empty records and empty keys are dropped.
+export function sanitizeSeriesPrefs(raw) {
+  const series = {}
+  const src = raw !== null && typeof raw === 'object' && raw.series !== null && typeof raw.series === 'object' && !Array.isArray(raw.series) ? raw.series : {}
+  for (const [name, rec] of Object.entries(src)) {
+    const k = key(name)
+    if (!k || k in series || rec === null || typeof rec !== 'object') continue
+    const stored = buildStored(
+      { quality: QUALITIES.includes(rec.quality) ? rec.quality : null, mode: MODES.includes(rec.mode) ? rec.mode : null, subOffset: readOffsets(rec.subOffset) },
+      { reveal: readReveal(rec.reveal), metaOff: rec.metaOff === true },
+      readAuto(rec.autoDownload),
+      rec.aniListSync,
+    )
+    if (Object.keys(stored).length) series[k] = stored
+  }
+  return { version: 1, series }
+}
+
 // Quality, sub/dub, the subtitle offset per mode and the spoiler reveals, remembered per series
 // (also for series not in the watchlist).
 export function createSeriesPrefs(file) {
   const loaded = readJson(file, { version: 1, series: {} }).data
-  const db = loaded && typeof loaded.series === 'object' && loaded.series !== null ? loaded : { version: 1, series: {} }
+  let db = loaded && typeof loaded.series === 'object' && loaded.series !== null ? loaded : { version: 1, series: {} }
 
   function get(title) {
     const raw = db.series[key(title)] ?? {}
@@ -53,16 +86,7 @@ export function createSeriesPrefs(file) {
 
   // One writer for both halves, so changing one never drops the other.
   function persist(k, prefs, spoilers, auto, aniListSync) {
-    const stored = {}
-    if (prefs.quality !== null) stored.quality = prefs.quality
-    if (prefs.mode !== null) stored.mode = prefs.mode
-    const offsets = Object.fromEntries(MODES.filter((m) => prefs.subOffset[m] !== 0).map((m) => [m, prefs.subOffset[m]]))
-    if (Object.keys(offsets).length) stored.subOffset = offsets
-    const { all, episodes } = spoilers.reveal
-    if (all || episodes.length) stored.reveal = { ...(all ? { all: true } : {}), ...(episodes.length ? { episodes } : {}) }
-    if (spoilers.metaOff) stored.metaOff = true
-    if (auto) stored.autoDownload = readAuto(auto)
-    if (aniListSync === false) stored.aniListSync = false
+    const stored = buildStored(prefs, spoilers, auto, aniListSync)
     if (Object.keys(stored).length) db.series[k] = stored
     else delete db.series[k]
     writeJsonAtomic(file, db)
@@ -129,5 +153,13 @@ export function createSeriesPrefs(file) {
     return { quality: p.quality ?? settings.quality, mode: p.mode ?? settings.mode }
   }
 
-  return { get, set, resolve, getSpoilers, setSpoilers, getAutoDownload, setAutoDownload, getAniListSync, setAniListSync }
+  const snapshot = () => ({ version: 1, series: structuredClone(db.series) })
+  // `next` is already sanitized; written first so a failed write leaves the current data untouched.
+  function replaceAll(next) {
+    const fresh = { version: 1, series: structuredClone(next.series) }
+    writeJsonAtomic(file, fresh)
+    db = fresh
+  }
+
+  return { snapshot, replaceAll, get, set, resolve, getSpoilers, setSpoilers, getAutoDownload, setAutoDownload, getAniListSync, setAniListSync }
 }

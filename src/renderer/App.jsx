@@ -128,11 +128,16 @@ export default function App({ api, sound: injectedSound }) {
   })
   const { page, animeId } = nav.route
   const [stats, setStats] = useState(EMPTY_STATS)
+  // bumped after an import so SettingsPage (which keeps local copies of some settings) remounts with the new values
+  const [settingsKey, setSettingsKey] = useState(0)
   const [wizardOpen, setWizardOpen] = useState(false)
   // FIFO: an ask for episode N must survive the ask for N+1 (askOnClose + autoNext)
   const [asks, setAsks] = useState([])
   const [pendingWatch, setPendingWatch] = useState(null)
   const [corrupt, setCorrupt] = useState(false)
+  // one-shot: after an import remounts Settings, focus goes to its import button; dropped when leaving Settings
+  const [focusImport, setFocusImport] = useState(false)
+  useEffect(() => { if (page !== 'settings') setFocusImport(false) }, [page])
   const [updateState, setUpdateState] = useState({ status: 'idle', currentVersion: '' })
   const [whatsNew, setWhatsNew] = useState(null)
   const [fullscreen, setFullscreen] = useState(false)
@@ -298,6 +303,13 @@ export default function App({ api, sound: injectedSound }) {
   settingsRef.current = settings
   const ready = health.light === 'green'
   const updateSettings = async (patch) => setSettings(await api.settings.update(patch))
+  const onImported = (next) => {
+    setSettings(next)
+    setSettingsKey((k) => k + 1)
+    setCorrupt(false)
+    setFocusImport(true)
+    api.stats.get().then(setStats).catch((err) => console.warn('stats refresh after import failed', err?.message))
+  }
   const navigate = (p) => { if (p !== page) sound.play('navigate'); nav.navigate({ page: p, animeId: null }) }
   const openAnime = (id) => nav.navigate({ page: 'watchlist', animeId: id })
   openRef.current = { anime: openAnime, page: navigate }
@@ -342,7 +354,7 @@ export default function App({ api, sound: injectedSound }) {
                 {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} />}
                 {page === 'downloads' && <DownloadsPage />}
                 {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} />}
-                {page === 'settings' && <SettingsPage settings={settings} onSettings={updateSettings} onTestSound={() => sound.play('levelUp')} updateState={updateState} />}
+                {page === 'settings' && <SettingsPage key={settingsKey} focusImport={focusImport} settings={settings} onSettings={updateSettings} onImported={onImported} onTestSound={() => sound.play('levelUp')} updateState={updateState} />}
                 </RouteStateContext.Provider>
               </ErrorBoundary>
             </div>

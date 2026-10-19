@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mapError, menuKind, autoAnswer, parsePlayerArgs, buildEnv, stripAnsi, parseQualityFallback } from '../../src/main/aniCliBridge.js'
+import { createAniCliBridge, mapError, menuKind, autoAnswer, parsePlayerArgs, buildEnv, stripAnsi, parseQualityFallback } from '../../src/main/aniCliBridge.js'
 import { DEFAULT_SETTINGS } from '../../src/main/settings.js'
 
 describe('aniCliBridge helpers', () => {
@@ -82,5 +82,26 @@ describe('no sources and quality fallback', () => {
     expect(parseQualityFallback('\x1b[1;33m1080 not found, defaulting to best\x1b[0m')).toBe('1080')
     expect(parseQualityFallback('\x1b[2K')).toBeNull()
     expect(parseQualityFallback('Checking dependencies...')).toBeNull()
+  })
+})
+
+describe('startSession query tokens', () => {
+  const run = async (query) => {
+    let captured
+    const bridge = createAniCliBridge({
+      toolManager: { toolPaths: () => ({ bash: 'bash', aniCli: 'ani-cli' }) },
+      server: { registerSession() {}, unregisterSession() {}, port: 1, token: 't' },
+      bridges: { menu: 'm', player: 'p' }, getSettings: () => DEFAULT_SETTINGS, historyDir: 'h',
+      runImpl: (bash, args) => { captured = args; return { done: Promise.resolve({ code: 0, stdout: '', stderr: '' }), kill() {} } },
+    })
+    await bridge.startSession({ query }).done
+    return captured
+  }
+  it('drops query tokens that look like options', async () => {
+    expect((await run('-d --dub Naruto -x Shippuden')).slice(1)).toEqual(['Naruto', 'Shippuden'])
+  })
+  it('keeps the empty-query behaviour when nothing remains', async () => {
+    expect((await run('')).slice(1)).toEqual([''])
+    expect((await run('-d --dub')).slice(1)).toEqual([''])
   })
 })

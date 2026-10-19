@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createPositions } from '../../src/main/positions.js'
+import { createPositions, sanitizePositions } from '../../src/main/positions.js'
 
 let file
 beforeEach(() => { file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-pos-')), 'positions.json') })
@@ -102,5 +102,70 @@ describe('positions', () => {
     expect(ok).toHaveBeenCalledWith('save')
     expect(p.get('A b', 1)).not.toBeNull()
     warn.mockRestore()
+  })
+})
+
+describe('sanitizePositions', () => {
+  it('keeps valid items and drops invalid ones', () => {
+    const r = sanitizePositions({ version: 1, items: {
+      'show#1': { position: 600, duration: 1400, at: 5, extra: 1 },
+      'show#2': { position: 600, duration: 0, at: 5 },
+      'show#3': { position: NaN, duration: 1400, at: 5 },
+      'nohash': { position: 600, duration: 1400, at: 5 },
+      'show#4': { position: 600, duration: 1400 },
+      'show#5': null,
+    } })
+    expect(r).toEqual({ version: 1, items: { 'show#1': { position: 600, duration: 1400, at: 5 } } })
+  })
+  it('returns empty when not an object', () => {
+    expect(sanitizePositions([])).toEqual({ version: 1, items: {} })
+    expect(sanitizePositions(null)).toEqual({ version: 1, items: {} })
+  })
+})
+
+describe('positions snapshot / replaceAll', () => {
+  it('replaceAll swaps data, persists, fires clear and does not alias', () => {
+    const p = createPositions(file, { now: () => 1000 })
+    p.save('Old', 1, { position: 600, duration: 1400 })
+    const cb = vi.fn()
+    p.onChange(cb)
+    const snap = p.snapshot()
+    snap.items['old#1'].position = 1
+    expect(p.get('Old', 1).position).toBe(600)
+    const db = { version: 1, items: { 'new#2': { position: 700, duration: 1400, at: 5 } } }
+    p.replaceAll(db)
+    expect(cb).toHaveBeenCalledWith('clear')
+    expect(p.get('Old', 1)).toBeNull()
+    expect(p.get('New', 2)).toEqual({ position: 700, duration: 1400 })
+    expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual(db)
+    db.items['new#2'].position = 1
+    expect(p.get('New', 2).position).toBe(700)
+  })
+  it('replaceAll throws when the write fails (and does not emit)', () => {
+    const p = createPositions(file)
+    const cb = vi.fn()
+    p.onChange(cb)
+    fs.mkdirSync(`${file}.tmp`)
+    expect(() => p.replaceAll({ version: 1, items: {} })).toThrow()
+    expect(cb).not.toHaveBeenCalled()
+  })
+})
+
+describe('positions with a #-prefixed title', () => {
+  it('sanitizePositions keeps it and it round-trips through the store', () => {
+    const p = createPositions(file, { now: () => 1000 })
+    p.save('#Compass 2.0', 1, { position: 600, duration: 1400 })
+    const snap = p.snapshot()
+    expect(Object.keys(snap.items)).toEqual(['#compass 2.0#1'])
+    const clean = sanitizePositions(snap)
+    expect(clean).toEqual(snap)
+    const q = createPositions(path.join(path.dirname(file), 'other.json'))
+    q.replaceAll(clean)
+    expect(q.get('#Compass 2.0', 1)).toEqual({ position: 600, duration: 1400 })
+  })
+  it('requires a canonical episode part', () => {
+    const v = { position: 600, duration: 1400, at: 5 }
+    const r = sanitizePositions({ items: { 'a#1': v, 'a#01': v, 'a#x': v, 'a#12.5': v, 'a#': v, '#1': v } })
+    expect(Object.keys(r.items).sort()).toEqual(['a#1', 'a#12.5'])
   })
 })

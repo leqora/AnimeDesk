@@ -12,7 +12,7 @@ export function makeFakeApi(overrides = {}) {
   const api = {
     settings: { get: vi.fn(async () => ({ ...DEFAULT_SETTINGS })), update: vi.fn(async (p) => ({ ...DEFAULT_SETTINGS, ...p })) },
     library: {
-      list: vi.fn(async () => []), add: vi.fn(async (e) => ({ id: 'new', ...e })), update: vi.fn(async (id, p) => ({ id, ...p })),
+      list: vi.fn(async () => []), facets: vi.fn(async () => ({})), add: vi.fn(async (e) => ({ id: 'new', ...e })), update: vi.fn(async (id, p) => ({ id, ...p })),
       remove: vi.fn(async () => true), restore: vi.fn(async () => ({ ok: true, entry: {} })), setEpisodeNote: vi.fn(async () => ({})), recordWatched: vi.fn(async () => ({})), wasCorrupt: vi.fn(async () => false),
       setPinned: vi.fn(async (id, pinned) => ({ ok: true, entry: { id, pinnedAt: pinned ? 'now' : null } })),
     },
@@ -38,6 +38,11 @@ export function makeFakeApi(overrides = {}) {
     },
     whatsNew: { get: vi.fn(async () => null), seen: vi.fn(async () => {}) },
     window: { getFullscreen: vi.fn(async () => false), setFullscreen: vi.fn(async () => {}), onFullscreen: sub() },
+    data: {
+      export: vi.fn(async () => ({ ok: true })), importPick: vi.fn(async () => ({ ok: false, canceled: true })),
+      importApply: vi.fn(async () => ({ ok: true, settings: {} })), info: vi.fn(async () => ({ cacheBytes: 0, lastAutoBackup: null })),
+      clearCache: vi.fn(async () => ({ cacheBytes: 0 })), openFolder: vi.fn(async () => {}),
+    },
     dialog: { pickFolder: vi.fn(async () => null) },
     app: { openRepo: vi.fn(async () => {}) },
     skip: { get: vi.fn(async () => ({ op: null, ed: null, recap: null })) },

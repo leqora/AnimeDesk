@@ -14,7 +14,12 @@ function services() {
     internalPlayer: { progress: vi.fn(), closed: vi.fn() },
     watch: { watch: vi.fn(), cancel: vi.fn(), answerMenu: vi.fn(), playLocal: vi.fn(async () => 'watched'), recover: vi.fn(() => ({ ok: true })), retryAgain: vi.fn() },
     downloads: { enqueue: vi.fn(), pause: vi.fn(), resume: vi.fn(), cancel: vi.fn(), queueItems: vi.fn(), listDownloaded: vi.fn(), removeDownloaded: vi.fn(), getDownloaded: vi.fn((id) => (id === 'd1' ? { path: 'D:\\A\\A Episode 1.mp4', title: 'A', episode: '1', mode: 'dub' } : null)) },
-    electron: { pickFolder: vi.fn(async () => 'D:\\X'), showItemInFolder: vi.fn(), openRepo: vi.fn() },
+    electron: { pickFolder: vi.fn(async () => 'D:\\X'), showItemInFolder: vi.fn(), openRepo: vi.fn(), saveFile: vi.fn(async () => 'D:\\out.json'), openFile: vi.fn(async () => 'D:\\in.json'), openPath: vi.fn(async () => '') },
+    paths: { base: 'D:\\Data' },
+    dataBackup: {
+      exportTo: vi.fn(), readBackup: vi.fn(() => ({ ok: true, preview: { token: 't1', series: 2 } })), applyImport: vi.fn(() => ({ ok: true, settings: { language: 'en' } })),
+      info: vi.fn(() => ({ cacheBytes: 5, lastAutoBackup: '2026-10-19' })), clearCache: vi.fn(() => 0),
+    },
     tracker: { update: vi.fn(), remove: vi.fn(), restore: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })) },
     progress: { snapshot: vi.fn(() => ({ level: 1 })), check: vi.fn() },
     updater: { getState: vi.fn(() => ({ status: 'idle' })), check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(() => true), install: vi.fn(() => true), applySettings: vi.fn() },
@@ -375,5 +380,99 @@ describe('ipc background hooks', () => {
     const h = createHandlers(s)
     expect(() => h[INVOKE.settingsUpdate]({ language: 'en' })).not.toThrow()
     expect(() => h[INVOKE.libraryAdd]({ title: 'A' })).not.toThrow()
+  })
+  it('library:facets returns romaji+genres from the cache only', () => {
+    const s = services()
+    s.library.list.mockReturnValue([
+      { id: 'a', title: 'Frieren', aniListId: 5 },
+      { id: 'b', title: 'NoCache', aniListId: null },
+      { id: 'c', title: 'Odd', aniListId: null },
+    ])
+    s.anilist.getCached = vi.fn((title) => (title === 'Frieren' ? { romaji: 'Sousou no Frieren', genres: ['Adventure', 'Fantasy'] }
+      : title === 'Odd' ? { romaji: 42, genres: ['Drama', 7, null] } : null))
+    const result = createHandlers(s)[INVOKE.libraryFacets]()
+    expect(s.anilist.getCached).toHaveBeenCalledWith('Frieren', { aniListId: 5 })
+    expect(result).toEqual({
+      a: { romaji: 'Sousou no Frieren', genres: ['Adventure', 'Fantasy'] },
+      c: { romaji: null, genres: ['Drama'] },
+    })
+    expect(s.anilist.getForTitle).not.toHaveBeenCalled()
+    expect(s.anilist.search).not.toHaveBeenCalled()
+  })
+})
+
+describe('ipc data', () => {
+  it('data:export canceled', async () => {
+    const s = services()
+    s.electron.saveFile.mockResolvedValueOnce(null)
+    expect(await createHandlers(s)[INVOKE.dataExport]()).toEqual({ ok: false, canceled: true })
+    expect(s.dataBackup.exportTo).not.toHaveBeenCalled()
+  })
+  it('data:export writes to the chosen file with a language-dependent default name', async () => {
+    const s = services()
+    const h = createHandlers(s)
+    expect(await h[INVOKE.dataExport]()).toEqual({ ok: true })
+    expect(s.dataBackup.exportTo).toHaveBeenCalledWith('D:\\out.json')
+    expect(s.electron.saveFile.mock.calls[0][0]).toMatch(/^AnimeDesk-rezerva-\d{4}-\d{2}-\d{2}\.json$/)
+    s.settings.get.mockReturnValue({ language: 'en' })
+    await h[INVOKE.dataExport]()
+    expect(s.electron.saveFile.mock.calls[1][0]).toMatch(/^AnimeDesk-backup-\d{4}-\d{2}-\d{2}\.json$/)
+  })
+  it('data:export reports a write error without throwing', async () => {
+    const s = services()
+    s.dataBackup.exportTo.mockImplementationOnce(() => { throw new Error('disk') })
+    expect(await createHandlers(s)[INVOKE.dataExport]()).toEqual({ ok: false, error: 'write-failed' })
+  })
+  it('data:import-pick canceled and ok', async () => {
+    const s = services()
+    const h = createHandlers(s)
+    s.electron.openFile.mockResolvedValueOnce(null)
+    expect(await h[INVOKE.dataImportPick]()).toEqual({ ok: false, canceled: true })
+    expect(s.dataBackup.readBackup).not.toHaveBeenCalled()
+    expect(await h[INVOKE.dataImportPick]()).toEqual({ ok: true, preview: { token: 't1', series: 2 } })
+    expect(s.dataBackup.readBackup).toHaveBeenCalledWith('D:\\in.json')
+  })
+  it('data:import-apply passes the token and returns the result', () => {
+    const s = services()
+    const h = createHandlers(s)
+    expect(h[INVOKE.dataImportApply]('t1')).toEqual({ ok: true, settings: { language: 'en' } })
+    expect(s.dataBackup.applyImport).toHaveBeenCalledWith('t1')
+    h[INVOKE.dataImportApply](42)
+    expect(s.dataBackup.applyImport).toHaveBeenLastCalledWith('')
+  })
+  it('data:info returns cache size and last auto backup', () => {
+    expect(createHandlers(services())[INVOKE.dataInfo]()).toEqual({ cacheBytes: 5, lastAutoBackup: '2026-10-19' })
+  })
+  it('data:clear-cache returns cacheBytes and refreshes dependants', () => {
+    const s = services()
+    s.onCacheCleared = vi.fn()
+    expect(createHandlers(s)[INVOKE.dataClearCache]()).toEqual({ cacheBytes: 0 })
+    expect(s.dataBackup.clearCache).toHaveBeenCalled()
+    expect(s.onCacheCleared).toHaveBeenCalled()
+  })
+  it('data:open-folder opens the data folder', async () => {
+    const s = services()
+    await createHandlers(s)[INVOKE.dataOpenFolder]()
+    expect(s.electron.openPath).toHaveBeenCalledWith('D:\\Data')
+  })
+  it('channel names', () => {
+    expect([INVOKE.dataExport, INVOKE.dataImportPick, INVOKE.dataImportApply, INVOKE.dataInfo, INVOKE.dataClearCache, INVOKE.dataOpenFolder])
+      .toEqual(['data:export', 'data:import-pick', 'data:import-apply', 'data:info', 'data:clear-cache', 'data:open-folder'])
+  })
+})
+
+describe('settings side effects module', () => {
+  it('applies updater, mpv skin and hook for a patch', async () => {
+    const { createSettingsEffects } = await import('../../src/main/settingsEffects.js')
+    const updater = { applySettings: vi.fn() }
+    const toolManager = { installOptional: vi.fn() }
+    const onSettingsChanged = vi.fn()
+    const apply = createSettingsEffects({ updater, toolManager, send: vi.fn(), onSettingsChanged })
+    apply({ language: 'en' })
+    expect(updater.applySettings).not.toHaveBeenCalled()
+    apply({ autoDownloadUpdates: true, mpvModernUi: true })
+    expect(updater.applySettings).toHaveBeenCalledTimes(1)
+    expect(toolManager.installOptional).toHaveBeenCalledTimes(1)
+    expect(onSettingsChanged).toHaveBeenLastCalledWith({ autoDownloadUpdates: true, mpvModernUi: true })
   })
 })

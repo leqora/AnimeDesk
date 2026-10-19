@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react'
 import App from '../../../src/renderer/App.jsx'
 import { makeFakeApi } from './helpers.jsx'
 
@@ -42,10 +42,13 @@ describe('navigation', () => {
   it('watchlist filter survives detail and back', async () => {
     setup()
     await goWatchlist()
-    fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'completed' } })
+    const completed = () => within(screen.getByRole('group', { name: 'Status' })).getByRole('button', { name: /^Završeno/ })
+    fireEvent.click(completed())
+    fireEvent.change(screen.getByLabelText('Pretraži watchlist…'), { target: { value: 'bra' } })
     await openCard('Bravo')
     fireEvent.click(screen.getByRole('button', { name: 'Nazad' }))
-    await waitFor(() => expect(screen.getByLabelText('Status')).toHaveValue('completed'))
+    await waitFor(() => expect(completed()).toHaveAttribute('aria-pressed', 'true'))
+    expect(screen.getByLabelText('Pretraži watchlist…')).toHaveValue('bra')
   })
   it('Alt+ArrowLeft and mouse button 4 go back; Alt+ArrowRight / button 5 forward', async () => {
     setup()

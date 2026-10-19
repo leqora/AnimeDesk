@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 import { DEFAULT_SUBTITLES, SUBTITLE_FONT_STACKS, SUBTITLE_COLORS } from '../shared/subtitles.js'
 
@@ -106,11 +107,32 @@ export function sanitizeSettings(input = {}) {
   return s
 }
 
+// Per-machine state that a backup never carries over and an import never overwrites.
+export const LOCAL_SETTINGS = ['lastSeenVersion', 'trayHintShown', 'fullscreen']
+
+// An imported folder must be a local drive path: UNC and device paths would make the existence check contact a remote host.
+const LOCAL_DRIVE_PATH = /^[A-Za-z]:[\\/]/
+const isLocalDrivePath = (p) => LOCAL_DRIVE_PATH.test(p)
+
 export function createSettings(file, { systemName = 'Player', isPackaged = false } = {}) {
   let current = sanitizeSettings(readJson(file, {}).data)
   const view = () => ({ ...current, systemName, isPackaged })
   return {
     get: view,
+    snapshot() {
+      const out = { ...current }
+      for (const k of LOCAL_SETTINGS) delete out[k]
+      return structuredClone(out)
+    },
+    // Import: sanitized `input`, local fields and a missing downloadDir stay as they are. Throws if the write fails.
+    replace(input, { dirExists = fs.existsSync } = {}) {
+      const next = sanitizeSettings(input !== null && typeof input === 'object' ? input : {})
+      for (const k of LOCAL_SETTINGS) next[k] = current[k]
+      if (!(next.downloadDir && isLocalDrivePath(next.downloadDir) && dirExists(next.downloadDir))) next.downloadDir = current.downloadDir
+      writeJsonAtomic(file, next)
+      current = next
+      return view()
+    },
     update(patch) {
       const next = { ...current, ...patch }
       // partial subtitle patches (e.g. only enabled.dub) keep the other subtitle fields
