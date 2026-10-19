@@ -18,7 +18,7 @@ export function makeFakeApi(overrides = {}) {
     },
     seriesPrefs: { get: vi.fn(async () => ({ quality: null, mode: null, subOffset: { sub: 0, dub: 0 }, autoDownload: false, hideFiller: false })), set: vi.fn(async (title, patch) => ({ quality: null, mode: null, subOffset: { sub: 0, dub: 0 }, ...patch })) },
     autoDownload: { set: vi.fn(async (animeId, enabled) => ({ ok: true, enabled })) },
-    anilist: { forTitle: vi.fn(async () => null), search: vi.fn(async () => []) },
+    anilist: { forTitle: vi.fn(async () => null), search: vi.fn(async () => []), onRateLimited: sub() },
     episodes: { forSeries: vi.fn(async () => null), thumb: vi.fn(async () => null), spoilers: vi.fn(async () => null), onChanged: vi.fn(() => () => {}) },
     positions: { forSeries: vi.fn(async () => ({})) },
     tools: { status: vi.fn(async () => ({})), installMissing: vi.fn(async () => ({})), checkUpdates: vi.fn(async () => []), onProgress: sub() },

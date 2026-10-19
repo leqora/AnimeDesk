@@ -36,7 +36,7 @@ contextBridge.exposeInMainWorld('animedesk', {
     openFolder: invoke(INVOKE.dataOpenFolder),
   },
   seriesPrefs: { get: invoke(INVOKE.seriesPrefsGet), set: invoke(INVOKE.seriesPrefsSet) },
-  anilist: { forTitle: invoke(INVOKE.anilistForTitle), search: invoke(INVOKE.anilistSearch) },
+  anilist: { forTitle: invoke(INVOKE.anilistForTitle), search: invoke(INVOKE.anilistSearch), onRateLimited: on(EVENTS.anilistRateLimited) },
   episodes: { forSeries: invoke(INVOKE.episodesForSeries), thumb: invoke(INVOKE.episodesThumb), spoilers: invoke(INVOKE.episodesSpoilers), onChanged: on(EVENTS.episodesChanged) },
   positions: { forSeries: invoke(INVOKE.positionsForSeries) },
   tools: {

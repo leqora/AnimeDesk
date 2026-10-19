@@ -213,6 +213,7 @@
   "toast.undo": "Poništi",
   "toast.removed": "Uklonjeno iz watchlist-e: {title}",
   "toast.restoreFailed": "Seriju nije moguće vratiti.",
+  "toast.anilistRateLimited": "AniList privremeno ograničava zahteve — slike i podaci stižu za oko {seconds} s",
   "toast.markedWatched": "EP {episode} označena kao odgledana",
   "toast.unmarkedWatched": "EP {episode} označena kao neodgledana",
   "toast.region": "Obaveštenja",

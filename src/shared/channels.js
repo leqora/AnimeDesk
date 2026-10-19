@@ -89,6 +89,7 @@ export const EVENTS = {
   positionsChanged: 'event:positions-changed',
   downloads: 'event:downloads',
   levelUp: 'event:level-up',
+  anilistRateLimited: 'event:anilist-rate-limited',
   seriesCompleted: 'event:series-completed',
   updateState: 'event:update-state',
   fullscreen: 'event:fullscreen',

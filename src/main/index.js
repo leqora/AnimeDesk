@@ -127,7 +127,7 @@ async function main() {
   const updater = createUpdater({ autoUpdater, isPackaged: app.isPackaged, currentVersion: app.getVersion(), getSettings: () => settings.get(), notify: send })
   const library = createLibrary(paths.library)
   const seriesPrefs = createSeriesPrefs(paths.seriesPrefs)
-  const anilist = createAniList({ cacheDir: paths.cache })
+  const anilist = createAniList({ cacheDir: paths.cache, onRateLimited: ({ waitMs, until }) => send(EVENTS.anilistRateLimited, { seconds: Math.ceil(waitMs / 1000), until }) })
   const episodeMeta = createEpisodeMeta({ cacheDir: paths.anizipCache })
   const episodeLists = createEpisodeLists(paths.episodeLists)
   const fillerInfo = createFillerInfo({ cacheDir: paths.jikanCache })
