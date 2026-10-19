@@ -64,6 +64,13 @@ describe('redactEpisode', () => {
     expect(r).toEqual({ number: '1', runtime: 24, visibility: 'full', title: 'Tajna 5', hasThumb: true, overview: 'Opis 5' })
     expect(JSON.stringify(r)).not.toContain('img.example')
   })
+  it('adds kind only when it is filler or recap, for every visibility', () => {
+    expect(redactEpisode('5', META, 'hidden', 'filler')).toEqual({ number: '5', runtime: 24, visibility: 'hidden', kind: 'filler' })
+    expect(redactEpisode('5', META, 'hidden', 'recap').kind).toBe('recap')
+    expect(redactEpisode('5', META, 'full', 'filler').kind).toBe('filler')
+    expect(redactEpisode('5', META, 'hidden', 'other')).toEqual({ number: '5', runtime: 24, visibility: 'hidden' })
+    expect(redactEpisode('5', META, 'hidden', null)).toEqual({ number: '5', runtime: 24, visibility: 'hidden' })
+  })
   it('never copies unknown fields', () => {
     const r = redactEpisode('1', { ...META, synopsis: 'skriveno', airdate: '2030-01-01' }, 'full')
     expect(Object.keys(r).sort()).toEqual(['hasThumb', 'number', 'overview', 'runtime', 'title', 'visibility'])

@@ -28,9 +28,11 @@ export function episodeVisibility(n, { enabled = true, watchedMax: max = 0, reve
 
 // Built from a whitelist, never by spreading `meta`: a field ani.zip adds tomorrow cannot slip through.
 // The image URL never leaves main; the renderer asks for the thumbnail by episode number.
-export function redactEpisode(number, meta, visibility) {
+// `kind` (filler/recap) is not story content, so it is carried for every visibility; anything else is dropped.
+export function redactEpisode(number, meta, visibility, kind = null) {
   const runtime = Number.isFinite(meta?.runtime) && meta.runtime > 0 ? meta.runtime : null
   const out = { number: String(number), runtime, visibility }
+  if (kind === 'filler' || kind === 'recap') out.kind = kind
   // Fail closed: anything but an explicit preview or full carries no metadata.
   if ((visibility !== 'preview' && visibility !== 'full') || !meta) return out
   if (typeof meta.title === 'string' && meta.title) out.title = meta.title
