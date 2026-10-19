@@ -2,7 +2,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 
-export const JIKAN_URL = 'https://api.jikan.moe/v4/anime'
+// The public Jikan API was discontinued on 2026-10-01; jikan-edge is a Jikan-parity mirror.
+export const JIKAN_URL = 'https://jikan.lucashdo.com/v1/anime'
 const HOUR = 3600 * 1000
 const DAY = 24 * HOUR
 export const TTL_MS = 30 * DAY
@@ -14,6 +15,7 @@ export const RETRY_AFTER_MS = HOUR
 export const GAP_MS = 1100
 export const RATE_PAUSE_MS = 60000
 export const MAX_RATE_RETRIES = 2
+const MAX_RETRY_AFTER_MS = 5 * 60 * 1000
 export const MAX_PAGES = 30
 export const TIMEOUT_MS = 15000
 
@@ -24,10 +26,12 @@ const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 export function slimJikanPage(raw) {
   const episodes = []
   for (const e of Array.isArray(raw?.data) ? raw.data : []) {
-    if (e === null || typeof e !== 'object' || !Number.isInteger(e.mal_id) || e.mal_id < 1) continue
-    episodes.push({ n: e.mal_id, kind: e.recap === true ? 'recap' : e.filler === true ? 'filler' : null })
+    if (e === null || typeof e !== 'object') continue
+    const n = e.number ?? e.mal_id
+    if (!Number.isInteger(n) || n < 1) continue
+    episodes.push({ n, kind: e.recap === true ? 'recap' : e.filler === true ? 'filler' : null })
   }
-  return { episodes, hasNext: raw?.pagination?.has_next_page === true }
+  return { episodes, hasNext: raw?.meta?.pagination?.hasNextPage === true || raw?.pagination?.has_next_page === true }
 }
 
 export function createFillerInfo({ cacheDir, fetchImpl = fetch, now = Date.now, sleep = defaultSleep }) {
@@ -56,7 +60,12 @@ export function createFillerInfo({ cacheDir, fetchImpl = fetch, now = Date.now, 
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
     try {
       const r = await fetchImpl(url, { signal: ctrl.signal })
-      return { status: r.status, ok: r.ok, body: r.ok ? await r.json() : null }
+      const retryAfter = Number(r.headers?.get?.('retry-after'))
+      if (!r.ok) {
+        try { await r.body?.cancel?.() } catch { /* body already gone */ }
+        return { status: r.status, ok: false, body: null, retryAfter }
+      }
+      return { status: r.status, ok: true, body: await r.json(), retryAfter }
     } finally { clearTimeout(timer) }
   }
 
@@ -67,7 +76,10 @@ export function createFillerInfo({ cacheDir, fetchImpl = fetch, now = Date.now, 
         const out = await requestOnce(url)
         if (out.status !== 429) return out
         if (attempt >= MAX_RATE_RETRIES) throw new Error('Jikan HTTP 429')
-        await sleep(RATE_PAUSE_MS)
+        const pause = Number.isFinite(out.retryAfter) && out.retryAfter > 0
+          ? Math.min(MAX_RETRY_AFTER_MS, Math.max(RATE_PAUSE_MS, out.retryAfter * 1000))
+          : RATE_PAUSE_MS
+        await sleep(pause)
         lastStart = now()
       }
     })
@@ -88,6 +100,8 @@ export function createFillerInfo({ cacheDir, fetchImpl = fetch, now = Date.now, 
       return null
     }
   }
+
+  const write = (id, data) => { writeJsonAtomic(file(id), data); parsed.delete(id) }
 
   const ttlFor = (rec, airing) => (rec.missing ? MISSING_TTL_MS : airing ? AIRING_TTL_MS : TTL_MS)
   const numbers = (a) => (Array.isArray(a) ? a.filter((n) => Number.isInteger(n) && n > 0) : [])
@@ -122,7 +136,7 @@ export function createFillerInfo({ cacheDir, fetchImpl = fetch, now = Date.now, 
         if (res.status === 404 && p === 1) {
           // Never let a "not found" replace a record that holds real data.
           if (good) { failedAt.set(id, now()); return false }
-          writeJsonAtomic(file(id), { missing: true, fetchedAt: now() })
+          write(id, { missing: true, fetchedAt: now() })
           failedAt.delete(id)
           return false
         }
@@ -139,12 +153,12 @@ export function createFillerInfo({ cacheDir, fetchImpl = fetch, now = Date.now, 
       if (seen === 0) {
         // An empty answer must not replace a good cache.
         if (good) { failedAt.set(id, now()); return false }
-        writeJsonAtomic(file(id), { missing: true, fetchedAt: now() })
+        write(id, { missing: true, fetchedAt: now() })
         failedAt.delete(id)
         return false
       }
       const asc = (a, b) => a - b
-      writeJsonAtomic(file(id), { filler: filler.sort(asc), recap: recap.sort(asc), count, fetchedAt: now() })
+      write(id, { filler: filler.sort(asc), recap: recap.sort(asc), count, fetchedAt: now() })
       failedAt.delete(id)
       return true
     } catch (err) {

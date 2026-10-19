@@ -7,10 +7,16 @@ import {
   GAP_MS, RATE_PAUSE_MS, MAX_PAGES, TIMEOUT_MS,
 } from '../../src/main/fillerInfo.js'
 
-const res = (body, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body })
+const res = (body, status = 200, headers = {}) => ({
+  ok: status >= 200 && status < 300, status, json: async () => body,
+  headers: { get: (k) => new Headers(headers).get(k) },
+})
+// jikan-edge shape
 const page = (items, next = false) => ({
-  pagination: { has_next_page: next },
-  data: items.map(([n, kind]) => ({ mal_id: n, title: 'Secret', filler: kind === 'filler', recap: kind === 'recap', aired: '2000-01-01', score: 4 })),
+  data: items.map(([n, kind]) => ({
+    number: n, title: 'Secret', titleJapanese: 'Himitsu', url: 'https://example.invalid/x', filler: kind === 'filler', recap: kind === 'recap', aired: '2000-01-01', score: 4, forumReplies: 1,
+  })),
+  meta: { cached: true, pagination: { page: 1, limit: 100, count: items.length, total: 0, hasNextPage: next } },
 })
 const P1 = page([[1], [2], [3, 'filler']], true)
 const P2 = page([[4, 'filler'], [50, 'recap'], [101, 'filler']], false)
@@ -23,6 +29,7 @@ beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-filler-'))
   clock = 1_000_000
   sleeps = []
+  vi.spyOn(console, 'warn').mockImplementation(() => {})
   sleep = vi.fn(async (ms) => { sleeps.push(ms); clock += ms })
   fetchImpl = vi.fn(async (url) => (url.endsWith('page=2') ? res(P2) : res(P1)))
   info = make()
@@ -45,6 +52,13 @@ describe('slimJikanPage', () => {
       hasNext: true,
     })
   })
+  it('still parses the old Jikan shape and prefers number over mal_id', () => {
+    expect(slimJikanPage({ pagination: { has_next_page: true }, data: [{ mal_id: 7, filler: true }, { number: 8, mal_id: 2, recap: true }] })).toEqual({
+      episodes: [{ n: 7, kind: 'filler' }, { n: 8, kind: 'recap' }],
+      hasNext: true,
+    })
+    expect(slimJikanPage({ data: [{ number: 0 }, { number: '3' }], meta: { pagination: { hasNextPage: false } } })).toEqual({ episodes: [], hasNext: false })
+  })
   it('survives a bad body', () => {
     expect(slimJikanPage(null)).toEqual({ episodes: [], hasNext: false })
     expect(slimJikanPage({ data: 'x', pagination: { has_next_page: 'yes' } })).toEqual({ episodes: [], hasNext: false })
@@ -56,7 +70,8 @@ describe('fillerInfo.ensure', () => {
     expect(await info.ensure(21)).toBe(true)
     expect(fetchImpl.mock.calls.map((c) => c[0])).toEqual([`${JIKAN_URL}/21/episodes?page=1`, `${JIKAN_URL}/21/episodes?page=2`])
     expect(JSON.parse(fs.readFileSync(file(21), 'utf8'))).toEqual({ filler: [3, 4, 101], recap: [50], count: 101, fetchedAt: clock })
-    expect(fs.readFileSync(file(21), 'utf8')).not.toContain('Secret')
+    for (const w of ['Secret', 'Himitsu', 'example.invalid']) expect(fs.readFileSync(file(21), 'utf8')).not.toContain(w)
+    expect(fetchImpl.mock.calls[0][0]).toBe('https://jikan.lucashdo.com/v1/anime/21/episodes?page=1')
     expect(info.cached(21)).toEqual({ filler: [3, 4, 101], recap: [50], count: 101, fetchedAt: clock, expired: false })
   })
 
@@ -147,6 +162,36 @@ describe('fillerInfo.ensure', () => {
     expect(fs.existsSync(file(4))).toBe(false)
     expect(await info.ensure(4)).toBe(false)
     expect(fetchImpl).toHaveBeenCalledTimes(3)
+  })
+
+  it('429 honours a numeric Retry-After, capped at 5 minutes', async () => {
+    fetchImpl
+      .mockResolvedValueOnce(res({}, 429, { 'Retry-After': '120' }))
+      .mockResolvedValueOnce(res({}, 429, { 'Retry-After': '10' }))
+      .mockResolvedValueOnce(res(page([[1, 'filler']], false)))
+    expect(await info.ensure(3)).toBe(true)
+    expect(sleeps.filter((ms) => ms >= RATE_PAUSE_MS)).toEqual([120000, RATE_PAUSE_MS])
+    sleeps.length = 0
+    fetchImpl.mockReset()
+    fetchImpl.mockResolvedValueOnce(res({}, 429, { 'Retry-After': '99999' })).mockResolvedValueOnce(res(page([[1]], false)))
+    await info.ensure(4)
+    expect(sleeps.filter((ms) => ms >= RATE_PAUSE_MS)).toEqual([300000])
+  })
+
+  it('cancels the body of a non-ok response', async () => {
+    const cancel = vi.fn()
+    fetchImpl.mockResolvedValue({ ok: false, status: 500, body: { cancel }, headers: { get: () => null } })
+    await info.ensure(6)
+    expect(cancel).toHaveBeenCalled()
+  })
+
+  it('cached() sees a same-size rewrite made right after our own write', async () => {
+    await info.ensure(21)
+    expect(info.cached(21).filler).toEqual([3, 4, 101])
+    clock += TTL_MS + 1
+    fetchImpl.mockImplementation(async (url) => (url.endsWith('page=2') ? res(page([[4, 'filler'], [50, 'recap'], [102, 'filler']])) : res(P1)))
+    await info.ensure(21)
+    expect(info.cached(21).filler).toEqual([3, 4, 102])
   })
 
   it('empty answer never replaces a good cache', async () => {
