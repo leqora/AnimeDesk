@@ -172,3 +172,27 @@ describe('AnimeDetail undo', () => {
     await waitFor(() => expect(api.library.update).toHaveBeenLastCalledWith('a1', { watchedEpisodes: [2, 3, 4] }))
   })
 })
+
+describe('AnimeDetail marks', () => {
+  const marked = (meta, marks) => ({ source: 'ani-cli', meta, marks, markCounts: { filler: 1, recap: 0 }, episodes: ['1', '2', '3', '4'].map((n) => ({ number: n, runtime: null, visibility: 'hidden', ...(n === '2' ? { kind: 'filler' } : {}) })) })
+  const OFF = 'Isključi metapodatke za ovu seriju'
+  it('shows the metadata switch row when marks are available even without metadata', async () => {
+    const s = marked('none', 'ok')
+    mount(makeFakeApi({ episodes: { forSeries: vi.fn(async () => s) } }))
+    expect(await screen.findByLabelText(OFF)).toBeInTheDocument()
+  })
+  it.each([['none', 'none'], ['none', 'off']])('hides the row when meta is %s and marks is %s', async (meta, marks) => {
+    const api = makeFakeApi({ episodes: { forSeries: vi.fn(async () => marked(meta, marks)) } })
+    mount(api)
+    await waitFor(() => expect(api.episodes.forSeries).toHaveBeenCalled())
+    await new Promise((r) => setTimeout(r, 20))
+    expect(screen.queryByLabelText(OFF)).not.toBeInTheDocument()
+  })
+  it('toggling hide saves hideFiller for the series and hides marked episodes', async () => {
+    const api = makeFakeApi({ episodes: { forSeries: vi.fn(async () => marked('none', 'ok')) } })
+    mount(api)
+    fireEvent.click(await screen.findByRole('button', { name: 'Sakrij filler i recap' }))
+    await waitFor(() => expect(api.seriesPrefs.set).toHaveBeenCalledWith('Show', { hideFiller: true }))
+    await waitFor(() => expect(screen.queryByRole('button', { name: '2, filler' })).not.toBeInTheDocument())
+  })
+})

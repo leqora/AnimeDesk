@@ -130,3 +130,19 @@ describe('useEpisodeProgress', () => {
     expect(none.positions.forSeries).not.toHaveBeenCalled()
   })
 })
+
+describe('useSeriesEpisodes marks', () => {
+  it('reloads on episodes changed and unsubscribes on unmount', async () => {
+    let changed
+    const unsub = vi.fn()
+    const forSeries = vi.fn(async () => LIST)
+    const api = makeFakeApi({ episodes: { forSeries } })
+    api.episodes.onChanged = vi.fn((cb) => { changed = cb; return unsub })
+    const { result, unmount } = renderHookUi(() => useSeriesEpisodes({ title: 'Show' }), { api })
+    await waitFor(() => expect(result.current.series).toEqual(LIST))
+    act(() => changed())
+    await waitFor(() => expect(forSeries).toHaveBeenCalledTimes(2))
+    unmount()
+    expect(unsub).toHaveBeenCalled()
+  })
+})

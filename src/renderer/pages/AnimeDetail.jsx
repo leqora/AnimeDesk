@@ -31,11 +31,17 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   // Auto-download switch: needs a series identity (aniCliTitle + aniListId) and a download folder.
   const canAuto = Boolean(entry.aniCliTitle && entry.aniListId != null)
   const [auto, setAuto] = useState(false)
+  const [hideFiller, setHideFiller] = useState(false)
   const [downloadDir, setDownloadDir] = useState(undefined)
+  useEffect(() => {
+    if (!entry.aniCliTitle) return undefined
+    let live = true
+    api.seriesPrefs.get(entry.aniCliTitle).then((p) => { if (live) { setAuto(Boolean(p?.autoDownload)); setHideFiller(Boolean(p?.hideFiller)) } }).catch((err) => console.error(err))
+    return () => { live = false }
+  }, [api, entry.aniCliTitle])
   useEffect(() => {
     if (!canAuto) return undefined
     let live = true
-    api.seriesPrefs.get(entry.aniCliTitle).then((p) => { if (live) setAuto(Boolean(p?.autoDownload)) }).catch((err) => console.error(err))
     // A failed read must not lock the switch: main validates the folder again on set().
     api.settings.get().then((s) => { if (live) setDownloadDir(s?.downloadDir ?? null) }).catch((err) => { console.error(err); if (live) setDownloadDir('') })
     return () => { live = false }
@@ -47,6 +53,14 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
     if (r?.ok) setAuto(r.enabled)
     else toast.show({ message: t('detail.autoDownloadFailed') })
   }
+
+  const changeHideFiller = entry.aniCliTitle ? async (hide) => {
+    setHideFiller(hide)
+    try {
+      const next = await api.seriesPrefs.set(entry.aniCliTitle, { hideFiller: hide })
+      if (mounted.current) setHideFiller(Boolean(next?.hideFiller))
+    } catch (err) { console.error(err); if (mounted.current) setHideFiller(!hide) }
+  } : null
 
   // Patch aniListId/totalEpisodes into the library once per entry id, when its info first arrives.
   const patchedFor = useRef(null)
@@ -242,8 +256,10 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
             progress={progress}
             onReveal={(ep) => update({ episode: ep })}
             loadThumb={thumb}
+            hideMarked={hideFiller}
+            onHideMarked={changeHideFiller}
           />
-          {series && series.meta !== 'none' && (
+          {series && (series.meta !== 'none' || series.marks === 'ok') && (
             <div className="row spoiler-row">
               {series.meta === 'unreliable' && <span className="muted">{t('episodes.unreliable')}</span>}
               {series.meta === 'ok' && <button type="button" onClick={() => update({ all: true })}>{t('episodes.revealAll')}</button>}

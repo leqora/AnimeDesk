@@ -183,3 +183,14 @@ describe('SettingsPage', () => {
     expect(screen.getByRole('button', { name: 'Proveravam…' })).toBeDisabled()
   })
 })
+
+describe('SettingsPage episode marks', () => {
+  it('toggles filler and recap marks', () => {
+    const onSettings = vi.fn()
+    renderUi(<SettingsPage settings={{ ...DEFAULT_SETTINGS }} onSettings={onSettings} />)
+    const box = screen.getByRole('checkbox', { name: 'Prikaži filler i recap oznake (MyAnimeList)' })
+    expect(box).toBeChecked()
+    fireEvent.click(box)
+    expect(onSettings).toHaveBeenCalledWith({ episodeMarks: false })
+  })
+})
