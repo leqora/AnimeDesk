@@ -26,6 +26,19 @@ export function createHandlers(s) {
     [INVOKE.windowGetFullscreen]: () => s.window.get(),
     [INVOKE.windowSetFullscreen]: (value) => s.window.set(Boolean(value)),
     [INVOKE.libraryList]: () => s.library.list(),
+    // search/genre facets for the watchlist: read from the AniList cache only, never from the network
+    [INVOKE.libraryFacets]: () => {
+      const facets = {}
+      for (const e of s.library.list()) {
+        const info = s.anilist.getCached(e.title, { aniListId: e.aniListId })
+        if (!info) continue
+        facets[e.id] = {
+          romaji: typeof info.romaji === 'string' ? info.romaji : null,
+          genres: Array.isArray(info.genres) ? info.genres.filter((g) => typeof g === 'string') : [],
+        }
+      }
+      return facets
+    },
     [INVOKE.libraryAdd]: (entry) => {
       const added = s.library.add(entry)
       s.onLibraryChanged?.()

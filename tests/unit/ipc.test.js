@@ -376,4 +376,22 @@ describe('ipc background hooks', () => {
     expect(() => h[INVOKE.settingsUpdate]({ language: 'en' })).not.toThrow()
     expect(() => h[INVOKE.libraryAdd]({ title: 'A' })).not.toThrow()
   })
+  it('library:facets returns romaji+genres from the cache only', () => {
+    const s = services()
+    s.library.list.mockReturnValue([
+      { id: 'a', title: 'Frieren', aniListId: 5 },
+      { id: 'b', title: 'NoCache', aniListId: null },
+      { id: 'c', title: 'Odd', aniListId: null },
+    ])
+    s.anilist.getCached = vi.fn((title) => (title === 'Frieren' ? { romaji: 'Sousou no Frieren', genres: ['Adventure', 'Fantasy'] }
+      : title === 'Odd' ? { romaji: 42, genres: ['Drama', 7, null] } : null))
+    const result = createHandlers(s)[INVOKE.libraryFacets]()
+    expect(s.anilist.getCached).toHaveBeenCalledWith('Frieren', { aniListId: 5 })
+    expect(result).toEqual({
+      a: { romaji: 'Sousou no Frieren', genres: ['Adventure', 'Fantasy'] },
+      c: { romaji: null, genres: ['Drama'] },
+    })
+    expect(s.anilist.getForTitle).not.toHaveBeenCalled()
+    expect(s.anilist.search).not.toHaveBeenCalled()
+  })
 })

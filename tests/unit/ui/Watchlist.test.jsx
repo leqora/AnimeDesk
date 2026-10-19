@@ -36,7 +36,7 @@ describe('WatchlistPage', () => {
     const api = makeFakeApi({ library: { list: vi.fn(async () => [entry(), entry({ id: 'a2', title: 'Naruto', status: 'dropped' })]) } })
     renderUi(<WatchlistPage ready onContinue={() => {}} />, { api })
     await waitFor(() => screen.getByText('Naruto'))
-    fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'dropped' } })
+    fireEvent.click(within(screen.getByRole('group', { name: 'Status' })).getByRole('button', { name: /^Odustao/ }))
     expect(screen.queryByText('Frieren')).not.toBeInTheDocument()
     expect(screen.getByText('Naruto')).toBeInTheDocument()
   })
@@ -85,6 +85,150 @@ describe('WatchlistPage', () => {
     expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '3' })
     fireEvent.click(screen.getByRole('button', { name: 'Dodaj u omiljene: Show' }))
     expect(await screen.findByText('Možeš zakačiti najviše 5 serija. Otkači neku pa pokušaj ponovo.')).toBeInTheDocument()
+  })
+})
+
+describe('WatchlistPage toolbar', () => {
+  const lib = () => [
+    entry({ id: 'a', title: 'Frieren', aniCliTitle: 'Frieren', status: 'watching', addedAt: '2026-01-01T00:00:00Z' }),
+    entry({ id: 'b', title: 'Naruto', aniCliTitle: 'Naruto', status: 'dropped', addedAt: '2026-03-01T00:00:00Z' }),
+    entry({ id: 'c', title: 'Šaman Kralj', aniCliTitle: 'Shaman King', status: 'watching', addedAt: '2026-02-01T00:00:00Z' }),
+  ]
+  const facets = {
+    a: { romaji: 'Sousou no Frieren', genres: ['Fantasy', 'Adventure'] },
+    b: { romaji: null, genres: ['Action'] },
+    c: { romaji: 'Shaman King Romaji', genres: ['Action'] },
+  }
+  const setup = (over = {}) => {
+    const api = makeFakeApi({ library: { list: vi.fn(async () => lib()), facets: vi.fn(async () => facets), ...over } })
+    const utils = renderUi(<WatchlistPage ready onContinue={() => {}} />, { api })
+    return { api, ...utils }
+  }
+  const search = () => screen.getByRole('searchbox', { name: 'Pretraži watchlist…' })
+  const chip = (name) => within(screen.getByRole('group', { name: 'Status' })).getByRole('button', { name: new RegExp('^' + name) })
+
+  it('search filters by aniCliTitle and romaji without diacritics', async () => {
+    setup()
+    await screen.findByText('Naruto')
+    fireEvent.change(search(), { target: { value: 'saman' } })
+    expect(screen.queryByText('Naruto')).not.toBeInTheDocument()
+    expect(screen.getByText('Šaman Kralj')).toBeInTheDocument()
+    fireEvent.change(search(), { target: { value: 'sousou' } })
+    expect(screen.getByText('Frieren')).toBeInTheDocument()
+    expect(screen.queryByText('Šaman Kralj')).not.toBeInTheDocument()
+    fireEvent.change(search(), { target: { value: 'shaman king' } })
+    expect(screen.getByText('Šaman Kralj')).toBeInTheDocument()
+  })
+  it('status chips show counts and aria-pressed, clicking filters, counts follow search', async () => {
+    setup()
+    await screen.findByText('Naruto')
+    expect(chip('Sve')).toHaveTextContent('3')
+    expect(chip('Sve')).toHaveAttribute('aria-pressed', 'true')
+    expect(chip('Gledam')).toHaveTextContent('2')
+    expect(chip('Gledam')).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(chip('Gledam'))
+    expect(chip('Gledam')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByText('Naruto')).not.toBeInTheDocument()
+    fireEvent.change(search(), { target: { value: 'frieren' } })
+    expect(chip('Gledam')).toHaveTextContent('1')
+    expect(chip('Sve')).toHaveTextContent('1')
+  })
+  it('genre select lists only library genres and hides when none known', async () => {
+    const { unmount } = setup()
+    const select = await screen.findByLabelText('Žanr')
+    expect([...select.options].map((o) => o.textContent)).toEqual(['Svi žanrovi', 'Action', 'Adventure', 'Fantasy'])
+    fireEvent.change(select, { target: { value: 'Action' } })
+    expect(screen.queryByText('Frieren')).not.toBeInTheDocument()
+    expect(screen.getByText('Naruto')).toBeInTheDocument()
+    unmount()
+    setup({ facets: vi.fn(async () => ({})) })
+    await screen.findByText('Naruto')
+    expect(screen.queryByLabelText('Žanr')).not.toBeInTheDocument()
+  })
+  it('sort Poslednje dodato orders by addedAt', async () => {
+    const { container } = setup()
+    await screen.findByText('Naruto')
+    fireEvent.change(screen.getByLabelText('Sortiraj'), { target: { value: 'added' } })
+    const text = container.querySelector('.card-grid').textContent
+    expect(text.indexOf('Naruto')).toBeLessThan(text.indexOf('Šaman Kralj'))
+    expect(text.indexOf('Šaman Kralj')).toBeLessThan(text.indexOf('Frieren'))
+  })
+  it('filtered empty state resets query/status/genre and focuses search', async () => {
+    setup()
+    await screen.findByText('Naruto')
+    fireEvent.click(chip('Gledam'))
+    fireEvent.change(screen.getByLabelText('Žanr'), { target: { value: 'Action' } })
+    fireEvent.change(search(), { target: { value: 'nothing-here' } })
+    expect(screen.getByText('Nema serija za ovaj filter')).toBeInTheDocument()
+    expect(screen.queryByText('Watchlist je prazna.')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Poništi filtere' }))
+    expect(search()).toHaveValue('')
+    expect(chip('Sve')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Žanr')).toHaveValue('all')
+    expect(search()).toHaveFocus()
+    expect(screen.getByText('Naruto')).toBeInTheDocument()
+  })
+  it('empty library still shows the empty message', async () => {
+    renderUi(<WatchlistPage ready onContinue={() => {}} />)
+    expect(await screen.findByText('Watchlist je prazna.')).toBeInTheDocument()
+    expect(screen.queryByText('Nema serija za ovaj filter')).not.toBeInTheDocument()
+  })
+  it('slash and Ctrl+F focus the search', async () => {
+    setup()
+    await screen.findByText('Naruto')
+    fireEvent.keyDown(window, { key: '/' })
+    expect(search()).toHaveFocus()
+    search().blur()
+    const notPrevented = fireEvent.keyDown(window, { key: 'f', ctrlKey: true })
+    expect(notPrevented).toBe(false)
+    expect(search()).toHaveFocus()
+  })
+  it('slash inside an input types normally', async () => {
+    setup()
+    await screen.findByText('Naruto')
+    const manual = screen.getByLabelText('Naziv animea')
+    manual.focus()
+    fireEvent.keyDown(manual, { key: '/' })
+    fireEvent.change(manual, { target: { value: '/' } })
+    expect(manual).toHaveValue('/')
+    expect(search()).not.toHaveFocus()
+    expect(manual).toHaveFocus()
+  })
+  it('Esc clears the query and is defaultPrevented; Esc on an empty field blurs', async () => {
+    setup()
+    await screen.findByText('Naruto')
+    search().focus()
+    fireEvent.change(search(), { target: { value: 'nar' } })
+    const notPrevented = fireEvent.keyDown(search(), { key: 'Escape' })
+    expect(notPrevented).toBe(false)
+    expect(search()).toHaveValue('')
+    expect(search()).toHaveFocus()
+    fireEvent.keyDown(search(), { key: 'Escape' })
+    expect(search()).not.toHaveFocus()
+  })
+  it('shortcuts are inactive while a dialog is open', async () => {
+    setup()
+    await screen.findByText('Naruto')
+    const dlg = document.createElement('div')
+    dlg.setAttribute('role', 'dialog')
+    document.body.appendChild(dlg)
+    try {
+      fireEvent.keyDown(window, { key: '/' })
+      expect(search()).not.toHaveFocus()
+      const notPrevented = fireEvent.keyDown(window, { key: 'f', ctrlKey: true })
+      expect(notPrevented).toBe(true)
+      expect(search()).not.toHaveFocus()
+    } finally {
+      dlg.remove()
+    }
+  })
+  it('facets reload on library change', async () => {
+    const { api } = setup()
+    await screen.findByText('Naruto')
+    const calls = api.library.facets.mock.calls.length
+    expect(calls).toBeGreaterThan(0)
+    api.onLibraryChanged.mock.calls[0][0]()
+    await waitFor(() => expect(api.library.facets.mock.calls.length).toBeGreaterThan(calls))
   })
 })
 

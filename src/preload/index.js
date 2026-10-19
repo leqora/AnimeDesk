@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('animedesk', {
   settings: { get: invoke(INVOKE.settingsGet), update: invoke(INVOKE.settingsUpdate) },
   library: {
     list: invoke(INVOKE.libraryList),
+    facets: invoke(INVOKE.libraryFacets),
     add: invoke(INVOKE.libraryAdd),
     update: invoke(INVOKE.libraryUpdate),
     remove: invoke(INVOKE.libraryRemove),

@@ -8,6 +8,7 @@ export const INVOKE = {
   whatsNewSeen: 'whats-new:seen',
   settingsUpdate: 'settings:update',
   libraryList: 'library:list',
+  libraryFacets: 'library:facets',
   libraryAdd: 'library:add',
   libraryUpdate: 'library:update',
   libraryRemove: 'library:remove',
