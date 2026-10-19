@@ -7,7 +7,7 @@ import { sanitizeWatchLog } from './watchLog.js'
 import { sanitizeSeriesPrefs } from './seriesPrefs.js'
 import { sanitizePositions } from './positions.js'
 import { LOCAL_SETTINGS } from './settings.js'
-import { MAX_IMPORT_BYTES, IMPORT_TTL_MS, PRE_IMPORT_KEEP, toPrune, preImportName } from '../shared/backupRules.js'
+import { MAX_IMPORT_BYTES, IMPORT_TTL_MS, PRE_IMPORT_KEEP, AUTO_KEEP, toPrune, preImportName, autoName, latestAuto, nextDelay } from '../shared/backupRules.js'
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
 
@@ -15,6 +15,8 @@ const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
 export function createDataBackup({
   paths, library, watchLog, seriesPrefs, positions, settings, tracker, progress,
   appVersion, fs = nodeFs, now = Date.now, uuid = () => crypto.randomUUID(), onImported = () => {},
+  setTimeout: setT = globalThis.setTimeout, clearTimeout: clearT = globalThis.clearTimeout,
+  cacheDirs = [], isCorrupt = () => false,
 }) {
   let pending = null // { token, candidate, expiresAt } — one at a time
 
@@ -43,6 +45,7 @@ export function createDataBackup({
   }
 
   function readBackup(file) {
+    pending = null // a new pick replaces the old one, even when this one fails
     let raw
     try {
       if (fs.statSync(file).size > MAX_IMPORT_BYTES) return { ok: false, error: 'too-large' }
@@ -102,7 +105,10 @@ export function createDataBackup({
     // Pre-import copy from the same snapshot objects that a rollback will use.
     const old = takeSnapshots()
     try {
-      const file = path.join(paths.backups, preImportName(now()))
+      // Never overwrite an earlier copy made in the same second.
+      let n = 1
+      while (fs.existsSync(path.join(paths.backups, preImportName(now(), n)))) n++
+      const file = path.join(paths.backups, preImportName(now(), n))
       writeJsonAtomic(file, wrap(old))
       for (const name of toPrune(fs.readdirSync(paths.backups), 'pre-import-', PRE_IMPORT_KEEP)) {
         try { fs.unlinkSync(path.join(paths.backups, name)) } catch (err) { console.warn('dataBackup: prune failed', err?.message) }
@@ -142,5 +148,71 @@ export function createDataBackup({
     return { ok: true, settings: after }
   }
 
-  return { build, exportTo, writeCopy, readBackup, applyImport }
+  const listBackups = () => {
+    try { return fs.readdirSync(paths.backups) } catch { return [] }
+  }
+
+  function checkDaily() {
+    try {
+      const name = autoName(now())
+      if (listBackups().includes(name)) return false
+      if (isCorrupt()) return false
+      if (library.list().length === 0 && watchLog.list().length === 0) return false
+      writeCopy(name)
+      for (const old of toPrune(listBackups(), 'auto-', AUTO_KEEP)) {
+        try { fs.unlinkSync(path.join(paths.backups, old)) } catch (err) { console.warn('dataBackup: prune failed', err?.message) }
+      }
+      return true
+    } catch (err) {
+      console.warn('dataBackup: daily copy failed', err?.message)
+      return false
+    }
+  }
+
+  let timer = null
+  let running = false
+  const schedule = (ms) => {
+    if (timer !== null) clearT(timer)
+    timer = setT(tick, ms)
+    timer?.unref?.()
+  }
+  function tick() {
+    if (timer !== null) clearT(timer)
+    timer = null
+    if (!running) return
+    checkDaily()
+    schedule(nextDelay(now()))
+  }
+  const start = () => { running = true; schedule(2 * 60 * 1000) }
+  const stop = () => {
+    running = false
+    if (timer !== null) clearT(timer)
+    timer = null
+  }
+  const resume = () => { running = true; tick() }
+
+  const sizeOf = (dir) => {
+    let total = 0
+    let entries
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch { return 0 }
+    for (const e of entries) {
+      const full = path.join(dir, e.name)
+      try { total += e.isDirectory() ? sizeOf(full) : fs.statSync(full).size } catch { /* vanished meanwhile */ }
+    }
+    return total
+  }
+  const cacheSize = () => cacheDirs.reduce((sum, d) => sum + sizeOf(d), 0)
+  function clearCache() {
+    for (const dir of cacheDirs) {
+      let names
+      try { names = fs.readdirSync(dir) } catch { continue }
+      for (const name of names) {
+        try { fs.rmSync(path.join(dir, name), { recursive: true, force: true }) } catch (err) { console.warn('dataBackup: cache delete failed', err?.message) }
+      }
+    }
+    return cacheSize()
+  }
+  const info = () => ({ cacheBytes: cacheSize(), lastAutoBackup: latestAuto(listBackups()) })
+
+  return { build, exportTo, writeCopy, readBackup, applyImport, start, stop, resume, checkDaily, info, cacheSize, clearCache }
 }

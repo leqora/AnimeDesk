@@ -14,8 +14,20 @@ import { createDataBackup } from '../../src/main/dataBackup.js'
 
 const NOW = new Date(2026, 9, 19, 10, 0, 0).getTime()
 
-function setup({ wrap = {}, fsImpl = fs } = {}) {
+function fakeTimers() {
+  const list = []
+  let id = 0
+  return {
+    list,
+    setTimeout: (fn, ms) => { const t = { id: ++id, fn, ms }; list.push(t); return t.id },
+    clearTimeout: (i) => { const k = list.findIndex((t) => t.id === i); if (k >= 0) list.splice(k, 1) },
+    fire: () => { const t = list.shift(); t.fn() },
+  }
+}
+
+function setup({ wrap = {}, fsImpl = fs, corrupt = false } = {}) {
   const clock = { t: NOW }
+  const timers = fakeTimers()
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-backup-'))
   const paths = createPaths(dir)
   const library = createLibrary(paths.library)
@@ -33,8 +45,10 @@ function setup({ wrap = {}, fsImpl = fs } = {}) {
   const backup = createDataBackup({
     paths, library: { ...library, ...(wrap.library ?? {}) }, watchLog, seriesPrefs, positions, settings, tracker, progress,
     appVersion: '0.12.0', fs: fsImpl, now: () => clock.t, uuid: () => `tok-${++n}`, onImported,
+    setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout,
+    cacheDirs: [paths.cache, paths.anizipCache, path.join(paths.base, 'cache', 'aniskip')], isCorrupt: () => corrupt,
   })
-  return { dir, paths, library, watchLog, seriesPrefs, positions, settings, progress, tracker, notify, clearTrash, onImported, backup, clock }
+  return { dir, paths, library, watchLog, seriesPrefs, positions, settings, progress, tracker, notify, clearTrash, onImported, backup, clock, timers }
 }
 
 function seed(s, titles) {
@@ -248,6 +262,7 @@ describe('applyImport', () => {
     const s = setup()
     const { token } = s.backup.readBackup(file).preview
     expect(s.backup.applyImport(token).ok).toBe(true)
+    s.progress.check()
     expect(s.notify).not.toHaveBeenCalled()
     expect(JSON.parse(fs.readFileSync(s.paths.profile, 'utf8')).lastLevel).toBe(3)
   })
@@ -271,5 +286,186 @@ describe('applyImport', () => {
     s.backup.applyImport(token)
     expect(s.onImported).toHaveBeenCalledTimes(1)
     expect(s.onImported).toHaveBeenCalledWith(['language'])
+  })
+})
+
+describe('readBackup / pre-import extras', () => {
+  it('a failed pick also invalidates the earlier token', () => {
+    const file = donorFile(['Alpha'])
+    const s = setup()
+    const a = s.backup.readBackup(file).preview.token
+    const bad = path.join(s.dir, 'bad.json')
+    fs.writeFileSync(bad, 'nope')
+    expect(s.backup.readBackup(bad)).toEqual({ ok: false, error: 'invalid' })
+    expect(s.backup.applyImport(a)).toEqual({ ok: false, error: 'expired' })
+    expect(s.library.list()).toHaveLength(0)
+  })
+
+  it('two imports in the same second keep two distinct pre-import copies', () => {
+    const file = donorFile(['Alpha'])
+    const s = setup()
+    seed(s, ['Old'])
+    const first = s.backup.build().data
+    s.backup.applyImport(s.backup.readBackup(file).preview.token)
+    const second = s.backup.build().data
+    s.backup.applyImport(s.backup.readBackup(file).preview.token)
+    const pre = fs.readdirSync(s.paths.backups).filter((n) => n.startsWith('pre-import-')).sort()
+    expect(pre).toEqual(['pre-import-2026-10-19T10-00-00-2.json', 'pre-import-2026-10-19T10-00-00.json'])
+    expect(JSON.parse(fs.readFileSync(path.join(s.paths.backups, pre[1]), 'utf8')).data).toEqual(first)
+    expect(JSON.parse(fs.readFileSync(path.join(s.paths.backups, pre[0]), 'utf8')).data).toEqual(second)
+  })
+})
+
+describe('daily backup', () => {
+  const todayFile = (s) => path.join(s.paths.backups, 'auto-2026-10-19.json')
+
+  it('first check at +2 min writes auto-<today>', () => {
+    const s = setup()
+    seed(s, ['Alpha'])
+    s.backup.start()
+    expect(s.timers.list).toHaveLength(1)
+    expect(s.timers.list[0].ms).toBe(2 * 60 * 1000)
+    expect(fs.existsSync(todayFile(s))).toBe(false)
+    s.timers.fire()
+    expect(fs.existsSync(todayFile(s))).toBe(true)
+    expect(s.timers.list).toHaveLength(1) // the next check is scheduled
+  })
+
+  it('existing today file means no write', () => {
+    const s = setup()
+    seed(s, ['Alpha'])
+    fs.mkdirSync(s.paths.backups, { recursive: true })
+    fs.writeFileSync(todayFile(s), 'KEEP')
+    expect(s.backup.checkDaily()).toBe(false)
+    expect(fs.readFileSync(todayFile(s), 'utf8')).toBe('KEEP')
+  })
+
+  it('empty data means no write', () => {
+    const s = setup()
+    expect(s.backup.checkDaily()).toBe(false)
+    expect(fs.existsSync(s.paths.backups)).toBe(false)
+  })
+
+  it('corrupt library means no write', () => {
+    const s = setup({ corrupt: true })
+    seed(s, ['Alpha'])
+    expect(s.backup.checkDaily()).toBe(false)
+    expect(fs.existsSync(todayFile(s))).toBe(false)
+  })
+
+  it('prunes to the 7 newest and keeps foreign files', () => {
+    const s = setup()
+    seed(s, ['Alpha'])
+    fs.mkdirSync(s.paths.backups, { recursive: true })
+    for (let d = 1; d <= 9; d++) fs.writeFileSync(path.join(s.paths.backups, `auto-2026-10-0${d}.json`), '{}')
+    fs.writeFileSync(path.join(s.paths.backups, 'notes.txt'), 'x')
+    fs.writeFileSync(path.join(s.paths.backups, 'pre-import-2026-01-01T00-00-00.json'), '{}')
+    expect(s.backup.checkDaily()).toBe(true)
+    const names = fs.readdirSync(s.paths.backups)
+    const autos = names.filter((n) => n.startsWith('auto-')).sort()
+    expect(autos).toHaveLength(7)
+    expect(autos[6]).toBe('auto-2026-10-19.json')
+    expect(autos[0]).toBe('auto-2026-10-04.json')
+    expect(names).toContain('notes.txt')
+    expect(names).toContain('pre-import-2026-01-01T00-00-00.json')
+  })
+
+  it('the next timer is within [60 s, 6 h], also just before midnight', () => {
+    const s = setup()
+    seed(s, ['Alpha'])
+    s.clock.t = new Date(2026, 9, 19, 23, 59, 30).getTime()
+    s.backup.start()
+    s.timers.fire()
+    const ms = s.timers.list[0].ms
+    expect(ms).toBeGreaterThanOrEqual(60000)
+    expect(ms).toBeLessThanOrEqual(6 * 3600 * 1000)
+    expect(ms).toBe(5.5 * 60 * 1000)
+  })
+
+  it('stop clears timers; resume checks now and schedules again', () => {
+    const s = setup()
+    seed(s, ['Alpha'])
+    s.backup.start()
+    s.backup.stop()
+    expect(s.timers.list).toHaveLength(0)
+    s.backup.resume()
+    expect(fs.existsSync(todayFile(s))).toBe(true)
+    expect(s.timers.list).toHaveLength(1)
+    s.backup.stop()
+    expect(s.timers.list).toHaveLength(0)
+  })
+
+  it('resume replaces a pending timer instead of stacking', () => {
+    const s = setup()
+    seed(s, ['Alpha'])
+    s.backup.start()
+    s.backup.resume()
+    s.backup.resume()
+    expect(s.timers.list).toHaveLength(1)
+  })
+
+  it('write failure warns and does not throw', () => {
+    const s = setup()
+    seed(s, ['Alpha'])
+    fs.writeFileSync(s.paths.backups, 'i am a file')
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    let r
+    expect(() => { r = s.backup.checkDaily() }).not.toThrow()
+    expect(r).toBe(false)
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('info reports the latest auto copy or null', () => {
+    const s = setup()
+    expect(s.backup.info().lastAutoBackup).toBeNull()
+    fs.mkdirSync(s.paths.backups, { recursive: true })
+    fs.writeFileSync(path.join(s.paths.backups, 'auto-2026-10-03.json'), '{}')
+    fs.writeFileSync(path.join(s.paths.backups, 'auto-2026-10-01.json'), '{}')
+    expect(s.backup.info().lastAutoBackup).toBe('2026-10-03')
+  })
+})
+
+describe('cache', () => {
+  const put = (file, size) => {
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, 'x'.repeat(size))
+  }
+
+  it('cacheSize sums nested files; missing dirs count as 0', () => {
+    const s = setup()
+    expect(s.backup.cacheSize()).toBe(0)
+    put(path.join(s.paths.cache, 'a.json'), 100)
+    put(path.join(s.paths.anizipCache, 'thumbs', 'b.txt'), 250)
+    expect(s.backup.cacheSize()).toBe(350)
+    expect(s.backup.info().cacheBytes).toBe(350)
+  })
+
+  it('clearCache empties the three dirs, keeps sequels.json and returns the new size', () => {
+    const s = setup()
+    const aniskip = path.join(s.paths.base, 'cache', 'aniskip')
+    put(path.join(s.paths.cache, 'a.json'), 10)
+    put(path.join(s.paths.anizipCache, 'thumbs', 'b.txt'), 10)
+    put(path.join(aniskip, 'c.json'), 10)
+    put(s.paths.sequels, 7)
+    expect(s.backup.clearCache()).toBe(0)
+    expect(fs.readdirSync(s.paths.cache)).toEqual([])
+    expect(fs.readdirSync(s.paths.anizipCache)).toEqual([])
+    expect(fs.readdirSync(aniskip)).toEqual([])
+    expect(fs.readFileSync(s.paths.sequels, 'utf8')).toBe('xxxxxxx')
+  })
+
+  it('a file that cannot be deleted does not stop the others', () => {
+    const real = fs.rmSync
+    const locked = { ...fs, rmSync: (p, o) => { if (String(p).endsWith('a.json')) throw new Error('locked'); return real(p, o) } }
+    const s = setup({ fsImpl: locked })
+    put(path.join(s.paths.cache, 'a.json'), 10)
+    put(path.join(s.paths.cache, 'b.json'), 10)
+    put(path.join(s.paths.anizipCache, 'c.json'), 10)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(s.backup.clearCache()).toBe(10)
+    warn.mockRestore()
+    expect(fs.readdirSync(s.paths.cache)).toEqual(['a.json'])
+    expect(fs.readdirSync(s.paths.anizipCache)).toEqual([])
   })
 })

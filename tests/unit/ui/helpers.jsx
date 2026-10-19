@@ -38,6 +38,11 @@ export function makeFakeApi(overrides = {}) {
     },
     whatsNew: { get: vi.fn(async () => null), seen: vi.fn(async () => {}) },
     window: { getFullscreen: vi.fn(async () => false), setFullscreen: vi.fn(async () => {}), onFullscreen: sub() },
+    data: {
+      export: vi.fn(async () => ({ ok: true })), importPick: vi.fn(async () => ({ ok: false, canceled: true })),
+      importApply: vi.fn(async () => ({ ok: true, settings: {} })), info: vi.fn(async () => ({ cacheBytes: 0, lastAutoBackup: null })),
+      clearCache: vi.fn(async () => ({ cacheBytes: 0 })), openFolder: vi.fn(async () => {}),
+    },
     dialog: { pickFolder: vi.fn(async () => null) },
     app: { openRepo: vi.fn(async () => {}) },
     skip: { get: vi.fn(async () => ({ op: null, ed: null, recap: null })) },

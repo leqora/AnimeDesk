@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { localDate, autoName, preImportName, toPrune, latestAuto, AUTO_KEEP, PRE_IMPORT_KEEP, MAX_IMPORT_BYTES, IMPORT_TTL_MS } from '../../src/shared/backupRules.js'
+import { localDate, autoName, preImportName, toPrune, latestAuto, nextDelay, AUTO_KEEP, PRE_IMPORT_KEEP, MAX_IMPORT_BYTES, IMPORT_TTL_MS } from '../../src/shared/backupRules.js'
 
 const at = new Date(2026, 9, 5, 7, 4, 9).getTime() // local 2026-10-05 07:04:09
 
@@ -38,5 +38,18 @@ describe('backupRules', () => {
     expect(latestAuto(['auto-2026-10-01.json', 'auto-2026-10-03.json', 'auto-notes.txt', 'pre-import-2026-12-01T00-00-00.json'])).toBe('2026-10-03')
     expect(latestAuto(['x.json'])).toBeNull()
     expect(latestAuto([])).toBeNull()
+  })
+  it('toPrune orders same-second pre-import copies by their numeric suffix', () => {
+    const base = 'pre-import-2026-10-19T10-00-00'
+    const old = ['pre-import-2026-10-17T10-00-00.json', 'pre-import-2026-10-18T10-00-00.json']
+    const names = [`${base}.json`, `${base}-2.json`, `${base}-10.json`, `${base}-3.json`, ...old]
+    expect(toPrune(names, 'pre-import-', 5)).toEqual([old[0]])
+    // newest first: -10, -3, -2, plain, then the older days
+    expect(toPrune(names, 'pre-import-', 3)).toEqual([`${base}.json`, old[1], old[0]])
+  })
+  it('nextDelay targets the next local midnight + 5 min, capped at 6 h', () => {
+    expect(nextDelay(new Date(2026, 9, 19, 23, 59, 30).getTime())).toBe(5 * 60 * 1000 + 30 * 1000)
+    expect(nextDelay(new Date(2026, 9, 19, 10, 0, 0).getTime())).toBe(6 * 3600 * 1000)
+    expect(nextDelay(new Date(2026, 9, 19, 18, 30, 0).getTime())).toBe(5.5 * 3600 * 1000 + 5 * 60 * 1000)
   })
 })

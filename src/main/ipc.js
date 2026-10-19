@@ -1,15 +1,16 @@
 import { INVOKE, EVENTS } from '../shared/channels.js'
 import { ANILIST_CLIENT_ID, APPS_URL, authorizeUrl } from '../shared/anilistAuth.js'
+import { localDate } from '../shared/backupRules.js'
+import { createSettingsEffects } from './settingsEffects.js'
 
 export function createHandlers(s) {
   const progress = (p) => s.send(EVENTS.toolProgress, p)
+  const settingsEffects = createSettingsEffects({ updater: s.updater, toolManager: s.toolManager, send: s.send, onSettingsChanged: (patch) => s.onSettingsChanged?.(patch) })
   return {
     [INVOKE.settingsGet]: () => s.settings.get(),
     [INVOKE.settingsUpdate]: (patch) => {
       const updated = s.settings.update(patch)
-      if (patch && 'autoDownloadUpdates' in patch) s.updater.applySettings()
-      if (patch?.mpvModernUi === true) s.toolManager.installOptional(progress)
-      s.onSettingsChanged?.(patch)
+      settingsEffects(patch)
       return updated
     },
     [INVOKE.updateGetState]: () => s.updater.getState(),
@@ -25,6 +26,31 @@ export function createHandlers(s) {
     },
     [INVOKE.windowGetFullscreen]: () => s.window.get(),
     [INVOKE.windowSetFullscreen]: (value) => s.window.set(Boolean(value)),
+    [INVOKE.dataExport]: async () => {
+      const kind = s.settings.get().language === 'sr' ? 'rezerva' : 'backup'
+      const file = await s.electron.saveFile(`AnimeDesk-${kind}-${localDate(Date.now())}.json`)
+      if (!file) return { ok: false, canceled: true }
+      try {
+        s.dataBackup.exportTo(file)
+        return { ok: true }
+      } catch (err) {
+        console.warn('data export failed', err?.message)
+        return { ok: false, error: 'write-failed' }
+      }
+    },
+    [INVOKE.dataImportPick]: async () => {
+      const file = await s.electron.openFile()
+      if (!file) return { ok: false, canceled: true }
+      return s.dataBackup.readBackup(file)
+    },
+    [INVOKE.dataImportApply]: (token) => s.dataBackup.applyImport(typeof token === 'string' ? token : ''),
+    [INVOKE.dataInfo]: () => s.dataBackup.info(),
+    [INVOKE.dataClearCache]: () => {
+      const cacheBytes = s.dataBackup.clearCache()
+      s.onCacheCleared?.()
+      return { cacheBytes }
+    },
+    [INVOKE.dataOpenFolder]: async () => { await s.electron.openPath(s.paths.base) },
     [INVOKE.libraryList]: () => s.library.list(),
     // search/genre facets for the watchlist: read from the AniList cache only, never from the network
     [INVOKE.libraryFacets]: () => {

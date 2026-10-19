@@ -29,6 +29,8 @@ import { createWatchLog } from './watchLog.js'
 import { createProgress } from './progress.js'
 import { createCelebrations } from './celebrations.js'
 import { createTracker } from './tracker.js'
+import { createDataBackup } from './dataBackup.js'
+import { createSettingsEffects } from './settingsEffects.js'
 import { computeStats } from '../shared/stats.js'
 import { createHealthCheck } from './healthCheck.js'
 import { createHandlers, registerIpc } from './ipc.js'
@@ -236,14 +238,29 @@ async function main() {
   const autoDownloader = createAutoDownloader({ library, anilist, seriesPrefs, settings, downloads })
   const health = createHealthCheck({ toolManager, aniCli, isOnline, onState: (s) => send(EVENTS.health, s) })
 
+  const onSettingsChanged = (patch) => {
+    if (patch && 'launchAtLogin' in patch) applyLoginItem()
+    if (patch && 'language' in patch) tray?.setLabels(trayLabels(settings.get().language))
+  }
+  // The same side effects run for settings:update and for settings replaced by a data import.
+  const settingsEffects = createSettingsEffects({ updater, toolManager, send, onSettingsChanged })
+  const dataBackup = createDataBackup({
+    paths, library, watchLog, seriesPrefs, positions, settings, tracker, progress, appVersion: app.getVersion(),
+    cacheDirs: [paths.cache, paths.anizipCache, path.join(paths.base, 'cache', 'aniskip')],
+    isCorrupt: () => library.wasCorrupt,
+    onImported: (keys) => {
+      const now = settings.get()
+      settingsEffects(Object.fromEntries(keys.map((k) => [k, now[k]])))
+      sendAndWatch(EVENTS.libraryChanged) // also runs the airing/auto-download/sync/sequel checks
+    },
+  })
+
   registerIpc(ipcMain, createHandlers({
-    settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, autoDownloader, updater, whatsNew, notifications: notificationsStore, aniListAuth, aniListSync, sequels,
+    paths, dataBackup, settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, autoDownloader, updater, whatsNew, notifications: notificationsStore, aniListAuth, aniListSync, sequels,
     send: sendAndWatch,
     onLibraryChanged: () => { airingWatcher.check(); autoDownloader.check(); aniListSync.check(); sequels.check() },
-    onSettingsChanged: (patch) => {
-      if (patch && 'launchAtLogin' in patch) applyLoginItem()
-      if (patch && 'language' in patch) tray?.setLabels(trayLabels(settings.get().language))
-    },
+    onSettingsChanged,
+    onCacheCleared: () => { airingWatcher.refresh().catch(() => {}).finally(() => { autoDownloader.check(); sequels.check() }) },
     window: { get: () => fullscreen?.get() ?? false, set: (v) => fullscreen?.set(v) },
     electron: {
       pickFolder: async () => {
@@ -253,6 +270,15 @@ async function main() {
       showItemInFolder: (p) => shell.showItemInFolder(p),
       openRepo: () => shell.openExternal(REPO_URL),
       openExternal: (url) => shell.openExternal(url),
+      saveFile: async (defaultName) => {
+        const r = await dialog.showSaveDialog(win, { defaultPath: path.join(app.getPath('documents'), defaultName), filters: [{ name: 'JSON', extensions: ['json'] }] })
+        return r.canceled ? null : r.filePath
+      },
+      openFile: async () => {
+        const r = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }] })
+        return r.canceled ? null : r.filePaths[0]
+      },
+      openPath: (p) => shell.openPath(p),
     },
   }))
 
@@ -277,9 +303,10 @@ async function main() {
   win.on('query-session-end', () => { quitting = true })
   win.on('session-end', () => { quitting = true; app.quit() })
   tray = createTray({ Tray, Menu, iconPath, labels: trayLabels(settings.get().language), onOpen: showWindow, onQuit: () => app.quit() })
-  powerMonitor.on('resume', () => { downloads.rearm(); aniListSync.resume(); airingWatcher.refresh().finally(() => autoDownloader.check()) })
+  powerMonitor.on('resume', () => { downloads.rearm(); aniListSync.resume(); dataBackup.resume(); airingWatcher.refresh().finally(() => autoDownloader.check()) })
   airingWatcher.start()
   sequels.start()
+  dataBackup.start()
   aniListSync.start()
   autoDownloader.start()
   updater.start()
@@ -288,7 +315,7 @@ async function main() {
   setInterval(() => { if (health.get().reason === 'source-down') health.run() }, SIX_HOURS)
 
   app.on('window-all-closed', () => { if (!shouldHideOnClose({ closeToTray: settings.get().closeToTray, quitting })) app.quit() })
-  app.on('before-quit', () => { quitting = true; airingWatcher.stop(); autoDownloader.stop(); aniListSync.stop(); sequels.stop(); aniListAuth.dispose(); downloads.dispose(); tray?.destroy(); stopPositionEvents(); watch.dispose(); server.stop(); streams.stop() })
+  app.on('before-quit', () => { quitting = true; airingWatcher.stop(); autoDownloader.stop(); aniListSync.stop(); sequels.stop(); dataBackup.stop(); aniListAuth.dispose(); downloads.dispose(); tray?.destroy(); stopPositionEvents(); watch.dispose(); server.stop(); streams.stop() })
 }
 
 // A failed startup must not leave a silent background process; a stray rejection must not go unnoticed.
