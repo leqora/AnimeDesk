@@ -135,6 +135,9 @@ export default function App({ api, sound: injectedSound }) {
   const [asks, setAsks] = useState([])
   const [pendingWatch, setPendingWatch] = useState(null)
   const [corrupt, setCorrupt] = useState(false)
+  // one-shot: after an import remounts Settings, focus goes to its import button; dropped when leaving Settings
+  const [focusImport, setFocusImport] = useState(false)
+  useEffect(() => { if (page !== 'settings') setFocusImport(false) }, [page])
   const [updateState, setUpdateState] = useState({ status: 'idle', currentVersion: '' })
   const [whatsNew, setWhatsNew] = useState(null)
   const [fullscreen, setFullscreen] = useState(false)
@@ -303,7 +306,9 @@ export default function App({ api, sound: injectedSound }) {
   const onImported = (next) => {
     setSettings(next)
     setSettingsKey((k) => k + 1)
-    api.stats.get().then(setStats)
+    setCorrupt(false)
+    setFocusImport(true)
+    api.stats.get().then(setStats).catch((err) => console.warn('stats refresh after import failed', err?.message))
   }
   const navigate = (p) => { if (p !== page) sound.play('navigate'); nav.navigate({ page: p, animeId: null }) }
   const openAnime = (id) => nav.navigate({ page: 'watchlist', animeId: id })
@@ -349,7 +354,7 @@ export default function App({ api, sound: injectedSound }) {
                 {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} />}
                 {page === 'downloads' && <DownloadsPage />}
                 {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} />}
-                {page === 'settings' && <SettingsPage key={settingsKey} settings={settings} onSettings={updateSettings} onImported={onImported} onTestSound={() => sound.play('levelUp')} updateState={updateState} />}
+                {page === 'settings' && <SettingsPage key={settingsKey} focusImport={focusImport} settings={settings} onSettings={updateSettings} onImported={onImported} onTestSound={() => sound.play('levelUp')} updateState={updateState} />}
                 </RouteStateContext.Provider>
               </ErrorBoundary>
             </div>

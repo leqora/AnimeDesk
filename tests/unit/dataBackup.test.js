@@ -43,7 +43,7 @@ function setup({ wrap = {}, fsImpl = fs, corrupt = false } = {}) {
   const onImported = vi.fn()
   let n = 0
   const backup = createDataBackup({
-    paths, library: { ...library, ...(wrap.library ?? {}) }, watchLog, seriesPrefs, positions, settings, tracker, progress,
+    paths, library: { ...library, ...(wrap.library ?? {}) }, watchLog: { ...watchLog, ...(wrap.watchLog ?? {}) }, seriesPrefs, positions, settings, tracker, progress,
     appVersion: '0.12.0', fs: fsImpl, now: () => clock.t, uuid: () => `tok-${++n}`, onImported,
     setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout,
     cacheDirs: [paths.cache, paths.anizipCache, path.join(paths.base, 'cache', 'aniskip')], isCorrupt: () => corrupt,
@@ -257,6 +257,19 @@ describe('applyImport', () => {
     expect(s.clearTrash).not.toHaveBeenCalled()
   })
 
+  it('reports rollback-failed when an undo step throws too', () => {
+    const file = donorFile(['Alpha'])
+    let calls = 0
+    const s = setup({ wrap: {
+      library: { replaceAll: () => { throw new Error('disk') } },
+      watchLog: { replaceAll: () => { if (++calls > 1) throw new Error('undo disk') } },
+    } })
+    seed(s, ['Old'])
+    const { token } = s.backup.readBackup(file).preview
+    expect(s.backup.applyImport(token)).toEqual({ ok: false, error: 'rollback-failed' })
+    expect(s.onImported).not.toHaveBeenCalled()
+  })
+
   it('import does not celebrate and rebases the level', () => {
     const file = donorFile(['A', 'B', 'C'])
     const s = setup()
@@ -353,6 +366,25 @@ describe('daily backup', () => {
     expect(fs.existsSync(todayFile(s))).toBe(false)
   })
 
+  it('a successful import clears the corrupt state for the daily copy', () => {
+    const file = donorFile(['Alpha'])
+    const s = setup({ corrupt: true })
+    expect(s.backup.checkDaily()).toBe(false)
+    const { token } = s.backup.readBackup(file).preview
+    expect(s.backup.applyImport(token).ok).toBe(true)
+    expect(s.backup.checkDaily()).toBe(true)
+    expect(fs.existsSync(todayFile(s))).toBe(true)
+  })
+
+  it('a failed import keeps the corrupt state', () => {
+    const file = donorFile(['Alpha'])
+    const s = setup({ corrupt: true, wrap: { library: { replaceAll: () => { throw new Error('disk') } } } })
+    seed(s, ['Old'])
+    const { token } = s.backup.readBackup(file).preview
+    expect(s.backup.applyImport(token).ok).toBe(false)
+    expect(s.backup.checkDaily()).toBe(false)
+  })
+
   it('prunes to the 7 newest and keeps foreign files', () => {
     const s = setup()
     seed(s, ['Alpha'])
@@ -382,12 +414,24 @@ describe('daily backup', () => {
     expect(ms).toBe(5.5 * 60 * 1000)
   })
 
-  it('stop clears timers; resume checks now and schedules again', () => {
+  it('stop clears timers; resume after stop (or before start) is a no-op', () => {
     const s = setup()
     seed(s, ['Alpha'])
+    s.backup.resume()
+    expect(fs.existsSync(todayFile(s))).toBe(false)
+    expect(s.timers.list).toHaveLength(0)
     s.backup.start()
     s.backup.stop()
     expect(s.timers.list).toHaveLength(0)
+    s.backup.resume()
+    expect(fs.existsSync(todayFile(s))).toBe(false)
+    expect(s.timers.list).toHaveLength(0)
+  })
+
+  it('resume while started checks now and schedules again', () => {
+    const s = setup()
+    seed(s, ['Alpha'])
+    s.backup.start()
     s.backup.resume()
     expect(fs.existsSync(todayFile(s))).toBe(true)
     expect(s.timers.list).toHaveLength(1)

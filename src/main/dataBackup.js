@@ -19,6 +19,7 @@ export function createDataBackup({
   cacheDirs = [], isCorrupt = () => false,
 }) {
   let pending = null // { token, candidate, expiresAt } — one at a time
+  let imported = false // a successful import replaced any corrupt data, so the corrupt flag no longer applies
 
   const wrap = (snaps) => ({
     app: 'AnimeDesk',
@@ -106,9 +107,10 @@ export function createDataBackup({
     const old = takeSnapshots()
     try {
       // Never overwrite an earlier copy made in the same second.
+      const t = now()
       let n = 1
-      while (fs.existsSync(path.join(paths.backups, preImportName(now(), n)))) n++
-      const file = path.join(paths.backups, preImportName(now(), n))
+      while (fs.existsSync(path.join(paths.backups, preImportName(t, n)))) n++
+      const file = path.join(paths.backups, preImportName(t, n))
       writeJsonAtomic(file, wrap(old))
       for (const name of toPrune(fs.readdirSync(paths.backups), 'pre-import-', PRE_IMPORT_KEEP)) {
         try { fs.unlinkSync(path.join(paths.backups, name)) } catch (err) { console.warn('dataBackup: prune failed', err?.message) }
@@ -135,11 +137,14 @@ export function createDataBackup({
       }
     } catch (err) {
       console.warn('dataBackup: import failed, rolling back', err?.message)
+      let undoFailed = 0
       for (const undo of done.reverse()) {
-        try { undo() } catch (e) { console.warn('dataBackup: rollback step failed', e?.message) }
+        try { undo() } catch (e) { undoFailed++; console.warn('dataBackup: rollback step failed', e?.message) }
       }
-      return { ok: false, error: 'write-failed' }
+      return { ok: false, error: undoFailed > 0 ? 'rollback-failed' : 'write-failed' }
     }
+
+    imported = true
 
     tracker.clearTrash()
     progress.rebase()
@@ -156,7 +161,7 @@ export function createDataBackup({
     try {
       const name = autoName(now())
       if (listBackups().includes(name)) return false
-      if (isCorrupt()) return false
+      if (isCorrupt() && !imported) return false
       if (library.list().length === 0 && watchLog.list().length === 0) return false
       writeCopy(name)
       for (const old of toPrune(listBackups(), 'auto-', AUTO_KEEP)) {
@@ -189,7 +194,7 @@ export function createDataBackup({
     if (timer !== null) clearT(timer)
     timer = null
   }
-  const resume = () => { running = true; tick() }
+  const resume = () => { if (running) tick() }
 
   const sizeOf = (dir) => {
     let total = 0

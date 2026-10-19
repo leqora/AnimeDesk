@@ -7,7 +7,7 @@ import { ConfirmButton } from './ConfirmButton.jsx'
 
 const MB = 1024 * 1024
 const PICK_ERRORS = { invalid: 'invalid', newer: 'newer', 'too-large': 'tooLarge', 'read-failed': 'readFailed' }
-const APPLY_ERRORS = { expired: 'expired', 'backup-failed': 'backupFailed', 'write-failed': 'writeFailed' }
+const APPLY_ERRORS = { expired: 'expired', 'backup-failed': 'backupFailed', 'write-failed': 'writeFailed', 'rollback-failed': 'rollbackFailed' }
 
 function formatSize(bytes, locale) {
   const fmt = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
@@ -27,7 +27,7 @@ function formatIsoDate(iso, locale) {
   return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString(locale)
 }
 
-export function DataSection({ onImported }) {
+export function DataSection({ onImported, focusImport = false }) {
   const api = useApi()
   const t = useT()
   const { show } = useToast()
@@ -38,6 +38,9 @@ export function DataSection({ onImported }) {
   const cancelRef = useRef(null)
   const importRef = useRef(null)
   const hadPreview = useRef(false)
+
+  // mount only: after an import Settings remounts and focus would otherwise fall back to the body
+  useEffect(() => { if (focusImport) importRef.current?.focus() }, [])
 
   useEffect(() => {
     alive.current = true
@@ -112,6 +115,7 @@ export function DataSection({ onImported }) {
       </div>
       {preview && (
         <Modal label={t('data.importTitle')} initialFocus={cancelRef} onClose={busy ? undefined : () => setPreview(null)}>
+          <div className="data-import">
           <h3>{t('data.importTitle')}</h3>
           {createdAt && <p>{t('data.importFrom', { date: createdAt })}</p>}
           <p>{t('data.importCounts', counts(preview))}</p>
@@ -120,6 +124,7 @@ export function DataSection({ onImported }) {
           <div className="row">
             <button type="button" className="danger" disabled={busy} onClick={doApply}>{t('data.importConfirm')}</button>
             <button type="button" ref={cancelRef} disabled={busy} onClick={() => setPreview(null)}>{t('data.importCancel')}</button>
+          </div>
           </div>
         </Modal>
       )}

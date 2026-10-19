@@ -22,7 +22,7 @@ export function sanitizePositions(raw) {
 
 export function createPositions(file, { now = () => Date.now() } = {}) {
   const loaded = readJson(file, { version: 1, items: {} }).data
-  let db = loaded &&!Array.isArray(loaded) && typeof loaded.items === 'object' && loaded.items !== null ? loaded : { version: 1, items: {} }
+  let db = loaded && !Array.isArray(loaded) && typeof loaded.items === 'object' && loaded.items !== null ? loaded : { version: 1, items: {} }
   const key = (title, episode) => `${normalizeTitle(String(title ?? '')).toLowerCase()}#${String(Number(episode))}`
   const persist = () => {
     try { writeJsonAtomic(file, db) } catch (err) { console.warn('positions: write failed', err?.message) } // a disk error must not break playback; in-memory state stays valid

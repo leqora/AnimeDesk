@@ -13,7 +13,7 @@ const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 const FONT_NAMES = { segoe: 'Segoe UI', arial: 'Arial', verdana: 'Verdana', trebuchet: 'Trebuchet MS', georgia: 'Georgia', exo2: 'Exo 2' }
 const SLIDE_SAVE_MS = 250
 
-export function SettingsPage({ settings, onSettings, onImported = () => {}, onTestSound = () => {}, updateState = { status: 'disabled', currentVersion: '' } }) {
+export function SettingsPage({ settings, onSettings, onImported = () => {}, focusImport = false, onTestSound = () => {}, updateState = { status: 'disabled', currentVersion: '' } }) {
   const api = useApi()
   const t = useT()
   const [tools, setTools] = useState({})
@@ -263,7 +263,7 @@ export function SettingsPage({ settings, onSettings, onImported = () => {}, onTe
           )}
         </div>
       )}
-      <DataSection onImported={onImported} />
+      <DataSection onImported={onImported} focusImport={focusImport} />
       <h3>{t('settings.tools')}</h3>
       <ul className="tool-list">
         {[...TOOL_IDS, ...OPTIONAL_TOOL_IDS].map((id) => (

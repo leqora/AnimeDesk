@@ -62,7 +62,7 @@ export function sanitizeSeriesPrefs(raw) {
 // (also for series not in the watchlist).
 export function createSeriesPrefs(file) {
   const loaded = readJson(file, { version: 1, series: {} }).data
-  let db = loaded &&typeof loaded.series === 'object' && loaded.series !== null ? loaded : { version: 1, series: {} }
+  let db = loaded && typeof loaded.series === 'object' && loaded.series !== null ? loaded : { version: 1, series: {} }
 
   function get(title) {
     const raw = db.series[key(title)] ?? {}

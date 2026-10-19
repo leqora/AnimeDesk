@@ -434,6 +434,7 @@
   "data.error.expired": "Pregled je istekao, izaberite fajl ponovo",
   "data.error.backupFailed": "Kopija trenutnih podataka nije napravljena, uvoz je prekinut",
   "data.error.writeFailed": "Upis podataka nije uspeo, vraćeni su prethodni podaci",
+  "data.error.rollbackFailed": "Upis nije uspeo i prethodni podaci nisu u potpunosti vraćeni. Kopija prethodnih podataka je u folderu „backups“ (pre-import-…), otvori je preko „Otvori folder podataka“",
   "data.openFolder": "Otvori folder podataka",
   "data.clearCache": "Obriši keš slika i opisa",
   "data.clearCacheConfirm": "Obrisati keš? Biće ponovo preuzet po potrebi.",

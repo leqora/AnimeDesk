@@ -119,7 +119,7 @@ export function sanitizeLibrary(raw, { now }) {
   return { db: { version: 1, anime }, accepted, skipped }
 }
 
-export function createLibrary(file,{ now = () => new Date().toISOString(), uuid = () => crypto.randomUUID() } = {}) {
+export function createLibrary(file, { now = () => new Date().toISOString(), uuid = () => crypto.randomUUID() } = {}) {
   const loaded = readJson(file, { version: 1, anime: {} })
   let db = loaded.data
   const save = () => writeJsonAtomic(file, db)

@@ -131,6 +131,18 @@ describe('DataSection', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(onImported).not.toHaveBeenCalled()
   })
+  it('apply error rollback-failed tells the user where the copy of the previous data is', async () => {
+    const { onImported } = setup({ importPick: vi.fn(async () => preview()), importApply: vi.fn(async () => ({ ok: false, error: 'rollback-failed' })) })
+    fireEvent.click(screen.getByRole('button', { name: 'Uvezi' }))
+    const dlg = await screen.findByRole('dialog')
+    fireEvent.click(within(dlg).getByRole('button', { name: 'Zameni podatke' }))
+    expect(await screen.findByText(/pre-import.*Otvori folder podataka/)).toBeInTheDocument()
+    expect(onImported).not.toHaveBeenCalled()
+  })
+  it('focusImport focuses the Uvezi button on mount', () => {
+    setup({}, { focusImport: true })
+    expect(screen.getByRole('button', { name: 'Uvezi' })).toHaveFocus()
+  })
   it('clear cache needs confirmation, then shows the new size', async () => {
     const { api } = setup({ info: vi.fn(async () => ({ cacheBytes: 5 * 1024 * 1024, lastAutoBackup: null })), clearCache: vi.fn(async () => ({ cacheBytes: 0 })) })
     await screen.findByText(/Keš: 5,0 MB/)

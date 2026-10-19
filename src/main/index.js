@@ -247,7 +247,7 @@ async function main() {
   const dataBackup = createDataBackup({
     paths, library, watchLog, seriesPrefs, positions, settings, tracker, progress, appVersion: app.getVersion(),
     cacheDirs: [paths.cache, paths.anizipCache, path.join(paths.base, 'cache', 'aniskip')],
-    isCorrupt: () => library.wasCorrupt,
+    isCorrupt: () => library.wasCorrupt || watchLog.wasCorrupt,
     onImported: (keys) => {
       const now = settings.get()
       settingsEffects(Object.fromEntries(keys.map((k) => [k, now[k]])))

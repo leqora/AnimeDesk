@@ -434,6 +434,7 @@
   "data.error.expired": "The preview expired, pick the file again",
   "data.error.backupFailed": "Could not back up your current data, import canceled",
   "data.error.writeFailed": "Writing the data failed, your previous data was restored",
+  "data.error.rollbackFailed": "Writing failed and your previous data could not be fully restored. A copy of it is in the \"backups\" folder (pre-import-…), open it with \"Open data folder\"",
   "data.openFolder": "Open data folder",
   "data.clearCache": "Clear image and description cache",
   "data.clearCacheConfirm": "Clear the cache? It will be downloaded again as needed.",

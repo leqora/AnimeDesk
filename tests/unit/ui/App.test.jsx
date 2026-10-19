@@ -165,6 +165,41 @@ describe('App', () => {
     expect(screen.getByLabelText('Ime na profilu')).toHaveValue('Uvezeno')
     expect(api.stats.get.mock.calls.length).toBeGreaterThan(statsCalls)
   })
+  it('after a successful import the corrupt banner disappears and focus lands on Uvezi', async () => {
+    const api = makeFakeApi({
+      library: { wasCorrupt: vi.fn(async () => true) },
+      data: {
+        importPick: vi.fn(async () => ({ ok: true, preview: { token: 't', createdAt: null, appVersion: null, series: 1, logEntries: 2, skipped: 0, current: { series: 0, logEntries: 0 } } })),
+        importApply: vi.fn(async () => ({ ok: true, settings: DEFAULT_SETTINGS })),
+      },
+    })
+    render(<App api={api} />)
+    await waitFor(() => expect(screen.getByText(/bio oštećen/)).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Uvezi' }))
+    const dlg = await screen.findByRole('dialog')
+    fireEvent.click(within(dlg).getByRole('button', { name: 'Zameni podatke' }))
+    await waitFor(() => expect(screen.queryByText(/bio oštećen/)).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Uvezi' })).toHaveFocus())
+  })
+  it('a failing stats refresh after import does not break the app', async () => {
+    const api = makeFakeApi({
+      data: {
+        importPick: vi.fn(async () => ({ ok: true, preview: { token: 't', createdAt: null, appVersion: null, series: 1, logEntries: 2, skipped: 0, current: { series: 0, logEntries: 0 } } })),
+        importApply: vi.fn(async () => ({ ok: true, settings: DEFAULT_SETTINGS })),
+      },
+    })
+    render(<App api={api} />)
+    await waitFor(() => screen.getByRole('button', { name: 'Podešavanja' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
+    api.stats.get.mockRejectedValue(new Error('boom'))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    fireEvent.click(screen.getByRole('button', { name: 'Uvezi' }))
+    const dlg = await screen.findByRole('dialog')
+    fireEvent.click(within(dlg).getByRole('button', { name: 'Zameni podatke' }))
+    await waitFor(() => expect(warn).toHaveBeenCalled())
+    warn.mockRestore()
+  })
   it('warns when the watchlist file was corrupt', async () => {
     const api = makeFakeApi({ library: { wasCorrupt: vi.fn(async () => true) } })
     render(<App api={api} />)
