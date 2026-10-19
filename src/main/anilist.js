@@ -111,16 +111,19 @@ export function createAniList({ cacheDir, fetchImpl = fetch, sleep = realSleep, 
   // AniList allows ~30 requests a minute; a search result grid asks for 25+ posters at once.
   // Requests go through one queue; a 429 pauses the request itself, an exhausted budget pauses the queue.
   let queue = Promise.resolve()
+  // Gate every task reads when it STARTS, so a pause also holds tasks that were already queued behind the one that
+  // saw the exhausted budget. A new pause combines with an active one (waits for the longer, never stacks).
+  let pause = Promise.resolve()
   const enqueue = (task) => {
-    const run = queue.then(task)
+    const run = queue.then(() => pause).then(task)
     queue = run.catch(() => {})
     return run
   }
-  // Called from inside the running task: the result returns at once, the NEXT task waits. A failed sleep must not
-  // leave the queue rejected.
+  // Called from inside the running task: the result returns at once, the NEXT tasks wait. A failed sleep never
+  // rejects the gate, so it cannot leave the queue rejected.
   const pauseQueue = (ms) => {
     notifyRateLimited(ms)
-    queue = queue.then(() => sleep(ms)).catch(() => {})
+    pause = Promise.all([pause, Promise.resolve().then(() => sleep(ms))]).catch(() => {})
   }
 
   const clampWait = (ms) => Math.min(MAX_WAIT_MS, Math.max(1000, ms))

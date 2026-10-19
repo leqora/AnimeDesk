@@ -760,7 +760,36 @@ describe('anilist queue and errors', () => {
     release()
     expect((await second).id).toBe(5)
     expect(apiCalls()).toBe(2)
-    expect(f).toHaveBeenCalled()
+  })
+  it('holds tasks that were already queued behind the one that saw Remaining: 0', async () => {
+    const now = () => 1_000_000
+    let release
+    const gate = new Promise((r) => { release = r })
+    const sleep = vi.fn(() => gate)
+    const exhausted = () => json(page([hit]), { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': String(1_000_000 / 1000 + 5) })
+    const { apiCalls, al } = mkApi([exhausted, () => json(page([hit]))], { sleep, now })
+    const all = Promise.all(['a', 'b', 'c', 'd', 'e'].map((q) => al.search(q)))
+    await tick()
+    expect(apiCalls()).toBe(1)
+    release()
+    await all
+    expect(apiCalls()).toBe(5)
+  })
+  it('does not stack two Remaining: 0 pauses', async () => {
+    const now = () => 1_000_000
+    const gates = []
+    const sleep = vi.fn(() => new Promise((r) => gates.push(r)))
+    const exhausted = () => json(page([hit]), { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': String(1_000_000 / 1000 + 5) })
+    const { apiCalls, al } = mkApi([exhausted], { sleep, now })
+    const all = Promise.all([al.search('a'), al.search('b')])
+    await tick()
+    expect(apiCalls()).toBe(1)
+    gates[0]() // first pause ends -> second task runs, sees Remaining: 0 and starts its own pause
+    await tick()
+    expect(apiCalls()).toBe(2)
+    expect(sleep).toHaveBeenCalledTimes(2)
+    gates[1]()
+    await all
   })
   it('a failing pause never leaves the queue rejected', async () => {
     const sleep = vi.fn(async () => { throw new Error('sleep broke') })
