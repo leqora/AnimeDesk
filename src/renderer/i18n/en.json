@@ -439,5 +439,6 @@
   "data.clearCacheConfirm": "Clear the cache? It will be downloaded again as needed.",
   "data.cacheSize": "Cache: {size}",
   "data.lastAuto": "Last automatic backup: {date}",
-  "data.lastAutoNone": "No automatic backup yet"
+  "data.lastAutoNone": "No automatic backup yet",
+  "data.clearCacheFailed": "Clearing the cache failed"
 }

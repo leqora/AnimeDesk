@@ -439,5 +439,6 @@
   "data.clearCacheConfirm": "Obrisati keš? Biće ponovo preuzet po potrebi.",
   "data.cacheSize": "Keš: {size}",
   "data.lastAuto": "Poslednja automatska kopija: {date}",
-  "data.lastAutoNone": "Automatska kopija još nije napravljena"
+  "data.lastAutoNone": "Automatska kopija još nije napravljena",
+  "data.clearCacheFailed": "Brisanje keša nije uspelo"
 }

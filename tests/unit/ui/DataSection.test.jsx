@@ -82,6 +82,29 @@ describe('DataSection', () => {
     expect(await screen.findByText('Podaci uvezeni')).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
+  it('initial focus in the import modal is the Cancel button, and Cancel/Esc return focus to Uvezi', async () => {
+    setup({ importPick: vi.fn(async () => preview()) })
+    const open = async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Uvezi' }))
+      return screen.findByRole('dialog')
+    }
+    let dlg = await open()
+    await waitFor(() => expect(document.activeElement).toBe(within(dlg).getByRole('button', { name: 'Otkaži' })))
+    fireEvent.click(within(dlg).getByRole('button', { name: 'Otkaži' }))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Uvezi' })))
+    dlg = await open()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Uvezi' }))
+  })
+  it('clear cache failure shows an error toast; open folder rejection is handled', async () => {
+    const { api } = setup({ clearCache: vi.fn(async () => { throw new Error('x') }), openFolder: vi.fn(async () => { throw new Error('y') }) })
+    fireEvent.click(screen.getByRole('button', { name: 'Obriši keš slika i opisa' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Da' }))
+    expect(await screen.findByText('Brisanje keša nije uspelo')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Otvori folder podataka' }))
+    await waitFor(() => expect(api.data.openFolder).toHaveBeenCalled())
+  })
   it('pick canceled shows nothing', async () => {
     const { api } = setup()
     fireEvent.click(screen.getByRole('button', { name: 'Uvezi' }))

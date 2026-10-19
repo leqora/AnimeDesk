@@ -35,6 +35,9 @@ export function DataSection({ onImported }) {
   const [busy, setBusy] = useState(false)
   const [preview, setPreview] = useState(null)
   const alive = useRef(true)
+  const cancelRef = useRef(null)
+  const importRef = useRef(null)
+  const hadPreview = useRef(false)
 
   useEffect(() => {
     alive.current = true
@@ -76,9 +79,19 @@ export function DataSection({ onImported }) {
   })
 
   const doClear = () => run(async () => {
-    const res = await api.data.clearCache()
-    if (alive.current && res) setInfo((i) => ({ ...i, cacheBytes: res.cacheBytes }))
+    try {
+      const res = await api.data.clearCache()
+      if (alive.current && res) setInfo((i) => ({ ...i, cacheBytes: res.cacheBytes }))
+    } catch {
+      show({ message: t('data.clearCacheFailed'), icon: 'alert' })
+    }
   })
+
+  // the opener button is disabled while the pick runs, so Modal cannot restore focus to it: do it here
+  useEffect(() => {
+    if (hadPreview.current && !preview) importRef.current?.focus()
+    hadPreview.current = preview != null
+  }, [preview])
 
   const lastAuto = formatLocalDate(info?.lastAutoBackup, t.locale)
   const createdAt = formatIsoDate(preview?.createdAt, t.locale)
@@ -89,8 +102,8 @@ export function DataSection({ onImported }) {
       <h3>{t('data.section')}</h3>
       <div className="row">
         <button type="button" disabled={busy} onClick={doExport}>{t('data.export')}</button>
-        <button type="button" disabled={busy} onClick={doPick}>{t('data.import')}</button>
-        <button type="button" disabled={busy} onClick={() => api.data.openFolder()}>{t('data.openFolder')}</button>
+        <button type="button" ref={importRef} disabled={busy} onClick={doPick}>{t('data.import')}</button>
+        <button type="button" disabled={busy} onClick={() => { Promise.resolve(api.data.openFolder()).catch(() => {}) }}>{t('data.openFolder')}</button>
       </div>
       {info && <p className="muted">{lastAuto ? t('data.lastAuto', { date: lastAuto }) : t('data.lastAutoNone')}</p>}
       <div className="row">
@@ -98,7 +111,7 @@ export function DataSection({ onImported }) {
         {info && <span className="muted">{t('data.cacheSize', { size: formatSize(info.cacheBytes ?? 0, t.locale) })}</span>}
       </div>
       {preview && (
-        <Modal label={t('data.importTitle')} onClose={busy ? undefined : () => setPreview(null)}>
+        <Modal label={t('data.importTitle')} initialFocus={cancelRef} onClose={busy ? undefined : () => setPreview(null)}>
           <h3>{t('data.importTitle')}</h3>
           {createdAt && <p>{t('data.importFrom', { date: createdAt })}</p>}
           <p>{t('data.importCounts', counts(preview))}</p>
@@ -106,7 +119,7 @@ export function DataSection({ onImported }) {
           <p>{t('data.importWarning', { current: `${counts(preview.current).series}, ${counts(preview.current).log}` })}</p>
           <div className="row">
             <button type="button" className="danger" disabled={busy} onClick={doApply}>{t('data.importConfirm')}</button>
-            <button type="button" disabled={busy} onClick={() => setPreview(null)}>{t('data.importCancel')}</button>
+            <button type="button" ref={cancelRef} disabled={busy} onClick={() => setPreview(null)}>{t('data.importCancel')}</button>
           </div>
         </Modal>
       )}
