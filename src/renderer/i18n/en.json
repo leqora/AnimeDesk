@@ -213,6 +213,7 @@
   "toast.undo": "Undo",
   "toast.removed": "Removed from watchlist: {title}",
   "toast.restoreFailed": "The series could not be restored.",
+  "toast.anilistRateLimited": "AniList is limiting requests for a moment — posters and info will arrive in about {seconds} s",
   "toast.markedWatched": "EP {episode} marked as watched",
   "toast.unmarkedWatched": "EP {episode} marked as not watched",
   "toast.region": "Notifications",

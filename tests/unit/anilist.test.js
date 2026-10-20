@@ -16,6 +16,9 @@ function mkFetch(list) {
     if (url.startsWith('https://img/')) return new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/jpeg' } })
     const body = JSON.parse(init.body)
     if (body.variables.id) return Response.json({ data: { Media: list.find((m) => m.id === body.variables.id) ?? null } })
+    if (body.variables.ids) return Response.json({ data: { Page: { media: list.filter((m) => body.variables.ids.includes(m.id)) } } })
+    const aliases = Object.keys(body.variables).filter((k) => /^s\d+$/.test(k))
+    if (aliases.length) return Response.json({ data: Object.fromEntries(aliases.map((k) => [k, { media: list }])) })
     return Response.json({ data: { Page: { media: list } } })
   })
 }
@@ -29,12 +32,23 @@ beforeEach(() => {
 function mkSearchFetch(hits, { failOn = [] } = {}) {
   return vi.fn(async (url, init) => {
     if (url.startsWith('https://img/')) return new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/jpeg' } })
-    const { search } = JSON.parse(init.body).variables
-    if (failOn.includes(search)) return new Response('busy', { status: 500 })
-    return Response.json({ data: { Page: { media: hits[search] ? [hits[search]] : [] } } })
+    const { variables } = JSON.parse(init.body)
+    const aliases = Object.keys(variables).filter((k) => /^s\d+$/.test(k))
+    const answer = (search) => ({ media: hits[search] ? [hits[search]] : [] })
+    if (aliases.length) {
+      if (aliases.some((k) => failOn.includes(variables[k]))) return new Response('busy', { status: 500 })
+      return Response.json({ data: Object.fromEntries(aliases.map((k) => [k, answer(variables[k])])) })
+    }
+    if (failOn.includes(variables.search)) return new Response('busy', { status: 500 })
+    return Response.json({ data: { Page: answer(variables.search) } })
   })
 }
-const searches = (f) => f.mock.calls.filter(([url]) => !url.startsWith('https://img/')).map(([, init]) => JSON.parse(init.body).variables.search)
+// Every searched text in order, whether sent plain or as aliased s0..sN.
+const searches = (f) => f.mock.calls.filter(([url]) => !url.startsWith('https://img/')).flatMap(([, init]) => {
+  const v = JSON.parse(init.body).variables
+  const aliased = Object.keys(v).filter((k) => /^s\d+$/.test(k)).sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)))
+  return aliased.length ? aliased.map((k) => v[k]) : [v.search]
+})
 
 describe('anilist fallback searches', () => {
   describe('stale entries without malId', () => {
@@ -196,16 +210,19 @@ describe('anilist rate limiting', () => {
 
   it('sends AniList requests one at a time', async () => {
     let inFlight = 0, maxInFlight = 0
-    const f = vi.fn(async (url) => {
+    const f = vi.fn(async (url, init) => {
       if (isImg(url)) return img()
       inFlight++; maxInFlight = Math.max(maxInFlight, inFlight)
       await new Promise((r) => setTimeout(r, 5))
       inFlight--
-      return json(page([hit]))
+      const aliases = Object.keys(JSON.parse(init.body).variables).filter((k) => /^s\d+$/.test(k))
+      return aliases.length ? json({ data: Object.fromEntries(aliases.map((k) => [k, { media: [hit] }])) }) : json(page([hit]))
     })
     const al = createAniList({ cacheDir, fetchImpl: f, sleep: async () => {} })
-    const res = await Promise.all(['A b', 'C d', 'E f'].map((t) => al.getForTitle(t)))
+    // 12 titles do not fit one aliased request (10 max), so two waves compete for the queue
+    const res = await Promise.all(Array.from({ length: 12 }, (_, i) => al.getForTitle(`Title ${i}`)))
     expect(res.every((r) => r?.id === 5)).toBe(true)
+    expect(f.mock.calls.filter(([u]) => !isImg(u)).length).toBe(2)
     expect(maxInFlight).toBe(1)
   })
   it('waits Retry-After on 429 and retries the same request', async () => {
@@ -461,12 +478,13 @@ describe('anilist request dedup and retry timing', () => {
     expect(a).toEqual(b)
   })
 
-  it('does not merge different titles', async () => {
+  it('different titles go in one aliased request and keep their own results', async () => {
     const f = mkFetch([media(23, 'Alpha Show', 'Alpha Show'), media(24, 'Beta Show', 'Beta Show')])
     const al = createAniList({ cacheDir, fetchImpl: f })
     const [a, b] = await Promise.all([al.getForTitle('Alpha Show'), al.getForTitle('Beta Show')])
-    expect(queries(f)).toBe(2)
-    expect(a.title ?? a.malId).not.toEqual(b.title ?? b.malId)
+    expect(queries(f)).toBe(1)
+    expect(a.id).toBe(23)
+    expect(b.id).toBe(24)
   })
 
   it('after a slow failed refresh the retry pause starts at the failure', async () => {
@@ -492,6 +510,125 @@ describe('anilist request dedup and retry timing', () => {
     clock = start + 50 * 60 * 1000 + HOUR + 1
     await al.getForTitle('Slow Show')
     expect(f.mock.calls.length).toBeGreaterThan(calls)
+  })
+})
+
+describe('anilist lookup batching', () => {
+  const isImg = (url) => url.startsWith('https://img/')
+  const apiBodies = (f) => f.mock.calls.filter(([url]) => !isImg(url)).map(([, init]) => JSON.parse(init.body))
+  const cacheFiles = () => fs.readdirSync(cacheDir).map((n) => JSON.parse(fs.readFileSync(path.join(cacheDir, n), 'utf8')))
+  const NOW = 1_800_000_000_000
+
+  it('20 concurrent title lookups on an empty cache make 2 API requests', async () => {
+    const list = Array.from({ length: 20 }, (_, i) => media(100 + i, `Batch Show ${i}`, `Batch Show ${i}`, { status: 'FINISHED' }))
+    const f = mkFetch(list)
+    const al = createAniList({ cacheDir, fetchImpl: f, now: () => NOW })
+    const res = await Promise.all(list.map((m) => al.getForTitle(m.title.english)))
+    expect(res.map((r) => r.id)).toEqual(list.map((m) => m.id))
+    expect(apiBodies(f).length).toBe(2)
+    expect(cacheFiles().length).toBe(20)
+
+    // a lookup on its own writes the same file content as one from a batch
+    const soloDir = fs.mkdtempSync(path.join(os.tmpdir(), 'animedesk-al-solo-'))
+    const solo = createAniList({ cacheDir: soloDir, fetchImpl: mkFetch(list), now: () => NOW })
+    const alone = await solo.getForTitle('Batch Show 3')
+    const stored = cacheFiles().find((e) => e.id === 103)
+    expect(stored).toEqual(alone)
+    const [soloFile] = fs.readdirSync(soloDir)
+    expect(JSON.parse(fs.readFileSync(path.join(soloDir, soloFile), 'utf8'))).toEqual(stored)
+  })
+
+  it('60 concurrent id lookups make 2 API requests (50 + 10)', async () => {
+    const list = Array.from({ length: 60 }, (_, i) => media(200 + i, `Id Batch ${i}`, `Id Batch ${i}`, { status: 'FINISHED' }))
+    const f = mkFetch(list)
+    const al = createAniList({ cacheDir, fetchImpl: f })
+    const res = await Promise.all(list.map((m) => al.getForTitle('whatever', { aniListId: m.id })))
+    expect(res.map((r) => r.id)).toEqual(list.map((m) => m.id))
+    expect(apiBodies(f).map((b) => b.variables.ids.length)).toEqual([50, 10])
+  })
+
+  it('fallback candidates go in the next wave', async () => {
+    const f = mkSearchFetch({
+      'Real One Name': media(301, 'Real One Name', 'Real One Name', { status: 'FINISHED' }),
+      'Other Thing Here': media(302, 'Other Thing Here', 'Other Thing Here', { status: 'FINISHED' }),
+    })
+    const al = createAniList({ cacheDir, fetchImpl: f })
+    const [a, b] = await Promise.all([al.getForTitle('Alpha: Real One Name'), al.getForTitle('Beta: Other Thing Here')])
+    expect([a.id, b.id]).toEqual([301, 302])
+    const bodies = apiBodies(f)
+    expect(bodies.length).toBe(2)
+    expect(bodies[0].variables).toEqual({ s0: 'Alpha: Real One Name', s1: 'Beta: Other Thing Here' })
+    expect(bodies[1].variables).toEqual({ s0: 'Real One Name', s1: 'Other Thing Here' })
+  })
+
+  it('two titles sharing a candidate text get one alias and both cache files', async () => {
+    const f = mkSearchFetch({ 'Shared Sub Name': media(311, 'Shared Sub Name', 'Shared Sub Name', { status: 'FINISHED' }) })
+    const al = createAniList({ cacheDir, fetchImpl: f })
+    const [a, b] = await Promise.all([al.getForTitle('Alpha: Shared Sub Name'), al.getForTitle('Beta: Shared Sub Name')])
+    expect([a.id, b.id]).toEqual([311, 311])
+    expect(searches(f)).toEqual(['Alpha: Shared Sub Name', 'Beta: Shared Sub Name', 'Shared Sub Name'])
+    expect(cacheFiles().length).toBe(2)
+  })
+
+  it('a 429 on a search stops the fallback candidates for that title and does not remember the miss', async () => {
+    const f = vi.fn(async () => new Response('', { status: 429, headers: { 'Retry-After': '1' } }))
+    const al = createAniList({ cacheDir, fetchImpl: f, sleep: async () => {} })
+    expect(await al.getForTitle('Alpha: Real One Name')).toBeNull()
+    const bodies = apiBodies(f)
+    expect(bodies.length).toBe(3) // three attempts of the first candidate, no second candidate
+    expect(bodies.every((b) => b.variables.search === 'Alpha: Real One Name')).toBe(true)
+    expect(fs.readdirSync(cacheDir)).toEqual([])
+  })
+
+  it('holds the next wave while the rate limit is exhausted (11 lookups, 2nd request waits for the sleep)', async () => {
+    const list = Array.from({ length: 11 }, (_, i) => media(400 + i, `Wave Show ${i}`, `Wave Show ${i}`, { status: 'FINISHED' }))
+    const inner = mkFetch(list)
+    let apiCalls = 0
+    const f = vi.fn(async (url, init) => {
+      const res = await inner(url, init)
+      if (isImg(url) || ++apiCalls > 1) return res
+      return new Response(await res.text(), { headers: { 'Content-Type': 'application/json', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': String(NOW / 1000 + 5) } })
+    })
+    let release
+    const gate = new Promise((r) => { release = r })
+    const sleep = vi.fn(() => gate)
+    const al = createAniList({ cacheDir, fetchImpl: f, sleep, now: () => NOW, batchWindowMs: 0 })
+    const all = Promise.all(list.map((m) => al.getForTitle(m.title.english)))
+    await vi.waitFor(() => expect(sleep).toHaveBeenCalledWith(5000))
+    await new Promise((r) => setTimeout(r, 20)) // give a (wrongly) ungated second request time to appear
+    expect(apiBodies(f).length).toBe(1)
+    release()
+    const res = await all
+    expect(res.map((r) => r.id)).toEqual(list.map((m) => m.id))
+    expect(apiBodies(f).length).toBe(2)
+  })
+
+  it('holds the searches of the same wave while the ids request left the rate limit exhausted', async () => {
+    const idList = [media(501, 'Gate Id A', 'Gate Id A', { status: 'FINISHED' }), media(502, 'Gate Id B', 'Gate Id B', { status: 'FINISHED' })]
+    const titled = media(503, 'Gate Title', 'Gate Title', { status: 'FINISHED' })
+    const inner = mkFetch([...idList, titled])
+    let apiCalls = 0
+    const f = vi.fn(async (url, init) => {
+      const res = await inner(url, init)
+      if (isImg(url) || ++apiCalls > 1) return res
+      return new Response(await res.text(), { headers: { 'Content-Type': 'application/json', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': String(NOW / 1000 + 5) } })
+    })
+    let release
+    const gate = new Promise((r) => { release = r })
+    const sleep = vi.fn(() => gate)
+    const al = createAniList({ cacheDir, fetchImpl: f, sleep, now: () => NOW, batchWindowMs: 0 })
+    const all = Promise.all([
+      ...idList.map((m) => al.getForTitle('whatever', { aniListId: m.id })),
+      al.getForTitle('Gate Title'),
+    ])
+    await vi.waitFor(() => expect(sleep).toHaveBeenCalledWith(5000))
+    await new Promise((r) => setTimeout(r, 20)) // give a (wrongly) ungated search time to appear
+    expect(apiBodies(f).length).toBe(1)
+    expect(apiBodies(f)[0].variables.ids).toEqual([501, 502])
+    release()
+    const res = await all
+    expect(res.map((r) => r.id)).toEqual([501, 502, 503])
+    expect(apiBodies(f).length).toBe(2)
   })
 })
 
@@ -725,5 +862,144 @@ describe('anilist relations and poster', () => {
     expect(await al.poster('https://img/x.jpg')).toBeNull()
     expect(await al.poster('https://img/boom.jpg')).toBeNull()
     expect(await al.poster(null)).toBeNull()
+  })
+})
+
+describe('anilist queue and errors', () => {
+  const hit = media(5, 'Show Five', 'Show Five')
+  const json = (body, headers = {}) => Response.json(body, { headers })
+  const page = (list) => ({ data: { Page: { media: list } } })
+  const isImg = (url) => url.startsWith('https://img/')
+  const img = () => new Response(new Uint8Array([1]), { headers: { 'content-type': 'image/jpeg' } })
+  const tick = () => new Promise((r) => setTimeout(r, 15))
+  // Scripted API answers (images are always fine); `script` entries are Responses or functions returning one.
+  const mkApi = (script, extra = {}) => {
+    const queue = [...script]
+    const f = vi.fn(async (url) => (isImg(url) ? img() : (queue.length > 1 ? queue.shift() : queue[0])()))
+    const apiCalls = () => f.mock.calls.filter(([u]) => !isImg(u)).length
+    return { f, apiCalls, al: createAniList({ cacheDir, fetchImpl: f, sleep: async () => {}, ...extra }) }
+  }
+  const ok = () => json(page([hit]))
+  const limited = (retryAfter) => () => new Response('', { status: 429, headers: { 'Retry-After': String(retryAfter) } })
+
+  it('returns data before the Remaining: 0 pause and delays the next request', async () => {
+    const now = () => 1_000_000
+    let release
+    const gate = new Promise((r) => { release = r })
+    const sleep = vi.fn(() => gate)
+    const { f, apiCalls, al } = mkApi([() => json(page([hit]), { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': String(1_000_000 / 1000 + 5) })], { sleep, now, batchWindowMs: 0 })
+    const first = await al.getForTitle('Show Five')
+    expect(first.id).toBe(5)
+    expect(sleep).toHaveBeenCalledWith(5000)
+    const second = al.getForTitle('Other Show')
+    await tick()
+    expect(apiCalls()).toBe(1)
+    release()
+    expect((await second).id).toBe(5)
+    expect(apiCalls()).toBe(2)
+  })
+  it('holds tasks that were already queued behind the one that saw Remaining: 0', async () => {
+    const now = () => 1_000_000
+    let release
+    const gate = new Promise((r) => { release = r })
+    const sleep = vi.fn(() => gate)
+    const exhausted = () => json(page([hit]), { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': String(1_000_000 / 1000 + 5) })
+    const { apiCalls, al } = mkApi([exhausted, () => json(page([hit]))], { sleep, now })
+    const all = Promise.all(['a', 'b', 'c', 'd', 'e'].map((q) => al.search(q)))
+    await tick()
+    expect(apiCalls()).toBe(1)
+    release()
+    await all
+    expect(apiCalls()).toBe(5)
+  })
+  it('does not stack two Remaining: 0 pauses', async () => {
+    const now = () => 1_000_000
+    const gates = []
+    const sleep = vi.fn(() => new Promise((r) => gates.push(r)))
+    const exhausted = () => json(page([hit]), { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': String(1_000_000 / 1000 + 5) })
+    const { apiCalls, al } = mkApi([exhausted], { sleep, now })
+    const all = Promise.all([al.search('a'), al.search('b')])
+    await tick()
+    expect(apiCalls()).toBe(1)
+    gates[0]() // first pause ends -> second task runs, sees Remaining: 0 and starts its own pause
+    await vi.waitFor(() => expect(apiCalls()).toBe(2))
+    expect(sleep).toHaveBeenCalledTimes(2)
+    gates[1]()
+    await all
+  })
+  it('a failing pause never leaves the queue rejected', async () => {
+    const sleep = vi.fn(async () => { throw new Error('sleep broke') })
+    const { al } = mkApi([() => json(page([hit]), { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '2000000000' })], { sleep, now: () => 1_000_000 })
+    expect((await al.getForTitle('Show Five')).id).toBe(5)
+    expect((await al.getForTitle('Other Show')).id).toBe(5)
+  })
+
+  it('tags HTTP errors with status', async () => {
+    const { al } = mkApi([() => new Response('boom', { status: 500 })])
+    expect(await al.getForTitle('Show Five')).toBeNull()
+    const err = await al.search('x').catch((e) => e)
+    expect(err.status).toBe(500)
+    expect(err.message).toBe('AniList HTTP 500')
+    expect(err.graphql).toBeUndefined()
+  })
+  it('tags a final 429 with status 429', async () => {
+    const { al } = mkApi([limited(1)])
+    const err = await al.search('x').catch((e) => e)
+    expect(err.status).toBe(429)
+  })
+  it('tags errors-without-data as graphql', async () => {
+    const { al } = mkApi([() => json({ errors: [{ message: 'bad' }] })])
+    const err = await al.search('x').catch((e) => e)
+    expect(err.graphql).toBe(true)
+    expect(err.message).toBe('AniList returned a GraphQL error')
+  })
+  it('treats 200 without data as a graphql error', async () => {
+    const { al } = mkApi([() => json({})])
+    const err = await al.search('x').catch((e) => e)
+    expect(err.graphql).toBe(true)
+  })
+
+  describe('onRateLimited', () => {
+    it('is called for a 429 pause of 7 s and a Remaining: 0 pause of 5 s', async () => {
+      let t = 1_000_000
+      const onRateLimited = vi.fn()
+      const sleep = vi.fn(async () => {})
+      const remaining0 = () => json(page([hit]), { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': String(t / 1000 + 5) })
+      const { al } = mkApi([limited(7), ok, remaining0, ok], { onRateLimited, sleep, now: () => t })
+      await al.getForTitle('Show Five')
+      expect(onRateLimited).toHaveBeenCalledTimes(1)
+      expect(onRateLimited).toHaveBeenLastCalledWith({ waitMs: 7000, until: t + 7000 })
+      t += 30_000
+      await al.getForTitle('Other Show')
+      await vi.waitFor(() => expect(onRateLimited).toHaveBeenCalledTimes(2))
+      expect(onRateLimited).toHaveBeenLastCalledWith({ waitMs: 5000, until: t + 5000 })
+    })
+    it('is not called for a 1 s pause or the final 429', async () => {
+      let t = 0
+      const onRateLimited = vi.fn()
+      const small = mkApi([limited(1), ok], { onRateLimited, now: () => t })
+      await small.al.getForTitle('Show Five')
+      expect(onRateLimited).not.toHaveBeenCalled()
+      // Three 429s: two pauses (notified, clock jumps past the throttle each time), the third attempt has no pause.
+      const final = mkApi([limited(7)], { onRateLimited, now: () => (t += 30_000), sleep: async () => {} })
+      expect(await final.al.getForTitle('Show Six')).toBeNull()
+      expect(onRateLimited).toHaveBeenCalledTimes(2)
+    })
+    it('is called at most once per 30 s', async () => {
+      let t = 5_000_000
+      const onRateLimited = vi.fn()
+      const { al } = mkApi([limited(7), limited(7), ok, limited(7), ok], { onRateLimited, now: () => t })
+      await al.getForTitle('Show Five')
+      expect(onRateLimited).toHaveBeenCalledTimes(1)
+      t += 30_000
+      await al.getForTitle('Other Show')
+      expect(onRateLimited).toHaveBeenCalledTimes(2)
+    })
+    it('a throwing callback does not break the request', async () => {
+      const onRateLimited = vi.fn(() => { throw new Error('ui gone') })
+      const { al } = mkApi([limited(7), ok], { onRateLimited })
+      expect((await al.getForTitle('Show Five')).id).toBe(5)
+      expect(onRateLimited).toHaveBeenCalled()
+    })
   })
 })
