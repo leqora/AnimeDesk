@@ -300,7 +300,7 @@ describe('AnimeDetail', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: '3' })).toHaveAttribute('title', 'ostalo 14 min'))
     expect(api.positions.forSeries).toHaveBeenCalledWith('Show')
   })
-  const info = { id: 154587, genres: ['Adventure'], year: 2023, episodes: 28, description: 'Tajna radnja', poster: null }
+  const info = { id: 154587, match: 'exact', genres: ['Adventure'], year: 2023, episodes: 28, description: 'Tajna radnja', poster: null }
 
   it('puts meta, genres, airing and the main actions in the banner', async () => {
     const AT = Date.now() + (2 * 24 + 4) * 3600 * 1000 + 30_000
@@ -454,7 +454,7 @@ describe('WatchlistPage info cache', () => {
     expect({ Alpha: count('Alpha'), Beta: count('Beta') }).toEqual(before)
   })
   it('detail patches aniListId once without a second request or a poster flash', async () => {
-    const info = { id: 99, poster: 'https://img/Solo.jpg', episodes: 4, genres: [] }
+    const info = { id: 99, match: 'exact', poster: 'https://img/Solo.jpg', episodes: 4, genres: [] }
     const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => info) } })
     const props = { ready: true, onBack: () => {}, onChanged: () => {}, onContinue: () => {} }
     const { container, rerender } = renderUi(<AnimeDetail entry={entry({ id: 's', title: 'Solo' })} {...props} />, { api })

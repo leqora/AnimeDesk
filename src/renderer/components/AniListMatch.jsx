@@ -4,7 +4,8 @@ import { useT } from '../i18n/I18nContext.jsx'
 import { AniListPicker } from './AniListPicker.jsx'
 import { PosterFrame } from './Poster.jsx'
 
-// AniList match card + sync state line for the series detail. Shown only while an AniList account is connected.
+// AniList match card for the series detail (confirm / "not this one" / choose / change), available without an
+// AniList account; the sync state line and the opt-out switch need a connected account.
 // `info` is the detail's AniList info (poster/title/year/episodes): undefined = still loading (nothing shown for
 // the match yet), null = nothing found. onChanged refreshes the library entry.
 export function AniListMatch({ entry, info, onChanged = () => {} }) {
@@ -38,8 +39,6 @@ export function AniListMatch({ entry, info, onChanged = () => {} }) {
     return api.anilistSync.onChange(refresh)
   }, [api, connected, confirmed, refresh])
 
-  if (!connected) return null
-
   const confirm = async () => {
     setError(null)
     let r
@@ -57,7 +56,7 @@ export function AniListMatch({ entry, info, onChanged = () => {} }) {
   const time = (ms) => new Date(ms).toLocaleTimeString(t.locale, { hour: '2-digit', minute: '2-digit' })
 
   let line = null
-  if (confirmed && sync && !optOut) {
+  if (connected && confirmed && sync && !optOut) {
     const { state, progress, retryAt } = sync
     if (state === 'synced' && progress > 0) line = t('anilist.syncedEp', { n: progress })
     else if ((state === 'pending' || state === 'error') && retryAt != null) line = t('anilist.syncRetry', { time: time(retryAt) })
@@ -77,7 +76,7 @@ export function AniListMatch({ entry, info, onChanged = () => {} }) {
       {!confirmed && info !== undefined && (
         entry.aniListId == null ? (
           <div className="row">
-            <span className="muted">{t('anilist.notFound')}</span>
+            <span className="muted">{t(info?.match === 'close' ? 'anilist.uncertain' : 'anilist.notFound')}</span>
             <button type="button" onClick={() => setPicker(true)}>{t('anilist.choose')}</button>
           </div>
         ) : info && (
@@ -96,10 +95,12 @@ export function AniListMatch({ entry, info, onChanged = () => {} }) {
         <div className="row">
           {line && <span role="status" className="anilist-match__state muted">{line}</span>}
           <button type="button" onClick={() => setPicker(true)}>{t('anilist.change')}</button>
-          <label className="check">
-            <input type="checkbox" checked={optOut} onChange={(e) => toggleOptOut(e.target.checked)} />
-            {t('anilist.optOut')}
-          </label>
+          {connected && (
+            <label className="check">
+              <input type="checkbox" checked={optOut} onChange={(e) => toggleOptOut(e.target.checked)} />
+              {t('anilist.optOut')}
+            </label>
+          )}
         </div>
       )}
       {error && <p className="anilist-confirm__error" role="alert">{error}</p>}

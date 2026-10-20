@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { screen, act, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AniListMatch } from '../../../src/renderer/components/AniListMatch.jsx'
-import { makeFakeApi, renderUi, hasNoContent } from './helpers.jsx'
+import { makeFakeApi, renderUi } from './helpers.jsx'
 
 const OK = { connected: true, name: 'leqora', expiresAt: null, state: 'ok' }
 const info = { id: 20, title: 'Naruto', year: 2002, episodes: 220, poster: null }
@@ -24,11 +24,43 @@ function setup({ entry = unconfirmed, status = OK, state = { state: 'synced', pr
 }
 
 describe('AniListMatch', () => {
-  it('renders nothing when not connected', async () => {
-    const { container, api } = setup({ status: { connected: false, name: null, expiresAt: null, state: 'none' } })
-    await waitFor(() => expect(api.anilistAuth.status).toHaveBeenCalled())
-    await act(async () => {})
-    expect(hasNoContent(container)).toBe(true)
+  describe('without an AniList account (spec 15-17)', () => {
+    const OFF = { connected: false, name: null, expiresAt: null, state: 'none' }
+    it('unconfirmed with info still shows the card and both buttons', async () => {
+      const { api } = setup({ status: OFF })
+      expect(await screen.findByRole('button', { name: 'To je ta serija' })).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Nije ta' })).toBeTruthy()
+      expect(api.anilistSync.stateFor).not.toHaveBeenCalled()
+    })
+    it('confirmed shows "Promeni" but neither a sync line nor the opt-out box, and never queries sync state', async () => {
+      const { api } = setup({ status: OFF, entry: confirmed })
+      expect(await screen.findByRole('button', { name: 'Promeni' })).toBeTruthy()
+      await act(async () => {})
+      expect(screen.queryByRole('checkbox')).toBeNull()
+      expect(screen.queryByRole('status')).toBeNull()
+      expect(api.anilistSync.stateFor).not.toHaveBeenCalled()
+      expect(api.anilistSync.onChange).not.toHaveBeenCalled()
+    })
+    it('no id: not-found with "Izaberi"; a pick confirms through anilistSync.confirm and calls onChanged', async () => {
+      const candidates = vi.fn(async () => [{ id: 7, title: 'Naruto', romaji: null, year: 2002, format: 'TV', episodes: 220, poster: null }])
+      const { api, onChanged } = setup({ status: OFF, entry: { id: 'e1', title: 'Naruto', aniListId: null }, infoProp: null, sync: { candidates } })
+      expect(await screen.findByText('Serija nije pronađena na AniList-u.')).toBeTruthy()
+      await userEvent.click(screen.getByRole('button', { name: 'Izaberi' }))
+      await waitFor(() => expect(screen.getAllByRole('button', { name: 'Izaberi' }).length).toBeGreaterThan(1))
+      await userEvent.click(screen.getAllByRole('button', { name: 'Izaberi' }).at(-1))
+      await waitFor(() => expect(api.anilistSync.confirm).toHaveBeenCalledWith('e1', 7))
+      await waitFor(() => expect(onChanged).toHaveBeenCalled())
+    })
+    it('a close match without id says it is not sure (sr and en) and still offers "Izaberi"', async () => {
+      const closeInfo = { ...info, id: 5, match: 'close' }
+      const a = setup({ status: OFF, entry: { id: 'e1', title: 'Naruto', aniListId: null }, infoProp: closeInfo })
+      expect(await screen.findByText('Nije sigurno koja je ovo serija na AniList-u.')).toBeTruthy()
+      expect(screen.queryByText('Serija nije pronađena na AniList-u.')).toBeNull()
+      expect(screen.getByRole('button', { name: 'Izaberi' })).toBeTruthy()
+      a.unmount()
+      setup({ status: OFF, lang: 'en', entry: { id: 'e1', title: 'Naruto', aniListId: null }, infoProp: closeInfo })
+      expect(await screen.findByText('Not sure which AniList series this is.')).toBeTruthy()
+    })
   })
 
   it('unconfirmed with info shows the card with both buttons', async () => {

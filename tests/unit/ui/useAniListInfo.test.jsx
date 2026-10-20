@@ -41,6 +41,16 @@ describe('useAniListInfo', () => {
     expect(forTitle).toHaveBeenCalledTimes(2)
     expect(result.current.poster).toBe('new')
   })
+  it('live sets no refresh timer for a close match', async () => {
+    vi.useFakeTimers()
+    const now = Date.now()
+    const forTitle = vi.fn(async () => ({ ...airing(now + 5 * MIN), match: 'close' }))
+    const api = makeFakeApi({ anilist: { forTitle } })
+    renderHookUi(() => useAniListInfo('Show', null, { live: true }), { api })
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    await act(async () => { await vi.advanceTimersByTimeAsync(5 * MIN + AIRED_GRACE_MS + 31_000) })
+    expect(forTitle).toHaveBeenCalledTimes(1)
+  })
   it('a refetch by one hook updates another hook of the same series', async () => {
     vi.useFakeTimers()
     const now = Date.now()
