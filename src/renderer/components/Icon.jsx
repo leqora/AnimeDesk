@@ -1,11 +1,11 @@
-import { House, ListVideo, Download, UserRound, Settings, Play, Info, Check, Flame, Search, Film, Volume2, ArrowLeft, Star, ChevronLeft, ChevronRight, Maximize, Minimize, Pause, Rewind, FastForward, SkipBack, SkipForward, VolumeX, Subtitles, CircleAlert, Bell } from 'lucide-react'
+import { House, ListVideo, Download, UserRound, Settings, Play, Info, Check, Flame, Search, Film, Volume2, ArrowLeft, Star, ChevronLeft, ChevronRight, Maximize, Minimize, Pause, Rewind, FastForward, SkipBack, SkipForward, VolumeX, Subtitles, CircleAlert, Bell, CalendarDays } from 'lucide-react'
 
 const ICONS = {
   home: House, watchlist: ListVideo, downloads: Download, profile: UserRound, settings: Settings,
   play: Play, info: Info, check: Check, flame: Flame, search: Search, film: Film, volume: Volume2,
   back: ArrowLeft, star: Star, chevronLeft: ChevronLeft, chevronRight: ChevronRight, maximize: Maximize, minimize: Minimize,
   pause: Pause, rewind: Rewind, fastForward: FastForward, skipBack: SkipBack, skipForward: SkipForward,
-  volumeX: VolumeX, subtitles: Subtitles, alert: CircleAlert, bell: Bell,
+  volumeX: VolumeX, subtitles: Subtitles, alert: CircleAlert, bell: Bell, schedule: CalendarDays,
 }
 
 export function Icon({ name, size = 18 }) {

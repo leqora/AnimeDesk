@@ -3,14 +3,16 @@ import crypto from 'node:crypto'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 import { AIRED_GRACE_MS } from '../shared/airing.js'
 import { sequelsFromMedia } from '../shared/sequels.js'
-import { SEARCH, AIRING_BATCH, RELATIONS_BATCH, VIEWER, LIST_ENTRY, SAVE_PROGRESS, CANDIDATES, RECS_BATCH, TRENDING } from './anilistQueries.js'
+import { SEARCH, AIRING_BATCH, RELATIONS_BATCH, VIEWER, LIST_ENTRY, SAVE_PROGRESS, CANDIDATES, RECS_BATCH, TRENDING, SCHEDULE } from './anilistQueries.js'
 import { createAniListBatcher } from './anilistBatch.js'
 import { toCase, eligible } from '../shared/recommendations.js'
+import { posterAllowed } from '../shared/schedule.js'
 import { MATCH_VERSION, searchQueries, pickMatch, isExactName } from '../shared/titleMatch.js'
 
 const ENDPOINT = 'https://graphql.anilist.co'
 const AIRING_CHUNK = 50
 const CANDIDATE_LIMIT = 8
+const SCHEDULE_MAX_PAGES = 8
 
 const norm = (s) => String(s ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
 
@@ -46,6 +48,30 @@ function toRecItem(m, rank, rating) {
     rank,
     rating,
     eligible: eligible(toCase(m)),
+  }
+}
+
+// One airing row reduced to the schedule item (episode number and air time only; no relations or description kept).
+// Anything malformed is dropped (null).
+function toScheduleItem(row) {
+  const m = row?.media
+  const episode = row?.episode
+  const at = row?.airingAt
+  if (!Number.isInteger(episode) || episode < 1 || typeof at !== 'number' || !Number.isFinite(at)) return null
+  if (!Number.isInteger(m?.id) || m.id < 1) return null
+  const romaji = m.title?.romaji ?? null
+  const english = m.title?.english ?? null
+  return {
+    mediaId: m.id,
+    episode,
+    airingAt: at * 1000,
+    title: english ?? romaji,
+    romaji,
+    english,
+    format: m.format ?? null,
+    isAdult: m.isAdult === true,
+    coverUrl: m.coverImage?.medium ?? null,
+    poster: posterAllowed(toCase(m)),
   }
 }
 
@@ -387,7 +413,24 @@ export function createAniList({
     return (data?.Page?.media ?? []).map((m, rank) => toRecItem(m, rank, null))
   }
 
+  // Airings in [fromMs, toMs): pages in order through the queue while hasNextPage, at most SCHEDULE_MAX_PAGES (guards against an
+  // endless loop). Never touches the cache dir. A failed page rejects the whole call.
+  async function schedule(fromMs, toMs) {
+    const from = Math.floor(fromMs / 1000) - 1
+    const to = Math.ceil(toMs / 1000)
+    const items = []
+    for (let page = 1; page <= SCHEDULE_MAX_PAGES; page++) {
+      const data = await gql(SCHEDULE, { page, from, to })
+      for (const row of data?.Page?.airingSchedules ?? []) {
+        const item = toScheduleItem(row)
+        if (item) items.push(item)
+      }
+      if (data?.Page?.pageInfo?.hasNextPage !== true) break
+    }
+    return items
+  }
+
   const poster = (url) => posterDataUrl(url).catch(() => null)
 
-  return { search, getForTitle, getCached, refreshAiring, relations, recommendations, trending, poster, viewer, listEntry, saveProgress, candidates }
+  return { search, getForTitle, getCached, refreshAiring, relations, recommendations, trending, schedule, poster, viewer, listEntry, saveProgress, candidates }
 }

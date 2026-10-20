@@ -1,0 +1,2128 @@
+{
+ "note": "Real AniList airingSchedules, 14 days from 2026-10-20T15:32:59.000Z, one case per media (toCase shape). Manually reviewed 2026-10-20: poster=false for later parts and side stories (spoiler rule), shown=false for 18+.",
+ "cases": [
+  {
+   "id": 235,
+   "title": "Detective Conan",
+   "romaji": "Meitantei Conan",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 1996,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 966,
+   "title": "Shin Chan",
+   "romaji": "Crayon Shin-chan",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 1992,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 2406,
+   "title": "Sazae-san",
+   "romaji": "Sazae-san",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 1969,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 8687,
+   "title": "Doraemon (2005)",
+   "romaji": "Doraemon (2005)",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2005,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV_SHORT",
+     "year": 1979
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 118123,
+   "title": "Holo no Graffiti",
+   "romaji": "Holo no Graffiti",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 137653,
+   "title": "Renegade Immortal",
+   "romaji": "Xian Ni",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": null,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 137683,
+   "title": "Soul Land 2: The Peerless Tang Clan",
+   "romaji": "Douluo Dalu 2: Jueshi Tangmen",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": null,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": null
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 146004,
+   "title": "Watame Did Borderline Nothing Wrong",
+   "romaji": "Girigiri Warukunai Watame",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 152677,
+   "title": "The Detective Is Already Dead Season 2",
+   "romaji": "Tantei wa mou, Shindeiru. Season 2",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2021
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 155723,
+   "title": "Wushen Zhuzai: Da Wei Pian",
+   "romaji": "Wushen Zhuzai: Da Wei Pian",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": null,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": null
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 158871,
+   "title": "Pokémon Horizons: The Series",
+   "romaji": "Pocket Monsters (2023)",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 159042,
+   "title": "Reincarnated as a Sword Season 2",
+   "romaji": "Tensei Shitara Ken Deshita 2nd Season",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": 2022
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 160275,
+   "title": "Made in Abyss: Mezameru Shinpi",
+   "romaji": "Made in Abyss: Mezameru Shinpi",
+   "format": "MOVIE",
+   "status": "NOT_YET_RELEASED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2022
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 160803,
+   "title": "MAGICAL GIRL RAISING PROJECT restart",
+   "romaji": "Mahou Shoujo Ikusei Keikaku: restart",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2016
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 165159,
+   "title": "BEYBLADE X",
+   "romaji": "BEYBLADE X",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 168085,
+   "title": "Dali Si Rizhi 3",
+   "romaji": "Dali Si Rizhi 3",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": null,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": null
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 169581,
+   "title": "Magical Explorer",
+   "romaji": "Magical★Explorer: Eroge no Yuujin Chara ni Tensei Shitakedo, Game Chishiki Tsukatte Jiyuu ni Ikiru",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 172192,
+   "title": "A Returner's Magic Should be Special Season 2",
+   "romaji": "Kikansha no Mahou wa Tokubetsu desu 2nd Season",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2023
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 176314,
+   "title": "Sasaki and Peeps Season 2",
+   "romaji": "Sasaki to Pii-chan Season 2",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 178083,
+   "title": "Tokyo Revengers: War of the Three Titans Arc",
+   "romaji": "Tokyo Revengers: Santen Sensou-hen",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2023
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 178868,
+   "title": "Magic Knight Rayearth (2026)",
+   "romaji": "Magic Knight Rayearth (2026)",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 179876,
+   "title": "DARK MACHINE THE ANIMATION",
+   "romaji": "DARK MACHINE: The Animation",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 180136,
+   "title": "The Exiled Heavy Knight Knows How to Game the System",
+   "romaji": "Tsuihou Sareta Tensei Juukishi wa Game Chishiki de Musou Suru",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 180894,
+   "title": "Romelia War Chronicle",
+   "romaji": "Romelia Senki: Maou wo Taoshita nochi mo Jinrui Yabasou dakara Guntai Soshiki Shita",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 183231,
+   "title": "RILAKKUMA",
+   "romaji": "Rilakkuma",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 185646,
+   "title": "Koupen-chan",
+   "romaji": "Koupen-chan",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2025,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 185756,
+   "title": "As a Reincarnated Aristocrat, I'll Use My Appraisal Skill to Rise in the World Season 3",
+   "romaji": "Tensei Kizoku, Kantei Skill de Nariagaru 3rd Season",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 185874,
+   "title": "BLEACH: Thousand-Year Blood War - The Calamity",
+   "romaji": "BLEACH: Sennen Kessen-hen - Kashin-tan",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 186541,
+   "title": "Reborn as a Space Mercenary: I Woke Up Piloting the Strongest Starship!",
+   "romaji": "Mezametara Saikyou Soubi to Uchuusen-mochi datta node, Ikkodate Mezashite Youhei to shite Jiyuu ni Ikitai",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 186742,
+   "title": "A Certain Dark Item",
+   "romaji": "Toaru Anbu no ITEM",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 187316,
+   "title": "Gensou Suikoden",
+   "romaji": "Gensou Suikoden",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 187402,
+   "title": "A Tale of the Secret Saint",
+   "romaji": "Tensei shita Dai Seijo wa, Seijo de Aru Koto wo Hita Kakusu",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 187990,
+   "title": "Battle Spirits [Re] Zekkai No Ku",
+   "romaji": "Battle Spirits [Re] Zekkai no Kuu",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 188034,
+   "title": "Girls und Panzer: Motto Love Love Sakusen desu!",
+   "romaji": "Girls und Panzer: Motto Love Love Sakusen desu!",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 188753,
+   "title": "Gekkan! Nanmono Anime",
+   "romaji": "Gekkan! Nanmono Anime",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": null,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 189123,
+   "title": "Blue Box Season 2",
+   "romaji": "Ao no Hako Season 2",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 190054,
+   "title": "My Happy Marriage Special Episodes",
+   "romaji": "Watashi no Shiawase na Kekkon Tokubetsu-hen",
+   "format": "SPECIAL",
+   "status": "NOT_YET_RELEASED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 191656,
+   "title": "Even the Student Council Has Its Holes!",
+   "romaji": "Seitokai ni mo Ana wa Aru!",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 191788,
+   "title": "Aoashi Season 2",
+   "romaji": "Aoashi 2nd Season",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2022
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 191832,
+   "title": "Link Click Season 3",
+   "romaji": "Shiguang Dailiren III",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": null,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": null
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 194207,
+   "title": "Pan Dorobou",
+   "romaji": "Pan Dorobou",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 195516,
+   "title": "The Apothecary Diaries Season 3",
+   "romaji": "Kusuriya no Hitorigoto 3rd Season",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 195571,
+   "title": "The Vermilion Mask",
+   "romaji": "Shuiro no Kamen",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 195604,
+   "title": "Black Clover Season 2",
+   "romaji": "Black Clover 2nd Season",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2017
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 196613,
+   "title": "Dou Po Cangqiong: Nian Fan 4",
+   "romaji": "Dou Po Cangqiong: Nian Fan 4",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": null,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": null
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 196750,
+   "title": "Sister Breeder",
+   "romaji": "Sister Breeder",
+   "format": "OVA",
+   "status": "RELEASING",
+   "year": 2025,
+   "isAdult": true,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": false,
+    "poster": false
+   }
+  },
+  {
+   "id": 198727,
+   "title": "Chitose Is in the Ramune Bottle 2nd Cour",
+   "romaji": "Chitose-kun wa Ramune Bin no Naka Part 2",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 199007,
+   "title": "#I'm Looking For a Zombie",
+   "romaji": "#Zombie Sagashitemasu",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 199068,
+   "title": "The Prince of Tennis II U-17 WORLD CUP: Final Member Selection Match",
+   "romaji": "Shin Tennis no Ouji-sama: U-17 WORLD CUP Kesshou Member Ketteisen",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 199353,
+   "title": "Dawang Raoming 3",
+   "romaji": "Dawang Raoming 3",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": null,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": null
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 199409,
+   "title": "Yi Nian Yongheng 4",
+   "romaji": "Yi Nian Yongheng 4",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": null,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": null
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 199426,
+   "title": "HOTEL INHUMANS Season 2",
+   "romaji": "Hotel Inhumans 2nd Season",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 199594,
+   "title": "TETSURYO! Meet With Tetsudou Musume",
+   "romaji": "Tetsuryou! meet with Tetsudou Musume",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 200294,
+   "title": "Super Psychic Policeman Chojo",
+   "romaji": "Choujun! Choujou Senpai",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 200455,
+   "title": "Even Though I'm a Super Timid Noble Girl, I Accepted the Bet From My Cunning Fiancé",
+   "romaji": "Yowaki MAX Reijou Nano ni, Ratsuwan Konyakusha-sama no Kake ni Notte Shimatta",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 202079,
+   "title": "Uncle's Obsession with Cute Things",
+   "romaji": "Oji-san wa Kawaii Mono ga Osuki.",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 202250,
+   "title": "Magic Repo Man: Dumped by My Party, I’ll Cash In With a Cute Support Fairy to Become the Strongest!",
+   "romaji": "Kashita Maryoku wa [Revo Barai] de Kyousei Choushuu",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 202957,
+   "title": "Star Detective Precure!",
+   "romaji": "Meitantei Precure!",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 203473,
+   "title": "HORROR COLLECTOR",
+   "romaji": "Kyoufu Collector",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 203490,
+   "title": "Please Excuse My Younger Brothers",
+   "romaji": "Uchi no Otouto-domo ga Sumimasen",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 204011,
+   "title": "PSYREN",
+   "romaji": "PSYЯEN",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 204269,
+   "title": "Little Shark's Day Out Season 2",
+   "romaji": "Odekake Kozame Season 2",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "MOVIE",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 204389,
+   "title": "A Wild Last Boss Appeared! Season 2",
+   "romaji": "Yasei no Last Boss ga Arawareta! 2nd Season",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 204650,
+   "title": "TOUGEN ANKI: Nikko Kegon Falls Arc",
+   "romaji": "Tougen Anki: Nikko・Kegon no Taki-hen",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 204656,
+   "title": "mofusand",
+   "romaji": "mofusand",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 205896,
+   "title": "Full Clearing Another World under a Goddess with Zero Believers",
+   "romaji": "Shinja Zero no Megami-sama to Hajimeru Isekai Kouryaku",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 205909,
+   "title": "Firefly Wedding",
+   "romaji": "Hotaru no Yomeiri",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 206244,
+   "title": "Luo Xiaohei Zhan Ji: Xue Qian Pian",
+   "romaji": "Luo Xiaohei Zhan Ji: Xue Qian Pian",
+   "format": "ONA",
+   "status": "NOT_YET_RELEASED",
+   "year": null,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": null
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 206401,
+   "title": "FX Fighter Kurumi-chan",
+   "romaji": "FX Senshi Kurumi-chan",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 206523,
+   "title": "Onegai AiPri",
+   "romaji": "Onegai AiPri",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 206774,
+   "title": "Now That I Can Control Reality With A Mouse Cursor, I'm Gonna Click Away On The Girls!",
+   "romaji": "Mouse Cursor de Genjitsu wo Sousa Dekiru You ni Natta node, Onnanoko wo Ippai Click Shimasu",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 206814,
+   "title": "Dragon Ball Super: Beerus",
+   "romaji": "Dragon Ball Super: Beerus",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 1989
+    },
+    {
+     "format": "TV",
+     "year": 2014
+    },
+    {
+     "format": "TV",
+     "year": 2024
+    }
+   ],
+   "parent": true,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 206949,
+   "title": "Nia Liston: The Merciless Maiden",
+   "romaji": "Kyouran Reijou Nia Liston",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 207191,
+   "title": "Hello, I am a Witch and my Crush Wants me to Make a Love Potion!",
+   "romaji": "Doumo, Suki na Hito ni Horegusuri wo Irai Sareta Majo desu.",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 207329,
+   "title": "The Laid-Off Cheat-Granting Mage Enjoys a Second Lease on Life",
+   "romaji": "Tsuihou Sareta Cheat Fuyo Majutsushi wa Kimama na Second Life wo Ouka Suru.: Ore wa Buki dake ja Naku, Arayuru Mono ni \"Kyouka Point\" wo Fuyo Dekiru shi, Ore no Ishi de Itsudemo Kouka wo Kaijo Dekiru kedo, Nokotta Hitotachi Daijoubu?",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 207809,
+   "title": "Red River",
+   "romaji": "Sora wa Akai Kawa no Hotori",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 208025,
+   "title": "I'm Dating a Dark Summoner",
+   "romaji": "Dark Summoner to Dekiteiru",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 208367,
+   "title": "Duel Masters LOST: Danzai no Shounen",
+   "romaji": "Duel Masters LOST: Danzai no Shounen",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": 2026
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 209032,
+   "title": "Magical Sisters LuluttoLilly Part 2",
+   "romaji": "Mahou no Shimai LuluttoLilly Part 2",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2026
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 209219,
+   "title": "So What's Wrong with Getting Reborn as a Goblin?",
+   "romaji": "Tensei Goblin Dakedo Shitsumon Aru?",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 209463,
+   "title": "From Far Away",
+   "romaji": "Kanata Kara",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 209499,
+   "title": "TANK CHAIR",
+   "romaji": "TANK CHAIR: Sensha Isu",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 209502,
+   "title": "The Cold Sato-san is Only Sweet to Me",
+   "romaji": "Shiotaiou no Satou-san ga Ore ni dake Amai",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 209562,
+   "title": "VERTEX FORCE",
+   "romaji": "Vertex Force",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 209709,
+   "title": "Sirotan",
+   "romaji": "Sirotan",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 209872,
+   "title": "Ranma1/2 (2024) Season 3",
+   "romaji": "Ranma 1/2 (2024) 3rd Season",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 210482,
+   "title": "STEEL BALL RUN JoJo's Bizarre Adventure 2nd - 3rd STAGE",
+   "romaji": "JoJo no Kimyou na Bouken: Steel Ball Run - 2nd & 3rd STAGE",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": 2026
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 211338,
+   "title": "Harem-tou e Youkoso!",
+   "romaji": "Harem-tou e Youkoso!",
+   "format": "OVA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": true,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": false,
+    "poster": false
+   }
+  },
+  {
+   "id": 211778,
+   "title": "The World's Strongest Witch",
+   "romaji": "Sekai Saikyou no Majo, Hajimemashita",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 211877,
+   "title": "My Girlfriend's Friend",
+   "romaji": "Kanojo no Tomodachi",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 212144,
+   "title": "With Vengeance, Sincerely, Your Broken Saintess Season 2",
+   "romaji": "Kizu darake Seijo yori Houfuku wo Komete Season2",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV_SHORT",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 212308,
+   "title": "Pan no Akachan (TV)",
+   "romaji": "Pan no Akachan (TV)",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 212503,
+   "title": "The Iceblade Sorcerer Shall Rule the World II",
+   "romaji": "Hyouken no Majutsushi ga Sekai wo Suberu II",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2023
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 212667,
+   "title": "The Lonely Snow Widow and the Cursed Ring",
+   "romaji": "Hitozukiai ga Nigate na Miboujin no Yukionna-san to Noroi no Yubiwa",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": true,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": false,
+    "poster": false
+   }
+  },
+  {
+   "id": 212799,
+   "title": "The Seven Knights of the Marronnier Kingdom",
+   "romaji": "Marronnier Oukoku no Shichinin no Kishi",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 212888,
+   "title": "Overgeared",
+   "romaji": "Tempal: Item no Chikara",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 213068,
+   "title": "Dandivine",
+   "romaji": "Juuоu Mujin Dandivine",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 213188,
+   "title": "Jueshi Zhan Hun 2",
+   "romaji": "Jueshi Zhan Hun 2",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": null,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": null
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 213298,
+   "title": "Yuruyuru Zukan",
+   "romaji": "Yuruyuru Zukan",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 213356,
+   "title": "Beyond Time's Gaze 2",
+   "romaji": "Guangyin Zhi Wai 2",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": null,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": null
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 213657,
+   "title": "Mission: Yozakura Family Season 2 Part 2",
+   "romaji": "Yozakura-san Chi no Daisakusen 2nd Season Part 2",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2026
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 213658,
+   "title": "Ace of the Diamond act II -Second Season-",
+   "romaji": "Diamond no Ace act II: Second Season Part 2",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2026
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 213732,
+   "title": "Mujikaku na Osananajimi to Kyoumi Honi de Yatte Mitara THE ANIMATION",
+   "romaji": "Mujikaku na Osananajimi to Kyoumi Honi de Yatte Mitara THE ANIMATION",
+   "format": "OVA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": true,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": false,
+    "poster": false
+   }
+  },
+  {
+   "id": 213805,
+   "title": "The Ramparts of Ice Season 2",
+   "romaji": "Koori no Jouheki 2nd Season",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2026
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 214260,
+   "title": "A Good Day to Ascend",
+   "romaji": "Zeri Feisheng",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": null,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 214443,
+   "title": "Hitori Tsuma",
+   "romaji": "Hitori Tsuma",
+   "format": "OVA",
+   "status": "NOT_YET_RELEASED",
+   "year": 2026,
+   "isAdult": true,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": false,
+    "poster": false
+   }
+  },
+  {
+   "id": 214551,
+   "title": "Oushun Jogakuen no Danyuu",
+   "romaji": "Oushun Jogakuen no Danyuu",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": true,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": false,
+    "poster": false
+   }
+  },
+  {
+   "id": 214593,
+   "title": "Yuusanchi! from Yuuhachi",
+   "romaji": "Yuusanchi! from Yuuhachi",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 214703,
+   "title": "Ghost Meets Gal!",
+   "romaji": "Ghost Meets Gal!",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 214968,
+   "title": "Nezumi-kun no Chokki (TV) 2nd Season",
+   "romaji": "Nezumi-kun no Chokki (TV) 2nd Season",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV_SHORT",
+     "year": 2026
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 214974,
+   "title": "Da Xia Shou Mu Ren",
+   "romaji": "Da Xia Shou Mu Ren",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": null,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 215835,
+   "title": "Umayuru: Full Gate!",
+   "romaji": "Umayuru: Full Gate!",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": 2025
+    }
+   ],
+   "parent": true,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 216557,
+   "title": "KERORO☆",
+   "romaji": "Keroro Gunsou☆",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 216860,
+   "title": "Punirunes Puni 4",
+   "romaji": "Punirunes Puni 4",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV_SHORT",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 216895,
+   "title": "Welsh & Shedar",
+   "romaji": "Aoki Denshou: Welsh & Shedar",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 217282,
+   "title": "GelPiyo 2",
+   "romaji": "GelPiyo 2",
+   "format": "TV_SHORT",
+   "status": "NOT_YET_RELEASED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV_SHORT",
+     "year": 2026
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 217577,
+   "title": "Mazenchu",
+   "romaji": "Mazenchu",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 217624,
+   "title": "PetitCure: Precure Fairies Season 4",
+   "romaji": "PetitCure: Precure Fairies Season 4",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": 2026
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 217782,
+   "title": "My Girlfriend's Friend Mini Anime",
+   "romaji": "Kanojo no Tomodachi Mini Anime Gekijou",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 217787,
+   "title": "Pop Pap Polters",
+   "romaji": "Pop Pap Polters",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 218008,
+   "title": "Chibi Godzilla Raids Again Season 4",
+   "romaji": "Chibi Godzilla no Gyakushuu Season 4",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV_SHORT",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 218011,
+   "title": "Raccoon Dog & Fox",
+   "romaji": "Tanuki to Kitsune (TV)",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "expected": {
+    "shown": true,
+    "poster": true
+   }
+  },
+  {
+   "id": 218217,
+   "title": "JK Dark Summoner to Deki......Dei Nai!?",
+   "romaji": "JK Dark Summoner to Deki......Dei Nai!?",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 218493,
+   "title": "Wan Sheng Jie: Gubao de Mimi",
+   "romaji": "Wan Sheng Jie: Gubao de Mimi",
+   "format": "SPECIAL",
+   "status": "NOT_YET_RELEASED",
+   "year": null,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  },
+  {
+   "id": 218532,
+   "title": "Maomao no Hitorigoto 3rd Season",
+   "romaji": "Maomao no Hitorigoto 3rd Season",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": 2025
+    }
+   ],
+   "parent": true,
+   "expected": {
+    "shown": true,
+    "poster": false
+   }
+  }
+ ]
+}

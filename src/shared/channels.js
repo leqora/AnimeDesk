@@ -79,6 +79,8 @@ export const INVOKE = {
   recommendationsHide: 'recommendations:hide',
   recommendationsUnhide: 'recommendations:unhide',
   recommendationsForSeries: 'recommendations:for-series',
+  scheduleList: 'schedule:list',
+  schedulePosters: 'schedule:posters',
 }
 
 export const EVENTS = {
@@ -107,5 +109,6 @@ export const EVENTS = {
   anilistSyncChanged: 'event:anilist-sync-changed',
   sequelsChanged: 'event:sequels-changed',
   recommendationsChanged: 'event:recommendations-changed',
+  scheduleChanged: 'event:schedule-changed',
   episodesChanged: 'event:episodes-changed',
 }

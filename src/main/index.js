@@ -50,6 +50,7 @@ import { createAniListAuth } from './anilistAuth.js'
 import { createAniListSync } from './anilistSync.js'
 import { createSequels } from './sequels.js'
 import { createRecommendations } from './recommendations.js'
+import { createSchedule } from './schedule.js'
 import { createTray } from './tray.js'
 import { shouldHideOnClose, startHidden, notificationText, shouldNotifyDownload, trayLabels } from './background.js'
 
@@ -221,6 +222,9 @@ async function main() {
   sequels.onChange(() => send(EVENTS.sequelsChanged))
   const recommendations = createRecommendations({ file: paths.recommendations, library, anilist, settings })
   recommendations.onChange(() => send(EVENTS.recommendationsChanged))
+  // Weekly schedule: refreshed only when the page calls list(); never started, checked or timed from here.
+  const schedule = createSchedule({ file: paths.schedule, library, anilist })
+  schedule.onChange(() => send(EVENTS.scheduleChanged))
   const applyLoginItem = () => {
     if (!app.isPackaged) return
     try { app.setLoginItemSettings({ openAtLogin: Boolean(settings.get().launchAtLogin), args: ['--hidden'] }) } catch (err) { console.warn('login item failed', err?.message) }
@@ -267,11 +271,11 @@ async function main() {
   })
 
   registerIpc(ipcMain, createHandlers({
-    paths, dataBackup, settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, autoDownloader, updater, whatsNew, notifications: notificationsStore, aniListAuth, aniListSync, sequels, recommendations,
+    paths, dataBackup, settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, autoDownloader, updater, whatsNew, notifications: notificationsStore, aniListAuth, aniListSync, sequels, recommendations, schedule,
     send: sendAndWatch,
     onLibraryChanged: () => { airingWatcher.check(); autoDownloader.check(); aniListSync.check(); sequels.check(); recommendations.check() },
     onSettingsChanged,
-    onCacheCleared: () => { fillerInfo.forget(); airingWatcher.refresh().catch(() => {}).finally(() => { autoDownloader.check(); sequels.check(); recommendations.check() }) },
+    onCacheCleared: () => { fillerInfo.forget(); schedule.forget(); airingWatcher.refresh().catch(() => {}).finally(() => { autoDownloader.check(); sequels.check(); recommendations.check() }) },
     window: { get: () => fullscreen?.get() ?? false, set: (v) => fullscreen?.set(v) },
     electron: {
       pickFolder: async () => {
@@ -328,7 +332,7 @@ async function main() {
   setInterval(() => { if (health.get().reason === 'source-down') health.run() }, SIX_HOURS)
 
   app.on('window-all-closed', () => { if (!shouldHideOnClose({ closeToTray: settings.get().closeToTray, quitting })) app.quit() })
-  app.on('before-quit', () => { quitting = true; airingWatcher.stop(); autoDownloader.stop(); aniListSync.stop(); sequels.stop(); recommendations.stop(); dataBackup.stop(); aniListAuth.dispose(); downloads.dispose(); tray?.destroy(); stopPositionEvents(); watch.dispose(); server.stop(); streams.stop() })
+  app.on('before-quit', () => { quitting = true; airingWatcher.stop(); autoDownloader.stop(); aniListSync.stop(); sequels.stop(); recommendations.stop(); schedule.stop(); dataBackup.stop(); aniListAuth.dispose(); downloads.dispose(); tray?.destroy(); stopPositionEvents(); watch.dispose(); server.stop(); streams.stop() })
 }
 
 // A failed startup must not leave a silent background process; a stray rejection must not go unnoticed.
