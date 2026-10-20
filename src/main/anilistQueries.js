@@ -16,3 +16,8 @@ export function searchBatchQuery(n) {
   const body = Array.from({ length: n }, (_, i) => `s${i}: Page(perPage: 10) { media(search: $s${i}, type: ANIME) { ${FIELDS} } }`).join(' ')
   return `query (${vars}) { ${body} }`
 }
+
+// Fields of a recommended series (spec point 7), shared by RECS_BATCH and TRENDING.
+export const REC_MEDIA_FIELDS = 'id isAdult format status seasonYear episodes genres title { romaji english } coverImage { large } relations { edges { relationType(version: 2) node { id type format seasonYear } } }'
+export const RECS_BATCH = `query ($ids: [Int]) { Page(perPage: 50) { media(id_in: $ids, type: ANIME) { id recommendations(perPage: 10, sort: RATING_DESC) { nodes { rating mediaRecommendation { ${REC_MEDIA_FIELDS} } } } } } }`
+export const TRENDING = `query { Page(perPage: 50) { media(type: ANIME, sort: TRENDING_DESC, isAdult: false) { ${REC_MEDIA_FIELDS} } } }`

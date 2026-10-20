@@ -3,8 +3,9 @@ import crypto from 'node:crypto'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 import { AIRED_GRACE_MS } from '../shared/airing.js'
 import { sequelsFromMedia } from '../shared/sequels.js'
-import { SEARCH, AIRING_BATCH, RELATIONS_BATCH, VIEWER, LIST_ENTRY, SAVE_PROGRESS, CANDIDATES } from './anilistQueries.js'
+import { SEARCH, AIRING_BATCH, RELATIONS_BATCH, VIEWER, LIST_ENTRY, SAVE_PROGRESS, CANDIDATES, RECS_BATCH, TRENDING } from './anilistQueries.js'
 import { createAniListBatcher } from './anilistBatch.js'
+import { toCase, eligible } from '../shared/recommendations.js'
 import { MATCH_VERSION, searchQueries, pickMatch, isExactName } from '../shared/titleMatch.js'
 
 const ENDPOINT = 'https://graphql.anilist.co'
@@ -27,6 +28,25 @@ export function toNextAiring(raw) {
   const at = raw?.airingAt
   if (!Number.isInteger(episode) || episode < 1 || typeof at !== 'number' || !Number.isFinite(at)) return null
   return { episode, airingAt: at * 1000 }
+}
+
+// A recommended or trending media reduced to the card shape. No relations, no description: nothing that could spoil.
+function toRecItem(m, rank, rating) {
+  return {
+    id: m.id,
+    title: m.title?.english ?? m.title?.romaji ?? null,
+    romaji: m.title?.romaji ?? null,
+    english: m.title?.english ?? null,
+    format: m.format ?? null,
+    status: m.status ?? null,
+    year: m.seasonYear ?? null,
+    episodes: m.episodes ?? null,
+    genres: Array.isArray(m.genres) ? m.genres.slice(0, 3) : [],
+    coverUrl: m.coverImage?.large ?? null,
+    rank,
+    rating,
+    eligible: eligible(toCase(m)),
+  }
 }
 
 function toInfo(m) {
@@ -343,7 +363,31 @@ export function createAniList({
     return result
   }
 
+  // Community recommendations per id, one batched query per 50 unique ids; never touches the cache dir. Every answered id is
+  // a key (empty array = none). `rank` is the node's position before null recommendations are skipped. A failed chunk rejects.
+  async function recommendations(ids) {
+    const result = new Map()
+    const unique = [...new Set(ids)]
+    for (let i = 0; i < unique.length; i += AIRING_CHUNK) {
+      const data = await gql(RECS_BATCH, { ids: unique.slice(i, i + AIRING_CHUNK) })
+      for (const m of data?.Page?.media ?? []) {
+        const nodes = Array.isArray(m?.recommendations?.nodes) ? m.recommendations.nodes : []
+        const items = []
+        nodes.forEach((n, rank) => {
+          if (n?.mediaRecommendation) items.push(toRecItem(n.mediaRecommendation, rank, n.rating ?? null))
+        })
+        result.set(m.id, items)
+      }
+    }
+    return result
+  }
+
+  async function trending() {
+    const data = await gql(TRENDING, {})
+    return (data?.Page?.media ?? []).map((m, rank) => toRecItem(m, rank, null))
+  }
+
   const poster = (url) => posterDataUrl(url).catch(() => null)
 
-  return { search, getForTitle, getCached, refreshAiring, relations, poster, viewer, listEntry, saveProgress, candidates }
+  return { search, getForTitle, getCached, refreshAiring, relations, recommendations, trending, poster, viewer, listEntry, saveProgress, candidates }
 }

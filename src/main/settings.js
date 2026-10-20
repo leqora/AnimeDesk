@@ -35,6 +35,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   notifyDownloads: true,
   trayHintShown: false,
   hiddenSequels: [],
+  hiddenRecommendations: [],
 })
 
 export const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
@@ -62,12 +63,12 @@ export function sanitizeSubtitles(input, legacySize) {
   }
 }
 
-export const MAX_HIDDEN_SEQUELS = 500
+export const MAX_HIDDEN_IDS = 500
 
 function sanitizeIds(v) {
   if (!Array.isArray(v)) return []
   const ids = v.filter((n) => Number.isInteger(n) && n > 0)
-  return [...new Set(ids)].slice(0, MAX_HIDDEN_SEQUELS)
+  return [...new Set(ids)].slice(0, MAX_HIDDEN_IDS)
 }
 
 export function sanitizeSettings(input = {}) {
@@ -106,6 +107,7 @@ export function sanitizeSettings(input = {}) {
   if (typeof input.notifyDownloads === 'boolean') s.notifyDownloads = input.notifyDownloads
   if (typeof input.trayHintShown === 'boolean') s.trayHintShown = input.trayHintShown
   s.hiddenSequels = sanitizeIds(input.hiddenSequels)
+  s.hiddenRecommendations = sanitizeIds(input.hiddenRecommendations)
   return s
 }
 
