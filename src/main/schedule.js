@@ -94,23 +94,31 @@ export function createSchedule({
       return []
     }
   }
-  const getCachedId = (title) => {
-    const info = anilist.getCached(title)
-    return info?.match === 'exact' ? info.id : null
-  }
-
-  // Poster of the library entry straight from the AniList cache, or null when it is not a sure record (spec 15).
-  function libraryPoster(item, entry) {
-    if (!entry) return null
-    let info = null
-    try {
-      if (entry.aniListId != null) info = anilist.getCached(entry.title, { aniListId: entry.aniListId })
-      else {
-        const byTitle = anilist.getCached(entry.title)
-        info = byTitle?.match === 'exact' ? byTitle : null
+  // Cache reads are synchronous file reads: one lookup scope per list()/posters() call reads each distinct key once.
+  function lookups() {
+    const memo = new Map()
+    const read = (title, aniListId) => {
+      const key = aniListId != null ? `id:${aniListId}` : `t:${title}`
+      if (!memo.has(key)) {
+        let info = null
+        try { info = (aniListId != null ? anilist.getCached(title, { aniListId }) : anilist.getCached(title)) ?? null } catch { info = null }
+        memo.set(key, info)
       }
-    } catch { info = null }
-    return info && info.id === item.mediaId && typeof info.poster === 'string' && info.poster ? info.poster : null
+      return memo.get(key)
+    }
+    // Ids from the title cache only when the match is exact.
+    const getCachedId = (title) => {
+      const info = read(title, null)
+      return info?.match === 'exact' ? info.id : null
+    }
+    // Poster of the library entry straight from the AniList cache, or null when it is not a sure record (spec 15).
+    const libraryPoster = (item, entry) => {
+      if (!entry) return null
+      let info = read(entry.title, entry.aniListId ?? null)
+      if (entry.aniListId == null && info?.match !== 'exact') info = null
+      return info && info.id === item.mediaId && typeof info.poster === 'string' && info.poster ? info.poster : null
+    }
+    return { getCachedId, libraryPoster }
   }
 
   // A stored failure stamp from the future counts as "just now".
@@ -163,6 +171,7 @@ export function createSchedule({
       }
     }
     const entries = entriesNow()
+    const { getCachedId, libraryPoster } = lookups()
     const items = []
     for (const it of record?.items ?? []) {
       if (!(it.airingAt >= w.from && it.airingAt < w.to)) continue
@@ -197,7 +206,9 @@ export function createSchedule({
     const wanted = [...new Set((Array.isArray(ids) ? ids : []).slice(0, MAX_POSTER_IDS))]
     const result = {}
     const entries = entriesNow()
+    const { getCachedId, libraryPoster } = lookups()
     const todo = []
+    let added = false
     for (const id of wanted) {
       result[id] = null
       const item = (record?.items ?? []).find((i) => i.mediaId === Number(id))
@@ -219,11 +230,12 @@ export function createSchedule({
         if (typeof dataUrl === 'string' && dataUrl) {
           posters[item.mediaId] = { coverUrl: item.coverUrl, dataUrl }
           result[id] = dataUrl
-          persist()
+          added = true
         }
       }
     }
     await Promise.all(Array.from({ length: Math.min(POSTER_CONCURRENCY, todo.length) }, worker))
+    if (added && !stopped && g === gen) persist() // once per batch
     return result
   }
 

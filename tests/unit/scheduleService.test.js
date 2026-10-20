@@ -296,9 +296,10 @@ describe('createSchedule posters', () => {
     expect(peak).toBe(4)
   })
 
-  it('a slow download yields null after 8 s', async () => {
-    await refreshed()
+  it('a slow download yields null after 8 s (fake clock drives the service timer)', async () => {
     vi.useFakeTimers()
+    build() // after useFakeTimers so the service captures the fake setTimeout
+    await refreshed()
     anilist.poster.mockImplementation(() => new Promise(() => {}))
     const p = svc.posters([1])
     let done = false
@@ -307,6 +308,26 @@ describe('createSchedule posters', () => {
     expect(done).toBe(false)
     await vi.advanceTimersByTimeAsync(1)
     expect(await p).toEqual({ 1: null })
+  })
+
+  it('reads each distinct cache key once per list() / posters() call', async () => {
+    fetched = Array.from({ length: 50 }, (_, i) => item(i + 1, { poster: false }))
+    entries = ['A', 'B', 'C'].map((t, i) => ({ id: `e${i}`, title: t, status: 'watching' }))
+    await refreshed()
+    anilist.getCached.mockClear()
+    svc.list()
+    expect(anilist.getCached.mock.calls.length).toBeLessThanOrEqual(3)
+    anilist.getCached.mockClear()
+    await svc.posters(fetched.map((i) => i.mediaId))
+    expect(anilist.getCached.mock.calls.length).toBeLessThanOrEqual(3)
+  })
+
+  it('writes the file once per poster batch', async () => {
+    await refreshed()
+    const spy = vi.spyOn(fs, 'renameSync')
+    await svc.posters([1, 2])
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockRestore()
   })
 
   it('failed downloads are not stored', async () => {
