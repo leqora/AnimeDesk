@@ -4,7 +4,7 @@ import {
   RULES_VERSION, MAX_SEEDS, MAX_RAIL, MAX_SIMILAR, FORMATS, STATUSES,
   toCase, isLaterPart, isSideStory, eligible,
   libraryIds, libraryTitles, inLibrary,
-  seedsFrom, pickPersonal, pickTrending, pickSimilar, decideMode,
+  seedsFrom, pickPersonal, pickTrending, pickSimilar, decideMode, hasWeightedEntries,
 } from '../../src/shared/recommendations.js';
 
 const fixture = JSON.parse(readFileSync(new URL('../fixtures/recommendations.cases.json', import.meta.url), 'utf8'));
@@ -252,7 +252,19 @@ describe('pickSimilar', () => {
 });
 
 describe('decideMode', () => {
-  it('no seeds -> trending + hint', () => expect(decideMode([], [])).toEqual({ mode: 'trending', hint: true }));
+  it('no seeds, nothing weighted -> trending + rate hint', () => expect(decideMode([], [])).toEqual({ mode: 'trending', hint: 'rate' }));
+  it('no seeds but weighted entries without a sure id -> link hint', () => expect(decideMode([], [], true)).toEqual({ mode: 'trending', hint: 'link' }));
   it('seeds + empty personal -> trending, no hint', () => expect(decideMode([{ id: 1 }], [])).toEqual({ mode: 'trending', hint: false }));
   it('seeds + items -> personal', () => expect(decideMode([{ id: 1 }], [item(1)])).toEqual({ mode: 'personal', hint: false }));
+});
+
+describe('hasWeightedEntries', () => {
+  it('true for rating >= 7, completed, watching; false for low rating, other statuses, empty', () => {
+    expect(hasWeightedEntries([{ rating: 7 }])).toBe(true);
+    expect(hasWeightedEntries([{ status: 'completed' }])).toBe(true);
+    expect(hasWeightedEntries([{ status: 'watching' }])).toBe(true);
+    expect(hasWeightedEntries([{ rating: 3, status: 'completed' }, { status: 'planned' }])).toBe(false);
+    expect(hasWeightedEntries([])).toBe(false);
+    expect(hasWeightedEntries(undefined)).toBe(false);
+  });
 });

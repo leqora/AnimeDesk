@@ -1,5 +1,5 @@
 import { readJson, writeJsonAtomic } from './jsonStore.js'
-import { RULES_VERSION, seedsFrom, pickPersonal, pickTrending, pickSimilar, decideMode } from '../shared/recommendations.js'
+import { RULES_VERSION, seedsFrom, pickPersonal, pickTrending, pickSimilar, decideMode, hasWeightedEntries } from '../shared/recommendations.js'
 
 export const FIRST_RUN_MS = 120_000
 export const DEBOUNCE_MS = 30_000
@@ -120,14 +120,16 @@ export function createRecommendations({
     for (const [id, v] of Object.entries(bySeed)) recsBySeed[id] = v.recs
     const hidden = hiddenNow()
     const personal = pickPersonal(seeds, recsBySeed, entries, hidden, getCachedId)
-    const { mode, hint } = decideMode(seeds, personal)
+    const { mode, hint } = decideMode(seeds, personal, hasWeightedEntries(entries))
     const items = mode === 'personal' ? personal : pickTrending(trending?.items ?? [], entries, hidden, getCachedId)
     return { seeds, mode, hint, items }
   }
 
   function list() {
     load()
-    const { mode, hint, items } = compute(entriesNow() ?? [])
+    const entries = entriesNow()
+    if (entries === null) return { mode: 'trending', hint: false, items: [] }
+    const { mode, hint, items } = compute(entries)
     return {
       mode, hint,
       items: items.map((i) => card(i, posterOf(i), { fromTitle: i.fromTitle ?? null, fromId: i.fromId ?? null })),
@@ -136,7 +138,9 @@ export function createRecommendations({
 
   // What the rail renders, minus the data URLs (only whether a poster exists): any visible change must emit.
   const signature = () => {
-    const { mode, hint, items } = compute(entriesNow() ?? [])
+    const entries = entriesNow()
+    if (entries === null) return JSON.stringify(['trending', false])
+    const { mode, hint, items } = compute(entries)
     return JSON.stringify([mode, hint, ...items.map((i) => [
       i.id, i.title, i.romaji, i.format, i.status, i.year, i.episodes, i.genres, i.fromTitle ?? null, i.fromId ?? null, i.coverUrl, !!posterOf(i),
     ])])
@@ -237,7 +241,7 @@ export function createRecommendations({
         continue
       }
       if (posters[i.id]?.coverUrl === i.coverUrl) continue
-      const dataUrl = await anilist.poster(i.coverUrl)
+      const dataUrl = await downloadPoster(i.coverUrl)
       if (stopped) return false
       if (dataUrl) { posters[i.id] = { coverUrl: i.coverUrl, dataUrl }; dirty = true }
     }
@@ -295,6 +299,7 @@ export function createRecommendations({
 
   function check() {
     if (stopped) return
+    if (lastSig !== null) emitIfChanged() // e.g. hidden ids changed by a data import: no network needed
     if (debounceTimer) clearT(debounceTimer)
     debounceTimer = setT(() => { debounceTimer = null; fire() }, DEBOUNCE_MS)
   }
@@ -316,7 +321,11 @@ export function createRecommendations({
     if (hit && hit.at <= t && t - hit.at + SLACK_MS < SEED_TTL_MS) {
       recs = hit.recs
     } else {
-      if (isPaused(t)) return { items: [] }
+      if (isPaused(t)) {
+        if (!hit) return { items: [] }
+        recs = hit.recs // offline: a stale answer beats an empty section
+        return await similarCards(recs)
+      }
       let p = similarInflight.get(id)
       if (!p) {
         p = (async () => {
@@ -331,7 +340,8 @@ export function createRecommendations({
         similarInflight.set(id, p)
       }
       recs = await p
-      if (stopped || recs === null) return { items: [] }
+      if (stopped) return { items: [] }
+      if (recs === null) return hit ? similarCards(hit.recs) : { items: [] }
       if (bySeed[id]?.recs !== recs) {
         if (lastSig === null) lastSig = signature() // the first thing that happens must not look like a change
         bySeed[id] = { at: t, recs }
@@ -339,6 +349,10 @@ export function createRecommendations({
         emitIfChanged()
       }
     }
+    return similarCards(recs)
+  }
+
+  async function similarCards(recs) {
     const picked = pickSimilar(recs, entriesNow() ?? [], hiddenNow(), getCachedId)
     const items = await Promise.all(picked.map(async (i) => card(i, await posterFor(i), {})))
     return stopped ? { items: [] } : { items }
@@ -348,10 +362,15 @@ export function createRecommendations({
   async function posterFor(i) {
     if (posters[i.id] && posters[i.id].coverUrl === i.coverUrl) return posters[i.id].dataUrl
     if (!i.coverUrl) return null
+    return downloadPoster(i.coverUrl)
+  }
+
+  // One download that gives up (null) after posterTimeoutMs.
+  async function downloadPoster(url) {
     let timer
     const timeout = new Promise((resolve) => { timer = setT(() => resolve(null), posterTimeoutMs) })
     try {
-      return await Promise.race([Promise.resolve().then(() => anilist.poster(i.coverUrl)).catch(() => null), timeout])
+      return await Promise.race([Promise.resolve().then(() => anilist.poster(url)).catch(() => null), timeout])
     } finally {
       clearT(timer)
     }

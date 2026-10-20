@@ -422,6 +422,7 @@
   "recommendations.titlePersonal": "Preporuke za tebe",
   "recommendations.titleTrending": "Popularno sada",
   "recommendations.hint": "Oceni seriju sa 7 ili više ili je završi da dobiješ preporuke za tebe.",
+  "recommendations.hintLink": "Ocenjene serije još nisu sigurno prepoznate na AniList-u — u detalju serije izaberi pravu („Izaberi”) da dobiješ preporuke za tebe.",
   "recommendations.because": "Zbog: {title}",
   "recommendations.hide": "Ne preporučuj {title}",
   "recommendations.hidden": "Sakriveno: {title}",

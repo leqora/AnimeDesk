@@ -47,8 +47,16 @@ describe('recommendations rail', () => {
     expect(await screen.findByRole('region', { name: 'Popularno sada' })).toBeInTheDocument()
   })
 
+  it('link hint has its own text', async () => {
+    home(apiWith(payload([rec({ fromTitle: undefined })], 'trending', 'link')))
+    const rail = await screen.findByRole('region', { name: 'Popularno sada' })
+    const hint = 'Ocenjene serije još nisu sigurno prepoznate na AniList-u — u detalju serije izaberi pravu („Izaberi”) da dobiješ preporuke za tebe.'
+    expect(rail).toHaveAccessibleDescription(hint)
+    expect(screen.queryByText(/Oceni seriju/)).toBeNull()
+  })
+
   it('hint paragraph only with hint, wired by aria-describedby', async () => {
-    const a = apiWith(payload([rec({ fromTitle: undefined })], 'trending', true))
+    const a = apiWith(payload([rec({ fromTitle: undefined })], 'trending', 'rate'))
     const { unmount } = home(a)
     const rail = await screen.findByRole('region', { name: 'Popularno sada' })
     const hint = 'Oceni seriju sa 7 ili više ili je završi da dobiješ preporuke za tebe.'

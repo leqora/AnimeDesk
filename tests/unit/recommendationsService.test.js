@@ -48,7 +48,7 @@ function setup() {
   build()
 }
 
-const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve() }
+const flush = async () => { for (let i = 0; i < 100; i++) await Promise.resolve() }
 const advance = async (ms) => { await vi.advanceTimersByTimeAsync(ms) }
 const disk = () => JSON.parse(fs.readFileSync(file, 'utf8'))
 const ids = () => svc.list().items.map((s) => s.id)
@@ -184,7 +184,7 @@ describe('createRecommendations', () => {
     entries = []
     await svc.refresh()
     expect(anilist.recommendations).not.toHaveBeenCalled()
-    expect(svc.list()).toMatchObject({ mode: 'trending', hint: true })
+    expect(svc.list()).toMatchObject({ mode: 'trending', hint: 'rate' })
     expect(ids()).toEqual([900, 901])
   })
 
@@ -354,7 +354,7 @@ describe('createRecommendations', () => {
 
   it('hint-only flip emits even when the items stay identical', async () => {
     trendingItems = []
-    entries = [entry('a1', 100, { rating: 3 })] // seedless: hint true, empty items
+    entries = [entry('a1', 100, { rating: 3 })] // seedless: rate hint, empty items
     await svc.refresh()
     const cb = vi.fn()
     svc.onChange(cb)
@@ -363,6 +363,69 @@ describe('createRecommendations', () => {
     await svc.refresh()
     expect(svc.list()).toMatchObject({ mode: 'trending', hint: false, items: [] })
     expect(cb).toHaveBeenCalledTimes(1)
+  })
+
+  it('rated/finished series without a sure AniList id: link hint, not the rate hint', async () => {
+    entries = [entry('a1', null, { rating: 9 })]
+    await svc.refresh()
+    expect(svc.list()).toMatchObject({ mode: 'trending', hint: 'link' })
+    expect(ids()).toEqual([900, 901])
+    entries = [entry('a1', null, { rating: 3, status: 'planned' })] // nothing weighted
+    expect(svc.list().hint).toBe('rate')
+  })
+
+  it('link -> rate hint flip emits a change', async () => {
+    entries = [entry('a1', null, { rating: 9 })]
+    await svc.refresh()
+    const cb = vi.fn()
+    svc.onChange(cb)
+    entries = [entry('a1', null, { rating: 3, status: 'planned' })]
+    await svc.refresh()
+    expect(cb).toHaveBeenCalledTimes(1)
+  })
+
+  it('unreadable library: empty trending without hint, and recovery emits', async () => {
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, JSON.stringify({ version: 1, rules: RULES_VERSION, bySeed: {}, trending: { at: T0, items: [rec(900, 0, { rating: null })] }, posters: {}, failedAt: null }))
+    let broken = true
+    build({ library: { list: () => { if (broken) throw new Error('disk'); return [] } } })
+    expect(svc.list()).toEqual({ mode: 'trending', hint: false, items: [] })
+    await svc.refresh()
+    const cb = vi.fn()
+    svc.onChange(cb)
+    broken = false
+    await svc.refresh()
+    expect(svc.list().items.map((i) => i.id)).toEqual([900])
+    expect(cb).toHaveBeenCalledTimes(1)
+  })
+
+  it('check() emits at once (no network) when hidden changed behind our back, only after a first load', async () => {
+    const cb = vi.fn()
+    svc.onChange(cb)
+    hidden = [101]
+    svc.check()
+    expect(cb).not.toHaveBeenCalled() // nothing loaded yet: no spurious emit
+    await svc.refresh()
+    expect(cb).toHaveBeenCalledTimes(1)
+    anilist.recommendations.mockClear()
+    hidden = [102] // e.g. a data import
+    svc.check()
+    expect(cb).toHaveBeenCalledTimes(2)
+    expect(anilist.recommendations).not.toHaveBeenCalled()
+    expect(ids()).not.toContain(102)
+  })
+
+  it('rail poster download that never answers is cut after 8 s each', async () => {
+    anilist.poster.mockImplementation(() => new Promise(() => {}))
+    let done = false
+    const p = svc.refresh().then(() => { done = true })
+    await advance(8000 * 3 - 1)
+    expect(done).toBe(false)
+    await advance(1)
+    await p
+    expect(done).toBe(true)
+    expect(svc.list().items).toHaveLength(3)
+    expect(svc.list().items.every((i) => i.poster === null)).toBe(true)
   })
 
   it('a throwing listener does not break the refresh; unsubscribe works', async () => {
@@ -504,6 +567,28 @@ describe('createRecommendations', () => {
       expect(fs.existsSync(file) ? disk().failedAt : null).toBeNull()
       await svc.refresh()
       expect(anilist.recommendations).toHaveBeenCalledTimes(2)
+    })
+
+    it('failure with a stale record: serves the stale answer', async () => {
+      recs.set(555, [rec(1)])
+      await svc.forSeries(555)
+      await advance(SEED_TTL_MS + MIN)
+      anilist.recommendations.mockRejectedValueOnce(new Error('offline'))
+      const r = await svc.forSeries(555)
+      expect(r.items.map((i) => i.id)).toEqual([1])
+      expect(r.items[0].poster).toBe('data:http://img/1.jpg')
+    })
+
+    it('during the pause with a stale record: serves it, no request', async () => {
+      recs.set(555, [rec(1)])
+      await svc.forSeries(555)
+      await advance(SEED_TTL_MS + MIN)
+      anilist.recommendations.mockRejectedValueOnce(new Error('offline'))
+      await svc.refresh()
+      anilist.recommendations.mockClear()
+      const r = await svc.forSeries(555)
+      expect(r.items.map((i) => i.id)).toEqual([1])
+      expect(anilist.recommendations).not.toHaveBeenCalled()
     })
 
     it('during the pause: no request', async () => {

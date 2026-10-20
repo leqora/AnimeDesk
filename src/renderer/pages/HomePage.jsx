@@ -128,7 +128,7 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
             </Rail>
           )}
           {recItems.length > 0 && (
-            <Rail title={t(recs.mode === 'personal' ? 'recommendations.titlePersonal' : 'recommendations.titleTrending')} count={recItems.length} hint={recs.hint ? t('recommendations.hint') : null}>
+            <Rail title={t(recs.mode === 'personal' ? 'recommendations.titlePersonal' : 'recommendations.titleTrending')} count={recItems.length} hint={recs.hint === 'link' ? t('recommendations.hintLink') : recs.hint ? t('recommendations.hint') : null}>
               {recItems.map((r) => <RecommendationCard key={r.id} item={r} ready={ready} onSearch={onSearch} onHide={hideRec} />)}
             </Rail>
           )}

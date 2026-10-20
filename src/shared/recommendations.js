@@ -174,8 +174,14 @@ export function pickSimilar(recs, entries, hidden, getCachedId) {
   return (recs || []).filter((i) => i.rating > 0 && !excluded(i)).slice(0, MAX_SIMILAR)
 }
 
-export function decideMode(seeds, personal) {
+// True when some library entry would be a seed if it had a sure AniList id (rating >= 7, completed or watching).
+export function hasWeightedEntries(entries) {
+  return (entries || []).some((e) => seedWeight(e) > 0)
+}
+
+// hint: 'rate' = nothing weighted yet, 'link' = weighted entries exist but none has a sure AniList id, false = none.
+export function decideMode(seeds, personal, weighted = false) {
   const hasSeeds = (seeds || []).length > 0
   if (hasSeeds && (personal || []).length > 0) return { mode: 'personal', hint: false }
-  return { mode: 'trending', hint: !hasSeeds }
+  return { mode: 'trending', hint: hasSeeds ? false : weighted ? 'link' : 'rate' }
 }

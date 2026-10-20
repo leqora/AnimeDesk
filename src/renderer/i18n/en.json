@@ -422,6 +422,7 @@
   "recommendations.titlePersonal": "Recommended for you",
   "recommendations.titleTrending": "Popular now",
   "recommendations.hint": "Rate a series 7 or higher, or finish one, to get recommendations for you.",
+  "recommendations.hintLink": "Your rated series aren't recognized on AniList for sure yet — pick the right one on the series page (\"Choose\") to get recommendations for you.",
   "recommendations.because": "Because of: {title}",
   "recommendations.hide": "Don't recommend {title}",
   "recommendations.hidden": "Hidden: {title}",
