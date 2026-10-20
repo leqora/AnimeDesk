@@ -189,12 +189,49 @@ export function createSchedule({
     return { state, refreshing: !!inflight, fetchedAt: record?.fetchedAt ?? null, from: w.from, days: w.days, items }
   }
 
-  // One download that gives up (null) after posterTimeoutMs.
-  async function download(url) {
+  // Service-wide download limiter: at most POSTER_CONCURRENCY downloads at once across all posters() calls. A slot is freed
+  // when the download really settles, not when a caller gave up on it; the same poster requested twice shares one download.
+  let activeDownloads = 0
+  const slotWaiters = []
+  const acquireSlot = () => {
+    if (activeDownloads < POSTER_CONCURRENCY) { activeDownloads++; return Promise.resolve() }
+    return new Promise((resolve) => slotWaiters.push(resolve))
+  }
+  const releaseSlot = () => {
+    const next = slotWaiters.shift()
+    if (next) next() // the slot passes straight on
+    else activeDownloads--
+  }
+  const downloads = new Map() // `mediaId|coverUrl` -> { started, done }
+
+  function startDownload(key, url) {
+    let d = downloads.get(key)
+    if (d) return d
+    let markStarted
+    const started = new Promise((resolve) => { markStarted = resolve })
+    const done = (async () => {
+      await acquireSlot()
+      markStarted()
+      try {
+        return await Promise.resolve().then(() => anilist.poster(url)).catch(() => null)
+      } finally {
+        releaseSlot()
+        downloads.delete(key)
+      }
+    })()
+    d = { started, done }
+    downloads.set(key, d)
+    return d
+  }
+
+  // The caller gets null (timeout counted from the moment the download actually starts) while the download itself keeps its slot.
+  async function download(key, url) {
+    const d = startDownload(key, url)
+    await d.started
     let timer
     const timeout = new Promise((resolve) => { timer = setT(() => resolve(null), posterTimeoutMs) })
     try {
-      return await Promise.race([Promise.resolve().then(() => anilist.poster(url)).catch(() => null), timeout])
+      return await Promise.race([d.done, timeout])
     } finally {
       clearT(timer)
     }
@@ -221,20 +258,15 @@ export function createSchedule({
       if (cached && cached.coverUrl === item.coverUrl) { result[id] = cached.dataUrl; continue }
       todo.push({ id, item })
     }
-    let next = 0
-    const worker = async () => {
-      while (next < todo.length && !stopped && g === gen) {
-        const { id, item } = todo[next++]
-        const dataUrl = await download(item.coverUrl)
-        if (stopped || g !== gen) return
-        if (typeof dataUrl === 'string' && dataUrl) {
-          posters[item.mediaId] = { coverUrl: item.coverUrl, dataUrl }
-          result[id] = dataUrl
-          added = true
-        }
+    await Promise.all(todo.map(async ({ id, item }) => {
+      const dataUrl = await download(`${item.mediaId}|${item.coverUrl}`, item.coverUrl)
+      if (stopped || g !== gen) return
+      if (typeof dataUrl === 'string' && dataUrl) {
+        posters[item.mediaId] = { coverUrl: item.coverUrl, dataUrl }
+        result[id] = dataUrl
+        added = true
       }
-    }
-    await Promise.all(Array.from({ length: Math.min(POSTER_CONCURRENCY, todo.length) }, worker))
+    }))
     if (added && !stopped && g === gen) persist() // once per batch
     return result
   }

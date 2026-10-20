@@ -399,3 +399,83 @@ describe('createSchedule forget / stop', () => {
     expect(fn).not.toHaveBeenCalled()
   })
 })
+
+describe('createSchedule shared poster limiter', () => {
+  const deferred = () => { let resolve; const promise = new Promise((r) => { resolve = r }); return { promise, resolve } }
+
+  it('two overlapping posters() calls never exceed 4 downloads in flight overall', async () => {
+    fetched = Array.from({ length: 12 }, (_, i) => item(i + 1))
+    await refreshed()
+    let active = 0
+    let peak = 0
+    anilist.poster.mockImplementation(async (url) => {
+      active++; peak = Math.max(peak, active)
+      await new Promise((r) => setTimeout(r, 5))
+      active--
+      return `data:${url}`
+    })
+    const [a, b] = await Promise.all([svc.posters([1, 2, 3, 4, 5, 6]), svc.posters([7, 8, 9, 10, 11, 12])])
+    expect(Object.values({ ...a, ...b }).every((v) => v)).toBe(true)
+    expect(peak).toBe(4)
+    expect(anilist.poster).toHaveBeenCalledTimes(12)
+  })
+
+  it('the same id requested by two overlapping calls downloads once and both get the data URL', async () => {
+    await refreshed()
+    const gate = deferred()
+    anilist.poster.mockImplementation(async (url) => { await gate.promise; return `data:${url}` })
+    const p1 = svc.posters([1])
+    const p2 = svc.posters([1])
+    await flush()
+    gate.resolve()
+    expect(await p1).toEqual({ 1: 'data:http://img/1.jpg' })
+    expect(await p2).toEqual({ 1: 'data:http://img/1.jpg' })
+    expect(anilist.poster).toHaveBeenCalledTimes(1)
+  })
+
+  it('a download that timed out keeps its slot until it really settles', async () => {
+    vi.useFakeTimers()
+    build()
+    fetched = Array.from({ length: 5 }, (_, i) => item(i + 1))
+    await refreshed()
+    const gates = []
+    anilist.poster.mockImplementation((url) => { const g = deferred(); gates.push(g); return g.promise.then(() => `data:${url}`) })
+    const p = svc.posters([1, 2, 3, 4, 5])
+    await vi.advanceTimersByTimeAsync(0)
+    expect(anilist.poster).toHaveBeenCalledTimes(4)
+    await vi.advanceTimersByTimeAsync(8000)
+    expect(anilist.poster).toHaveBeenCalledTimes(4) // the four timed out for the caller but still hold their slots
+    gates[0].resolve()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(anilist.poster).toHaveBeenCalledTimes(5)
+    gates[4].resolve()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(await p).toEqual({ 1: null, 2: null, 3: null, 4: null, 5: 'data:http://img/5.jpg' })
+  })
+
+  it('forget() during an in-flight batch leaves the file deleted', async () => {
+    await refreshed()
+    const gate = deferred()
+    anilist.poster.mockImplementation(async (url) => { await gate.promise; return `data:${url}` })
+    const p = svc.posters([1, 2])
+    await flush()
+    svc.forget()
+    gate.resolve()
+    await p
+    await flush()
+    expect(fs.existsSync(file)).toBe(false)
+  })
+
+  it('stop() during an in-flight batch writes nothing afterwards', async () => {
+    await refreshed()
+    const before = fs.readFileSync(file, 'utf8')
+    const gate = deferred()
+    anilist.poster.mockImplementation(async (url) => { await gate.promise; return `data:${url}` })
+    const p = svc.posters([1, 2])
+    await flush()
+    svc.stop()
+    gate.resolve()
+    await p
+    expect(fs.readFileSync(file, 'utf8')).toBe(before)
+  })
+})
