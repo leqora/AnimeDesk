@@ -13,7 +13,8 @@ export function resolveDownload(toolId, release) {
   const src = SOURCES[toolId]
   const asset = (release.assets ?? []).find((a) => src.asset.test(a.name))
   if (!asset) throw new Error(`No download found for ${toolId} in release ${release.tag_name}`)
-  return { url: asset.browser_download_url, name: asset.name, version: release.tag_name }
+  const sha256 = /^sha256:([0-9a-f]{64})$/i.exec(asset.digest ?? '')?.[1].toLowerCase() ?? null
+  return { url: asset.browser_download_url, name: asset.name, version: release.tag_name, sha256 }
 }
 
 // Only Git for Windows locations — never C:\Windows\System32\bash.exe (WSL).

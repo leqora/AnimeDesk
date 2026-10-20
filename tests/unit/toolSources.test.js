@@ -11,8 +11,15 @@ describe('toolSources', () => {
       .toBe('ffmpeg-9.0.2-essentials_build.zip')
     expect(resolveDownload('bash', rel('v2.56.0.windows.1', 'Git-2.56.0-64-bit.exe', 'PortableGit-2.56.0-64-bit.7z.exe')).name)
       .toBe('PortableGit-2.56.0-64-bit.7z.exe')
-    expect(resolveDownload('ani-cli', rel('v5.1', 'ani-cli'))).toEqual({ url: 'https://x/ani-cli', name: 'ani-cli', version: 'v5.1' })
+    expect(resolveDownload('ani-cli', rel('v5.1', 'ani-cli'))).toEqual({ url: 'https://x/ani-cli', name: 'ani-cli', version: 'v5.1', sha256: null })
     expect(resolveDownload('yt-dlp', rel('2026.08.19', 'yt-dlp', 'yt-dlp.exe')).name).toBe('yt-dlp.exe')
+  })
+  it('reads sha256 from the asset digest', () => {
+    const withDigest = (digest) => ({ tag_name: 'v1', assets: [{ name: 'ani-cli', browser_download_url: 'u', digest }] })
+    expect(resolveDownload('ani-cli', withDigest('sha256:' + 'AB'.repeat(32))).sha256).toBe('ab'.repeat(32))
+    for (const bad of [undefined, null, 'sha512:' + 'ab'.repeat(32), 'sha256:xyz', 'sha256:' + 'a'.repeat(63)]) {
+      expect(resolveDownload('ani-cli', withDigest(bad)).sha256).toBeNull()
+    }
   })
   it('throws a clear error when no asset matches', () => {
     expect(() => resolveDownload('mpv', rel('v1', 'readme.txt'))).toThrow(/mpv/)
