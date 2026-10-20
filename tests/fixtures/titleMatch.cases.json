@@ -1,0 +1,5722 @@
+{
+ "note": "Real AniList search answers recorded 2026-10-20 for ani-cli titles from 20 searches; expect = reviewed outcome of the v0.13.3 rule.",
+ "cases": [
+  {
+   "title": "Macross Δ Movie: Gekijou no Walküre",
+   "queries": [
+    "Macross Δ Movie: Gekijou no Walküre",
+    "Gekijou no Walküre",
+    "Macross Δ Movie",
+    "Macross Δ Gekijou no Walküre"
+   ],
+   "answers": {
+    "Macross Δ Movie: Gekijou no Walküre": [],
+    "Gekijou no Walküre": [],
+    "Macross Δ Movie": [
+     {
+      "id": 122678,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Macross Δ: Pajama no Megami-tachi",
+       "english": null,
+       "native": "パジャマの女神達"
+      },
+      "synonyms": [
+       "Macross Δ Movie: Picture Drama",
+       "Macross Delta Picture Drama"
+      ]
+     },
+     {
+      "id": 101126,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Macross Δ: Gekijou no Walküre",
+       "english": "Macross Delta: Passionate Walküre",
+       "native": "劇場版マクロスΔ　激情のワルキューレ"
+      },
+      "synonyms": [
+       "Macross Delta: Gekijou no Walküre",
+       "Macross Δ: Passionate Walküre",
+       "Macross Δ Movie: Gekijou no Walküre",
+       "Gekijouban Macross Δ: Gekijou no Walkure"
+      ]
+     },
+     {
+      "id": 118126,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Macross Δ: Zettai LIVE!!!!!!",
+       "english": "Macross Delta: Zettai Live!!!!!!",
+       "native": "劇場版マクロスΔ 絶対LIVE!!!!!!"
+      },
+      "synonyms": [
+       "Macross Delta Movie: Zettai LIVE!!!!!!",
+       "Macross Delta Movie: Absolute LIVE!!!!!!",
+       "Macross Δ Movie: Absolute LIVE!!!!!!"
+      ]
+     }
+    ],
+    "Macross Δ Gekijou no Walküre": []
+   },
+   "expect": {
+    "id": 101126,
+    "match": "exact"
+   }
+  },
+  {
+   "title": "Saint Seiya: The Lost Canvas (season 1+season 2)",
+   "queries": [
+    "Saint Seiya: The Lost Canvas (season 1+season 2)",
+    "Saint Seiya: The Lost Canvas",
+    "The Lost Canvas",
+    "Saint Seiya",
+    "Saint Seiya The Lost Canvas"
+   ],
+   "answers": {
+    "Saint Seiya: The Lost Canvas (season 1+season 2)": [],
+    "Saint Seiya: The Lost Canvas": [
+     {
+      "id": 6171,
+      "format": "OVA",
+      "title": {
+       "romaji": "Saint Seiya: THE LOST CANVAS - Meiou Shinwa",
+       "english": "Saint Seiya: The Lost Canvas",
+       "native": "聖闘士星矢 THE LOST CANVAS 冥王神話"
+      },
+      "synonyms": [
+       "Los Guerreros del Zodiaco: El lienzo perdido",
+       "Os Cavaleiros do Zodíaco: The Lost Canvas"
+      ]
+     },
+     {
+      "id": 9130,
+      "format": "OVA",
+      "title": {
+       "romaji": "Saint Seiya: THE LOST CANVAS - Meiou Shinwa 2",
+       "english": "Saint Seiya: The Lost Canvas 2",
+       "native": "聖闘士星矢 THE LOST CANVAS 冥王神話 2"
+      },
+      "synonyms": [
+       "Los Guerreros del Zodiaco: El lienzo perdido - Parte 2"
+      ]
+     }
+    ],
+    "The Lost Canvas": [
+     {
+      "id": 6171,
+      "format": "OVA",
+      "title": {
+       "romaji": "Saint Seiya: THE LOST CANVAS - Meiou Shinwa",
+       "english": "Saint Seiya: The Lost Canvas",
+       "native": "聖闘士星矢 THE LOST CANVAS 冥王神話"
+      },
+      "synonyms": [
+       "Los Guerreros del Zodiaco: El lienzo perdido",
+       "Os Cavaleiros do Zodíaco: The Lost Canvas"
+      ]
+     },
+     {
+      "id": 9130,
+      "format": "OVA",
+      "title": {
+       "romaji": "Saint Seiya: THE LOST CANVAS - Meiou Shinwa 2",
+       "english": "Saint Seiya: The Lost Canvas 2",
+       "native": "聖闘士星矢 THE LOST CANVAS 冥王神話 2"
+      },
+      "synonyms": [
+       "Los Guerreros del Zodiaco: El lienzo perdido - Parte 2"
+      ]
+     }
+    ],
+    "Saint Seiya": [
+     {
+      "id": 1254,
+      "format": "TV",
+      "title": {
+       "romaji": "Saint Seiya",
+       "english": "Saint Seiya: Knights of the Zodiac",
+       "native": "聖闘士星矢"
+      },
+      "synonyms": [
+       "Knights of the Zodiac",
+       "Zodiac Knights",
+       "セイントセイヤ",
+       "Saint Seiya: Los Caballeros del Zodiaco",
+       "Os Cavaleiros do Zodíaco",
+       "Les Chevaliers du Zodiaque",
+       "I Cavalieri dello Zodiaco",
+       "Rycerze Zodiaku"
+      ]
+     },
+     {
+      "id": 12929,
+      "format": "TV",
+      "title": {
+       "romaji": "Saint Seiya Ω",
+       "english": "Saint Seiya Omega",
+       "native": "聖闘士星矢Ω"
+      },
+      "synonyms": [
+       "Os Cavaleiros do Zodíaco - Ômega"
+      ]
+     },
+     {
+      "id": 1257,
+      "format": "OVA",
+      "title": {
+       "romaji": "Saint Seiya: Meiou Hades Juuni Kyuu-hen",
+       "english": "Saint Seiya: The Hades Chapter - Sanctuary",
+       "native": "聖闘士星矢 冥王ハーデス十二宮編"
+      },
+      "synonyms": [
+       "Saint Seiya: Meiou Hades Juuni Kyuu Hen",
+       "Saint Seiya Hades",
+       "Saint Seiya: The Hades Sanctuary Chapter",
+       "เซนต์เซย์ย่า เดอะฮาเดสแชปเตอร์ แซงก์ทัวรี่",
+       "Thánh Đấu Sĩ Seiya – Chương Diêm Vương – Thánh địa"
+      ]
+     },
+     {
+      "id": 10687,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Saint Seiya: LEGEND of SANCTUARY",
+       "english": null,
+       "native": "聖闘士星矢 LEGEND of SANCTUARY"
+      },
+      "synonyms": [
+       "Saint Seiya (2013)",
+       "Los Caballeros del Zodiaco: La Leyenda del Santuario",
+       "圣斗士星矢：圣域传说",
+       "Els Cavallers del Zodíac: La Llegenda del Santuari",
+       "Os Cavaleiros do Zodíaco: A Lenda do Santuário"
+      ]
+     },
+     {
+      "id": 1256,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Saint Seiya: Jashin Eris",
+       "english": "Saint Seiya: Evil Goddess Eris",
+       "native": "聖闘士星矢 邪神エリス"
+      },
+      "synonyms": [
+       "Saint Seiya: The Battle with Eris",
+       "Saint Seiya: Movie 1",
+       "Saint Seiya: The Legend of the Golden Apple",
+       "I Cavalieri dello Zodiaco - La dea della discordia",
+       "Los Caballeros del Zodíaco y la reencarnación de Ellis, diosa de la guerra",
+       "Os Cavaleiros do Zodíaco: O Santo Guerreiro"
+      ]
+     },
+     {
+      "id": 1258,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Saint Seiya: Kamigami no Atsuki Tatakai",
+       "english": "Saint Seiya: The Heated Battle of the Gods",
+       "native": "聖闘士星矢 神々の熱き戦い"
+      },
+      "synonyms": [
+       "Saint Seiya: Movie 2",
+       "Os Cavaleiros do Zodíaco: A Grande Batalha dos Deuses"
+      ]
+     },
+     {
+      "id": 97919,
+      "format": "ONA",
+      "title": {
+       "romaji": "Saint Seiya: Saintia Shou",
+       "english": "Saint Seiya Saintia Sho",
+       "native": "聖闘士星矢 セインティア翔"
+      },
+      "synonyms": [
+       "Os Cavaleiros do Zodíaco - Saintia Shô"
+      ]
+     },
+     {
+      "id": 6171,
+      "format": "OVA",
+      "title": {
+       "romaji": "Saint Seiya: THE LOST CANVAS - Meiou Shinwa",
+       "english": "Saint Seiya: The Lost Canvas",
+       "native": "聖闘士星矢 THE LOST CANVAS 冥王神話"
+      },
+      "synonyms": [
+       "Los Guerreros del Zodiaco: El lienzo perdido",
+       "Os Cavaleiros do Zodíaco: The Lost Canvas"
+      ]
+     },
+     {
+      "id": 114448,
+      "format": "ONA",
+      "title": {
+       "romaji": "Saint Seiya: Knights of the Zodiac Part 2",
+       "english": "Knights of the Zodiac: Saint Seiya Part 2",
+       "native": "聖闘士星矢: Knights of the Zodiac パート2"
+      },
+      "synonyms": [
+       "SAINT SEIYA: Rycerze Zodiaku"
+      ]
+     },
+     {
+      "id": 20928,
+      "format": "ONA",
+      "title": {
+       "romaji": "Saint Seiya: Ougon Tamashii -soul of gold-",
+       "english": "Saint Seiya Soul of Gold",
+       "native": "聖闘士星矢 黄金魂 -soul of gold-"
+      },
+      "synonyms": [
+       "Os Cavaleiros do Zodíaco - Alma de Ouro"
+      ]
+     }
+    ],
+    "Saint Seiya The Lost Canvas": [
+     {
+      "id": 6171,
+      "format": "OVA",
+      "title": {
+       "romaji": "Saint Seiya: THE LOST CANVAS - Meiou Shinwa",
+       "english": "Saint Seiya: The Lost Canvas",
+       "native": "聖闘士星矢 THE LOST CANVAS 冥王神話"
+      },
+      "synonyms": [
+       "Los Guerreros del Zodiaco: El lienzo perdido",
+       "Os Cavaleiros do Zodíaco: The Lost Canvas"
+      ]
+     },
+     {
+      "id": 9130,
+      "format": "OVA",
+      "title": {
+       "romaji": "Saint Seiya: THE LOST CANVAS - Meiou Shinwa 2",
+       "english": "Saint Seiya: The Lost Canvas 2",
+       "native": "聖闘士星矢 THE LOST CANVAS 冥王神話 2"
+      },
+      "synonyms": [
+       "Los Guerreros del Zodiaco: El lienzo perdido - Parte 2"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 6171,
+    "match": "exact"
+   }
+  },
+  {
+   "title": "Naruto (Shinsaku Anime)",
+   "queries": [
+    "Naruto (Shinsaku Anime)",
+    "Naruto"
+   ],
+   "answers": {
+    "Naruto (Shinsaku Anime)": [],
+    "Naruto": [
+     {
+      "id": 20,
+      "format": "TV",
+      "title": {
+       "romaji": "NARUTO",
+       "english": "Naruto",
+       "native": "NARUTO -ナルト-"
+      },
+      "synonyms": [
+       "נארוטו",
+       "ناروتو",
+       "火影忍者",
+       "นารูโตะ นินจาจอมคาถา",
+       "Наруто"
+      ]
+     },
+     {
+      "id": 10075,
+      "format": "OVA",
+      "title": {
+       "romaji": "NARUTO×UT",
+       "english": null,
+       "native": "NARUTO×UT"
+      },
+      "synonyms": [
+       "NARUTO x UT"
+      ]
+     },
+     {
+      "id": 162561,
+      "format": "TV",
+      "title": {
+       "romaji": "NARUTO×NINKU",
+       "english": null,
+       "native": "NARUTO-ナルト-×NINKU-忍空-"
+      },
+      "synonyms": [
+       "NARUTO -ナルト- (2026)",
+       "NARUTO (2026)",
+       "NARUTO×NINKŪ"
+      ]
+     },
+     {
+      "id": 155348,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ROAD OF NARUTO",
+       "english": null,
+       "native": "ROAD OF NARUTO"
+      },
+      "synonyms": [
+       "NARUTO - ナルト -  20 周年記念",
+       "NARUTO 20 Shuunenkinen",
+       "Naruto 20th Anniversary PV"
+      ]
+     },
+     {
+      "id": 1735,
+      "format": "TV",
+      "title": {
+       "romaji": "NARUTO: Shippuuden",
+       "english": "Naruto: Shippuden",
+       "native": "NARUTO -ナルト- 疾風伝"
+      },
+      "synonyms": [
+       "Naruto Shippuuden",
+       "Naruto Shippuden",
+       "נארוטו שיפודן",
+       "火影忍者 疾风传",
+       "นารูโตะ ตำนานวายุสลาตัน",
+       "ناروتو شيبودن",
+       "Наруто: Ураганные хроники"
+      ]
+     },
+     {
+      "id": 936,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "NARUTO: Dai Gekitotsu! Maboroshi no Chitei Iseki Dattebayo",
+       "english": "Naruto the Movie: Legend of the Stone of Gelel",
+       "native": "劇場版 NARUTO -ナルト- 大激突!幻の地底遺跡だってばよ"
+      },
+      "synonyms": [
+       "Naruto THE Movie vol.2",
+       "Naruto Movie 2",
+       "Gekijouban Naruto",
+       "Naruto the Movie: The Great Clash! The Phantom Ruins in the Depths of the Earth",
+       "Naruto La Légende de la Pierre de Guelel",
+       "Naruto la película: La leyenda de la piedra de Gelel",
+       "Naruto Movie 02: La leggenda della pietra di Gelel"
+      ]
+     },
+     {
+      "id": 10659,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "NARUTO: Soyokazeden - Naruto to Mashin to Mitsu no Onegai Dattebayo!!",
+       "english": "Naruto, the Genie, and the Three Wishes, Believe It!",
+       "native": "劇場版 NARUTO -ナルト- そよかぜ伝 ナルトと魔神と3つのお願いだってばよ!!"
+      },
+      "synonyms": [
+       "Gekijouban Naruto Soyokazeden: Naruto to Mashin to Mitsu no Onegai Dattebayo!!",
+       "Naruto: Gentle Breeze Chronicles the Film: Naruto",
+       "the Genie",
+       "and the Three Wishes Dattebayo!!"
+      ]
+     },
+     {
+      "id": 21579,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "BORUTO: NARUTO THE MOVIE - Naruto ga Hokage ni Natta Hi",
+       "english": "Boruto: Naruto the Movie - The Day Naruto Became Hokage",
+       "native": "BORUTO -NARUTO THE MOVIE- ナルトが火影になった日"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 8246,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "NARUTO: Shippuuden - The Lost Tower",
+       "english": "Naruto Shippuden the Movie: The Lost Tower",
+       "native": "劇場版 NARUTO -ナルト- 疾風伝 ザ・ロストタワー"
+      },
+      "synonyms": [
+       "Naruto Movie 7",
+       "Gekijouban Naruto Shippuuden: The Lost Tower",
+       "Naruto Shippūden la película: La torre perdida",
+       "Naruto Shippuden Movie 04: La torre perduta"
+      ]
+     },
+     {
+      "id": 6325,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "NARUTO: Shippuuden - Hi no Ishi wo Tsugu Mono",
+       "english": "Naruto Shippuden the Movie: The Will of Fire",
+       "native": "劇場版 NARUTO -ナルト- 疾風伝 火の意志を継ぐ者"
+      },
+      "synonyms": [
+       "Naruto Shippuuden Movie 3",
+       "Naruto Movie 6",
+       "Naruto Shippuuden 3: Inheritors of Will of Fire",
+       "Naruto Shippūden la película: La voluntad de fuego",
+       "Naruto Shippuden - Eredi della volontà del Fuoco",
+       "Naruto Shippuden Movie 03: Gli eredi della volontà del Fuoco",
+       "Naruto Shippuden O Filme: Herdeiros da Vontade do Fogo"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 20,
+    "match": "exact"
+   }
+  },
+  {
+   "title": "Bluer Than Indigo: Fate - Miyuki",
+   "queries": [
+    "Bluer Than Indigo: Fate - Miyuki",
+    "Bluer Than Indigo: Fate",
+    "Bluer Than Indigo Fate Miyuki"
+   ],
+   "answers": {
+    "Bluer Than Indigo: Fate - Miyuki": [],
+    "Bluer Than Indigo: Fate": [
+     {
+      "id": 394,
+      "format": "TV",
+      "title": {
+       "romaji": "Ai Yori Aoshi: Enishi",
+       "english": "Ai Yori Aoshi: Enishi",
+       "native": "藍より青し～縁～"
+      },
+      "synonyms": [
+       "Bluer Than Indigo: Fate"
+      ]
+     }
+    ],
+    "Bluer Than Indigo Fate Miyuki": []
+   },
+   "expect": null
+  },
+  {
+   "title": "Fate/stay night: Unlimited Blade Works - Prologue",
+   "queries": [
+    "Fate/stay night: Unlimited Blade Works - Prologue",
+    "Fate/stay night: Unlimited Blade Works",
+    "Fate stay night Unlimited Blade Works Prologue"
+   ],
+   "answers": {
+    "Fate/stay night: Unlimited Blade Works - Prologue": [],
+    "Fate/stay night: Unlimited Blade Works": [
+     {
+      "id": 19603,
+      "format": "TV",
+      "title": {
+       "romaji": "Fate/stay night: Unlimited Blade Works",
+       "english": "Fate/stay night: Unlimited Blade Works",
+       "native": "Fate/stay night [Unlimited Blade Works]"
+      },
+      "synonyms": [
+       "フェイト/ステイナイト Unlimited Blade Works",
+       "Fate/UBW",
+       "פייט/סטיי נייט: מלאכת חרבות אינסופית",
+       "Судьба/Ночь схватки: Бесконечный мир клинков"
+      ]
+     },
+     {
+      "id": 20792,
+      "format": "TV",
+      "title": {
+       "romaji": "Fate/stay night: Unlimited Blade Works 2nd Season",
+       "english": "Fate/stay night: Unlimited Blade Works 2nd Season",
+       "native": "Fate/stay night [Unlimited Blade Works] 2ndシーズン"
+      },
+      "synonyms": [
+       "フェイト/ステイナイト Unlimited Blade Works 2ndシーズン",
+       "Судьба/Ночь схватки: Бесконечный мир клинков 2"
+      ]
+     },
+     {
+      "id": 6922,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Fate/stay night Movie: UNLIMITED BLADE WORKS",
+       "english": "Fate/stay night: Unlimited Blade Works (Movie)",
+       "native": "劇場版 Fate/stay night UNLIMITED BLADE WORKS"
+      },
+      "synonyms": [
+       "Gekijouban Fate/Stay Night: Unlimited Blade Works",
+       "Fate/stay night UBW",
+       "Судaьба/Ночь схватки: Бесконечный мир клинков"
+      ]
+     },
+     {
+      "id": 21318,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Fate/stay night: Unlimited Blade Works 2nd Season - sunny day",
+       "english": "Fate/stay night: Unlimited Blade Works 2nd Season - sunny day",
+       "native": "Fate/stay night [Unlimited Blade Works] 2ndシーズン - sunny day"
+      },
+      "synonyms": [
+       "フェイト/ステイナイト Unlimited Blade Works 2ndシーズン - sunny day"
+      ]
+     }
+    ],
+    "Fate stay night Unlimited Blade Works Prologue": []
+   },
+   "expect": null
+  },
+  {
+   "title": "Fate/Extra: Last Encore - Illustrias Tendousetsu",
+   "queries": [
+    "Fate/Extra: Last Encore - Illustrias Tendousetsu",
+    "Illustrias Tendousetsu",
+    "Fate/Extra: Last Encore",
+    "Fate Extra Last Encore Illustrias Tendousetsu"
+   ],
+   "answers": {
+    "Fate/Extra: Last Encore - Illustrias Tendousetsu": [],
+    "Illustrias Tendousetsu": [],
+    "Fate/Extra: Last Encore": [
+     {
+      "id": 21717,
+      "format": "TV",
+      "title": {
+       "romaji": "Fate/EXTRA Last Encore",
+       "english": "Fate/EXTRA Last Encore",
+       "native": "Fate/EXTRA Last Encore"
+      },
+      "synonyms": [
+       "Oblitus Copernican Theory",
+       "Illustrias Geocentric Theory",
+       "פייט/אקסטרה ההדרן האחרון",
+       "Судьба/Дополнение: Последний вызов на бис"
+      ]
+     }
+    ],
+    "Fate Extra Last Encore Illustrias Tendousetsu": []
+   },
+   "expect": null
+  },
+  {
+   "title": "[RAW] Manga Aesop Monogatari (TV)",
+   "queries": [
+    "[RAW] Manga Aesop Monogatari (TV)",
+    "Manga Aesop Monogatari"
+   ],
+   "answers": {
+    "[RAW] Manga Aesop Monogatari (TV)": [],
+    "Manga Aesop Monogatari": [
+     {
+      "id": 3180,
+      "format": "TV_SHORT",
+      "title": {
+       "romaji": "Manga Aesop Monogatari",
+       "english": "Aesop's Fables",
+       "native": "まんがイソップ物語"
+      },
+      "synonyms": [
+       "Animated Aesop's Fables",
+       "Manga Aesop's Fables",
+       "Esopo favol-oso!",
+       "Les Fables d'Esope"
+      ]
+     },
+     {
+      "id": 109942,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Manga Aesop Monogatari",
+       "english": "Manga: Aesop's Tale",
+       "native": "まんがイソップ物語"
+      },
+      "synonyms": [
+       "Aesop's Fables Movie"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 3180,
+    "match": "exact"
+   }
+  },
+  {
+   "title": "[RAW] Konchuu Monogatari Minashigo Hutch (1989)",
+   "queries": [
+    "[RAW] Konchuu Monogatari Minashigo Hutch (1989)",
+    "Konchuu Monogatari Minashigo Hutch"
+   ],
+   "answers": {
+    "[RAW] Konchuu Monogatari Minashigo Hutch (1989)": [],
+    "Konchuu Monogatari Minashigo Hutch": [
+     {
+      "id": 3858,
+      "format": "TV",
+      "title": {
+       "romaji": "Konchuu Monogatari Minashigo Hutch",
+       "english": "The Adventures of Hutch the Honeybee",
+       "native": "昆虫物語みなしごハッチ"
+      },
+      "synonyms": [
+       "Insect Story: Honey Bee Hutch",
+       "Las aventuras de Hatchi",
+       "La abejita Hutch",
+       "Las aventuras de José Miel",
+       "A Abelhinha Hutch",
+       "A Abelhinha Guerreira",
+       "Un alveare d'avventure per l'ape Magà",
+       "Le Petit Prince Orphelin",
+       "Hacou I'abeille",
+       "Micky l'abeille",
+       "Flitz das bienenkind",
+       "Honingbij hutch",
+       "Hutch Miodowe Serce",
+       "Пчелка Хатч",
+       "مغامرات بشّار",
+       "مغامرات نحول , بشار"
+      ]
+     },
+     {
+      "id": 8140,
+      "format": "TV",
+      "title": {
+       "romaji": "Konchuu Monogatari Minashigo Hutch (1989)",
+       "english": null,
+       "native": "昆虫物語みなしごハッチ"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 8139,
+      "format": "TV",
+      "title": {
+       "romaji": "Konchuu Monogatari: Shin Minashigo Hutch",
+       "english": "The New Adventures of Hutch the Honeybee",
+       "native": "昆虫物語　新みなしごハッチ"
+      },
+      "synonyms": [
+       "Le nuove avventure dell'Ape Magà"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 3858,
+    "match": "exact"
+   }
+  },
+  {
+   "title": "JoJo's Bizarre Adventure (Uncensored)",
+   "queries": [
+    "JoJo's Bizarre Adventure (Uncensored)",
+    "JoJo's Bizarre Adventure",
+    "JoJo s Bizarre Adventure"
+   ],
+   "answers": {
+    "JoJo's Bizarre Adventure (Uncensored)": [],
+    "JoJo's Bizarre Adventure": [
+     {
+      "id": 666,
+      "format": "OVA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken",
+       "english": "JoJo's Bizarre Adventure",
+       "native": "ジョジョの奇妙な冒険"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure OVA 1"
+      ]
+     },
+     {
+      "id": 14719,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken (TV)",
+       "english": "JoJo's Bizarre Adventure (TV)",
+       "native": "ジョジョの奇妙な冒険 (TV)"
+      },
+      "synonyms": [
+       "JoJo no Kimyou na Bouken (2012)",
+       "JoJo no Kimyou na Bouken: Sentou Chouryuu",
+       "JoJo's Bizarre Adventure: Phantom Blood",
+       "JoJo's Bizarre Adventure: Battle Tendency",
+       "مغامرات جوجو العجيبة",
+       "مغامرات جوجو العجيبة:الدماء الوهمية",
+       "مغامرات جوجو العجيبة:حمى القتال",
+       "Le bizzarre avventure di JoJo (2012)",
+       "Le bizzarre avventure di JoJo: Phantom Blood",
+       "Le bizzarre avventure di JoJo: Battle Tendency",
+       "Химерні пригоди ДжоДжо: Тяжіння до бою",
+       "Химерні пригоди ДжоДжо: Примарна кров",
+       "JJBA",
+       "Невероятные приключения ДжоДжо: Призрачная кровь",
+       "Невероятные приключения ДжоДжо: Стремление к бою"
+      ]
+     },
+     {
+      "id": 665,
+      "format": "OVA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken (2000)",
+       "english": "JoJo's Bizarre Adventure (2000)",
+       "native": "ジョジョの奇妙な冒険 (2000)"
+      },
+      "synonyms": [
+       "JoJo no Kimyou na Bouken: Adventure"
+      ]
+     },
+     {
+      "id": 102883,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Ougon no Kaze",
+       "english": "JoJo's Bizarre Adventure: Golden Wind",
+       "native": "ジョジョの奇妙な冒険 黄金の風"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure Part 5",
+       "JoJo's Bizarre Adventure: Vento Aureo",
+       "Le Bizzarre Avventure Di GioGio: Vento Aureo",
+       "مغامرات جوجو العجيبة: الرياح الذهبية",
+       "Невероятные приключения ДжоДжо: Золотой ветер"
+      ]
+     },
+     {
+      "id": 131942,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stone Ocean",
+       "english": "JoJo's Bizarre Adventure: STONE OCEAN",
+       "native": "ジョジョの奇妙な冒険 ストーンオーシャン"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Stone Ocean",
+       "JoJo's Bizarre Adventure Part 6",
+       "JoJo no Kimyou na Bouken Part 6",
+       "Le bizzarre avventure di JoJo: Stone Ocean",
+       "โจโจ้ ล่าข้ามศตวรรษ: สโตนโอเชียน ",
+       "โจโจ้ ล่าข้ามศตวรรษ ภาค 6",
+       "مغامرات جوجو العجيبة: محيط الأحجار",
+       "ההרפתקה המוזרה של ג'וג'ו: אוקיינוס האבן",
+       "Невероятные приключения ДжоДжо: Каменный океан ",
+       "Химерні пригоди ДжоДжо: Кам'яний океан"
+      ]
+     },
+     {
+      "id": 3603,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Phantom Blood",
+       "english": null,
+       "native": "ジョジョの奇妙な冒険 ファントム ブラッド"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Phantom Blood"
+      ]
+     },
+     {
+      "id": 20474,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stardust Crusaders",
+       "english": "JoJo's Bizarre Adventure: Stardust Crusaders",
+       "native": "ジョジョの奇妙な冒険 スターダストクルセイダース"
+      },
+      "synonyms": [
+       "Dai San Bu Kujo Jotaro: Mirai e no Isan",
+       "JoJo no Kimyou na Bouken Part 3: Stardust Crusaders",
+       "JoJo's Bizarre Adventure Part 3: Stardust Crusaders",
+       "ההרפתקה המוזרה של ג'וג'ו: צלבני אבק כוכבים ",
+       "مغامرات جوجو العجيبة : فرسان غبار النجم",
+       "Le bizzarre avventure di JoJo: Stardust Crusaders",
+       "Невероятные приключения ДжоДжо: Крестоносцы звездной пыли"
+      ]
+     },
+     {
+      "id": 146722,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stone Ocean Part 2",
+       "english": "JoJo's Bizarre Adventure: STONE OCEAN Part 2",
+       "native": "ジョジョの奇妙な冒険 ストーンオーシャン 2クール"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure Part 6 (Part 2)",
+       "JoJo no Kimyou na Bouken Part 6 (Part 2)",
+       "JoJo's Bizarre Adventure: STONE OCEAN The Final Episodes"
+      ]
+     },
+     {
+      "id": 21450,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Diamond wa Kudakenai",
+       "english": "JoJo's Bizarre Adventure: Diamond is Unbreakable",
+       "native": "ジョジョの奇妙な冒険 ダイヤモンドは砕けない"
+      },
+      "synonyms": [
+       "JoJo no Kimyou na Bouken Part 4: Diamond wa Kudakenai",
+       "JoJo's Bizarre Adventure Part 4: Diamond is Unbreakable",
+       "مغامرات جوجو العجيبة: الألماس غير قابل للكسر",
+       "Le bizzarre avventure di JoJo: Diamond is Unbreakable",
+       "Невероятные приключения ДжоДжо: Diamond is Unbreakable"
+      ]
+     },
+     {
+      "id": 210482,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Steel Ball Run - 2nd & 3rd STAGE",
+       "english": "STEEL BALL RUN JoJo's Bizarre Adventure 2nd - 3rd STAGE",
+       "native": "ジョジョの奇妙な冒険 スティール・ボール・ラン 2nd＆3rd STAGE"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Part 7–Steel Ball Run",
+       "SBR"
+      ]
+     }
+    ],
+    "JoJo s Bizarre Adventure": []
+   },
+   "expect": {
+    "id": 666,
+    "match": "exact"
+   }
+  },
+  {
+   "title": "JoJo's Bizarre Adventure Part 2: Stardust Crusaders (Uncensored)",
+   "queries": [
+    "JoJo's Bizarre Adventure Part 2: Stardust Crusaders (Uncensored)",
+    "JoJo's Bizarre Adventure Part 2: Stardust Crusaders",
+    "Stardust Crusaders",
+    "JoJo's Bizarre Adventure Part 2",
+    "JoJo s Bizarre Adventure Part 2 Stardust Crusaders"
+   ],
+   "answers": {
+    "JoJo's Bizarre Adventure Part 2: Stardust Crusaders (Uncensored)": [],
+    "JoJo's Bizarre Adventure Part 2: Stardust Crusaders": [],
+    "Stardust Crusaders": [
+     {
+      "id": 20474,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stardust Crusaders",
+       "english": "JoJo's Bizarre Adventure: Stardust Crusaders",
+       "native": "ジョジョの奇妙な冒険 スターダストクルセイダース"
+      },
+      "synonyms": [
+       "Dai San Bu Kujo Jotaro: Mirai e no Isan",
+       "JoJo no Kimyou na Bouken Part 3: Stardust Crusaders",
+       "JoJo's Bizarre Adventure Part 3: Stardust Crusaders",
+       "ההרפתקה המוזרה של ג'וג'ו: צלבני אבק כוכבים ",
+       "مغامرات جوجو العجيبة : فرسان غبار النجم",
+       "Le bizzarre avventure di JoJo: Stardust Crusaders",
+       "Невероятные приключения ДжоДжо: Крестоносцы звездной пыли"
+      ]
+     },
+     {
+      "id": 20799,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stardust Crusaders - Egypt-hen",
+       "english": "JoJo's Bizarre Adventure: Stardust Crusaders - Battle in Egypt",
+       "native": "ジョジョの奇妙な冒険 スターダストクルセイダース エジプト編"
+      },
+      "synonyms": [
+       "Dai San Bu Kujo Jotaro: Mirai e no Isan",
+       "JoJo's Bizarre Adventure: Stardust Crusaders 2nd Season",
+       "JoJo no Kimyou na Bouken: Stardust Crusaders 2nd Season",
+       "JoJo's Bizarre Adventure Part 3: Stardust Crusaders - Battle in Egypt",
+       "JoJo no Kimyou na Bouken Part 3: Stardust Crusaders - Egypt-hen",
+       "JoJo's Bizarre Adventure: Stardust Crusaders - Egypt Arc",
+       "Le bizzarre avventure di JoJo: Stardust Crusaders",
+       "JoJo's Bizarre Adventure: Stardust Crusaders – Starcie w Egipcie"
+      ]
+     }
+    ],
+    "JoJo's Bizarre Adventure Part 2": [
+     {
+      "id": 146722,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stone Ocean Part 2",
+       "english": "JoJo's Bizarre Adventure: STONE OCEAN Part 2",
+       "native": "ジョジョの奇妙な冒険 ストーンオーシャン 2クール"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure Part 6 (Part 2)",
+       "JoJo no Kimyou na Bouken Part 6 (Part 2)",
+       "JoJo's Bizarre Adventure: STONE OCEAN The Final Episodes"
+      ]
+     }
+    ],
+    "JoJo s Bizarre Adventure Part 2 Stardust Crusaders": []
+   },
+   "expect": {
+    "id": 20474,
+    "match": "close"
+   }
+  },
+  {
+   "title": "JoJo's Bizarre Adventure Part 3: Stardust Crusaders 2nd Season (Uncensored)",
+   "queries": [
+    "JoJo's Bizarre Adventure Part 3: Stardust Crusaders 2nd Season (Uncensored)",
+    "JoJo's Bizarre Adventure Part 3: Stardust Crusaders 2nd Season",
+    "Stardust Crusaders 2nd Season",
+    "JoJo's Bizarre Adventure Part 3",
+    "JoJo s Bizarre Adventure Part 3 Stardust Crusaders 2nd Season"
+   ],
+   "answers": {
+    "JoJo's Bizarre Adventure Part 3: Stardust Crusaders 2nd Season (Uncensored)": [],
+    "JoJo's Bizarre Adventure Part 3: Stardust Crusaders 2nd Season": [],
+    "Stardust Crusaders 2nd Season": [
+     {
+      "id": 20799,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stardust Crusaders - Egypt-hen",
+       "english": "JoJo's Bizarre Adventure: Stardust Crusaders - Battle in Egypt",
+       "native": "ジョジョの奇妙な冒険 スターダストクルセイダース エジプト編"
+      },
+      "synonyms": [
+       "Dai San Bu Kujo Jotaro: Mirai e no Isan",
+       "JoJo's Bizarre Adventure: Stardust Crusaders 2nd Season",
+       "JoJo no Kimyou na Bouken: Stardust Crusaders 2nd Season",
+       "JoJo's Bizarre Adventure Part 3: Stardust Crusaders - Battle in Egypt",
+       "JoJo no Kimyou na Bouken Part 3: Stardust Crusaders - Egypt-hen",
+       "JoJo's Bizarre Adventure: Stardust Crusaders - Egypt Arc",
+       "Le bizzarre avventure di JoJo: Stardust Crusaders",
+       "JoJo's Bizarre Adventure: Stardust Crusaders – Starcie w Egipcie"
+      ]
+     }
+    ],
+    "JoJo's Bizarre Adventure Part 3": [
+     {
+      "id": 20474,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stardust Crusaders",
+       "english": "JoJo's Bizarre Adventure: Stardust Crusaders",
+       "native": "ジョジョの奇妙な冒険 スターダストクルセイダース"
+      },
+      "synonyms": [
+       "Dai San Bu Kujo Jotaro: Mirai e no Isan",
+       "JoJo no Kimyou na Bouken Part 3: Stardust Crusaders",
+       "JoJo's Bizarre Adventure Part 3: Stardust Crusaders",
+       "ההרפתקה המוזרה של ג'וג'ו: צלבני אבק כוכבים ",
+       "مغامرات جوجو العجيبة : فرسان غبار النجم",
+       "Le bizzarre avventure di JoJo: Stardust Crusaders",
+       "Невероятные приключения ДжоДжо: Крестоносцы звездной пыли"
+      ]
+     },
+     {
+      "id": 20799,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stardust Crusaders - Egypt-hen",
+       "english": "JoJo's Bizarre Adventure: Stardust Crusaders - Battle in Egypt",
+       "native": "ジョジョの奇妙な冒険 スターダストクルセイダース エジプト編"
+      },
+      "synonyms": [
+       "Dai San Bu Kujo Jotaro: Mirai e no Isan",
+       "JoJo's Bizarre Adventure: Stardust Crusaders 2nd Season",
+       "JoJo no Kimyou na Bouken: Stardust Crusaders 2nd Season",
+       "JoJo's Bizarre Adventure Part 3: Stardust Crusaders - Battle in Egypt",
+       "JoJo no Kimyou na Bouken Part 3: Stardust Crusaders - Egypt-hen",
+       "JoJo's Bizarre Adventure: Stardust Crusaders - Egypt Arc",
+       "Le bizzarre avventure di JoJo: Stardust Crusaders",
+       "JoJo's Bizarre Adventure: Stardust Crusaders – Starcie w Egipcie"
+      ]
+     }
+    ],
+    "JoJo s Bizarre Adventure Part 3 Stardust Crusaders 2nd Season": []
+   },
+   "expect": {
+    "id": 20799,
+    "match": "close"
+   }
+  },
+  {
+   "title": "JoJo's Bizarre Adventure: Stone Ocean Part 3",
+   "queries": [
+    "JoJo's Bizarre Adventure: Stone Ocean Part 3",
+    "Stone Ocean Part 3",
+    "JoJo's Bizarre Adventure",
+    "JoJo s Bizarre Adventure Stone Ocean Part 3"
+   ],
+   "answers": {
+    "JoJo's Bizarre Adventure: Stone Ocean Part 3": [],
+    "Stone Ocean Part 3": [],
+    "JoJo's Bizarre Adventure": [
+     {
+      "id": 666,
+      "format": "OVA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken",
+       "english": "JoJo's Bizarre Adventure",
+       "native": "ジョジョの奇妙な冒険"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure OVA 1"
+      ]
+     },
+     {
+      "id": 14719,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken (TV)",
+       "english": "JoJo's Bizarre Adventure (TV)",
+       "native": "ジョジョの奇妙な冒険 (TV)"
+      },
+      "synonyms": [
+       "JoJo no Kimyou na Bouken (2012)",
+       "JoJo no Kimyou na Bouken: Sentou Chouryuu",
+       "JoJo's Bizarre Adventure: Phantom Blood",
+       "JoJo's Bizarre Adventure: Battle Tendency",
+       "مغامرات جوجو العجيبة",
+       "مغامرات جوجو العجيبة:الدماء الوهمية",
+       "مغامرات جوجو العجيبة:حمى القتال",
+       "Le bizzarre avventure di JoJo (2012)",
+       "Le bizzarre avventure di JoJo: Phantom Blood",
+       "Le bizzarre avventure di JoJo: Battle Tendency",
+       "Химерні пригоди ДжоДжо: Тяжіння до бою",
+       "Химерні пригоди ДжоДжо: Примарна кров",
+       "JJBA",
+       "Невероятные приключения ДжоДжо: Призрачная кровь",
+       "Невероятные приключения ДжоДжо: Стремление к бою"
+      ]
+     },
+     {
+      "id": 665,
+      "format": "OVA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken (2000)",
+       "english": "JoJo's Bizarre Adventure (2000)",
+       "native": "ジョジョの奇妙な冒険 (2000)"
+      },
+      "synonyms": [
+       "JoJo no Kimyou na Bouken: Adventure"
+      ]
+     },
+     {
+      "id": 102883,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Ougon no Kaze",
+       "english": "JoJo's Bizarre Adventure: Golden Wind",
+       "native": "ジョジョの奇妙な冒険 黄金の風"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure Part 5",
+       "JoJo's Bizarre Adventure: Vento Aureo",
+       "Le Bizzarre Avventure Di GioGio: Vento Aureo",
+       "مغامرات جوجو العجيبة: الرياح الذهبية",
+       "Невероятные приключения ДжоДжо: Золотой ветер"
+      ]
+     },
+     {
+      "id": 131942,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stone Ocean",
+       "english": "JoJo's Bizarre Adventure: STONE OCEAN",
+       "native": "ジョジョの奇妙な冒険 ストーンオーシャン"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Stone Ocean",
+       "JoJo's Bizarre Adventure Part 6",
+       "JoJo no Kimyou na Bouken Part 6",
+       "Le bizzarre avventure di JoJo: Stone Ocean",
+       "โจโจ้ ล่าข้ามศตวรรษ: สโตนโอเชียน ",
+       "โจโจ้ ล่าข้ามศตวรรษ ภาค 6",
+       "مغامرات جوجو العجيبة: محيط الأحجار",
+       "ההרפתקה המוזרה של ג'וג'ו: אוקיינוס האבן",
+       "Невероятные приключения ДжоДжо: Каменный океан ",
+       "Химерні пригоди ДжоДжо: Кам'яний океан"
+      ]
+     },
+     {
+      "id": 3603,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Phantom Blood",
+       "english": null,
+       "native": "ジョジョの奇妙な冒険 ファントム ブラッド"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Phantom Blood"
+      ]
+     },
+     {
+      "id": 20474,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stardust Crusaders",
+       "english": "JoJo's Bizarre Adventure: Stardust Crusaders",
+       "native": "ジョジョの奇妙な冒険 スターダストクルセイダース"
+      },
+      "synonyms": [
+       "Dai San Bu Kujo Jotaro: Mirai e no Isan",
+       "JoJo no Kimyou na Bouken Part 3: Stardust Crusaders",
+       "JoJo's Bizarre Adventure Part 3: Stardust Crusaders",
+       "ההרפתקה המוזרה של ג'וג'ו: צלבני אבק כוכבים ",
+       "مغامرات جوجو العجيبة : فرسان غبار النجم",
+       "Le bizzarre avventure di JoJo: Stardust Crusaders",
+       "Невероятные приключения ДжоДжо: Крестоносцы звездной пыли"
+      ]
+     },
+     {
+      "id": 146722,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stone Ocean Part 2",
+       "english": "JoJo's Bizarre Adventure: STONE OCEAN Part 2",
+       "native": "ジョジョの奇妙な冒険 ストーンオーシャン 2クール"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure Part 6 (Part 2)",
+       "JoJo no Kimyou na Bouken Part 6 (Part 2)",
+       "JoJo's Bizarre Adventure: STONE OCEAN The Final Episodes"
+      ]
+     },
+     {
+      "id": 21450,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Diamond wa Kudakenai",
+       "english": "JoJo's Bizarre Adventure: Diamond is Unbreakable",
+       "native": "ジョジョの奇妙な冒険 ダイヤモンドは砕けない"
+      },
+      "synonyms": [
+       "JoJo no Kimyou na Bouken Part 4: Diamond wa Kudakenai",
+       "JoJo's Bizarre Adventure Part 4: Diamond is Unbreakable",
+       "مغامرات جوجو العجيبة: الألماس غير قابل للكسر",
+       "Le bizzarre avventure di JoJo: Diamond is Unbreakable",
+       "Невероятные приключения ДжоДжо: Diamond is Unbreakable"
+      ]
+     },
+     {
+      "id": 210482,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Steel Ball Run - 2nd & 3rd STAGE",
+       "english": "STEEL BALL RUN JoJo's Bizarre Adventure 2nd - 3rd STAGE",
+       "native": "ジョジョの奇妙な冒険 スティール・ボール・ラン 2nd＆3rd STAGE"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Part 7–Steel Ball Run",
+       "SBR"
+      ]
+     }
+    ],
+    "JoJo s Bizarre Adventure Stone Ocean Part 3": []
+   },
+   "expect": {
+    "id": 131942,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Steel Ball Run: JoJo's Bizarre Adventure",
+   "queries": [
+    "Steel Ball Run: JoJo's Bizarre Adventure",
+    "JoJo's Bizarre Adventure",
+    "Steel Ball Run",
+    "Steel Ball Run JoJo s Bizarre Adventure"
+   ],
+   "answers": {
+    "Steel Ball Run: JoJo's Bizarre Adventure": [
+     {
+      "id": 210482,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Steel Ball Run - 2nd & 3rd STAGE",
+       "english": "STEEL BALL RUN JoJo's Bizarre Adventure 2nd - 3rd STAGE",
+       "native": "ジョジョの奇妙な冒険 スティール・ボール・ラン 2nd＆3rd STAGE"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Part 7–Steel Ball Run",
+       "SBR"
+      ]
+     },
+     {
+      "id": 190327,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Steel Ball Run - 1st STAGE",
+       "english": "STEEL BALL RUN JoJo's Bizarre Adventure 1st STAGE",
+       "native": "ジョジョの奇妙な冒険 スティール・ボール・ラン 1st STAGE"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Part 7–Steel Ball Run",
+       "SBR",
+       "ГОНКА «СТАЛЬНОЙ ШАР»: Невероятные приключения ДжоДжо",
+       "Перегони «Сталева куля»: Химерні пригоди ДжоДжо"
+      ]
+     }
+    ],
+    "JoJo's Bizarre Adventure": [
+     {
+      "id": 666,
+      "format": "OVA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken",
+       "english": "JoJo's Bizarre Adventure",
+       "native": "ジョジョの奇妙な冒険"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure OVA 1"
+      ]
+     },
+     {
+      "id": 14719,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken (TV)",
+       "english": "JoJo's Bizarre Adventure (TV)",
+       "native": "ジョジョの奇妙な冒険 (TV)"
+      },
+      "synonyms": [
+       "JoJo no Kimyou na Bouken (2012)",
+       "JoJo no Kimyou na Bouken: Sentou Chouryuu",
+       "JoJo's Bizarre Adventure: Phantom Blood",
+       "JoJo's Bizarre Adventure: Battle Tendency",
+       "مغامرات جوجو العجيبة",
+       "مغامرات جوجو العجيبة:الدماء الوهمية",
+       "مغامرات جوجو العجيبة:حمى القتال",
+       "Le bizzarre avventure di JoJo (2012)",
+       "Le bizzarre avventure di JoJo: Phantom Blood",
+       "Le bizzarre avventure di JoJo: Battle Tendency",
+       "Химерні пригоди ДжоДжо: Тяжіння до бою",
+       "Химерні пригоди ДжоДжо: Примарна кров",
+       "JJBA",
+       "Невероятные приключения ДжоДжо: Призрачная кровь",
+       "Невероятные приключения ДжоДжо: Стремление к бою"
+      ]
+     },
+     {
+      "id": 665,
+      "format": "OVA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken (2000)",
+       "english": "JoJo's Bizarre Adventure (2000)",
+       "native": "ジョジョの奇妙な冒険 (2000)"
+      },
+      "synonyms": [
+       "JoJo no Kimyou na Bouken: Adventure"
+      ]
+     },
+     {
+      "id": 102883,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Ougon no Kaze",
+       "english": "JoJo's Bizarre Adventure: Golden Wind",
+       "native": "ジョジョの奇妙な冒険 黄金の風"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure Part 5",
+       "JoJo's Bizarre Adventure: Vento Aureo",
+       "Le Bizzarre Avventure Di GioGio: Vento Aureo",
+       "مغامرات جوجو العجيبة: الرياح الذهبية",
+       "Невероятные приключения ДжоДжо: Золотой ветер"
+      ]
+     },
+     {
+      "id": 131942,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stone Ocean",
+       "english": "JoJo's Bizarre Adventure: STONE OCEAN",
+       "native": "ジョジョの奇妙な冒険 ストーンオーシャン"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Stone Ocean",
+       "JoJo's Bizarre Adventure Part 6",
+       "JoJo no Kimyou na Bouken Part 6",
+       "Le bizzarre avventure di JoJo: Stone Ocean",
+       "โจโจ้ ล่าข้ามศตวรรษ: สโตนโอเชียน ",
+       "โจโจ้ ล่าข้ามศตวรรษ ภาค 6",
+       "مغامرات جوجو العجيبة: محيط الأحجار",
+       "ההרפתקה המוזרה של ג'וג'ו: אוקיינוס האבן",
+       "Невероятные приключения ДжоДжо: Каменный океан ",
+       "Химерні пригоди ДжоДжо: Кам'яний океан"
+      ]
+     },
+     {
+      "id": 3603,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Phantom Blood",
+       "english": null,
+       "native": "ジョジョの奇妙な冒険 ファントム ブラッド"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Phantom Blood"
+      ]
+     },
+     {
+      "id": 20474,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stardust Crusaders",
+       "english": "JoJo's Bizarre Adventure: Stardust Crusaders",
+       "native": "ジョジョの奇妙な冒険 スターダストクルセイダース"
+      },
+      "synonyms": [
+       "Dai San Bu Kujo Jotaro: Mirai e no Isan",
+       "JoJo no Kimyou na Bouken Part 3: Stardust Crusaders",
+       "JoJo's Bizarre Adventure Part 3: Stardust Crusaders",
+       "ההרפתקה המוזרה של ג'וג'ו: צלבני אבק כוכבים ",
+       "مغامرات جوجو العجيبة : فرسان غبار النجم",
+       "Le bizzarre avventure di JoJo: Stardust Crusaders",
+       "Невероятные приключения ДжоДжо: Крестоносцы звездной пыли"
+      ]
+     },
+     {
+      "id": 146722,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Stone Ocean Part 2",
+       "english": "JoJo's Bizarre Adventure: STONE OCEAN Part 2",
+       "native": "ジョジョの奇妙な冒険 ストーンオーシャン 2クール"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure Part 6 (Part 2)",
+       "JoJo no Kimyou na Bouken Part 6 (Part 2)",
+       "JoJo's Bizarre Adventure: STONE OCEAN The Final Episodes"
+      ]
+     },
+     {
+      "id": 21450,
+      "format": "TV",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Diamond wa Kudakenai",
+       "english": "JoJo's Bizarre Adventure: Diamond is Unbreakable",
+       "native": "ジョジョの奇妙な冒険 ダイヤモンドは砕けない"
+      },
+      "synonyms": [
+       "JoJo no Kimyou na Bouken Part 4: Diamond wa Kudakenai",
+       "JoJo's Bizarre Adventure Part 4: Diamond is Unbreakable",
+       "مغامرات جوجو العجيبة: الألماس غير قابل للكسر",
+       "Le bizzarre avventure di JoJo: Diamond is Unbreakable",
+       "Невероятные приключения ДжоДжо: Diamond is Unbreakable"
+      ]
+     },
+     {
+      "id": 210482,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Steel Ball Run - 2nd & 3rd STAGE",
+       "english": "STEEL BALL RUN JoJo's Bizarre Adventure 2nd - 3rd STAGE",
+       "native": "ジョジョの奇妙な冒険 スティール・ボール・ラン 2nd＆3rd STAGE"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Part 7–Steel Ball Run",
+       "SBR"
+      ]
+     }
+    ],
+    "Steel Ball Run": [
+     {
+      "id": 210482,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Steel Ball Run - 2nd & 3rd STAGE",
+       "english": "STEEL BALL RUN JoJo's Bizarre Adventure 2nd - 3rd STAGE",
+       "native": "ジョジョの奇妙な冒険 スティール・ボール・ラン 2nd＆3rd STAGE"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Part 7–Steel Ball Run",
+       "SBR"
+      ]
+     },
+     {
+      "id": 190327,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Steel Ball Run - 1st STAGE",
+       "english": "STEEL BALL RUN JoJo's Bizarre Adventure 1st STAGE",
+       "native": "ジョジョの奇妙な冒険 スティール・ボール・ラン 1st STAGE"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Part 7–Steel Ball Run",
+       "SBR",
+       "ГОНКА «СТАЛЬНОЙ ШАР»: Невероятные приключения ДжоДжо",
+       "Перегони «Сталева куля»: Химерні пригоди ДжоДжо"
+      ]
+     }
+    ],
+    "Steel Ball Run JoJo s Bizarre Adventure": []
+   },
+   "expect": {
+    "id": 190327,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Steel Ball Run: JoJo's Bizarre Adventure 2nd Stage",
+   "queries": [
+    "Steel Ball Run: JoJo's Bizarre Adventure 2nd Stage",
+    "JoJo's Bizarre Adventure 2nd Stage",
+    "Steel Ball Run",
+    "Steel Ball Run JoJo s Bizarre Adventure 2nd Stage"
+   ],
+   "answers": {
+    "Steel Ball Run: JoJo's Bizarre Adventure 2nd Stage": [
+     {
+      "id": 210482,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Steel Ball Run - 2nd & 3rd STAGE",
+       "english": "STEEL BALL RUN JoJo's Bizarre Adventure 2nd - 3rd STAGE",
+       "native": "ジョジョの奇妙な冒険 スティール・ボール・ラン 2nd＆3rd STAGE"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Part 7–Steel Ball Run",
+       "SBR"
+      ]
+     }
+    ],
+    "JoJo's Bizarre Adventure 2nd Stage": [
+     {
+      "id": 210482,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Steel Ball Run - 2nd & 3rd STAGE",
+       "english": "STEEL BALL RUN JoJo's Bizarre Adventure 2nd - 3rd STAGE",
+       "native": "ジョジョの奇妙な冒険 スティール・ボール・ラン 2nd＆3rd STAGE"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Part 7–Steel Ball Run",
+       "SBR"
+      ]
+     }
+    ],
+    "Steel Ball Run": [
+     {
+      "id": 210482,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Steel Ball Run - 2nd & 3rd STAGE",
+       "english": "STEEL BALL RUN JoJo's Bizarre Adventure 2nd - 3rd STAGE",
+       "native": "ジョジョの奇妙な冒険 スティール・ボール・ラン 2nd＆3rd STAGE"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Part 7–Steel Ball Run",
+       "SBR"
+      ]
+     },
+     {
+      "id": 190327,
+      "format": "ONA",
+      "title": {
+       "romaji": "JoJo no Kimyou na Bouken: Steel Ball Run - 1st STAGE",
+       "english": "STEEL BALL RUN JoJo's Bizarre Adventure 1st STAGE",
+       "native": "ジョジョの奇妙な冒険 スティール・ボール・ラン 1st STAGE"
+      },
+      "synonyms": [
+       "JoJo's Bizarre Adventure: Part 7–Steel Ball Run",
+       "SBR",
+       "ГОНКА «СТАЛЬНОЙ ШАР»: Невероятные приключения ДжоДжо",
+       "Перегони «Сталева куля»: Химерні пригоди ДжоДжо"
+      ]
+     }
+    ],
+    "Steel Ball Run JoJo s Bizarre Adventure 2nd Stage": []
+   },
+   "expect": {
+    "id": 190327,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Lupin the Third",
+   "queries": [
+    "Lupin the Third"
+   ],
+   "answers": {
+    "Lupin the Third": [
+     {
+      "id": 1426,
+      "format": "TV",
+      "title": {
+       "romaji": "Lupin III: Part III",
+       "english": "Lupin the Third Part 3",
+       "native": "ルパン三世 - Part III"
+      },
+      "synonyms": [
+       "Rupan Sansei: Part III",
+       "Lupin, l'incorreggibile Lupin"
+      ]
+     },
+     {
+      "id": 8097,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Lupin III: The Last Job",
+       "english": "Lupin the 3rd: The Last Job",
+       "native": "ルパン三世 The Last Job"
+      },
+      "synonyms": [
+       "Rupan Sansei - The Last Job",
+       "LUPIN THE THIRD the Last Job",
+       "Lupin III - L'ultimo colpo"
+      ]
+     },
+     {
+      "id": 1435,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Lupin III: Lupin vs Clone",
+       "english": "Lupin III: The Secret of Mamo",
+       "native": "ルパン三世 ルパンvs複製人間"
+      },
+      "synonyms": [
+       "Rupan Sansei",
+       "Lupin III: Lupin vs The Human Clone",
+       "Edgar de la Cambriole : Le secret de Mamo",
+       "Lupin III: La pietra della saggezza",
+       "Lupin the Third: The Mystery of Mamo",
+       "LUPIN THE 3rd: Mystery of Mamo",
+       "Lupin III: O Segredo de Mamo",
+       "Lupin III: Lupin vs Fukusei-ningen",
+       "Lupin Trzeci: Tajemnica Mamo"
+      ]
+     },
+     {
+      "id": 20978,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "LUPIN THE IIIRD: Jigen Daisuke no Bohyou",
+       "english": "Lupin the IIIrd: Jigen's Gravestone",
+       "native": "LUPIN THE IIIRD 次元大介の墓標"
+      },
+      "synonyms": [
+       "Lupin III: Jigen's Gravestone",
+       "Lupin the IIIrd - La lapide di Jigen Daisuke",
+       "Lupin the IIIrd: Daisuke Jigen's Gravestone",
+       "Lupin the Third: Jigen's Gravestone",
+       "Lupin the 3rd: Jigen's Gravestone",
+       "Lupin III.: Daisuke Jigens Grabstein"
+      ]
+     },
+     {
+      "id": 1439,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Lupin III: Walther P-38",
+       "english": "Lupin the Third: Island of Assassins",
+       "native": "ルパン三世ワルサーP38"
+      },
+      "synonyms": [
+       "Rupan Sansei: Walusa P38 - In Gedenken an die Walther P38",
+       "Lupin III: In Memory of the Walther P38",
+       "Lupin III: Island of Assassins",
+       "Lupin III - Nome in codice Tarantola"
+      ]
+     },
+     {
+      "id": 13203,
+      "format": "TV",
+      "title": {
+       "romaji": "LUPIN the Third: Mine Fujiko to Iu Onna",
+       "english": "Lupin the Third: The Woman Called Fujiko Mine",
+       "native": "LUPIN the Third ～峰不二子という女～"
+      },
+      "synonyms": [
+       "Lupin III",
+       "Lupin III~Mine Fujiko to Iu Onna~",
+       "Lupin the Third: La donna chiamata Fujiko Mine"
+      ]
+     },
+     {
+      "id": 9035,
+      "format": "MUSIC",
+      "title": {
+       "romaji": "Lupin the Third x Monkey Majik",
+       "english": null,
+       "native": "Lupin the Third x Monkey Majik"
+      },
+      "synonyms": [
+       "Lupin III",
+       "Monkey Majik"
+      ]
+     },
+     {
+      "id": 104257,
+      "format": "OVA",
+      "title": {
+       "romaji": "Lupin wa Ima mo Moete Iru ka?",
+       "english": "Is Lupin Still Burning?",
+       "native": "ルパンは今も燃えているか？"
+      },
+      "synonyms": [
+       "Lupin III: Part V - Special",
+       "Lupin III (2018) Special",
+       "Lupin the Third - 50th Anniversary Special",
+       "Lupin III - Lupin contro tutti!",
+       "Lupin Ainda Está Queimando?",
+       "Lupin Contra o Tempo?"
+      ]
+     },
+     {
+      "id": 97619,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "LUPIN THE IIIRD: Chikemuri no Ishikawa Goemon",
+       "english": "Lupin the IIIrd: Goemon's Blood Spray",
+       "native": "LUPIN THE IIIRD 血煙の石川五ェ門"
+      },
+      "synonyms": [
+       "Lupin the Third: Goemon Ishikawa's Spray of Blood",
+       "Lupin III.: Goemon Ishikawa, der es Blut regnen lässt",
+       "Lupin the IIIrd - Ishikawa Goemon getto di sangue"
+      ]
+     }
+    ]
+   },
+   "expect": null
+  },
+  {
+   "title": "Lupin III: Goodbye Lady Liberty",
+   "queries": [
+    "Lupin III: Goodbye Lady Liberty",
+    "Goodbye Lady Liberty",
+    "Lupin III",
+    "Lupin III Goodbye Lady Liberty"
+   ],
+   "answers": {
+    "Lupin III: Goodbye Lady Liberty": [],
+    "Goodbye Lady Liberty": [],
+    "Lupin III": [
+     {
+      "id": 13203,
+      "format": "TV",
+      "title": {
+       "romaji": "LUPIN the Third: Mine Fujiko to Iu Onna",
+       "english": "Lupin the Third: The Woman Called Fujiko Mine",
+       "native": "LUPIN the Third ～峰不二子という女～"
+      },
+      "synonyms": [
+       "Lupin III",
+       "Lupin III~Mine Fujiko to Iu Onna~",
+       "Lupin the Third: La donna chiamata Fujiko Mine"
+      ]
+     },
+     {
+      "id": 1412,
+      "format": "TV",
+      "title": {
+       "romaji": "Lupin III",
+       "english": "Lupin the 3rd",
+       "native": "ルパン三世"
+      },
+      "synonyms": [
+       "Rupan Sansei",
+       "לופין השלישי",
+       "Cliffhanger",
+       "Cliff Hanger",
+       "Lupin III: Parte I",
+       "Cliffhanger, o Aventureiro",
+       "Люпен III"
+      ]
+     },
+     {
+      "id": 9035,
+      "format": "MUSIC",
+      "title": {
+       "romaji": "Lupin the Third x Monkey Majik",
+       "english": null,
+       "native": "Lupin the Third x Monkey Majik"
+      },
+      "synonyms": [
+       "Lupin III",
+       "Monkey Majik"
+      ]
+     },
+     {
+      "id": 1426,
+      "format": "TV",
+      "title": {
+       "romaji": "Lupin III: Part III",
+       "english": "Lupin the Third Part 3",
+       "native": "ルパン三世 - Part III"
+      },
+      "synonyms": [
+       "Rupan Sansei: Part III",
+       "Lupin, l'incorreggibile Lupin"
+      ]
+     },
+     {
+      "id": 1429,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Lupin III: Nusumareta Lupin - Copycat wa Manatsu no Chou",
+       "english": "Lupin the 3rd: Swallowtail Tattoo",
+       "native": "ルパン三世 盗まれたルパン 〜コピーキャットは真夏の蝶〜"
+      },
+      "synonyms": [
+       "Rupan Sansei: Nusumareta Rupan",
+       "Lupin III: Stolen Lupin - Copycat Summer Butterflies",
+       "Lupin III: Stolen Lupin",
+       "Lupin III - Tutti i tesori del mondo"
+      ]
+     },
+     {
+      "id": 1425,
+      "format": "TV",
+      "title": {
+       "romaji": "Lupin III: Part II",
+       "english": "Lupin the 3rd Part 2",
+       "native": "新・ルパン三世"
+      },
+      "synonyms": [
+       "Rupan Sansei: Part II",
+       "Shin Lupin III",
+       "Lupin III: Greatest Capers",
+       "Edgar, Détective Cambrioleur",
+       "Le nuove avventure di Lupin III"
+      ]
+     },
+     {
+      "id": 107313,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "LUPIN THE IIIRD: Mine Fujiko no Uso",
+       "english": "Lupin the IIIrd: Fujiko's Lie",
+       "native": "LUPIN THE IIIRD 峰不二子の嘘"
+      },
+      "synonyms": [
+       "Lupin III (2019)",
+       "ルパン三世 (2019)",
+       "ルパン三世 峰不二子の嘘",
+       "Lupin the IIIrd: Fujiko Mine’s Lie",
+       "Lupin III - La bugia di Mine Fujiko"
+      ]
+     },
+     {
+      "id": 1417,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Lupin III: Moeyo Zantetsuken",
+       "english": "Lupin the 3rd: Dragon of Doom",
+       "native": "ルパン三世 燃えよ斬鉄剣"
+      },
+      "synonyms": [
+       "Rupan Sansei: Moeyo Zantetsuken",
+       "Lupin III: Burn",
+       "Zantetsuken!",
+       "Lupin III: Dragon of Doom",
+       "Lupin III: Spada Zantetsu, infuocati!",
+       "Lupin III: O Dragão da Perda",
+       "Lupin III: O Dragão da Perdição"
+      ]
+     },
+     {
+      "id": 1435,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Lupin III: Lupin vs Clone",
+       "english": "Lupin III: The Secret of Mamo",
+       "native": "ルパン三世 ルパンvs複製人間"
+      },
+      "synonyms": [
+       "Rupan Sansei",
+       "Lupin III: Lupin vs The Human Clone",
+       "Edgar de la Cambriole : Le secret de Mamo",
+       "Lupin III: La pietra della saggezza",
+       "Lupin the Third: The Mystery of Mamo",
+       "LUPIN THE 3rd: Mystery of Mamo",
+       "Lupin III: O Segredo de Mamo",
+       "Lupin III: Lupin vs Fukusei-ningen",
+       "Lupin Trzeci: Tajemnica Mamo"
+      ]
+     },
+     {
+      "id": 13247,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Lupin III: Lupin Ikka Seizoroi",
+       "english": null,
+       "native": "ルパン三世 ルパン一家勢揃い"
+      },
+      "synonyms": [
+       "Rupan Sansei: Lupin Ikka Seizoroi",
+       "Lupin Family Lineup",
+       "Lupin III Master File",
+       "Lupin Sansei: Lupin Ikka Seizoroi"
+      ]
+     }
+    ],
+    "Lupin III Goodbye Lady Liberty": []
+   },
+   "expect": null
+  },
+  {
+   "title": "Lupin III: Harimao no Zaihou wo Oe!!",
+   "queries": [
+    "Lupin III: Harimao no Zaihou wo Oe!!",
+    "Harimao no Zaihou wo Oe!!",
+    "Lupin III",
+    "Lupin III Harimao no Zaihou wo Oe"
+   ],
+   "answers": {
+    "Lupin III: Harimao no Zaihou wo Oe!!": [],
+    "Harimao no Zaihou wo Oe!!": [],
+    "Lupin III": [
+     {
+      "id": 13203,
+      "format": "TV",
+      "title": {
+       "romaji": "LUPIN the Third: Mine Fujiko to Iu Onna",
+       "english": "Lupin the Third: The Woman Called Fujiko Mine",
+       "native": "LUPIN the Third ～峰不二子という女～"
+      },
+      "synonyms": [
+       "Lupin III",
+       "Lupin III~Mine Fujiko to Iu Onna~",
+       "Lupin the Third: La donna chiamata Fujiko Mine"
+      ]
+     },
+     {
+      "id": 1412,
+      "format": "TV",
+      "title": {
+       "romaji": "Lupin III",
+       "english": "Lupin the 3rd",
+       "native": "ルパン三世"
+      },
+      "synonyms": [
+       "Rupan Sansei",
+       "לופין השלישי",
+       "Cliffhanger",
+       "Cliff Hanger",
+       "Lupin III: Parte I",
+       "Cliffhanger, o Aventureiro",
+       "Люпен III"
+      ]
+     },
+     {
+      "id": 9035,
+      "format": "MUSIC",
+      "title": {
+       "romaji": "Lupin the Third x Monkey Majik",
+       "english": null,
+       "native": "Lupin the Third x Monkey Majik"
+      },
+      "synonyms": [
+       "Lupin III",
+       "Monkey Majik"
+      ]
+     },
+     {
+      "id": 1426,
+      "format": "TV",
+      "title": {
+       "romaji": "Lupin III: Part III",
+       "english": "Lupin the Third Part 3",
+       "native": "ルパン三世 - Part III"
+      },
+      "synonyms": [
+       "Rupan Sansei: Part III",
+       "Lupin, l'incorreggibile Lupin"
+      ]
+     },
+     {
+      "id": 1429,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Lupin III: Nusumareta Lupin - Copycat wa Manatsu no Chou",
+       "english": "Lupin the 3rd: Swallowtail Tattoo",
+       "native": "ルパン三世 盗まれたルパン 〜コピーキャットは真夏の蝶〜"
+      },
+      "synonyms": [
+       "Rupan Sansei: Nusumareta Rupan",
+       "Lupin III: Stolen Lupin - Copycat Summer Butterflies",
+       "Lupin III: Stolen Lupin",
+       "Lupin III - Tutti i tesori del mondo"
+      ]
+     },
+     {
+      "id": 1425,
+      "format": "TV",
+      "title": {
+       "romaji": "Lupin III: Part II",
+       "english": "Lupin the 3rd Part 2",
+       "native": "新・ルパン三世"
+      },
+      "synonyms": [
+       "Rupan Sansei: Part II",
+       "Shin Lupin III",
+       "Lupin III: Greatest Capers",
+       "Edgar, Détective Cambrioleur",
+       "Le nuove avventure di Lupin III"
+      ]
+     },
+     {
+      "id": 107313,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "LUPIN THE IIIRD: Mine Fujiko no Uso",
+       "english": "Lupin the IIIrd: Fujiko's Lie",
+       "native": "LUPIN THE IIIRD 峰不二子の嘘"
+      },
+      "synonyms": [
+       "Lupin III (2019)",
+       "ルパン三世 (2019)",
+       "ルパン三世 峰不二子の嘘",
+       "Lupin the IIIrd: Fujiko Mine’s Lie",
+       "Lupin III - La bugia di Mine Fujiko"
+      ]
+     },
+     {
+      "id": 1417,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Lupin III: Moeyo Zantetsuken",
+       "english": "Lupin the 3rd: Dragon of Doom",
+       "native": "ルパン三世 燃えよ斬鉄剣"
+      },
+      "synonyms": [
+       "Rupan Sansei: Moeyo Zantetsuken",
+       "Lupin III: Burn",
+       "Zantetsuken!",
+       "Lupin III: Dragon of Doom",
+       "Lupin III: Spada Zantetsu, infuocati!",
+       "Lupin III: O Dragão da Perda",
+       "Lupin III: O Dragão da Perdição"
+      ]
+     },
+     {
+      "id": 1435,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Lupin III: Lupin vs Clone",
+       "english": "Lupin III: The Secret of Mamo",
+       "native": "ルパン三世 ルパンvs複製人間"
+      },
+      "synonyms": [
+       "Rupan Sansei",
+       "Lupin III: Lupin vs The Human Clone",
+       "Edgar de la Cambriole : Le secret de Mamo",
+       "Lupin III: La pietra della saggezza",
+       "Lupin the Third: The Mystery of Mamo",
+       "LUPIN THE 3rd: Mystery of Mamo",
+       "Lupin III: O Segredo de Mamo",
+       "Lupin III: Lupin vs Fukusei-ningen",
+       "Lupin Trzeci: Tajemnica Mamo"
+      ]
+     },
+     {
+      "id": 13247,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Lupin III: Lupin Ikka Seizoroi",
+       "english": null,
+       "native": "ルパン三世 ルパン一家勢揃い"
+      },
+      "synonyms": [
+       "Rupan Sansei: Lupin Ikka Seizoroi",
+       "Lupin Family Lineup",
+       "Lupin III Master File",
+       "Lupin Sansei: Lupin Ikka Seizoroi"
+      ]
+     }
+    ],
+    "Lupin III Harimao no Zaihou wo Oe": []
+   },
+   "expect": null
+  },
+  {
+   "title": "Gintama: Shiroyasha Koutan",
+   "queries": [
+    "Gintama: Shiroyasha Koutan",
+    "Shiroyasha Koutan",
+    "Gintama Shiroyasha Koutan"
+   ],
+   "answers": {
+    "Gintama: Shiroyasha Koutan": [
+     {
+      "id": 6945,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Gintama: Jump Festa 2008 Special",
+       "english": null,
+       "native": "ジャンプアニメツアー 2008 白夜叉降誕"
+      },
+      "synonyms": [
+       "Gintama OVA: Shiroyasha Koutan",
+       "Gintama: Jump Anime Tour 2008 Special"
+      ]
+     }
+    ],
+    "Shiroyasha Koutan": [
+     {
+      "id": 6945,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Gintama: Jump Festa 2008 Special",
+       "english": null,
+       "native": "ジャンプアニメツアー 2008 白夜叉降誕"
+      },
+      "synonyms": [
+       "Gintama OVA: Shiroyasha Koutan",
+       "Gintama: Jump Anime Tour 2008 Special"
+      ]
+     }
+    ],
+    "Gintama Shiroyasha Koutan": [
+     {
+      "id": 6945,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Gintama: Jump Festa 2008 Special",
+       "english": null,
+       "native": "ジャンプアニメツアー 2008 白夜叉降誕"
+      },
+      "synonyms": [
+       "Gintama OVA: Shiroyasha Koutan",
+       "Gintama: Jump Anime Tour 2008 Special"
+      ]
+     }
+    ]
+   },
+   "expect": null
+  },
+  {
+   "title": "Bleach: Thousand-Year Blood War Arc",
+   "queries": [
+    "Bleach: Thousand-Year Blood War Arc",
+    "Bleach: Thousand-Year Blood War",
+    "Thousand-Year Blood War",
+    "Bleach Thousand Year Blood War"
+   ],
+   "answers": {
+    "Bleach: Thousand-Year Blood War Arc": [],
+    "Bleach: Thousand-Year Blood War": [
+     {
+      "id": 116674,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen",
+       "english": "BLEACH: Thousand-Year Blood War",
+       "native": "BLEACH 千年血戦篇"
+      },
+      "synonyms": [
+       "بليتش: حرب الألف سنة الدموية",
+       "Bleach: La guerre sanglante de mille ans",
+       "BLEACH TYBW"
+      ]
+     },
+     {
+      "id": 185874,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen - Kashin-tan",
+       "english": "BLEACH: Thousand-Year Blood War - The Calamity",
+       "native": "BLEACH 千年血戦篇-禍進譚-"
+      },
+      "synonyms": [
+       "BLEACH: Thousand-Year Blood War Part 4",
+       "BLEACH 千年血戦篇 第4クール",
+       "BLEACH: Thousand-Year Blood War The Final Season",
+       "BLEACH TYBW"
+      ]
+     },
+     {
+      "id": 159322,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen - Ketsubetsu-tan",
+       "english": "BLEACH: Thousand-Year Blood War - The Separation",
+       "native": "BLEACH 千年血戦篇-訣別譚-"
+      },
+      "synonyms": [
+       "BLEACH: Thousand Year Blood War Part 2",
+       "BLEACH 千年血戦篇 第2クール",
+       "BLEACH TYBW"
+      ]
+     },
+     {
+      "id": 169755,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen - Soukoku-tan",
+       "english": "BLEACH: Thousand-Year Blood War - The Conflict",
+       "native": "BLEACH 千年血戦篇-相剋譚-"
+      },
+      "synonyms": [
+       "BLEACH: Thousand Year Blood War Part 3",
+       "BLEACH 千年血戦篇 第3クール",
+       "BLEACH TYBW"
+      ]
+     }
+    ],
+    "Thousand-Year Blood War": [
+     {
+      "id": 116674,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen",
+       "english": "BLEACH: Thousand-Year Blood War",
+       "native": "BLEACH 千年血戦篇"
+      },
+      "synonyms": [
+       "بليتش: حرب الألف سنة الدموية",
+       "Bleach: La guerre sanglante de mille ans",
+       "BLEACH TYBW"
+      ]
+     },
+     {
+      "id": 159322,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen - Ketsubetsu-tan",
+       "english": "BLEACH: Thousand-Year Blood War - The Separation",
+       "native": "BLEACH 千年血戦篇-訣別譚-"
+      },
+      "synonyms": [
+       "BLEACH: Thousand Year Blood War Part 2",
+       "BLEACH 千年血戦篇 第2クール",
+       "BLEACH TYBW"
+      ]
+     },
+     {
+      "id": 169755,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen - Soukoku-tan",
+       "english": "BLEACH: Thousand-Year Blood War - The Conflict",
+       "native": "BLEACH 千年血戦篇-相剋譚-"
+      },
+      "synonyms": [
+       "BLEACH: Thousand Year Blood War Part 3",
+       "BLEACH 千年血戦篇 第3クール",
+       "BLEACH TYBW"
+      ]
+     },
+     {
+      "id": 185874,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen - Kashin-tan",
+       "english": "BLEACH: Thousand-Year Blood War - The Calamity",
+       "native": "BLEACH 千年血戦篇-禍進譚-"
+      },
+      "synonyms": [
+       "BLEACH: Thousand-Year Blood War Part 4",
+       "BLEACH 千年血戦篇 第4クール",
+       "BLEACH: Thousand-Year Blood War The Final Season",
+       "BLEACH TYBW"
+      ]
+     }
+    ],
+    "Bleach Thousand Year Blood War": [
+     {
+      "id": 116674,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen",
+       "english": "BLEACH: Thousand-Year Blood War",
+       "native": "BLEACH 千年血戦篇"
+      },
+      "synonyms": [
+       "بليتش: حرب الألف سنة الدموية",
+       "Bleach: La guerre sanglante de mille ans",
+       "BLEACH TYBW"
+      ]
+     },
+     {
+      "id": 159322,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen - Ketsubetsu-tan",
+       "english": "BLEACH: Thousand-Year Blood War - The Separation",
+       "native": "BLEACH 千年血戦篇-訣別譚-"
+      },
+      "synonyms": [
+       "BLEACH: Thousand Year Blood War Part 2",
+       "BLEACH 千年血戦篇 第2クール",
+       "BLEACH TYBW"
+      ]
+     },
+     {
+      "id": 169755,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen - Soukoku-tan",
+       "english": "BLEACH: Thousand-Year Blood War - The Conflict",
+       "native": "BLEACH 千年血戦篇-相剋譚-"
+      },
+      "synonyms": [
+       "BLEACH: Thousand Year Blood War Part 3",
+       "BLEACH 千年血戦篇 第3クール",
+       "BLEACH TYBW"
+      ]
+     },
+     {
+      "id": 185874,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen - Kashin-tan",
+       "english": "BLEACH: Thousand-Year Blood War - The Calamity",
+       "native": "BLEACH 千年血戦篇-禍進譚-"
+      },
+      "synonyms": [
+       "BLEACH: Thousand-Year Blood War Part 4",
+       "BLEACH 千年血戦篇 第4クール",
+       "BLEACH: Thousand-Year Blood War The Final Season",
+       "BLEACH TYBW"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 116674,
+    "match": "exact"
+   }
+  },
+  {
+   "title": "Bleach: Karaburi! - Gotei 13, Food Stall Devotion!",
+   "queries": [
+    "Bleach: Karaburi! - Gotei 13, Food Stall Devotion!",
+    "Gotei 13, Food Stall Devotion!",
+    "Bleach: Karaburi!",
+    "Bleach Karaburi Gotei 13 Food Stall Devotion"
+   ],
+   "answers": {
+    "Bleach: Karaburi! - Gotei 13, Food Stall Devotion!": [],
+    "Gotei 13, Food Stall Devotion!": [],
+    "Bleach: Karaburi!": [
+     {
+      "id": 100719,
+      "format": "OVA",
+      "title": {
+       "romaji": "BLEACH Colorful!: Gotei Juusan Yatai Daisakusen!",
+       "english": null,
+       "native": "BLEACH カラブリ！護廷十三屋台大作戦！"
+      },
+      "synonyms": [
+       "Bleach: Jump Festa 2008",
+       "Bleach KaraBuri!: Gotei Juusan Yatai Daisakusen!"
+      ]
+     }
+    ],
+    "Bleach Karaburi Gotei 13 Food Stall Devotion": []
+   },
+   "expect": null
+  },
+  {
+   "title": "Bleach: Thousand-Year Blood War - The Separation Recap",
+   "queries": [
+    "Bleach: Thousand-Year Blood War - The Separation Recap",
+    "The Separation Recap",
+    "Bleach: Thousand-Year Blood War",
+    "Bleach Thousand Year Blood War The Separation Recap"
+   ],
+   "answers": {
+    "Bleach: Thousand-Year Blood War - The Separation Recap": [],
+    "The Separation Recap": [],
+    "Bleach: Thousand-Year Blood War": [
+     {
+      "id": 116674,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen",
+       "english": "BLEACH: Thousand-Year Blood War",
+       "native": "BLEACH 千年血戦篇"
+      },
+      "synonyms": [
+       "بليتش: حرب الألف سنة الدموية",
+       "Bleach: La guerre sanglante de mille ans",
+       "BLEACH TYBW"
+      ]
+     },
+     {
+      "id": 185874,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen - Kashin-tan",
+       "english": "BLEACH: Thousand-Year Blood War - The Calamity",
+       "native": "BLEACH 千年血戦篇-禍進譚-"
+      },
+      "synonyms": [
+       "BLEACH: Thousand-Year Blood War Part 4",
+       "BLEACH 千年血戦篇 第4クール",
+       "BLEACH: Thousand-Year Blood War The Final Season",
+       "BLEACH TYBW"
+      ]
+     },
+     {
+      "id": 159322,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen - Ketsubetsu-tan",
+       "english": "BLEACH: Thousand-Year Blood War - The Separation",
+       "native": "BLEACH 千年血戦篇-訣別譚-"
+      },
+      "synonyms": [
+       "BLEACH: Thousand Year Blood War Part 2",
+       "BLEACH 千年血戦篇 第2クール",
+       "BLEACH TYBW"
+      ]
+     },
+     {
+      "id": 169755,
+      "format": "TV",
+      "title": {
+       "romaji": "BLEACH: Sennen Kessen-hen - Soukoku-tan",
+       "english": "BLEACH: Thousand-Year Blood War - The Conflict",
+       "native": "BLEACH 千年血戦篇-相剋譚-"
+      },
+      "synonyms": [
+       "BLEACH: Thousand Year Blood War Part 3",
+       "BLEACH 千年血戦篇 第3クール",
+       "BLEACH TYBW"
+      ]
+     }
+    ],
+    "Bleach Thousand Year Blood War The Separation Recap": []
+   },
+   "expect": {
+    "id": 159322,
+    "match": "close"
+   }
+  },
+  {
+   "title": "One Piece Movie 1",
+   "queries": [
+    "One Piece Movie 1",
+    "One Piece"
+   ],
+   "answers": {
+    "One Piece Movie 1": [],
+    "One Piece": [
+     {
+      "id": 21,
+      "format": "TV",
+      "title": {
+       "romaji": "ONE PIECE",
+       "english": "ONE PIECE",
+       "native": "ONE PIECE"
+      },
+      "synonyms": [
+       "ワンピース",
+       "海贼王",
+       "וואן פיס",
+       "ون بيس",
+       "วันพีซ",
+       "Vua Hải Tặc",
+       "All'arrembaggio!",
+       "Tutti all'arrembaggio!",
+       "Ντρέηκ, το Κυνήγι του Θησαυρού",
+       "OP",
+       "Ван-Пис"
+      ]
+     },
+     {
+      "id": 171630,
+      "format": null,
+      "title": {
+       "romaji": "THE ONE PIECE",
+       "english": "THE ONE PIECE",
+       "native": "THE ONE PIECE"
+      },
+      "synonyms": [
+       "ザワンピース"
+      ]
+     },
+     {
+      "id": 459,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "ONE PIECE (Movie)",
+       "english": "ONE PIECE: The Movie",
+       "native": "ONE PIECE (Movie)"
+      },
+      "synonyms": [
+       "One Piece: The Movie",
+       "One Piece (2000)",
+       "One Piece: La Película",
+       "วันพีซ เดอะมูฟวี่ 1 เกาะสมบัติแห่งวูนัน",
+       "Vua Hải Tặc: Đảo Châu Báu",
+       "One Piece: Golden Island Adventure",
+       "One Piece - Per tutto l'oro del mondo"
+      ]
+     },
+     {
+      "id": 19123,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ONE PIECE: Episode of Merry - Mou Hitori no Nakama no Monogatari",
+       "english": "One Piece: Episode of Merry - The Tale of One More Friend",
+       "native": "ONE PIECE エピソードオブメリー 〜もうひとりの仲間の物語〜"
+      },
+      "synonyms": [
+       "One Piece Special"
+      ]
+     },
+     {
+      "id": 188668,
+      "format": "ONA",
+      "title": {
+       "romaji": "Koisuru ONE PIECE",
+       "english": null,
+       "native": "恋するワンピース"
+      },
+      "synonyms": [
+       "One Piece in Love"
+      ]
+     },
+     {
+      "id": 15323,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ONE PIECE: Episode of Nami - Koukaishi no Namida to Nakama no Kizuna",
+       "english": null,
+       "native": "ONE PIECE エピソードオブナミ 〜航海士の涙と仲間の絆〜"
+      },
+      "synonyms": [
+       "One Piece Special"
+      ]
+     },
+     {
+      "id": 105143,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "ONE PIECE STAMPEDE",
+       "english": "One Piece: Stampede",
+       "native": "ONE PIECE STAMPEDE"
+      },
+      "synonyms": [
+       "ワンピース スタンピード",
+       "One Piece: Estampida",
+       "航海王：狂热行动",
+       "One Piece Film 14"
+      ]
+     },
+     {
+      "id": 197178,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ONE PIECE HEROINES",
+       "english": "ONE PIECE HEROINES",
+       "native": "ONE PIECE HEROINES"
+      },
+      "synonyms": [
+       "ONE PIECE HEROINES episode: NAMI"
+      ]
+     },
+     {
+      "id": 116054,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Noroi no One Piece",
+       "english": null,
+       "native": "呪いのワンピース"
+      },
+      "synonyms": [
+       "内田春菊の呪いのワンピース",
+       "The Living Dress",
+       "Uchida Shungiku no Noroi no One Piece"
+      ]
+     },
+     {
+      "id": 5252,
+      "format": "OVA",
+      "title": {
+       "romaji": "ONE PIECE: ROMANCE DAWN STORY",
+       "english": "One Piece: Romance Dawn Story",
+       "native": "ONE PIECE ロマンス ドーン ストーリー"
+      },
+      "synonyms": [
+       "One Piece Prototype"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 459,
+    "match": "close"
+   }
+  },
+  {
+   "title": "One Piece Film: Gold - Cine Mike Popcorn Advertisement",
+   "queries": [
+    "One Piece Film: Gold - Cine Mike Popcorn Advertisement",
+    "Cine Mike Popcorn Advertisement",
+    "One Piece Film: Gold",
+    "One Piece Film Gold Cine Mike Popcorn Advertisement"
+   ],
+   "answers": {
+    "One Piece Film: Gold - Cine Mike Popcorn Advertisement": [],
+    "Cine Mike Popcorn Advertisement": [],
+    "One Piece Film: Gold": [
+     {
+      "id": 21335,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "ONE PIECE FILM: GOLD",
+       "english": "One Piece Film: Gold",
+       "native": "ONE PIECE FILM GOLD"
+      },
+      "synonyms": [
+       "One Piece Film 13",
+       "航海王之黄金城"
+      ]
+     },
+     {
+      "id": 21880,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ONE PIECE FILM: GOLD - episode 0 711ver.",
+       "english": null,
+       "native": "ONE PIECE FILM GOLD 〜episode 0〜 711ver."
+      },
+      "synonyms": []
+     },
+     {
+      "id": 12859,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "ONE PIECE FILM: Z",
+       "english": "One Piece Film: Z",
+       "native": "ONE PIECE FILM Z"
+      },
+      "synonyms": [
+       "One Piece Film 12: Z",
+       "海贼王剧场版Z",
+       "One Piece Gold - Il film"
+      ]
+     }
+    ],
+    "One Piece Film Gold Cine Mike Popcorn Advertisement": []
+   },
+   "expect": null
+  },
+  {
+   "title": "One Piece: The Planetarium",
+   "queries": [
+    "One Piece: The Planetarium",
+    "The Planetarium",
+    "One Piece",
+    "One Piece The Planetarium"
+   ],
+   "answers": {
+    "One Piece: The Planetarium": [],
+    "The Planetarium": [
+     {
+      "id": 164192,
+      "format": "MUSIC",
+      "title": {
+       "romaji": "Planetarium",
+       "english": "Planetarium",
+       "native": "プラネタリウム"
+      },
+      "synonyms": [
+       "ホロライブ x DECO*27",
+       "Hololive x DECO*27",
+       "holo*27 MV"
+      ]
+     },
+     {
+      "id": 13499,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Himitsukessha Taka no Tsume THE PLANETARIUM: Burabura! Black Hole no Nazo",
+       "english": "Eagle Talon the Planetarium: Mystery of the Black Hole",
+       "native": "秘密結社鷹の爪 THE PLANETARIUM: ブラブラ！ブラックホールの謎"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 163274,
+      "format": "MUSIC",
+      "title": {
+       "romaji": "Bath Time Planetarium",
+       "english": "Bath Time Planetarium",
+       "native": "バスタイムプラネタリウム"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 103355,
+      "format": "MUSIC",
+      "title": {
+       "romaji": "WONDER",
+       "english": null,
+       "native": "『WONDER』"
+      },
+      "synonyms": [
+       "1000say - Live in Planetarium 1"
+      ]
+     },
+     {
+      "id": 17573,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Planetarium Uchuu Kyoudai: Itten no Hikari",
+       "english": null,
+       "native": "プラネタリウム 宇宙兄弟 ～一点のひかり～"
+      },
+      "synonyms": []
+     }
+    ],
+    "One Piece": [
+     {
+      "id": 21,
+      "format": "TV",
+      "title": {
+       "romaji": "ONE PIECE",
+       "english": "ONE PIECE",
+       "native": "ONE PIECE"
+      },
+      "synonyms": [
+       "ワンピース",
+       "海贼王",
+       "וואן פיס",
+       "ون بيس",
+       "วันพีซ",
+       "Vua Hải Tặc",
+       "All'arrembaggio!",
+       "Tutti all'arrembaggio!",
+       "Ντρέηκ, το Κυνήγι του Θησαυρού",
+       "OP",
+       "Ван-Пис"
+      ]
+     },
+     {
+      "id": 171630,
+      "format": null,
+      "title": {
+       "romaji": "THE ONE PIECE",
+       "english": "THE ONE PIECE",
+       "native": "THE ONE PIECE"
+      },
+      "synonyms": [
+       "ザワンピース"
+      ]
+     },
+     {
+      "id": 459,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "ONE PIECE (Movie)",
+       "english": "ONE PIECE: The Movie",
+       "native": "ONE PIECE (Movie)"
+      },
+      "synonyms": [
+       "One Piece: The Movie",
+       "One Piece (2000)",
+       "One Piece: La Película",
+       "วันพีซ เดอะมูฟวี่ 1 เกาะสมบัติแห่งวูนัน",
+       "Vua Hải Tặc: Đảo Châu Báu",
+       "One Piece: Golden Island Adventure",
+       "One Piece - Per tutto l'oro del mondo"
+      ]
+     },
+     {
+      "id": 19123,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ONE PIECE: Episode of Merry - Mou Hitori no Nakama no Monogatari",
+       "english": "One Piece: Episode of Merry - The Tale of One More Friend",
+       "native": "ONE PIECE エピソードオブメリー 〜もうひとりの仲間の物語〜"
+      },
+      "synonyms": [
+       "One Piece Special"
+      ]
+     },
+     {
+      "id": 188668,
+      "format": "ONA",
+      "title": {
+       "romaji": "Koisuru ONE PIECE",
+       "english": null,
+       "native": "恋するワンピース"
+      },
+      "synonyms": [
+       "One Piece in Love"
+      ]
+     },
+     {
+      "id": 15323,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ONE PIECE: Episode of Nami - Koukaishi no Namida to Nakama no Kizuna",
+       "english": null,
+       "native": "ONE PIECE エピソードオブナミ 〜航海士の涙と仲間の絆〜"
+      },
+      "synonyms": [
+       "One Piece Special"
+      ]
+     },
+     {
+      "id": 105143,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "ONE PIECE STAMPEDE",
+       "english": "One Piece: Stampede",
+       "native": "ONE PIECE STAMPEDE"
+      },
+      "synonyms": [
+       "ワンピース スタンピード",
+       "One Piece: Estampida",
+       "航海王：狂热行动",
+       "One Piece Film 14"
+      ]
+     },
+     {
+      "id": 197178,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ONE PIECE HEROINES",
+       "english": "ONE PIECE HEROINES",
+       "native": "ONE PIECE HEROINES"
+      },
+      "synonyms": [
+       "ONE PIECE HEROINES episode: NAMI"
+      ]
+     },
+     {
+      "id": 116054,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Noroi no One Piece",
+       "english": null,
+       "native": "呪いのワンピース"
+      },
+      "synonyms": [
+       "内田春菊の呪いのワンピース",
+       "The Living Dress",
+       "Uchida Shungiku no Noroi no One Piece"
+      ]
+     },
+     {
+      "id": 5252,
+      "format": "OVA",
+      "title": {
+       "romaji": "ONE PIECE: ROMANCE DAWN STORY",
+       "english": "One Piece: Romance Dawn Story",
+       "native": "ONE PIECE ロマンス ドーン ストーリー"
+      },
+      "synonyms": [
+       "One Piece Prototype"
+      ]
+     }
+    ],
+    "One Piece The Planetarium": []
+   },
+   "expect": null
+  },
+  {
+   "title": "One Piece: Departure to the Starry Sky",
+   "queries": [
+    "One Piece: Departure to the Starry Sky",
+    "Departure to the Starry Sky",
+    "One Piece",
+    "One Piece Departure to the Starry Sky"
+   ],
+   "answers": {
+    "One Piece: Departure to the Starry Sky": [],
+    "Departure to the Starry Sky": [],
+    "One Piece": [
+     {
+      "id": 21,
+      "format": "TV",
+      "title": {
+       "romaji": "ONE PIECE",
+       "english": "ONE PIECE",
+       "native": "ONE PIECE"
+      },
+      "synonyms": [
+       "ワンピース",
+       "海贼王",
+       "וואן פיס",
+       "ون بيس",
+       "วันพีซ",
+       "Vua Hải Tặc",
+       "All'arrembaggio!",
+       "Tutti all'arrembaggio!",
+       "Ντρέηκ, το Κυνήγι του Θησαυρού",
+       "OP",
+       "Ван-Пис"
+      ]
+     },
+     {
+      "id": 171630,
+      "format": null,
+      "title": {
+       "romaji": "THE ONE PIECE",
+       "english": "THE ONE PIECE",
+       "native": "THE ONE PIECE"
+      },
+      "synonyms": [
+       "ザワンピース"
+      ]
+     },
+     {
+      "id": 459,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "ONE PIECE (Movie)",
+       "english": "ONE PIECE: The Movie",
+       "native": "ONE PIECE (Movie)"
+      },
+      "synonyms": [
+       "One Piece: The Movie",
+       "One Piece (2000)",
+       "One Piece: La Película",
+       "วันพีซ เดอะมูฟวี่ 1 เกาะสมบัติแห่งวูนัน",
+       "Vua Hải Tặc: Đảo Châu Báu",
+       "One Piece: Golden Island Adventure",
+       "One Piece - Per tutto l'oro del mondo"
+      ]
+     },
+     {
+      "id": 19123,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ONE PIECE: Episode of Merry - Mou Hitori no Nakama no Monogatari",
+       "english": "One Piece: Episode of Merry - The Tale of One More Friend",
+       "native": "ONE PIECE エピソードオブメリー 〜もうひとりの仲間の物語〜"
+      },
+      "synonyms": [
+       "One Piece Special"
+      ]
+     },
+     {
+      "id": 188668,
+      "format": "ONA",
+      "title": {
+       "romaji": "Koisuru ONE PIECE",
+       "english": null,
+       "native": "恋するワンピース"
+      },
+      "synonyms": [
+       "One Piece in Love"
+      ]
+     },
+     {
+      "id": 15323,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ONE PIECE: Episode of Nami - Koukaishi no Namida to Nakama no Kizuna",
+       "english": null,
+       "native": "ONE PIECE エピソードオブナミ 〜航海士の涙と仲間の絆〜"
+      },
+      "synonyms": [
+       "One Piece Special"
+      ]
+     },
+     {
+      "id": 105143,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "ONE PIECE STAMPEDE",
+       "english": "One Piece: Stampede",
+       "native": "ONE PIECE STAMPEDE"
+      },
+      "synonyms": [
+       "ワンピース スタンピード",
+       "One Piece: Estampida",
+       "航海王：狂热行动",
+       "One Piece Film 14"
+      ]
+     },
+     {
+      "id": 197178,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ONE PIECE HEROINES",
+       "english": "ONE PIECE HEROINES",
+       "native": "ONE PIECE HEROINES"
+      },
+      "synonyms": [
+       "ONE PIECE HEROINES episode: NAMI"
+      ]
+     },
+     {
+      "id": 116054,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Noroi no One Piece",
+       "english": null,
+       "native": "呪いのワンピース"
+      },
+      "synonyms": [
+       "内田春菊の呪いのワンピース",
+       "The Living Dress",
+       "Uchida Shungiku no Noroi no One Piece"
+      ]
+     },
+     {
+      "id": 5252,
+      "format": "OVA",
+      "title": {
+       "romaji": "ONE PIECE: ROMANCE DAWN STORY",
+       "english": "One Piece: Romance Dawn Story",
+       "native": "ONE PIECE ロマンス ドーン ストーリー"
+      },
+      "synonyms": [
+       "One Piece Prototype"
+      ]
+     }
+    ],
+    "One Piece Departure to the Starry Sky": []
+   },
+   "expect": null
+  },
+  {
+   "title": "One Piece 3D2Y: 15th Anniversary",
+   "queries": [
+    "One Piece 3D2Y: 15th Anniversary",
+    "15th Anniversary",
+    "One Piece 3D2Y",
+    "One Piece 3D2Y 15th Anniversary"
+   ],
+   "answers": {
+    "One Piece 3D2Y: 15th Anniversary": [],
+    "15th Anniversary": [
+     {
+      "id": 213343,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "MAPPA 15th Anniversary Movie",
+       "english": null,
+       "native": "MAPPA 15th Anniversary Movie"
+      },
+      "synonyms": [
+       "生活",
+       "Seikatsu",
+       "生活（MAPPA 15th Anniversary ver.）"
+      ]
+     },
+     {
+      "id": 207082,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Cardfight!! Vanguard 15 Shuunen Kinen PV",
+       "english": null,
+       "native": "カードファイト!! ヴァンガード 15周年記念PV"
+      },
+      "synonyms": [
+       "Cardfight!! Vanguard 15th Anniversary"
+      ]
+     },
+     {
+      "id": 20835,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ONE PIECE \"3D2Y\": Ace no shi wo Koete! Luffy Nakama to no Chikai",
+       "english": "One Piece 3D2Y: Overcome Ace’s Death! Luffy’s Vow to his Friends",
+       "native": "ONE PIECE “3D2Y” エースの死を越えて! ルフィ仲間との誓い"
+      },
+      "synonyms": [
+       "One Piece Special 15th Anniversary"
+      ]
+     },
+     {
+      "id": 169319,
+      "format": "ONA",
+      "title": {
+       "romaji": "15th Anniversary Short Animation: Battle Spirits Shounen Toppa Bashin × Saikyou Ginga Ultimate Zero Battle Spirits",
+       "english": null,
+       "native": "15周年記念ショートアニメ『バトルスピリッツ 少年突破バシン』×『最強銀河 究極(アルティメット)ゼロ ～バトルスピリッツ～』"
+      },
+      "synonyms": []
+     }
+    ],
+    "One Piece 3D2Y": [
+     {
+      "id": 20835,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ONE PIECE \"3D2Y\": Ace no shi wo Koete! Luffy Nakama to no Chikai",
+       "english": "One Piece 3D2Y: Overcome Ace’s Death! Luffy’s Vow to his Friends",
+       "native": "ONE PIECE “3D2Y” エースの死を越えて! ルフィ仲間との誓い"
+      },
+      "synonyms": [
+       "One Piece Special 15th Anniversary"
+      ]
+     }
+    ],
+    "One Piece 3D2Y 15th Anniversary": []
+   },
+   "expect": {
+    "id": 20835,
+    "match": "close"
+   }
+  },
+  {
+   "title": "One Piece: Episode of Nami - Tears of a Navigator and the Bonds of Friends",
+   "queries": [
+    "One Piece: Episode of Nami - Tears of a Navigator and the Bonds of Friends",
+    "Tears of a Navigator and the Bonds of Friends",
+    "One Piece: Episode of Nami",
+    "One Piece Episode of Nami Tears of a Navigator and the Bonds of Friends"
+   ],
+   "answers": {
+    "One Piece: Episode of Nami - Tears of a Navigator and the Bonds of Friends": [],
+    "Tears of a Navigator and the Bonds of Friends": [],
+    "One Piece: Episode of Nami": [
+     {
+      "id": 197178,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ONE PIECE HEROINES",
+       "english": "ONE PIECE HEROINES",
+       "native": "ONE PIECE HEROINES"
+      },
+      "synonyms": [
+       "ONE PIECE HEROINES episode: NAMI"
+      ]
+     },
+     {
+      "id": 15323,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ONE PIECE: Episode of Nami - Koukaishi no Namida to Nakama no Kizuna",
+       "english": null,
+       "native": "ONE PIECE エピソードオブナミ 〜航海士の涙と仲間の絆〜"
+      },
+      "synonyms": [
+       "One Piece Special"
+      ]
+     }
+    ],
+    "One Piece Episode of Nami Tears of a Navigator and the Bonds of Friends": []
+   },
+   "expect": null
+  },
+  {
+   "title": "itan Attack on Titan: The Last Attack",
+   "queries": [
+    "itan Attack on Titan: The Last Attack",
+    "The Last Attack",
+    "itan Attack on Titan",
+    "itan Attack on Titan The Last Attack"
+   ],
+   "answers": {
+    "itan Attack on Titan: The Last Attack": [],
+    "The Last Attack": [],
+    "itan Attack on Titan": [],
+    "itan Attack on Titan The Last Attack": []
+   },
+   "expect": null
+  },
+  {
+   "title": "itan Attack on Titan: The Final Season Part 3",
+   "queries": [
+    "itan Attack on Titan: The Final Season Part 3",
+    "The Final Season Part 3",
+    "itan Attack on Titan",
+    "itan Attack on Titan The Final Season Part 3"
+   ],
+   "answers": {
+    "itan Attack on Titan: The Final Season Part 3": [],
+    "The Final Season Part 3": [
+     {
+      "id": 146984,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Shingeki no Kyojin: The Final Season - Kanketsu-hen Zenpen",
+       "english": "Attack on Titan Final Season THE FINAL CHAPTERS Special 1",
+       "native": "進撃の巨人 The Final Season完結編 前編"
+      },
+      "synonyms": [
+       "Shingeki no Kyojin: The Final Season Final Edition",
+       "Shingeki no Kyojin: The Final Season Part 3",
+       "ผ่าพิภพไททัน ภาค 4",
+       "ผ่าพิภพไททัน ไฟนอล ซีซั่น Part 3",
+       "Attack on Titan Final Season Part 3 Final Arc Part 1",
+       "Attack on Titan The Final Season The Final Part Special",
+       "Attack on Titan The Final Season The Final Part Part 1",
+       "حمله به تایتان فصل آخر قسمت ویژه 1 ",
+       "SnK 4",
+       "AoT 4"
+      ]
+     },
+     {
+      "id": 162314,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Shingeki no Kyojin: The Final Season - Kanketsu-hen Kouhen",
+       "english": "Attack on Titan Final Season THE FINAL CHAPTERS Special 2",
+       "native": "進撃の巨人 The Final Season完結編 後編"
+      },
+      "synonyms": [
+       "Shingeki no Kyojin: The Final Season Final Edition",
+       "Attack on Titan Final Season Part 3 Final Arc Part 2",
+       "Attack on Titan: The Final Season Part 4",
+       "Shingeki no Kyojin: The Final Season Part 4",
+       "SnK 4",
+       "AoT 4"
+      ]
+     }
+    ],
+    "itan Attack on Titan": [],
+    "itan Attack on Titan The Final Season Part 3": []
+   },
+   "expect": {
+    "id": 146984,
+    "match": "close"
+   }
+  },
+  {
+   "title": "itan Attack on Titan: Wings of Freedom",
+   "queries": [
+    "itan Attack on Titan: Wings of Freedom",
+    "Wings of Freedom",
+    "itan Attack on Titan",
+    "itan Attack on Titan Wings of Freedom"
+   ],
+   "answers": {
+    "itan Attack on Titan: Wings of Freedom": [],
+    "Wings of Freedom": [
+     {
+      "id": 20692,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Shingeki no Kyojin Kouhen: Jiyuu no Tsubasa",
+       "english": "Attack on Titan Part II: Wings of Freedom",
+       "native": "劇場版「進撃の巨人」後編～自由の翼～"
+      },
+      "synonyms": [
+       "Attack on Titan: Asas da Liberdade"
+      ]
+     }
+    ],
+    "itan Attack on Titan": [],
+    "itan Attack on Titan Wings of Freedom": []
+   },
+   "expect": null
+  },
+  {
+   "title": "itan Attack on Titan: Since That Day",
+   "queries": [
+    "itan Attack on Titan: Since That Day",
+    "Since That Day",
+    "itan Attack on Titan",
+    "itan Attack on Titan Since That Day"
+   ],
+   "answers": {
+    "itan Attack on Titan: Since That Day": [],
+    "Since That Day": [],
+    "itan Attack on Titan": [],
+    "itan Attack on Titan Since That Day": []
+   },
+   "expect": null
+  },
+  {
+   "title": "nline Sword Art Online II: Debriefing",
+   "queries": [
+    "nline Sword Art Online II: Debriefing",
+    "nline Sword Art Online II",
+    "nline Sword Art Online II Debriefing"
+   ],
+   "answers": {
+    "nline Sword Art Online II: Debriefing": [],
+    "nline Sword Art Online II": [],
+    "nline Sword Art Online II Debriefing": []
+   },
+   "expect": null
+  },
+  {
+   "title": "nline Sword Art Online: Alicization - Recollection",
+   "queries": [
+    "nline Sword Art Online: Alicization - Recollection",
+    "nline Sword Art Online: Alicization",
+    "nline Sword Art Online Alicization Recollection"
+   ],
+   "answers": {
+    "nline Sword Art Online: Alicization - Recollection": [],
+    "nline Sword Art Online: Alicization": [],
+    "nline Sword Art Online Alicization Recollection": []
+   },
+   "expect": null
+  },
+  {
+   "title": "nline Sword Art Online: Alicization - War of Underworld Recap",
+   "queries": [
+    "nline Sword Art Online: Alicization - War of Underworld Recap",
+    "War of Underworld Recap",
+    "nline Sword Art Online: Alicization",
+    "nline Sword Art Online Alicization War of Underworld Recap"
+   ],
+   "answers": {
+    "nline Sword Art Online: Alicization - War of Underworld Recap": [],
+    "War of Underworld Recap": [],
+    "nline Sword Art Online: Alicization": [],
+    "nline Sword Art Online Alicization War of Underworld Recap": []
+   },
+   "expect": null
+  },
+  {
+   "title": "nline Sword Art Online Alternative: Gun Gale Online - Refrain",
+   "queries": [
+    "nline Sword Art Online Alternative: Gun Gale Online - Refrain",
+    "nline Sword Art Online Alternative: Gun Gale Online",
+    "nline Sword Art Online Alternative Gun Gale Online Refrain"
+   ],
+   "answers": {
+    "nline Sword Art Online Alternative: Gun Gale Online - Refrain": [],
+    "nline Sword Art Online Alternative: Gun Gale Online": [],
+    "nline Sword Art Online Alternative Gun Gale Online Refrain": []
+   },
+   "expect": null
+  },
+  {
+   "title": "nline Sword Art Online: Alicization - War of Underworld Reflection",
+   "queries": [
+    "nline Sword Art Online: Alicization - War of Underworld Reflection",
+    "War of Underworld Reflection",
+    "nline Sword Art Online: Alicization",
+    "nline Sword Art Online Alicization War of Underworld Reflection"
+   ],
+   "answers": {
+    "nline Sword Art Online: Alicization - War of Underworld Reflection": [],
+    "War of Underworld Reflection": [],
+    "nline Sword Art Online: Alicization": [],
+    "nline Sword Art Online Alicization War of Underworld Reflection": []
+   },
+   "expect": null
+  },
+  {
+   "title": "Pokémon",
+   "queries": [
+    "Pokémon"
+   ],
+   "answers": {
+    "Pokémon": [
+     {
+      "id": 138699,
+      "format": "ONA",
+      "title": {
+       "romaji": "Pokémon Evolutions",
+       "english": "Pokémon Evolutions",
+       "native": "Pokémon Evolutions"
+      },
+      "synonyms": [
+       "Evoluzioni Pokémon",
+       "Pokémon Entwicklungen",
+       "Evoluciones Pokémon",
+       "Pokémon Evoluções"
+      ]
+     },
+     {
+      "id": 110639,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Toho Cinemas × Pokémon GO",
+       "english": "Toho Cinemas x Pokémon GO",
+       "native": "ＴＯＨＯシネマズ × 『Pokémon GO』"
+      },
+      "synonyms": []
+     }
+    ]
+   },
+   "expect": null
+  },
+  {
+   "title": "Pokémon The Series: XY",
+   "queries": [
+    "Pokémon The Series: XY",
+    "Pokémon The Series",
+    "Pokémon The Series XY"
+   ],
+   "answers": {
+    "Pokémon The Series: XY": [],
+    "Pokémon The Series": [
+     {
+      "id": 138699,
+      "format": "ONA",
+      "title": {
+       "romaji": "Pokémon Evolutions",
+       "english": "Pokémon Evolutions",
+       "native": "Pokémon Evolutions"
+      },
+      "synonyms": [
+       "Evoluzioni Pokémon",
+       "Pokémon Entwicklungen",
+       "Evoluciones Pokémon",
+       "Pokémon Evoluções"
+      ]
+     },
+     {
+      "id": 110639,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Toho Cinemas × Pokémon GO",
+       "english": "Toho Cinemas x Pokémon GO",
+       "native": "ＴＯＨＯシネマズ × 『Pokémon GO』"
+      },
+      "synonyms": []
+     }
+    ],
+    "Pokémon The Series XY": []
+   },
+   "expect": null
+  },
+  {
+   "title": "Pokémon the Series: XYZ",
+   "queries": [
+    "Pokémon the Series: XYZ",
+    "Pokémon the Series",
+    "Pokémon the Series XYZ"
+   ],
+   "answers": {
+    "Pokémon the Series: XYZ": [],
+    "Pokémon the Series": [
+     {
+      "id": 138699,
+      "format": "ONA",
+      "title": {
+       "romaji": "Pokémon Evolutions",
+       "english": "Pokémon Evolutions",
+       "native": "Pokémon Evolutions"
+      },
+      "synonyms": [
+       "Evoluzioni Pokémon",
+       "Pokémon Entwicklungen",
+       "Evoluciones Pokémon",
+       "Pokémon Evoluções"
+      ]
+     },
+     {
+      "id": 110639,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Toho Cinemas × Pokémon GO",
+       "english": "Toho Cinemas x Pokémon GO",
+       "native": "ＴＯＨＯシネマズ × 『Pokémon GO』"
+      },
+      "synonyms": []
+     }
+    ],
+    "Pokémon the Series XYZ": []
+   },
+   "expect": null
+  },
+  {
+   "title": "Pokemon Diamond & Pearl",
+   "queries": [
+    "Pokemon Diamond & Pearl",
+    "Pokemon Diamond Pearl"
+   ],
+   "answers": {
+    "Pokemon Diamond & Pearl": [
+     {
+      "id": 10302,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Pocket Monsters Diamond & Pearl Tokubetsu-hen",
+       "english": null,
+       "native": "ポケットモンスター ダイヤモンド・パール 特別編"
+      },
+      "synonyms": [
+       "Pokemon: Battle Dimension",
+       "Pokémon Diamond & Pearl: Battle Dimension",
+       "Pokémon Diamond"
+      ]
+     },
+     {
+      "id": 1565,
+      "format": "TV",
+      "title": {
+       "romaji": "Pocket Monsters Diamond & Pearl",
+       "english": "Pokémon the Series: Diamond and Pearl",
+       "native": "ポケットモンスター ダイヤモンド&パール"
+      },
+      "synonyms": [
+       "Pocket Monsters: Diamond & Pearl",
+       "Diamond and Pearl",
+       "DP: Battle Dimension",
+       "DP: Galactic Battles",
+       "Pokemon: Diamond and Pearl",
+       "Pokémon-serien: Pokémon Diamond og Pearl",
+       "פוקימון יהלום ופנינה",
+       "Serie Pokémon Diamante e Perla",
+       "Pokémon série: Diamant a Perla",
+       "Pokémon Serien: Diamond and Pearl",
+       "Pokémon-sarja: Timantti ja helmi",
+       "Pokémon – Die TV-Serie: Diamant und Perl",
+       "Pokémon, la série : Diamant et Perle",
+       "포켓몬스터 DP",
+       "Pokémon, Seria: Diament i Perła",
+       "Serie Pokémon Diamante y Perla",
+       "La Serie Pokémon: Diamante y Perla"
+      ]
+     }
+    ],
+    "Pokemon Diamond Pearl": [
+     {
+      "id": 1565,
+      "format": "TV",
+      "title": {
+       "romaji": "Pocket Monsters Diamond & Pearl",
+       "english": "Pokémon the Series: Diamond and Pearl",
+       "native": "ポケットモンスター ダイヤモンド&パール"
+      },
+      "synonyms": [
+       "Pocket Monsters: Diamond & Pearl",
+       "Diamond and Pearl",
+       "DP: Battle Dimension",
+       "DP: Galactic Battles",
+       "Pokemon: Diamond and Pearl",
+       "Pokémon-serien: Pokémon Diamond og Pearl",
+       "פוקימון יהלום ופנינה",
+       "Serie Pokémon Diamante e Perla",
+       "Pokémon série: Diamant a Perla",
+       "Pokémon Serien: Diamond and Pearl",
+       "Pokémon-sarja: Timantti ja helmi",
+       "Pokémon – Die TV-Serie: Diamant und Perl",
+       "Pokémon, la série : Diamant et Perle",
+       "포켓몬스터 DP",
+       "Pokémon, Seria: Diament i Perła",
+       "Serie Pokémon Diamante y Perla",
+       "La Serie Pokémon: Diamante y Perla"
+      ]
+     },
+     {
+      "id": 10302,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Pocket Monsters Diamond & Pearl Tokubetsu-hen",
+       "english": null,
+       "native": "ポケットモンスター ダイヤモンド・パール 特別編"
+      },
+      "synonyms": [
+       "Pokemon: Battle Dimension",
+       "Pokémon Diamond & Pearl: Battle Dimension",
+       "Pokémon Diamond"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 1565,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Pokémon: Black & White: Rival Destinies",
+   "queries": [
+    "Pokémon: Black & White: Rival Destinies",
+    "Rival Destinies",
+    "Pokémon: Black & White",
+    "Pokémon Black White Rival Destinies"
+   ],
+   "answers": {
+    "Pokémon: Black & White: Rival Destinies": [],
+    "Rival Destinies": [
+     {
+      "id": 14093,
+      "format": "TV",
+      "title": {
+       "romaji": "Pocket Monsters Best Wishes! Season 2",
+       "english": "Pokémon BW: Rival Destinies",
+       "native": "ポケットモンスター ベストウイッシュ シーズン2"
+      },
+      "synonyms": [
+       "Pocket Monsters: Best Wishes! 2",
+       "Pokemon: Rival Destinies",
+       "Pokémon: BW Rivaliserende skjebner",
+       "Pokémon Nero e Bianco: Destini Rivali",
+       "Pokémon Černý a Bílý: Opačné Osudy",
+       "Pokémon: BW Rivaliserende Lotsbestemmingen",
+       "Pokémon: BW Kilpailevat kohtalot",
+       "Pokémon Noir & Blanc: Destinées Rivales",
+       "Pokémon Schwarz & Weiß: Rivalen des Schicksals",
+       "Πόκεμον Μαύρο & Άσπρο: Αντίπαλα Πεπρωμένα",
+       "पोकेमोन: BW राईवल डेस्टिनीस",
+       "Pokémon Czerń i Biel: Ścieżki Przeznaczenia",
+       "Pokémon Preto e Branco: Destinos Rivais",
+       "Покемон: Чёрное и Белое - Судьбы Соперников",
+       "Покемон: ЧБ Судьбы соперников",
+       "Pokémon Negro y Blanco: Destinos Rivales",
+       "Pokémon: BW Rivaliserande Öden",
+       "பொகெமொன்: BW ரைவல் டெஸ்டினிஸ்",
+       "పోకీమాన్: BW రివల్ డెస్టినీస్",
+       "Pokémon Siyah ve Beyaz: Rakip Yazgılar﻿"
+      ]
+     }
+    ],
+    "Pokémon: Black & White": [],
+    "Pokémon Black White Rival Destinies": []
+   },
+   "expect": null
+  },
+  {
+   "title": "onan Detective Conan Movie 08: Time Travel of the Silver Sky Recap",
+   "queries": [
+    "onan Detective Conan Movie 08: Time Travel of the Silver Sky Recap",
+    "Time Travel of the Silver Sky Recap",
+    "onan Detective Conan Movie 08",
+    "onan Detective Conan Time Travel of the Silver Sky Recap"
+   ],
+   "answers": {
+    "onan Detective Conan Movie 08: Time Travel of the Silver Sky Recap": [],
+    "Time Travel of the Silver Sky Recap": [],
+    "onan Detective Conan Movie 08": [],
+    "onan Detective Conan Time Travel of the Silver Sky Recap": []
+   },
+   "expect": null
+  },
+  {
+   "title": "Love Live! School Idol Project: Sunshine!! 2nd Season",
+   "queries": [
+    "Love Live! School Idol Project: Sunshine!! 2nd Season",
+    "Sunshine!! 2nd Season",
+    "Love Live! School Idol Project",
+    "Love Live School Idol Project Sunshine 2nd Season"
+   ],
+   "answers": {
+    "Love Live! School Idol Project: Sunshine!! 2nd Season": [],
+    "Sunshine!! 2nd Season": [
+     {
+      "id": 98349,
+      "format": "TV",
+      "title": {
+       "romaji": "Love Live! Sunshine!! 2nd Season",
+       "english": "Love Live! Sunshine!! Season 2",
+       "native": "ラブライブ！サンシャイン!! 2nd Season"
+      },
+      "synonyms": []
+     }
+    ],
+    "Love Live! School Idol Project": [
+     {
+      "id": 15051,
+      "format": "TV",
+      "title": {
+       "romaji": "Love Live! School idol project",
+       "english": "Love Live! School Idol Project",
+       "native": "ラブライブ! School idol project"
+      },
+      "synonyms": [
+       "Живая любовь: проект \"Школьный идол\""
+      ]
+     },
+     {
+      "id": 20554,
+      "format": "OVA",
+      "title": {
+       "romaji": "Love Live! School idol project OVA",
+       "english": null,
+       "native": "ラブライブ! School idol project OVA"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 20766,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Love Live! The School Idol Movie",
+       "english": "Love Live! The School Idol Movie",
+       "native": "ラブライブ！The School Idol Movie"
+      },
+      "synonyms": [
+       "Gekijouban Love Live!",
+       "Love Live! School Idol Project Movie"
+      ]
+     },
+     {
+      "id": 19111,
+      "format": "TV",
+      "title": {
+       "romaji": "Love Live! School idol project 2nd Season",
+       "english": "Love Live! School Idol Project 2nd Season",
+       "native": "ラブライブ! School idol project 2期"
+      },
+      "synonyms": [
+       "Живая любовь: проект \"Школьный идол\". 2 сезон"
+      ]
+     },
+     {
+      "id": 21584,
+      "format": "TV",
+      "title": {
+       "romaji": "Love Live! Sunshine!!",
+       "english": "Love Live! Sunshine!!",
+       "native": "ラブライブ！サンシャイン!!"
+      },
+      "synonyms": [
+       "Love Live! School Idol Project Sunshine!!"
+      ]
+     },
+     {
+      "id": 9930,
+      "format": "MUSIC",
+      "title": {
+       "romaji": "Snow Halation",
+       "english": "Snow Halation",
+       "native": "Snow Halation"
+      },
+      "synonyms": [
+       "Love Live! School Idol Project: Snow Halation",
+       "スノー・ハレーション"
+      ]
+     },
+     {
+      "id": 14951,
+      "format": "MUSIC",
+      "title": {
+       "romaji": "Wonderful Rush",
+       "english": null,
+       "native": "Wonderful Rush"
+      },
+      "synonyms": [
+       "Love Live! School Idol Project: Wonderful Rush"
+      ]
+     },
+     {
+      "id": 12637,
+      "format": "MUSIC",
+      "title": {
+       "romaji": "Mo Gyutto \"love\" de Sekkinchuu!",
+       "english": null,
+       "native": "もぎゅっと\"love\"で接近中!"
+      },
+      "synonyms": [
+       "Love Live! School Idol Project: Mo Gyutto Love de Sekkinchuu!"
+      ]
+     },
+     {
+      "id": 9907,
+      "format": "MUSIC",
+      "title": {
+       "romaji": "Bokura no LIVE Kimi to no LIFE",
+       "english": null,
+       "native": "僕らのLIVE 君とのLIFE"
+      },
+      "synonyms": [
+       "Love Live! School Idol Project: Bokura no Live Kimi to no Life"
+      ]
+     },
+     {
+      "id": 175945,
+      "format": "MUSIC",
+      "title": {
+       "romaji": "Waai WaiWai WaiWaiWai!",
+       "english": "Waaai Wai Wai Wai Wai Wai!",
+       "native": "わーいわいわい　わいわいわい！"
+      },
+      "synonyms": [
+       "Y! YY! YYY!",
+       "Love Live! School Idol Project Sunshine!!: わーいわいわい わいわいわい！",
+       "Love Live! School Idol Project Sunshine!!: Waai WaiWai WaiWaiWai!"
+      ]
+     }
+    ],
+    "Love Live School Idol Project Sunshine 2nd Season": []
+   },
+   "expect": {
+    "id": 21584,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Love Live! The School Idol Movie: Gekijou Manner CM",
+   "queries": [
+    "Love Live! The School Idol Movie: Gekijou Manner CM",
+    "Gekijou Manner CM",
+    "Love Live! The School Idol Movie",
+    "Love Live The School Idol Gekijou Manner CM"
+   ],
+   "answers": {
+    "Love Live! The School Idol Movie: Gekijou Manner CM": [],
+    "Gekijou Manner CM": [],
+    "Love Live! The School Idol Movie": [
+     {
+      "id": 20766,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Love Live! The School Idol Movie",
+       "english": "Love Live! The School Idol Movie",
+       "native": "ラブライブ！The School Idol Movie"
+      },
+      "synonyms": [
+       "Gekijouban Love Live!",
+       "Love Live! School Idol Project Movie"
+      ]
+     },
+     {
+      "id": 100965,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Love Live! Sunshine!! The School Idol Movie: Over the Rainbow",
+       "english": "Love Live! Sunshine!! The School Idol Movie: Over the Rainbow",
+       "native": "ラブライブ！サンシャイン!! The School Idol Movie Over the Rainbow"
+      },
+      "synonyms": [
+       "Love Live! Sunshine!! A Escola de Idol O Filme: Além do Arco Íris"
+      ]
+     },
+     {
+      "id": 166476,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Love Live! Nijigasaki Gakuen School Idol Doukoukai: Kanketsu-hen 1",
+       "english": "Love Live! Nijigasaki High School Idol Club The Movie – Finale – Chapter 1",
+       "native": "ラブライブ！虹ヶ咲学園スクールアイドル同好会 完結編 第1章"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 186603,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Love Live! Nijigasaki Gakuen School Idol Doukoukai: Kanketsu-hen Saishuushou",
+       "english": null,
+       "native": "ラブライブ！虹ヶ咲学園スクールアイドル同好会 完結編 最終章"
+      },
+      "synonyms": [
+       "Love Live! Nijigasaki High School Idol Club the Movie - Finale - Chapter 3",
+       "ラブライブ！虹ヶ咲学園スクールアイドル同好会 完結編 第3章",
+       "Love Live! Nijigasaki Gakuen School Idol Doukoukai: Kanketsu-hen 3"
+      ]
+     },
+     {
+      "id": 183384,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Love Live! Nijigasaki Gakuen School Idol Doukoukai: Kanketsu-hen 2",
+       "english": null,
+       "native": "ラブライブ！虹ヶ咲学園スクールアイドル同好会 完結編 第2章"
+      },
+      "synonyms": [
+       "Love Live! Nijigasaki High School Idol Club The Movie – Finale –  Chapter 2"
+      ]
+     }
+    ],
+    "Love Live The School Idol Gekijou Manner CM": []
+   },
+   "expect": null
+  },
+  {
+   "title": "Futari wa Precure: Max Heart Movie 1",
+   "queries": [
+    "Futari wa Precure: Max Heart Movie 1",
+    "Max Heart Movie 1",
+    "Futari wa Precure",
+    "Futari wa Precure Max Heart"
+   ],
+   "answers": {
+    "Futari wa Precure: Max Heart Movie 1": [],
+    "Max Heart Movie 1": [],
+    "Futari wa Precure": [
+     {
+      "id": 603,
+      "format": "TV",
+      "title": {
+       "romaji": "Futari wa Precure",
+       "english": "Precure",
+       "native": "ふたりはプリキュア"
+      },
+      "synonyms": [
+       "Pretty Cure"
+      ]
+     },
+     {
+      "id": 1929,
+      "format": "TV",
+      "title": {
+       "romaji": "Futari wa Precure: Max Heart",
+       "english": "PreCure Max Heart",
+       "native": "ふたりはプリキュア Max Heart"
+      },
+      "synonyms": [
+       "Pretty Cure: MaxHeart",
+       "We Are Pretty Cure: Max Heart",
+       "Pretty Cure Max Heart "
+      ]
+     },
+     {
+      "id": 101908,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "HUGtto! Precure ♡ Futari wa Precure All Stars Memories",
+       "english": null,
+       "native": "ＨＵＧっと！プリキュア♡ふたりはプリキュア オールスターズメモリーズ"
+      },
+      "synonyms": [
+       "Hugtto! Pretty Cure x Futari wa Pretty Cure Movie: All Stars Memories"
+      ]
+     },
+     {
+      "id": 1534,
+      "format": "TV",
+      "title": {
+       "romaji": "Futari wa Precure: Splash☆Star",
+       "english": "PreCure Splash Star",
+       "native": "ふたりはプリキュア Splash☆Star"
+      },
+      "synonyms": [
+       "Pretty Cure Splash☆Star"
+      ]
+     },
+     {
+      "id": 1930,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Futari wa Precure: Max Heart (Movie)",
+       "english": null,
+       "native": "ふたりはプリキュアー マックスハート (映画)"
+      },
+      "synonyms": [
+       "Precure Movie",
+       "Eiga Futari wa Pretty Cure: Max Heart"
+      ]
+     },
+     {
+      "id": 104436,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Futari wa Precure: Splash☆Star - Maji★Doki♥3D Theater",
+       "english": null,
+       "native": "ふたりはプリキュア Splash Star マジッ★ドキッ♥ 3Dシアター"
+      },
+      "synonyms": [
+       "Futari wa Precure: Splash☆Star Maji★Doki♥Theater",
+       "ふたりはプリキュア Splash Star マジッ★ドキッ♥ シアター."
+      ]
+     },
+     {
+      "id": 1931,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Futari wa Precure: Max Heart 2 - Yukizora no Tomodachi",
+       "english": null,
+       "native": "ふたりはプリキュア Max Heart2 雪空のともだち"
+      },
+      "synonyms": [
+       "Pretty Cure Movie 2",
+       "Eiga Futari wa Precure: Max Heart 2 - Yukizora no Tomodachi",
+       "Pretty Cure Max Heart 2 - Amici per sempre"
+      ]
+     },
+     {
+      "id": 4124,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Futari wa Precure: Splash☆Star - Tick Tack Kiki Ippatsu!",
+       "english": null,
+       "native": "ふたりはプリキュア Splash Star チクタク危機一髪!"
+      },
+      "synonyms": [
+       "Pretty Cure Splash Star Tic-Tac Crisis Hanging by a Thin Thread!",
+       "Pretty Cure Splash☆Star - Le leggendarie guerriere"
+      ]
+     },
+     {
+      "id": 198654,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Meitantei Precure! Fushigi na Niwa to Futari no Himitsu",
+       "english": null,
+       "native": "名探偵プリキュア！不思議な庭と2人の秘密"
+      },
+      "synonyms": []
+     }
+    ],
+    "Futari wa Precure Max Heart": [
+     {
+      "id": 1929,
+      "format": "TV",
+      "title": {
+       "romaji": "Futari wa Precure: Max Heart",
+       "english": "PreCure Max Heart",
+       "native": "ふたりはプリキュア Max Heart"
+      },
+      "synonyms": [
+       "Pretty Cure: MaxHeart",
+       "We Are Pretty Cure: Max Heart",
+       "Pretty Cure Max Heart "
+      ]
+     },
+     {
+      "id": 1930,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Futari wa Precure: Max Heart (Movie)",
+       "english": null,
+       "native": "ふたりはプリキュアー マックスハート (映画)"
+      },
+      "synonyms": [
+       "Precure Movie",
+       "Eiga Futari wa Pretty Cure: Max Heart"
+      ]
+     },
+     {
+      "id": 1931,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Futari wa Precure: Max Heart 2 - Yukizora no Tomodachi",
+       "english": null,
+       "native": "ふたりはプリキュア Max Heart2 雪空のともだち"
+      },
+      "synonyms": [
+       "Pretty Cure Movie 2",
+       "Eiga Futari wa Precure: Max Heart 2 - Yukizora no Tomodachi",
+       "Pretty Cure Max Heart 2 - Amici per sempre"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 1930,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Wonderful Precure! Movie",
+   "queries": [
+    "Wonderful Precure! Movie",
+    "Wonderful Precure"
+   ],
+   "answers": {
+    "Wonderful Precure! Movie": [
+     {
+      "id": 169403,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Wonderful Precure! The Movie! Dokidoki♡Game no Sekai de Daibouken!",
+       "english": null,
+       "native": "わんだふるぷりきゅあ！ざ・むーびー！ドキドキ♡ゲームの世界で大冒険！"
+      },
+      "synonyms": []
+     }
+    ],
+    "Wonderful Precure": [
+     {
+      "id": 171030,
+      "format": "TV",
+      "title": {
+       "romaji": "Wonderful Precure!",
+       "english": "Wonderful Precure!",
+       "native": "わんだふるぷりきゅあ！"
+      },
+      "synonyms": [
+       "WanPre",
+       "わんぷり"
+      ]
+     },
+     {
+      "id": 169403,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Wonderful Precure! The Movie! Dokidoki♡Game no Sekai de Daibouken!",
+       "english": null,
+       "native": "わんだふるぷりきゅあ！ざ・むーびー！ドキドキ♡ゲームの世界で大冒険！"
+      },
+      "synonyms": []
+     }
+    ]
+   },
+   "expect": {
+    "id": 171030,
+    "match": "close"
+   }
+  },
+  {
+   "title": "e shell Ghost in the Shell: Ghost Chaser",
+   "queries": [
+    "e shell Ghost in the Shell: Ghost Chaser",
+    "Ghost Chaser",
+    "e shell Ghost in the Shell",
+    "e shell Ghost in the Shell Ghost Chaser"
+   ],
+   "answers": {
+    "e shell Ghost in the Shell: Ghost Chaser": [],
+    "Ghost Chaser": [],
+    "e shell Ghost in the Shell": [],
+    "e shell Ghost in the Shell Ghost Chaser": []
+   },
+   "expect": null
+  },
+  {
+   "title": "e shell Ghost in the Shell: Stand Alone Complex: Tachikomatic Days Fan Disc",
+   "queries": [
+    "e shell Ghost in the Shell: Stand Alone Complex: Tachikomatic Days Fan Disc",
+    "Tachikomatic Days Fan Disc",
+    "e shell Ghost in the Shell: Stand Alone Complex",
+    "e shell Ghost in the Shell Stand Alone Complex Tachikomatic Days Fan Disc"
+   ],
+   "answers": {
+    "e shell Ghost in the Shell: Stand Alone Complex: Tachikomatic Days Fan Disc": [],
+    "Tachikomatic Days Fan Disc": [],
+    "e shell Ghost in the Shell: Stand Alone Complex": [],
+    "e shell Ghost in the Shell Stand Alone Complex Tachikomatic Days Fan Disc": []
+   },
+   "expect": null
+  },
+  {
+   "title": "e shell Ghost in the Shell: Stand Alone Complex 2045",
+   "queries": [
+    "e shell Ghost in the Shell: Stand Alone Complex 2045",
+    "Stand Alone Complex 2045",
+    "e shell Ghost in the Shell",
+    "e shell Ghost in the Shell Stand Alone Complex 2045"
+   ],
+   "answers": {
+    "e shell Ghost in the Shell: Stand Alone Complex 2045": [],
+    "Stand Alone Complex 2045": [],
+    "e shell Ghost in the Shell": [],
+    "e shell Ghost in the Shell Stand Alone Complex 2045": []
+   },
+   "expect": null
+  },
+  {
+   "title": "Mobile Suit Gundam: Iron-Blooded Orphans 2nd Season",
+   "queries": [
+    "Mobile Suit Gundam: Iron-Blooded Orphans 2nd Season",
+    "Iron-Blooded Orphans 2nd Season",
+    "Mobile Suit Gundam",
+    "Mobile Suit Gundam Iron Blooded Orphans 2nd Season"
+   ],
+   "answers": {
+    "Mobile Suit Gundam: Iron-Blooded Orphans 2nd Season": [
+     {
+      "id": 21749,
+      "format": "TV",
+      "title": {
+       "romaji": "Kidou Senshi Gundam: Tekketsu no Orphans 2",
+       "english": "Mobile Suit GUNDAM Iron Blooded Orphans 2",
+       "native": "機動戦士ガンダム 鉄血のオルフェンズ 2"
+      },
+      "synonyms": [
+       "Gundam IBO",
+       "G-Tekketsu"
+      ]
+     }
+    ],
+    "Iron-Blooded Orphans 2nd Season": [
+     {
+      "id": 21749,
+      "format": "TV",
+      "title": {
+       "romaji": "Kidou Senshi Gundam: Tekketsu no Orphans 2",
+       "english": "Mobile Suit GUNDAM Iron Blooded Orphans 2",
+       "native": "機動戦士ガンダム 鉄血のオルフェンズ 2"
+      },
+      "synonyms": [
+       "Gundam IBO",
+       "G-Tekketsu"
+      ]
+     }
+    ],
+    "Mobile Suit Gundam": [
+     {
+      "id": 80,
+      "format": "TV",
+      "title": {
+       "romaji": "Kidou Senshi Gundam",
+       "english": "Mobile Suit Gundam",
+       "native": "機動戦士ガンダム"
+      },
+      "synonyms": [
+       "MSG",
+       "Mobile Suit Gundam: 0079"
+      ]
+     },
+     {
+      "id": 1090,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Kidou Senshi Gundam I",
+       "english": "Mobile Suit Gundam I",
+       "native": "機動戦士ガンダムⅠ"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 6336,
+      "format": "OVA",
+      "title": {
+       "romaji": "Kidou Senshi Gundam UC",
+       "english": "Mobile Suit Gundam UC",
+       "native": "機動戦士ガンダムUC"
+      },
+      "synonyms": [
+       "Kidou Senshi Gundam Unicorn",
+       "Mobile Suit Gundam Unicorn"
+      ]
+     },
+     {
+      "id": 2581,
+      "format": "TV",
+      "title": {
+       "romaji": "Kidou Senshi Gundam 00",
+       "english": "Mobile Suit Gundam 00",
+       "native": "機動戦士ガンダム00"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 86,
+      "format": "TV",
+      "title": {
+       "romaji": "Kidou Senshi Gundam ZZ",
+       "english": "Mobile Suit Gundam ZZ",
+       "native": "機動戦士ガンダムZZ"
+      },
+      "synonyms": [
+       "Mobile Suit Gundam Double Zeta",
+       "Kidou Senshi Gundam Double Zeta"
+      ]
+     },
+     {
+      "id": 20756,
+      "format": "TV_SHORT",
+      "title": {
+       "romaji": "Kidou Senshi Gundam-san",
+       "english": "Mobile Suit Gundam-san",
+       "native": "機動戦士ガンダムさん"
+      },
+      "synonyms": [
+       "Gundam Sousei"
+      ]
+     },
+     {
+      "id": 10808,
+      "format": "TV",
+      "title": {
+       "romaji": "Kidou Senshi Gundam AGE",
+       "english": "Mobile Suit Gundam AGE",
+       "native": "機動戦士ガンダムAGE"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 90,
+      "format": "TV",
+      "title": {
+       "romaji": "Shin Kidou Senki Gundam Wing",
+       "english": "Mobile Suit Gundam Wing",
+       "native": "新機動戦記ガンダムW"
+      },
+      "synonyms": [
+       "Shin Kidou Senki Gundam W",
+       "New Mobile Report Gundam Wing"
+      ]
+     },
+     {
+      "id": 93,
+      "format": "TV",
+      "title": {
+       "romaji": "Kidou Senshi Gundam SEED",
+       "english": "Mobile Suit Gundam Seed",
+       "native": "機動戦士ガンダムSEED"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 88,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Kidou Senshi Gundam F91",
+       "english": "Mobile Suit Gundam F91",
+       "native": "機動戦士ガンダムF91"
+      },
+      "synonyms": []
+     }
+    ],
+    "Mobile Suit Gundam Iron Blooded Orphans 2nd Season": [
+     {
+      "id": 21749,
+      "format": "TV",
+      "title": {
+       "romaji": "Kidou Senshi Gundam: Tekketsu no Orphans 2",
+       "english": "Mobile Suit GUNDAM Iron Blooded Orphans 2",
+       "native": "機動戦士ガンダム 鉄血のオルフェンズ 2"
+      },
+      "synonyms": [
+       "Gundam IBO",
+       "G-Tekketsu"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 21749,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Naruto: Shippuuden Movie 5 - Blood Prison",
+   "queries": [
+    "Naruto: Shippuuden Movie 5 - Blood Prison",
+    "Blood Prison",
+    "Naruto: Shippuuden Movie 5",
+    "Naruto Shippuuden Blood Prison"
+   ],
+   "answers": {
+    "Naruto: Shippuuden Movie 5 - Blood Prison": [],
+    "Blood Prison": [
+     {
+      "id": 10589,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "NARUTO: Blood Prison",
+       "english": "Naruto Shippuden the Movie: Blood Prison",
+       "native": "劇場版 NARUTO -ナルト- ブラッド・プリズン"
+      },
+      "synonyms": [
+       "Naruto Movie 8",
+       "Naruto Shippuuden Movie 5",
+       "Naruto Shippūden la película: Prisión de sangre",
+       "Naruto Shippuden Movie 05: La prigione insanguinata"
+      ]
+     }
+    ],
+    "Naruto: Shippuuden Movie 5": [
+     {
+      "id": 10589,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "NARUTO: Blood Prison",
+       "english": "Naruto Shippuden the Movie: Blood Prison",
+       "native": "劇場版 NARUTO -ナルト- ブラッド・プリズン"
+      },
+      "synonyms": [
+       "Naruto Movie 8",
+       "Naruto Shippuuden Movie 5",
+       "Naruto Shippūden la película: Prisión de sangre",
+       "Naruto Shippuden Movie 05: La prigione insanguinata"
+      ]
+     }
+    ],
+    "Naruto Shippuuden Blood Prison": []
+   },
+   "expect": {
+    "id": 10589,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Naruto OVA3: Hidden Leaf Village Grand Sports Festival",
+   "queries": [
+    "Naruto OVA3: Hidden Leaf Village Grand Sports Festival",
+    "Hidden Leaf Village Grand Sports Festival",
+    "Naruto OVA3",
+    "Naruto Hidden Leaf Village Grand Sports Festival"
+   ],
+   "answers": {
+    "Naruto OVA3: Hidden Leaf Village Grand Sports Festival": [],
+    "Hidden Leaf Village Grand Sports Festival": [
+     {
+      "id": 2248,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "NARUTO: Dai Katsugeki!! Yuki Hime Shinobu Houjou Dattebayo! Special: Konoha Annual Sports Festival",
+       "english": "Hidden Leaf Village Grand Sports Festival",
+       "native": "木ノ葉の里と大うん動会"
+      },
+      "synonyms": [
+       "Gekijouban Naruto: Dai Katsugeki! Yuki Hime Ninpouchou Datte ba yo! - S1 Konoha Annual Sports Festival",
+       "Konoha no Sato no Daiun Douaki"
+      ]
+     }
+    ],
+    "Naruto OVA3": [
+     {
+      "id": 1074,
+      "format": "OVA",
+      "title": {
+       "romaji": "NARUTO: Narutimate Hero 3: Tsui ni Gekitotsu! Jounin VS Genin!! Musabetsu Dairansen Taikai Kaisai!!",
+       "english": null,
+       "native": "NARUTO -ナルト- ナルティメットヒーロー3 ついに激突! 上忍VS下忍!! 無差別大乱戦大会開催!!"
+      },
+      "synonyms": [
+       "Naruto Narutimate Hero 3 OVA",
+       "Naruto: Finally a Clash!! Jounin vs. Genin!"
+      ]
+     }
+    ],
+    "Naruto Hidden Leaf Village Grand Sports Festival": []
+   },
+   "expect": {
+    "id": 2248,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Detective Conan Movie 16: The Eleventh Striker",
+   "queries": [
+    "Detective Conan Movie 16: The Eleventh Striker",
+    "The Eleventh Striker",
+    "Detective Conan Movie 16",
+    "Detective Conan The Eleventh Striker"
+   ],
+   "answers": {
+    "Detective Conan Movie 16: The Eleventh Striker": [],
+    "The Eleventh Striker": [
+     {
+      "id": 12117,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Meitantei Conan: 11 Nin-me no Striker",
+       "english": "Detective Conan: The Eleventh Striker",
+       "native": "劇場版　名探偵コナン　11人目のストライカー"
+      },
+      "synonyms": [
+       "Detective Conan Movie 16: 11 Nin-me no Striker",
+       "Meitantei Conan Movie 16: 11 Nin-me no Striker",
+       "Detektiv Conan: Der 11. Stürmer",
+       "Detective Conan Movie 16: L’undicesimo attaccante",
+       "Détective Conan : Le Onzième Attaquant",
+       "Case Closed: The Eleventh Striker"
+      ]
+     }
+    ],
+    "Detective Conan Movie 16": [
+     {
+      "id": 12117,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Meitantei Conan: 11 Nin-me no Striker",
+       "english": "Detective Conan: The Eleventh Striker",
+       "native": "劇場版　名探偵コナン　11人目のストライカー"
+      },
+      "synonyms": [
+       "Detective Conan Movie 16: 11 Nin-me no Striker",
+       "Meitantei Conan Movie 16: 11 Nin-me no Striker",
+       "Detektiv Conan: Der 11. Stürmer",
+       "Detective Conan Movie 16: L’undicesimo attaccante",
+       "Détective Conan : Le Onzième Attaquant",
+       "Case Closed: The Eleventh Striker"
+      ]
+     }
+    ],
+    "Detective Conan The Eleventh Striker": [
+     {
+      "id": 12117,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Meitantei Conan: 11 Nin-me no Striker",
+       "english": "Detective Conan: The Eleventh Striker",
+       "native": "劇場版　名探偵コナン　11人目のストライカー"
+      },
+      "synonyms": [
+       "Detective Conan Movie 16: 11 Nin-me no Striker",
+       "Meitantei Conan Movie 16: 11 Nin-me no Striker",
+       "Detektiv Conan: Der 11. Stürmer",
+       "Detective Conan Movie 16: L’undicesimo attaccante",
+       "Détective Conan : Le Onzième Attaquant",
+       "Case Closed: The Eleventh Striker"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 12117,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Attack on Titan: Wings of Freedom",
+   "queries": [
+    "Attack on Titan: Wings of Freedom",
+    "Wings of Freedom",
+    "Attack on Titan",
+    "Attack on Titan Wings of Freedom"
+   ],
+   "answers": {
+    "Attack on Titan: Wings of Freedom": [
+     {
+      "id": 20692,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Shingeki no Kyojin Kouhen: Jiyuu no Tsubasa",
+       "english": "Attack on Titan Part II: Wings of Freedom",
+       "native": "劇場版「進撃の巨人」後編～自由の翼～"
+      },
+      "synonyms": [
+       "Attack on Titan: Asas da Liberdade"
+      ]
+     }
+    ],
+    "Wings of Freedom": [
+     {
+      "id": 20692,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Shingeki no Kyojin Kouhen: Jiyuu no Tsubasa",
+       "english": "Attack on Titan Part II: Wings of Freedom",
+       "native": "劇場版「進撃の巨人」後編～自由の翼～"
+      },
+      "synonyms": [
+       "Attack on Titan: Asas da Liberdade"
+      ]
+     }
+    ],
+    "Attack on Titan": [
+     {
+      "id": 16498,
+      "format": "TV",
+      "title": {
+       "romaji": "Shingeki no Kyojin",
+       "english": "Attack on Titan",
+       "native": "進撃の巨人"
+      },
+      "synonyms": [
+       "SnK",
+       "AoT",
+       "Ataque a los Titanes",
+       "Ataque dos Titãs",
+       "L'Attacco dei Giganti",
+       "מתקפת הטיטאנים",
+       "进击的巨人",
+       "L’Attaque des Titans",
+       "الهجوم على العمالقة",
+       "ผ่าพิภพไททัน",
+       "حمله به تایتان",
+       "Ataque de Titãs",
+       "Atak Tytanów",
+       "Атака титанов",
+       "Đại Chiến Titan"
+      ]
+     },
+     {
+      "id": 110277,
+      "format": "TV",
+      "title": {
+       "romaji": "Shingeki no Kyojin: The Final Season",
+       "english": "Attack on Titan Final Season",
+       "native": "進撃の巨人 The Final Season"
+      },
+      "synonyms": [
+       "SnK 4",
+       "AoT 4",
+       "Shingeki no Kyojin 4",
+       "進撃の巨人4",
+       "Attack on Titan Season 4",
+       "진격의 거인 더 파이널 시즌",
+       "מתקפת הטיטאנים העונה האחרונה",
+       "L'Attaque des Titans Saison Finale",
+       "L'Attacco dei Giganti 4",
+       "L'Attacco dei Giganti - La Stagione Finale",
+       "حمله به تایتان فصل 4 ",
+       " ผ่าพิภพไททัน ไฟนอล ซีซั่น",
+       "ผ่าพิภพไททัน Final Season",
+       "ผ่าพิภพไททัน ภาค 4",
+       "هجوم العملاقة الجزء الأخير",
+       "Атака Титанов: Финал"
+      ]
+     },
+     {
+      "id": 20958,
+      "format": "TV",
+      "title": {
+       "romaji": "Shingeki no Kyojin Season 2",
+       "english": "Attack on Titan Season 2",
+       "native": "進撃の巨人 Season２"
+      },
+      "synonyms": [
+       "SnK 2",
+       "AoT 2",
+       "+מתקפת הטיטאנים עונה 2",
+       "L'Attacco dei Giganti 2",
+       "L'Attacco dei Giganti - Seconda Stagione",
+       "ผ่าพิภพไททัน ภาค 2",
+       "حمله به تایتان فصل 2",
+       "Атака титанов 2"
+      ]
+     },
+     {
+      "id": 99147,
+      "format": "TV",
+      "title": {
+       "romaji": "Shingeki no Kyojin Season 3",
+       "english": "Attack on Titan Season 3",
+       "native": "進撃の巨人 Season３"
+      },
+      "synonyms": [
+       "SnK 3",
+       "AoT 3",
+       "מתקפת הטיטאנים עונה 3",
+       "L'Attacco dei Giganti 3",
+       "L'Attacco dei Giganti - Terza Stagione",
+       "ผ่าพิภพไททัน ภาค 3",
+       "حمله به تایتان فصل 3",
+       "ผ่าพิภพไททัน ภาค 3 Part 1",
+       "Атака титанов 3"
+      ]
+     },
+     {
+      "id": 20811,
+      "format": "OVA",
+      "title": {
+       "romaji": "Shingeki no Kyojin Gaiden: Kuinaki Sentaku",
+       "english": "Attack on Titan: No Regrets",
+       "native": "進撃の巨人 外伝 悔いなき選択"
+      },
+      "synonyms": [
+       "SnK",
+       "AoT",
+       "ผ่าพิภพไททัน ภาค OAD No Regret",
+       "ผ่าพิภพไททัน OAD ",
+       "Атака титанов: Выбор без сожалений"
+      ]
+     },
+     {
+      "id": 18397,
+      "format": "OVA",
+      "title": {
+       "romaji": "Shingeki no Kyojin OVA",
+       "english": "Attack on Titan OVA",
+       "native": "進撃の巨人 OVA"
+      },
+      "synonyms": [
+       "Attack on Titan: Ilse's Journal",
+       "Attack on Titan: A Sudden Visitor",
+       "ผ่าพิภพไททัน OAD",
+       "Атака титанов OVA"
+      ]
+     },
+     {
+      "id": 119113,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Shingeki no Kyojin: Chronicle",
+       "english": "Attack on Titan ~Chronicle~",
+       "native": "進撃の巨人 〜クロニクル〜"
+      },
+      "synonyms": [
+       "ผ่าพิภพไททัน Chronicle"
+      ]
+     },
+     {
+      "id": 19391,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Shingeki no Kyojin: Chimi Kyara Gekijou - Tondeke! Kunren Heidan",
+       "english": "Attack on Titan Picture Drama",
+       "native": "「進撃の巨人」ちみキャラ劇場\"とんでけ! 訓練兵団\""
+      },
+      "synonyms": []
+     },
+     {
+      "id": 99634,
+      "format": "OVA",
+      "title": {
+       "romaji": "Shingeki no Kyojin: LOST GIRLS",
+       "english": "Attack on Titan: Lost Girls",
+       "native": "進撃の巨人 LOST GIRLS"
+      },
+      "synonyms": [
+       "Episode 16.5A: Wall Sina. Goodbye",
+       "Episode 16.5B: Wall Sina. Goodbye",
+       "SnK",
+       "AoT",
+       "ผ่าพิภพไททัน OAD",
+       "ผ่าพิภพไททัน ภาค OAD Lost Girls",
+       "Атака титанов: Потерянные девушки"
+      ]
+     },
+     {
+      "id": 21281,
+      "format": "TV",
+      "title": {
+       "romaji": "Shingeki! Kyojin Chuugakkou",
+       "english": "Attack on Titan: Junior High",
+       "native": "進撃！巨人中学校"
+      },
+      "synonyms": [
+       "Ataque a los Titanes: Junior High",
+       "ผ่ามัธยมไททัน",
+       "ผ่า! มัธยมไททัน"
+      ]
+     }
+    ],
+    "Attack on Titan Wings of Freedom": [
+     {
+      "id": 20692,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Shingeki no Kyojin Kouhen: Jiyuu no Tsubasa",
+       "english": "Attack on Titan Part II: Wings of Freedom",
+       "native": "劇場版「進撃の巨人」後編～自由の翼～"
+      },
+      "synonyms": [
+       "Attack on Titan: Asas da Liberdade"
+      ]
+     }
+    ]
+   },
+   "expect": null
+  },
+  {
+   "title": "Pokemon The Movie 03: Spell Of The Unown",
+   "queries": [
+    "Pokemon The Movie 03: Spell Of The Unown",
+    "Spell Of The Unown",
+    "Pokemon The Movie 03",
+    "Pokemon Spell Of The Unown"
+   ],
+   "answers": {
+    "Pokemon The Movie 03: Spell Of The Unown": [],
+    "Spell Of The Unown": [
+     {
+      "id": 1118,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Pocket Monsters: Kesshoutou no Teiou ENTEI",
+       "english": "Pokémon 3: The Movie",
+       "native": "劇場版ポケットモンスター 結晶塔の帝王 ENTEI"
+      },
+      "synonyms": [
+       "Pokémon: Spell Of The Unown",
+       "Gekijouban Pocket Monsters: Lord of the UNKNOWN Tower ENTEI",
+       "Pokémon 3: Unowns forbannelse",
+       "Pokémon 3: Zaklęcie Unown",
+       "Pokémon 3: Unowns förtrollning",
+       "Pokémon 3 - L'incantesimo degli Unown"
+      ]
+     }
+    ],
+    "Pokemon The Movie 03": [],
+    "Pokemon Spell Of The Unown": [
+     {
+      "id": 1118,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Pocket Monsters: Kesshoutou no Teiou ENTEI",
+       "english": "Pokémon 3: The Movie",
+       "native": "劇場版ポケットモンスター 結晶塔の帝王 ENTEI"
+      },
+      "synonyms": [
+       "Pokémon: Spell Of The Unown",
+       "Gekijouban Pocket Monsters: Lord of the UNKNOWN Tower ENTEI",
+       "Pokémon 3: Unowns forbannelse",
+       "Pokémon 3: Zaklęcie Unown",
+       "Pokémon 3: Unowns förtrollning",
+       "Pokémon 3 - L'incantesimo degli Unown"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 1118,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Hug tto! Precure♡Futari wa Precure Movie: All Stars Memories",
+   "queries": [
+    "Hug tto! Precure♡Futari wa Precure Movie: All Stars Memories",
+    "All Stars Memories",
+    "Hug tto! Precure♡Futari wa Precure Movie",
+    "Hug tto Precure Futari wa Precure All Stars Memories"
+   ],
+   "answers": {
+    "Hug tto! Precure♡Futari wa Precure Movie: All Stars Memories": [],
+    "All Stars Memories": [
+     {
+      "id": 101908,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "HUGtto! Precure ♡ Futari wa Precure All Stars Memories",
+       "english": null,
+       "native": "ＨＵＧっと！プリキュア♡ふたりはプリキュア オールスターズメモリーズ"
+      },
+      "synonyms": [
+       "Hugtto! Pretty Cure x Futari wa Pretty Cure Movie: All Stars Memories"
+      ]
+     }
+    ],
+    "Hug tto! Precure♡Futari wa Precure Movie": [],
+    "Hug tto Precure Futari wa Precure All Stars Memories": []
+   },
+   "expect": {
+    "id": 101908,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Lupin III",
+   "queries": [
+    "Lupin III"
+   ],
+   "answers": {
+    "Lupin III": [
+     {
+      "id": 13203,
+      "format": "TV",
+      "title": {
+       "romaji": "LUPIN the Third: Mine Fujiko to Iu Onna",
+       "english": "Lupin the Third: The Woman Called Fujiko Mine",
+       "native": "LUPIN the Third ～峰不二子という女～"
+      },
+      "synonyms": [
+       "Lupin III",
+       "Lupin III~Mine Fujiko to Iu Onna~",
+       "Lupin the Third: La donna chiamata Fujiko Mine"
+      ]
+     },
+     {
+      "id": 1412,
+      "format": "TV",
+      "title": {
+       "romaji": "Lupin III",
+       "english": "Lupin the 3rd",
+       "native": "ルパン三世"
+      },
+      "synonyms": [
+       "Rupan Sansei",
+       "לופין השלישי",
+       "Cliffhanger",
+       "Cliff Hanger",
+       "Lupin III: Parte I",
+       "Cliffhanger, o Aventureiro",
+       "Люпен III"
+      ]
+     },
+     {
+      "id": 9035,
+      "format": "MUSIC",
+      "title": {
+       "romaji": "Lupin the Third x Monkey Majik",
+       "english": null,
+       "native": "Lupin the Third x Monkey Majik"
+      },
+      "synonyms": [
+       "Lupin III",
+       "Monkey Majik"
+      ]
+     },
+     {
+      "id": 1426,
+      "format": "TV",
+      "title": {
+       "romaji": "Lupin III: Part III",
+       "english": "Lupin the Third Part 3",
+       "native": "ルパン三世 - Part III"
+      },
+      "synonyms": [
+       "Rupan Sansei: Part III",
+       "Lupin, l'incorreggibile Lupin"
+      ]
+     },
+     {
+      "id": 1429,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Lupin III: Nusumareta Lupin - Copycat wa Manatsu no Chou",
+       "english": "Lupin the 3rd: Swallowtail Tattoo",
+       "native": "ルパン三世 盗まれたルパン 〜コピーキャットは真夏の蝶〜"
+      },
+      "synonyms": [
+       "Rupan Sansei: Nusumareta Rupan",
+       "Lupin III: Stolen Lupin - Copycat Summer Butterflies",
+       "Lupin III: Stolen Lupin",
+       "Lupin III - Tutti i tesori del mondo"
+      ]
+     },
+     {
+      "id": 1425,
+      "format": "TV",
+      "title": {
+       "romaji": "Lupin III: Part II",
+       "english": "Lupin the 3rd Part 2",
+       "native": "新・ルパン三世"
+      },
+      "synonyms": [
+       "Rupan Sansei: Part II",
+       "Shin Lupin III",
+       "Lupin III: Greatest Capers",
+       "Edgar, Détective Cambrioleur",
+       "Le nuove avventure di Lupin III"
+      ]
+     },
+     {
+      "id": 107313,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "LUPIN THE IIIRD: Mine Fujiko no Uso",
+       "english": "Lupin the IIIrd: Fujiko's Lie",
+       "native": "LUPIN THE IIIRD 峰不二子の嘘"
+      },
+      "synonyms": [
+       "Lupin III (2019)",
+       "ルパン三世 (2019)",
+       "ルパン三世 峰不二子の嘘",
+       "Lupin the IIIrd: Fujiko Mine’s Lie",
+       "Lupin III - La bugia di Mine Fujiko"
+      ]
+     },
+     {
+      "id": 1417,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Lupin III: Moeyo Zantetsuken",
+       "english": "Lupin the 3rd: Dragon of Doom",
+       "native": "ルパン三世 燃えよ斬鉄剣"
+      },
+      "synonyms": [
+       "Rupan Sansei: Moeyo Zantetsuken",
+       "Lupin III: Burn",
+       "Zantetsuken!",
+       "Lupin III: Dragon of Doom",
+       "Lupin III: Spada Zantetsu, infuocati!",
+       "Lupin III: O Dragão da Perda",
+       "Lupin III: O Dragão da Perdição"
+      ]
+     },
+     {
+      "id": 1435,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Lupin III: Lupin vs Clone",
+       "english": "Lupin III: The Secret of Mamo",
+       "native": "ルパン三世 ルパンvs複製人間"
+      },
+      "synonyms": [
+       "Rupan Sansei",
+       "Lupin III: Lupin vs The Human Clone",
+       "Edgar de la Cambriole : Le secret de Mamo",
+       "Lupin III: La pietra della saggezza",
+       "Lupin the Third: The Mystery of Mamo",
+       "LUPIN THE 3rd: Mystery of Mamo",
+       "Lupin III: O Segredo de Mamo",
+       "Lupin III: Lupin vs Fukusei-ningen",
+       "Lupin Trzeci: Tajemnica Mamo"
+      ]
+     },
+     {
+      "id": 13247,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Lupin III: Lupin Ikka Seizoroi",
+       "english": null,
+       "native": "ルパン三世 ルパン一家勢揃い"
+      },
+      "synonyms": [
+       "Rupan Sansei: Lupin Ikka Seizoroi",
+       "Lupin Family Lineup",
+       "Lupin III Master File",
+       "Lupin Sansei: Lupin Ikka Seizoroi"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 1412,
+    "match": "exact"
+   }
+  },
+  {
+   "title": "Macross F Movie 2: Sayonara no Tsubasa",
+   "queries": [
+    "Macross F Movie 2: Sayonara no Tsubasa",
+    "Sayonara no Tsubasa",
+    "Macross F Movie 2",
+    "Macross F Sayonara no Tsubasa"
+   ],
+   "answers": {
+    "Macross F Movie 2: Sayonara no Tsubasa": [],
+    "Sayonara no Tsubasa": [
+     {
+      "id": 7222,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Macross Frontier: Sayonara no Tsubasa",
+       "english": "Macross Frontier: The Wings of Farewell",
+       "native": "劇場版 マクロスF ~サヨナラノツバサ~"
+      },
+      "synonyms": [
+       "Macross F the Movie 2",
+       "Macross Frontier the Movie 2",
+       "Gekijouban Macross F: Sayonara no Tsubasa"
+      ]
+     }
+    ],
+    "Macross F Movie 2": [
+     {
+      "id": 7222,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Macross Frontier: Sayonara no Tsubasa",
+       "english": "Macross Frontier: The Wings of Farewell",
+       "native": "劇場版 マクロスF ~サヨナラノツバサ~"
+      },
+      "synonyms": [
+       "Macross F the Movie 2",
+       "Macross Frontier the Movie 2",
+       "Gekijouban Macross F: Sayonara no Tsubasa"
+      ]
+     }
+    ],
+    "Macross F Sayonara no Tsubasa": [
+     {
+      "id": 7222,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Macross Frontier: Sayonara no Tsubasa",
+       "english": "Macross Frontier: The Wings of Farewell",
+       "native": "劇場版 マクロスF ~サヨナラノツバサ~"
+      },
+      "synonyms": [
+       "Macross F the Movie 2",
+       "Macross Frontier the Movie 2",
+       "Gekijouban Macross F: Sayonara no Tsubasa"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 7222,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Mobile Suit Gundam Unicorn",
+   "queries": [
+    "Mobile Suit Gundam Unicorn"
+   ],
+   "answers": {
+    "Mobile Suit Gundam Unicorn": [
+     {
+      "id": 6336,
+      "format": "OVA",
+      "title": {
+       "romaji": "Kidou Senshi Gundam UC",
+       "english": "Mobile Suit Gundam UC",
+       "native": "機動戦士ガンダムUC"
+      },
+      "synonyms": [
+       "Kidou Senshi Gundam Unicorn",
+       "Mobile Suit Gundam Unicorn"
+      ]
+     },
+     {
+      "id": 112451,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Kidou Senshi Gundam UC Perfectibility",
+       "english": null,
+       "native": "機動戦士ガンダムUC ペルフェクティビリティ"
+      },
+      "synonyms": [
+       "Kidou Senshi Gundam Unicorn Perfectibility",
+       "Mobile Suit Gundam Unicorn Perfectibility"
+      ]
+     },
+     {
+      "id": 21658,
+      "format": "TV",
+      "title": {
+       "romaji": "Kidou Senshi Gundam Unicorn RE: 0096",
+       "english": "MOBILE SUIT GUNDAM UNICORN RE:0096",
+       "native": "機動戦士ガンダムユニコーン RE:0096"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 112452,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Kidou Senshi Gundam UC: A Phantom World",
+       "english": null,
+       "native": "機動戦士ガンダムUC A Phantom World"
+      },
+      "synonyms": [
+       "Kidou Senshi Gundam Unicorn: A Phantom World",
+       "Mobile Suit Gundam UC: A Phantom World",
+       "Mobile Suit Gundam Unicorn: A Phantom World"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 6336,
+    "match": "exact"
+   }
+  },
+  {
+   "title": "Mobile Suit Gundam 00",
+   "queries": [
+    "Mobile Suit Gundam 00"
+   ],
+   "answers": {
+    "Mobile Suit Gundam 00": [
+     {
+      "id": 2581,
+      "format": "TV",
+      "title": {
+       "romaji": "Kidou Senshi Gundam 00",
+       "english": "Mobile Suit Gundam 00",
+       "native": "機動戦士ガンダム00"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 3927,
+      "format": "TV",
+      "title": {
+       "romaji": "Kidou Senshi Gundam 00 2nd Season",
+       "english": "Mobile Suit Gundam 00 Second Season",
+       "native": "機動戦士ガンダム00 セカンドシーズン"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 7270,
+      "format": "OVA",
+      "title": {
+       "romaji": "Kidou Senshi Gundam 00 Special Edition",
+       "english": "Mobile Suit Gundam 00 Special Edition",
+       "native": "機動戦士ガンダム00 スペシャルエディション"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 146488,
+      "format": "ONA",
+      "title": {
+       "romaji": "Kidou Senshi Gundam 00: Revealed Chronicle",
+       "english": "Mobile Suit Gundam 00: Revealed Chronicle",
+       "native": "機動戦士ガンダム00 Revealed Chronicle"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 6288,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Kidou Senshi Gundam 00: A wakening of the Trailblazer",
+       "english": "Mobile Suit Gundam 00 the Movie: A Wakening of the Trailblazer",
+       "native": "劇場版 機動戦士ガンダム00 -A wakening of the Trailblazer-"
+      },
+      "synonyms": [
+       "Gundam Double O Movie"
+      ]
+     },
+     {
+      "id": 2695,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Kidou Senshi Gundam 0083: Zeon no Zankou",
+       "english": "Mobile Suit Gundam 0083: The Afterglow Of Zeon",
+       "native": "機動戦士ガンダム0083 －ジオンの残光－"
+      },
+      "synonyms": [
+       "Mobile Suit Gundam 0083: Zmierch Zeonu"
+      ]
+     },
+     {
+      "id": 84,
+      "format": "OVA",
+      "title": {
+       "romaji": "Kidou Senshi Gundam 0083: STARDUST MEMORY",
+       "english": "Mobile Suit Gundam 0083: Stardust Memory",
+       "native": "機動戦士ガンダム0083 STARDUST MEMORY"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 82,
+      "format": "OVA",
+      "title": {
+       "romaji": "Kidou Senshi Gundam 0080: Pocket no Naka no Sensou",
+       "english": "Mobile Suit Gundam 0080: War in the Pocket",
+       "native": "機動戦士ガンダム 0080 ポケットの中の戦争"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 10581,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Kidou Senshi Gundam 0083: Stardust Memory - Uchuu no Kagerou",
+       "english": "Mobile Suit Gundam 0083: Stardust Memory -  Mayfly of Space",
+       "native": "機動戦士ガンダム 0083 スターダストメモリー 宇宙の蜉蝣"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 110332,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Kidou Senshi Gundam 0083: STARDUST MEMORY - Uchuu no Kagerou 2",
+       "english": "Mobile Suit Gundam 0083: Stardust Memory - Mayfly of Space 2",
+       "native": "機動戦士ガンダム 0083 「STARDUST MEMORY」 ピクチャードラマ 「宇宙の蜉蝣2」"
+      },
+      "synonyms": []
+     }
+    ]
+   },
+   "expect": {
+    "id": 2581,
+    "match": "exact"
+   }
+  },
+  {
+   "title": "Naruto",
+   "queries": [
+    "Naruto"
+   ],
+   "answers": {
+    "Naruto": [
+     {
+      "id": 20,
+      "format": "TV",
+      "title": {
+       "romaji": "NARUTO",
+       "english": "Naruto",
+       "native": "NARUTO -ナルト-"
+      },
+      "synonyms": [
+       "נארוטו",
+       "ناروتو",
+       "火影忍者",
+       "นารูโตะ นินจาจอมคาถา",
+       "Наруто"
+      ]
+     },
+     {
+      "id": 10075,
+      "format": "OVA",
+      "title": {
+       "romaji": "NARUTO×UT",
+       "english": null,
+       "native": "NARUTO×UT"
+      },
+      "synonyms": [
+       "NARUTO x UT"
+      ]
+     },
+     {
+      "id": 162561,
+      "format": "TV",
+      "title": {
+       "romaji": "NARUTO×NINKU",
+       "english": null,
+       "native": "NARUTO-ナルト-×NINKU-忍空-"
+      },
+      "synonyms": [
+       "NARUTO -ナルト- (2026)",
+       "NARUTO (2026)",
+       "NARUTO×NINKŪ"
+      ]
+     },
+     {
+      "id": 155348,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "ROAD OF NARUTO",
+       "english": null,
+       "native": "ROAD OF NARUTO"
+      },
+      "synonyms": [
+       "NARUTO - ナルト -  20 周年記念",
+       "NARUTO 20 Shuunenkinen",
+       "Naruto 20th Anniversary PV"
+      ]
+     },
+     {
+      "id": 1735,
+      "format": "TV",
+      "title": {
+       "romaji": "NARUTO: Shippuuden",
+       "english": "Naruto: Shippuden",
+       "native": "NARUTO -ナルト- 疾風伝"
+      },
+      "synonyms": [
+       "Naruto Shippuuden",
+       "Naruto Shippuden",
+       "נארוטו שיפודן",
+       "火影忍者 疾风传",
+       "นารูโตะ ตำนานวายุสลาตัน",
+       "ناروتو شيبودن",
+       "Наруто: Ураганные хроники"
+      ]
+     },
+     {
+      "id": 936,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "NARUTO: Dai Gekitotsu! Maboroshi no Chitei Iseki Dattebayo",
+       "english": "Naruto the Movie: Legend of the Stone of Gelel",
+       "native": "劇場版 NARUTO -ナルト- 大激突!幻の地底遺跡だってばよ"
+      },
+      "synonyms": [
+       "Naruto THE Movie vol.2",
+       "Naruto Movie 2",
+       "Gekijouban Naruto",
+       "Naruto the Movie: The Great Clash! The Phantom Ruins in the Depths of the Earth",
+       "Naruto La Légende de la Pierre de Guelel",
+       "Naruto la película: La leyenda de la piedra de Gelel",
+       "Naruto Movie 02: La leggenda della pietra di Gelel"
+      ]
+     },
+     {
+      "id": 10659,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "NARUTO: Soyokazeden - Naruto to Mashin to Mitsu no Onegai Dattebayo!!",
+       "english": "Naruto, the Genie, and the Three Wishes, Believe It!",
+       "native": "劇場版 NARUTO -ナルト- そよかぜ伝 ナルトと魔神と3つのお願いだってばよ!!"
+      },
+      "synonyms": [
+       "Gekijouban Naruto Soyokazeden: Naruto to Mashin to Mitsu no Onegai Dattebayo!!",
+       "Naruto: Gentle Breeze Chronicles the Film: Naruto",
+       "the Genie",
+       "and the Three Wishes Dattebayo!!"
+      ]
+     },
+     {
+      "id": 21579,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "BORUTO: NARUTO THE MOVIE - Naruto ga Hokage ni Natta Hi",
+       "english": "Boruto: Naruto the Movie - The Day Naruto Became Hokage",
+       "native": "BORUTO -NARUTO THE MOVIE- ナルトが火影になった日"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 8246,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "NARUTO: Shippuuden - The Lost Tower",
+       "english": "Naruto Shippuden the Movie: The Lost Tower",
+       "native": "劇場版 NARUTO -ナルト- 疾風伝 ザ・ロストタワー"
+      },
+      "synonyms": [
+       "Naruto Movie 7",
+       "Gekijouban Naruto Shippuuden: The Lost Tower",
+       "Naruto Shippūden la película: La torre perdida",
+       "Naruto Shippuden Movie 04: La torre perduta"
+      ]
+     },
+     {
+      "id": 6325,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "NARUTO: Shippuuden - Hi no Ishi wo Tsugu Mono",
+       "english": "Naruto Shippuden the Movie: The Will of Fire",
+       "native": "劇場版 NARUTO -ナルト- 疾風伝 火の意志を継ぐ者"
+      },
+      "synonyms": [
+       "Naruto Shippuuden Movie 3",
+       "Naruto Movie 6",
+       "Naruto Shippuuden 3: Inheritors of Will of Fire",
+       "Naruto Shippūden la película: La voluntad de fuego",
+       "Naruto Shippuden - Eredi della volontà del Fuoco",
+       "Naruto Shippuden Movie 03: Gli eredi della volontà del Fuoco",
+       "Naruto Shippuden O Filme: Herdeiros da Vontade do Fogo"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 20,
+    "match": "exact"
+   }
+  },
+  {
+   "title": "Dragon Ball Z Special 2: The History of Trunks",
+   "queries": [
+    "Dragon Ball Z Special 2: The History of Trunks",
+    "The History of Trunks",
+    "Dragon Ball Z Special 2",
+    "Dragon Ball Z Special 2 The History of Trunks"
+   ],
+   "answers": {
+    "Dragon Ball Z Special 2: The History of Trunks": [],
+    "The History of Trunks": [
+     {
+      "id": 985,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Dragon Ball Z: Zetsubou e no Hankou!! Nokosareta Chousenshi - Gohan to Trunks",
+       "english": "Dragon Ball Z: The History of Trunks",
+       "native": "ドラゴンボールＺ・絶望への反抗！！残された超戦士・悟飯とトランクス"
+      },
+      "synonyms": [
+       "Dragon Ball Z: Resist Despair!! The Surviving Fighters - Gohan and Trunks",
+       "Dragon Ball Z: Trunks historie",
+       "Dragon Ball Z: Trunks historia",
+       "Dragon Ball Z: Gohan e Trunks, os Guerreiros do Futuro",
+       "Драконий жемчуг Зет: Стойкие бойцы — Гохан и Транкс"
+      ]
+     }
+    ],
+    "Dragon Ball Z Special 2": [],
+    "Dragon Ball Z Special 2 The History of Trunks": []
+   },
+   "expect": {
+    "id": 985,
+    "match": "close"
+   }
+  },
+  {
+   "title": "One Piece: The Movie 14 - Stampede",
+   "queries": [
+    "One Piece: The Movie 14 - Stampede",
+    "One Piece: The Movie 14",
+    "One Piece Stampede"
+   ],
+   "answers": {
+    "One Piece: The Movie 14 - Stampede": [],
+    "One Piece: The Movie 14": [],
+    "One Piece Stampede": [
+     {
+      "id": 105143,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "ONE PIECE STAMPEDE",
+       "english": "One Piece: Stampede",
+       "native": "ONE PIECE STAMPEDE"
+      },
+      "synonyms": [
+       "ワンピース スタンピード",
+       "One Piece: Estampida",
+       "航海王：狂热行动",
+       "One Piece Film 14"
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 105143,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Sword Art Online: Progressive",
+   "queries": [
+    "Sword Art Online: Progressive",
+    "Sword Art Online",
+    "Sword Art Online Progressive"
+   ],
+   "answers": {
+    "Sword Art Online: Progressive": [
+     {
+      "id": 124140,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Sword Art Online: Progressive - Hoshinaki Yoru no Aria",
+       "english": "Sword Art Online the Movie -Progressive- Aria of a Starless Night",
+       "native": "劇場版 ソードアート・オンライン プログレッシブ 星なき夜のアリア"
+      },
+      "synonyms": [
+       "SAO Progressive",
+       "Sword Art Online: Progressive - อาเรียแห่งคืนที่ไร้ดาว",
+       "Sword Art Online Progressive: Ária de Uma Noite Sem Estrelas",
+       "SAOP",
+       "Sword Art Online: Progressive - Aria de una noche sin estrellas"
+      ]
+     },
+     {
+      "id": 140999,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Sword Art Online: Progressive - Kuraki Yuuyami no Scherzo",
+       "english": "Sword Art Online the Movie -Progressive- Scherzo of Deep Night",
+       "native": "劇場版 ソードアート・オンライン プログレッシブ 冥き夕闇のスケルツォ"
+      },
+      "synonyms": [
+       "Sword Art Online: Progressive - Scherzo of Dark Night",
+       "SAO Progressive",
+       "SAOP",
+       "Sword Art Online : Progressive - สแกรโซแห่งสนธยาโศก",
+       "Sword Art Online: Progressive - Scherzo de una profunda oscuridad",
+       "Sword Art Online Progressive: Scherzo do Crepúsculo Sombrio "
+      ]
+     }
+    ],
+    "Sword Art Online": [
+     {
+      "id": 11757,
+      "format": "TV",
+      "title": {
+       "romaji": "Sword Art Online",
+       "english": "Sword Art Online",
+       "native": "ソードアート・オンライン"
+      },
+      "synonyms": [
+       "S.A.O",
+       "SAO",
+       "אומנות החרב אונליין",
+       "刀剑神域",
+       "ซอร์ดอาร์ตออนไลน์",
+       "Мастера меча онлайн"
+      ]
+     },
+     {
+      "id": 20594,
+      "format": "TV",
+      "title": {
+       "romaji": "Sword Art Online II",
+       "english": "Sword Art Online II",
+       "native": "ソードアート・オンライン II"
+      },
+      "synonyms": [
+       "SAO2",
+       "GGO",
+       "ซอร์ดอาร์ตออนไลน์ ภาค 2"
+      ]
+     },
+     {
+      "id": 100182,
+      "format": "TV",
+      "title": {
+       "romaji": "Sword Art Online: Alicization",
+       "english": "Sword Art Online: Alicization",
+       "native": "ソードアート・オンライン アリシゼーション"
+      },
+      "synonyms": [
+       "SAOIII",
+       "SAO3",
+       "Alicization",
+       "Sword Art Online III",
+       "ซอร์ดอาร์ตออนไลน์: Alicization",
+       "ซอร์ดอาร์ตออนไลน์ ภาค 3"
+      ]
+     },
+     {
+      "id": 101965,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Sword Art Online: Ordinal Scale - Sword Art Offline",
+       "english": "Sword Art Online Movie: Ordinal Scale - Sword Art Offline",
+       "native": "劇場版 ソードアート・オンライン -オーディナル・スケール- おふらいん"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 21403,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Sword Art Online: Ordinal Scale",
+       "english": "Sword Art Online the Movie: Ordinal Scale",
+       "native": "ソードアート・オンライン -オーディナル・スケール-"
+      },
+      "synonyms": [
+       "SAO THE MOVIE"
+      ]
+     },
+     {
+      "id": 20021,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Sword Art Online: Extra Edition",
+       "english": "Sword Art Online EXTRA EDITION",
+       "native": "ソードアート・オンライン Extra Edition"
+      },
+      "synonyms": [
+       "S.A.O: Extra Edition",
+       "SAO: Extra Edition",
+       "ซอร์ดอาร์ตออนไลน์: Extra Edition"
+      ]
+     },
+     {
+      "id": 100183,
+      "format": "TV",
+      "title": {
+       "romaji": "Sword Art Online Alternative: Gun Gale Online",
+       "english": "Sword Art Online Alternative: Gun Gale Online",
+       "native": "ソードアート・オンライン オルタナティブ ガンゲイル・オンライン"
+      },
+      "synonyms": [
+       "SAO Alternative: Gun Gale Online",
+       "SAO GGO"
+      ]
+     },
+     {
+      "id": 156631,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Sword Art Online: Integral Domain",
+       "english": null,
+       "native": "ソードアート・オンライン - インテグラル・ドメイン -"
+      },
+      "synonyms": []
+     },
+     {
+      "id": 124140,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Sword Art Online: Progressive - Hoshinaki Yoru no Aria",
+       "english": "Sword Art Online the Movie -Progressive- Aria of a Starless Night",
+       "native": "劇場版 ソードアート・オンライン プログレッシブ 星なき夜のアリア"
+      },
+      "synonyms": [
+       "SAO Progressive",
+       "Sword Art Online: Progressive - อาเรียแห่งคืนที่ไร้ดาว",
+       "Sword Art Online Progressive: Ária de Uma Noite Sem Estrelas",
+       "SAOP",
+       "Sword Art Online: Progressive - Aria de una noche sin estrellas"
+      ]
+     },
+     {
+      "id": 208754,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Unanswered//butterfly: Sword Art Online",
+       "english": null,
+       "native": "Unanswered//butterfly: Sword Art Online"
+      },
+      "synonyms": []
+     }
+    ],
+    "Sword Art Online Progressive": [
+     {
+      "id": 124140,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Sword Art Online: Progressive - Hoshinaki Yoru no Aria",
+       "english": "Sword Art Online the Movie -Progressive- Aria of a Starless Night",
+       "native": "劇場版 ソードアート・オンライン プログレッシブ 星なき夜のアリア"
+      },
+      "synonyms": [
+       "SAO Progressive",
+       "Sword Art Online: Progressive - อาเรียแห่งคืนที่ไร้ดาว",
+       "Sword Art Online Progressive: Ária de Uma Noite Sem Estrelas",
+       "SAOP",
+       "Sword Art Online: Progressive - Aria de una noche sin estrellas"
+      ]
+     },
+     {
+      "id": 140999,
+      "format": "MOVIE",
+      "title": {
+       "romaji": "Sword Art Online: Progressive - Kuraki Yuuyami no Scherzo",
+       "english": "Sword Art Online the Movie -Progressive- Scherzo of Deep Night",
+       "native": "劇場版 ソードアート・オンライン プログレッシブ 冥き夕闇のスケルツォ"
+      },
+      "synonyms": [
+       "Sword Art Online: Progressive - Scherzo of Dark Night",
+       "SAO Progressive",
+       "SAOP",
+       "Sword Art Online : Progressive - สแกรโซแห่งสนธยาโศก",
+       "Sword Art Online: Progressive - Scherzo de una profunda oscuridad",
+       "Sword Art Online Progressive: Scherzo do Crepúsculo Sombrio "
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "id": 124140,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Gintama: 3-Z Ginpachi Sensei",
+   "queries": [
+    "Gintama: 3-Z Ginpachi Sensei",
+    "3-Z Ginpachi Sensei",
+    "Gintama 3 Z Ginpachi Sensei"
+   ],
+   "answers": {
+    "Gintama: 3-Z Ginpachi Sensei": [],
+    "3-Z Ginpachi Sensei": [
+     {
+      "id": 162890,
+      "format": "TV",
+      "title": {
+       "romaji": "3-nen Z-gumi Ginpachi-sensei",
+       "english": "GINTAMA - Mr. Ginpachi's Zany Class",
+       "native": "3年Z組銀八先生"
+      },
+      "synonyms": [
+       "3-Z Class's Ginpachi-sensei",
+       "3rd Year Class Z Ginpachi-sensei",
+       "GINTAMA: Mr. Ginpachi's Zany Class",
+       "กินทามะ - ปี 3 ห้อง z อาจารย์กินปาจิ"
+      ]
+     }
+    ],
+    "Gintama 3 Z Ginpachi Sensei": []
+   },
+   "expect": {
+    "id": 162890,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Monogatari Series - Off & Monster Season: Specials",
+   "queries": [
+    "Monogatari Series - Off & Monster Season: Specials",
+    "Monogatari Series - Off & Monster Season",
+    "Monogatari Series Off Monster Season Specials"
+   ],
+   "answers": {
+    "Monogatari Series - Off & Monster Season: Specials": [],
+    "Monogatari Series - Off & Monster Season": [
+     {
+      "id": 173533,
+      "format": "ONA",
+      "title": {
+       "romaji": "Monogatari Series: Off & Monster Season",
+       "english": "MONOGATARI Series: OFF & MONSTER Season",
+       "native": "〈物語〉シリーズ オフ&モンスターシーズン"
+      },
+      "synonyms": [
+       "Orokamonogatari",
+       "Nademonogatari",
+       "Wazamonogatari",
+       "Shinobumonogatari"
+      ]
+     },
+     {
+      "id": 180332,
+      "format": "SPECIAL",
+      "title": {
+       "romaji": "Monogatari Series: Off & Monster Season - Zankoku Douwa: Utsukushi-hime",
+       "english": "MONOGATARI Series: OFF & MONSTER Season - A Cruel Fairy Tale: The Beautiful Princess",
+       "native": "〈物語〉シリーズ オフ&モンスターシーズン 残酷童話 うつくし姫"
+      },
+      "synonyms": [
+       "MONOGATARI Series: OFF & MONSTER Season Episode 6.5",
+       "〈物語〉シリーズ オフ&モンスターシーズン EX",
+       "Monogatari Series: Off & Monster Season - The Princess Beauty",
+       "Wazamonogatari"
+      ]
+     },
+     {
+      "id": 195448,
+      "format": null,
+      "title": {
+       "romaji": "Monogatari Series: Off & Monster Season Shin Episode",
+       "english": null,
+       "native": "〈物語〉シリーズ オフ&モンスターシーズン 新エピソード"
+      },
+      "synonyms": []
+     }
+    ],
+    "Monogatari Series Off Monster Season Specials": []
+   },
+   "expect": {
+    "id": 173533,
+    "match": "close"
+   }
+  },
+  {
+   "title": "Gintama Season 5",
+   "queries": [
+    "Gintama Season 5"
+   ],
+   "answers": {
+    "Gintama Season 5": []
+   },
+   "expect": null
+  },
+  {
+   "title": "Gintama x KFC",
+   "queries": [
+    "Gintama x KFC"
+   ],
+   "answers": {
+    "Gintama x KFC": []
+   },
+   "expect": null
+  }
+ ]
+}
