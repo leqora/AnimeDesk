@@ -4,7 +4,7 @@ import { ProfileCard } from './ProfileCard.jsx'
 import { Icon } from './Icon.jsx'
 import { NotificationBell } from './NotificationBell.jsx'
 
-const PAGES = ['home', 'watchlist', 'downloads', 'profile', 'settings']
+const PAGES = ['home', 'watchlist', 'schedule', 'downloads', 'profile', 'settings']
 
 export function Sidebar({ page, onNavigate, health, onSemaphoreClick, profileName, stats, version = '', onOpenAnime = () => {}, libraryIds = new Set(), fullscreen = false, onToggleFullscreen = () => {}, playerOpen = false }) {
   const t = useT()
