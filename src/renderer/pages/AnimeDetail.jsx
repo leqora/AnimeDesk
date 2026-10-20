@@ -22,6 +22,8 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const t = useT()
   const rawInfo = useAniListInfo(entry.title, entry.aniListId, { live: true }) // undefined = loading, null = not found
   const info = rawInfo ?? null
+  // A fuzzy (close) title match is shown as poster/title/year/genres only; nothing else is taken from it.
+  const closeMatch = info?.match === 'close'
   const tint = usePosterTint(info?.poster ?? null)
   const [showDesc, setShowDesc] = useState(false)
   const [comment, setComment] = useState(entry.comment)
@@ -66,6 +68,8 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const patchedFor = useRef(null)
   useEffect(() => {
     if (!info || patchedFor.current === entry.id) return
+    // Without a linked id only an exact title match may link one; a skipped info leaves the patch for a later exact one.
+    if (entry.aniListId == null && info.match !== 'exact') return
     patchedFor.current = entry.id
     const patch = {}
     if (entry.aniListId == null) patch.aniListId = info.id
@@ -86,13 +90,13 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const now = useNow()
   const fresh = newEpisodeCount(entry, info, now)
   const saved = progress[String(nextEp)]
-  const totalEps = entry.totalEpisodes ?? info?.episodes ?? null
+  const totalEps = entry.totalEpisodes ?? (closeMatch ? null : info?.episodes) ?? null
   const meta = info
     ? [
         info.year,
         totalEps && t('detail.episodesCount', { n: totalEps }),
-        info.duration && t('detail.duration', { min: info.duration }),
-        ANILIST_STATUSES.includes(info.status) && t(`airing.status.${info.status}`),
+        !closeMatch && info.duration && t('detail.duration', { min: info.duration }),
+        !closeMatch && ANILIST_STATUSES.includes(info.status) && t(`airing.status.${info.status}`),
       ].filter(Boolean)
     : []
 
@@ -237,7 +241,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
             <span>{t('detail.comment')}</span>
             <textarea aria-label={t('detail.comment')} value={comment} onChange={(e) => setComment(e.target.value)} onBlur={() => { if (comment !== entry.comment) save({ comment }) }} />
           </label>
-          {info?.description && (
+          {!closeMatch && info?.description && (
             <div>
               <button type="button" onClick={() => setShowDesc((v) => !v)}>{showDesc ? t('detail.hideDescription') : t('detail.showDescription')}</button>
               {showDesc && <p className="description">{info.description}</p>}

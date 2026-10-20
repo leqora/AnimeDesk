@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { screen, fireEvent, waitFor } from '@testing-library/react'
+import { screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { renderUi, makeFakeApi } from './helpers.jsx'
 import { AnimeDetail } from '../../../src/renderer/pages/AnimeDetail.jsx'
 
@@ -194,5 +194,46 @@ describe('AnimeDetail marks', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Sakrij filler i recap' }))
     await waitFor(() => expect(api.seriesPrefs.set).toHaveBeenCalledWith('Show', { hideFiller: true }))
     await waitFor(() => expect(screen.queryByRole('button', { name: '2, filler' })).not.toBeInTheDocument())
+  })
+})
+
+describe('AnimeDetail fuzzy AniList match', () => {
+  const now = Date.now()
+  const closeInfo = {
+    id: 777, match: 'close', title: 'Other Show', year: 2011, genres: ['Drama'], description: 'Opis serije',
+    episodes: 24, duration: 24, status: 'RELEASING', poster: null,
+    nextAiring: { episode: 5, airingAt: now + 3 * 3600_000 },
+  }
+  it('shows only poster-level data: no id/episodes patch, no description, no episode meta, no airing line', async () => {
+    const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => closeInfo) } })
+    mount(api, {}, entry({ totalEpisodes: null }))
+    await screen.findByText('Drama')
+    await act(async () => {})
+    expect(api.library.update).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'Prikaži opis' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/24 EP/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/24 min/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/izlazi/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/novih|nova|nove/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Emituje se')).not.toBeInTheDocument()
+    expect(screen.getByText(/2011/)).toBeInTheDocument()
+  })
+  it('a skipped close info does not consume the patch: a later exact info patches the same entry', async () => {
+    const forTitle = vi.fn(async (title) => (title === 'Show'
+      ? closeInfo
+      : { id: 5, match: 'exact', title: 'Show Two', episodes: 12, genres: [], poster: null }))
+    const api = makeFakeApi({ anilist: { forTitle } })
+    const e = entry({ totalEpisodes: null })
+    const { rerender } = mount(api, {}, e)
+    await screen.findByText('Drama')
+    await act(async () => {})
+    expect(api.library.update).not.toHaveBeenCalled()
+    rerender(<AnimeDetail entry={{ ...e, title: 'Show Two' }} ready onBack={() => {}} onRemoved={() => {}} onChanged={() => {}} onContinue={() => {}} />)
+    await waitFor(() => expect(api.library.update).toHaveBeenCalledWith('a1', { aniListId: 5, totalEpisodes: 12 }))
+  })
+  it('an entry that already has an aniListId keeps the totalEpisodes patch as before', async () => {
+    const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => ({ id: 5, match: 'id', episodes: 12, genres: [], poster: null })) } })
+    mount(api, {}, entry({ aniListId: 5, totalEpisodes: null }))
+    await waitFor(() => expect(api.library.update).toHaveBeenCalledWith('a1', { totalEpisodes: 12 }))
   })
 })

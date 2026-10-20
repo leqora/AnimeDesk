@@ -73,7 +73,10 @@ export function createSequels({
       return []
     }
   }
-  const getCachedId = (title) => anilist.getCached(title)?.id ?? null
+  const getCachedId = (title) => {
+    const info = anilist.getCached(title)
+    return info?.match === 'exact' ? info.id : null
+  }
   const hiddenNow = () => settings.get().hiddenSequels ?? []
 
   function visible(entries) {

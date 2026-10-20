@@ -13,7 +13,8 @@ export const LIVE_GIVE_UP_MS = 24 * 3600_000
 // undefined = still loading, null = nothing found / failed, falsy title = null.
 // Starts from the shared cache so returning to a page shows posters without a skeleton.
 // State is tagged with its key, so after a title/id change another series' info is never returned.
-// With live, one timer refetches shortly after the next episode has aired and its grace hour passed.
+// With live, one timer refetches shortly after the next episode has aired and its grace hour passed
+// (none for a close match: it carries no airing data).
 export function useAniListInfo(title, aniListId = null, { live = false } = {}) {
   const api = useApi()
   const cache = infoCache(api)
@@ -40,7 +41,7 @@ export function useAniListInfo(title, aniListId = null, { live = false } = {}) {
   else if (state?.key === key) info = state.info
   else info = cache.peek(title, aniListId)
 
-  const airingAt = live ? info?.nextAiring?.airingAt : undefined
+  const airingAt = live && info?.match !== 'close' ? info?.nextAiring?.airingAt : undefined
   useEffect(() => {
     if (!title || airingAt == null) return undefined
     const delay = airingAt + AIRED_GRACE_MS + LIVE_SLACK_MS - Date.now()

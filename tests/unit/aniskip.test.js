@@ -63,6 +63,27 @@ describe('skipLookup', () => {
     await createSkipLookup({ anilist, aniskip, findAniListId })('Other', '2', 1400)
     expect(anilist.getForTitle).toHaveBeenLastCalledWith('Other', { aniListId: null })
   })
+  it('a fuzzy title match gives no skip times and no aniskip call', async () => {
+    const aniskip = { getSkipTimes: vi.fn() }
+    const mk = (info) => createSkipLookup({ anilist: { getForTitle: vi.fn(async () => info) }, aniskip, findAniListId: (t) => (t === 'Known' ? 42 : null) })
+    expect(await mk({ malId: 7, match: 'close' })('Show', '1', 1400)).toEqual({ op: null, ed: null, recap: null })
+    expect(aniskip.getSkipTimes).not.toHaveBeenCalled()
+    aniskip.getSkipTimes.mockResolvedValue({ op: null, ed: null, recap: null })
+    for (const [t, info] of [['Show', { malId: 7, match: 'exact' }], ['Show', { malId: 7 }], ['Known', { malId: 7, match: 'close' }], ['Known', { malId: 7, match: 'id' }]]) {
+      aniskip.getSkipTimes.mockClear()
+      await mk(info)(t, '1', 1400)
+      expect(aniskip.getSkipTimes).toHaveBeenCalledTimes(1)
+    }
+  })
+  it('total episodes ignore a fuzzy title cache entry', () => {
+    const library = { findByAniCliTitle: vi.fn(() => null) }
+    const anilist = { getCached: vi.fn(() => ({ episodes: 24, match: 'close' })) }
+    expect(createTotalEpisodes({ library, anilist })('Show')).toBeNull()
+    anilist.getCached = vi.fn(() => ({ episodes: 24, match: 'exact' }))
+    expect(createTotalEpisodes({ library, anilist })('Show')).toBe(24)
+    anilist.getCached = vi.fn(() => ({ episodes: 24 }))
+    expect(createTotalEpisodes({ library, anilist })('Show')).toBe(24)
+  })
   it('looks up the total episode count with the watchlist entry and its AniList id', () => {
     const library = { findByAniCliTitle: vi.fn((t) => (t === 'Show' ? { aniListId: 42, totalEpisodes: null } : t === 'Done' ? { totalEpisodes: 12 } : null)) }
     const anilist = { getCached: vi.fn((t, { aniListId }) => (aniListId === 42 ? { episodes: 24 } : null)) }

@@ -47,10 +47,12 @@ export function infoCache(api, { now = Date.now } = {}) {
         until = Math.max(until, now() + MIN_TTL_MS)
         store.set(key, { info, until })
         // Also under the id key, so a later lookup by the freshly linked aniListId hits the same entry.
-        if (info?.id) store.set(keyOf(title, info.id), { info, until })
+        // A close (fuzzy) title match stays under the title key only: another entry that truly has this id must not get it.
+        const aliasId = info?.id && info.match !== 'close' ? info.id : null
+        if (aliasId) store.set(keyOf(title, aliasId), { info, until })
         // Every view of this series (by title or by id) learns about the fresh value, each function once.
         const targets = new Set(subs.get(key))
-        if (info?.id) for (const fn of subs.get(keyOf(title, info.id)) ?? []) targets.add(fn)
+        if (aliasId) for (const fn of subs.get(keyOf(title, aliasId)) ?? []) targets.add(fn)
         for (const fn of targets) fn(info)
         return info
       }).finally(() => { inflight.delete(key) })

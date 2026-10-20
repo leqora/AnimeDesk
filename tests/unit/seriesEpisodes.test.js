@@ -201,7 +201,7 @@ describe('seriesEpisodes marks', () => {
   })
   it('Search path: no id, not in library, AniList by title supplies the malId', async () => {
     const d = markDeps({ inLibrary: false })
-    d.anilist.getForTitle.mockResolvedValue({ id: 5, malId: 21, status: 'FINISHED' })
+    d.anilist.getForTitle.mockResolvedValue({ id: 5, malId: 21, status: 'FINISHED', match: 'exact' })
     const r = await run(d, { title: 'Show', list: ['1', '2', '3', '4', '5', '6'] })
     expect(d.fillerInfo.cached).toHaveBeenCalledWith(21, { airing: false })
     expect(r.marks).toBe('ok')
@@ -260,5 +260,40 @@ describe('seriesEpisodes marks', () => {
     expect(r.marks).toBe('unreliable')
     expect(r.markCounts).toEqual({ filler: 0, recap: 0 })
     expect(r.episodes.some((e) => 'kind' in e)).toBe(false)
+  })
+})
+
+describe('seriesEpisodes fuzzy title matches', () => {
+  const titleOnly = (match, over = {}) => {
+    const d = deps({ inLibrary: false, ...over })
+    d.anilist.getForTitle = vi.fn(async () => ({ id: 77, malId: 21, status: 'FINISHED', match }))
+    d.fillerInfo = { cached: vi.fn(() => null), ensure: vi.fn(async () => true) }
+    return d
+  }
+  it('close match on the title-only path: no episode data, no marks, episodes still listed', async () => {
+    const d = titleOnly('close')
+    const r = await createSeriesEpisodes(d).forSeries({ title: 'Show', list: ['1', '2', '3'] })
+    expect(d.episodeMeta.get).not.toHaveBeenCalled()
+    expect(d.fillerInfo.ensure).not.toHaveBeenCalled()
+    expect(r.meta).toBe('none')
+    expect(r.marks).toBe('none')
+    expect(r.episodes.map((e) => e.number)).toEqual(['1', '2', '3'])
+  })
+  it('a title-only hit without match is dropped too', async () => {
+    const d = titleOnly(undefined)
+    await createSeriesEpisodes(d).forSeries({ title: 'Show', list: ['1'] })
+    expect(d.episodeMeta.get).not.toHaveBeenCalled()
+  })
+  it('exact match on the title-only path keeps episode data', async () => {
+    const d = titleOnly('exact')
+    const r = await createSeriesEpisodes(d).forSeries({ title: 'Show', list: ['1'] })
+    expect(d.episodeMeta.get).toHaveBeenCalledWith(77, expect.anything())
+    expect(r.meta).toBe('ok')
+  })
+  it('a known id is unaffected by the match field', async () => {
+    const d = deps()
+    d.anilist.getCached = vi.fn(() => ({ id: 77, status: 'FINISHED', match: 'close' }))
+    await createSeriesEpisodes(d).forSeries({ title: 'Show' })
+    expect(d.episodeMeta.get).toHaveBeenCalledWith(77, expect.anything())
   })
 })

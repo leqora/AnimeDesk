@@ -359,6 +359,7 @@
   "anilist.matchLabel": "On AniList:",
   "anilist.notFound": "Series not found on AniList.",
   "anilist.choose": "Choose",
+  "anilist.uncertain": "Not sure which AniList series this is.",
   "anilist.change": "Change",
   "anilist.optOut": "Do not send for this series",
   "anilist.syncedEp": "AniList: EP {n} ✓",

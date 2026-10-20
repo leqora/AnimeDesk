@@ -359,6 +359,7 @@
   "anilist.matchLabel": "Na AniList-u:",
   "anilist.notFound": "Serija nije pronađena na AniList-u.",
   "anilist.choose": "Izaberi",
+  "anilist.uncertain": "Nije sigurno koja je ovo serija na AniList-u.",
   "anilist.change": "Promeni",
   "anilist.optOut": "Ne šalji za ovu seriju",
   "anilist.syncedEp": "AniList: EP {n} ✓",
