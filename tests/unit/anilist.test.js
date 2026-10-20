@@ -3,7 +3,8 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import crypto from 'node:crypto'
-import { createAniList, AniListAuthError, bestMatch, cleanDescription, SEARCH_VERSION, toNextAiring, isFresh } from '../../src/main/anilist.js'
+import { MATCH_VERSION } from '../../src/shared/titleMatch.js'
+import { createAniList, AniListAuthError, cleanDescription, SEARCH_VERSION, toNextAiring, isFresh } from '../../src/main/anilist.js'
 
 const media = (id, romaji, english, extra = {}) => ({
   id, idMal: 900 + id, title: { romaji, english, native: null }, coverImage: { large: `https://img/${id}.jpg` },
@@ -109,7 +110,7 @@ describe('anilist fallback searches', () => {
     expect((await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto the Movie 3: Guardians of the Crescent Moon')).id).toBe(2144)
   })
   it('falls back to the part before the last colon', async () => {
-    const f = mkSearchFetch({ 'Naruto Narutimate Hero 3': media(1074, 'NARUTO: Narutimate Hero 3', null) })
+    const f = mkSearchFetch({ 'Naruto Narutimate Hero 3': media(1074, 'NARUTO: Narutimate Hero 3', null, { synonyms: ['Naruto Narutimate Hero 3: Tsuini Gekitotsu! Jounin vs. Genin!!'] }) })
     const info = await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto Narutimate Hero 3: Tsuini Gekitotsu! Jounin vs. Genin!!')
     expect(info.id).toBe(1074)
     expect(searches(f)).toEqual(['Naruto Narutimate Hero 3: Tsuini Gekitotsu! Jounin vs. Genin!!', 'Tsuini Gekitotsu! Jounin vs. Genin!!', 'Naruto Narutimate Hero 3'])
@@ -141,7 +142,7 @@ describe('anilist fallback searches', () => {
     expect(searches(f)).toEqual(['Frieren: Beyond Journey’s End'])
   })
   it('keeps trying after one failing query', async () => {
-    const f = mkSearchFetch({ 'Road to Ninja': media(13667, 'ROAD TO NINJA', null) }, { failOn: ['Naruto: Shippuuden Movie 6: Road to Ninja'] })
+    const f = mkSearchFetch({ 'Road to Ninja': media(13667, 'ROAD TO NINJA: NARUTO THE MOVIE', 'Road to Ninja: Naruto the Movie') }, { failOn: ['Naruto: Shippuuden Movie 6: Road to Ninja'] })
     expect((await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Naruto: Shippuuden Movie 6: Road to Ninja')).id).toBe(13667)
   })
 })
@@ -150,12 +151,6 @@ describe('anilist', () => {
   it('cleans HTML out of descriptions', () => {
     expect(cleanDescription('Line one<br><br>Line <i>two</i>')).toBe('Line one\n\nLine two')
     expect(cleanDescription(null)).toBe('')
-  })
-  it('prefers an exact title match on any title, else the first result', () => {
-    const list = [media(1, 'A', 'B'), media(2, 'Shingeki no Kyojin', 'Attack on Titan')]
-    expect(bestMatch('attack on titan', list).id).toBe(2)
-    expect(bestMatch('Something else', list).id).toBe(1)
-    expect(bestMatch('x', [])).toBeNull()
   })
   it('returns info with an embedded poster and caches it', async () => {
     const info = await api.getForTitle('Attack on Titan')
@@ -220,7 +215,7 @@ describe('anilist rate limiting', () => {
     })
     const al = createAniList({ cacheDir, fetchImpl: f, sleep: async () => {} })
     // 12 titles do not fit one aliased request (10 max), so two waves compete for the queue
-    const res = await Promise.all(Array.from({ length: 12 }, (_, i) => al.getForTitle(`Title ${i}`)))
+    const res = await Promise.all(Array.from({ length: 12 }, (_, i) => al.getForTitle(`Show Five (${i})`)))
     expect(res.every((r) => r?.id === 5)).toBe(true)
     expect(f.mock.calls.filter(([u]) => !isImg(u)).length).toBe(2)
     expect(maxInFlight).toBe(1)
@@ -562,7 +557,7 @@ describe('anilist lookup batching', () => {
   })
 
   it('two titles sharing a candidate text get one alias and both cache files', async () => {
-    const f = mkSearchFetch({ 'Shared Sub Name': media(311, 'Shared Sub Name', 'Shared Sub Name', { status: 'FINISHED' }) })
+    const f = mkSearchFetch({ 'Shared Sub Name': media(311, 'Shared Sub Name', 'Shared Sub Name', { status: 'FINISHED', synonyms: ['Alpha: Shared Sub Name', 'Beta: Shared Sub Name'] }) })
     const al = createAniList({ cacheDir, fetchImpl: f })
     const [a, b] = await Promise.all([al.getForTitle('Alpha: Shared Sub Name'), al.getForTitle('Beta: Shared Sub Name')])
     expect([a.id, b.id]).toEqual([311, 311])
@@ -891,7 +886,7 @@ describe('anilist queue and errors', () => {
     const first = await al.getForTitle('Show Five')
     expect(first.id).toBe(5)
     expect(sleep).toHaveBeenCalledWith(5000)
-    const second = al.getForTitle('Other Show')
+    const second = al.getForTitle('Show Five (2)')
     await tick()
     expect(apiCalls()).toBe(1)
     release()
@@ -931,7 +926,7 @@ describe('anilist queue and errors', () => {
     const sleep = vi.fn(async () => { throw new Error('sleep broke') })
     const { al } = mkApi([() => json(page([hit]), { 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '2000000000' })], { sleep, now: () => 1_000_000 })
     expect((await al.getForTitle('Show Five')).id).toBe(5)
-    expect((await al.getForTitle('Other Show')).id).toBe(5)
+    expect((await al.getForTitle('Show Five (2)')).id).toBe(5)
   })
 
   it('tags HTTP errors with status', async () => {
@@ -1000,6 +995,149 @@ describe('anilist queue and errors', () => {
       const { al } = mkApi([limited(7), ok], { onRateLimited })
       expect((await al.getForTitle('Show Five')).id).toBe(5)
       expect(onRateLimited).toHaveBeenCalled()
+    })
+  })
+})
+
+describe('title matching and cache versions', () => {
+  const normKey = (t) => `t:${t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')}`
+  const fileFor = (key) => path.join(cacheDir, `${crypto.createHash('sha1').update(key).digest('hex')}.json`)
+  const apiCount = (f) => f.mock.calls.filter(([u]) => !u.startsWith('https://img/')).length
+  const read = (file) => JSON.parse(fs.readFileSync(file, 'utf8'))
+  const HOUR = 3600 * 1000
+  // A cached title entry as written by logic that predates matchVersion.
+  const oldEntry = (id, romaji, english, extra = {}) => ({
+    id, malId: 900 + id, title: english ?? romaji, romaji, genres: [], year: 2020, episodes: 12, duration: 24, description: '',
+    coverUrl: `https://img/${id}.jpg`, status: 'FINISHED', nextAiring: null, poster: 'data:image/jpeg;base64,AQID', fetchedAt: 1, ...extra,
+  })
+
+  it('SEARCH_VERSION follows the matching rule version', () => {
+    expect(SEARCH_VERSION).toBe(MATCH_VERSION)
+    expect(SEARCH_VERSION).toBe(3)
+  })
+  it('a title lookup stores match and matchVersion', async () => {
+    const info = await api.getForTitle('Attack on Titan')
+    expect(info).toMatchObject({ id: 1, match: 'exact', matchVersion: 3 })
+    expect(read(fileFor(normKey('Attack on Titan')))).toMatchObject({ match: 'exact', matchVersion: 3 })
+  })
+  it('the query is cleaned (trailing Arc) and the hit is stored as exact', async () => {
+    const f = mkSearchFetch({ 'Bleach: Thousand-Year Blood War': media(116674, 'Bleach: Sennen Kessen-hen', 'Bleach: Thousand-Year Blood War') })
+    const info = await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Bleach: Thousand-Year Blood War Arc')
+    expect(info).toMatchObject({ id: 116674, match: 'exact', matchVersion: 3 })
+  })
+  it('an id lookup stores match "id" and no matchVersion', async () => {
+    const info = await api.getForTitle('whatever', { aniListId: 2 })
+    expect(info.match).toBe('id')
+    expect(info).not.toHaveProperty('matchVersion')
+    expect(read(fileFor('id:2'))).toMatchObject({ match: 'id' })
+  })
+  it('an id entry is never rechecked as an old match', async () => {
+    await api.getForTitle('whatever', { aniListId: 2 })
+    const calls = fetchImpl.mock.calls.length
+    expect((await api.getForTitle('whatever', { aniListId: 2 })).id).toBe(2)
+    expect(fetchImpl.mock.calls.length).toBe(calls)
+  })
+  it('does not store synonyms in the cache entry', async () => {
+    const f = mkSearchFetch({ Show: media(7, 'Show', 'Show', { synonyms: ['Other Name'] }) })
+    expect(await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Show')).not.toHaveProperty('synonyms')
+  })
+  it('requests synonyms from AniList', async () => {
+    await api.getForTitle('Attack on Titan')
+    const queries = fetchImpl.mock.calls.filter(([u]) => !u.startsWith('https://img/')).map(([, init]) => JSON.parse(init.body).query)
+    expect(queries.length).toBeGreaterThan(0)
+    expect(queries.every((q) => q.includes('synonyms'))).toBe(true)
+  })
+  it('sends queries in searchQueries order and stops at the first accepted match', async () => {
+    const f = mkSearchFetch({
+      'Bleach: Thousand-Year Blood War': media(116674, 'Bleach: Sennen Kessen-hen', 'Bleach: Thousand-Year Blood War'),
+      'Thousand-Year Blood War': media(1, 'Wrong', 'Wrong'),
+    })
+    await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Bleach: Thousand-Year Blood War Arc')
+    expect(searches(f)).toEqual(['Bleach: Thousand-Year Blood War Arc', 'Bleach: Thousand-Year Blood War'])
+  })
+  it('an unrelated first result is not accepted', async () => {
+    const f = mkSearchFetch({ 'Lupin III: Goodbye Lady Liberty': media(13203, 'Lupin III: Mine Fujiko to Iu Onna', 'The Woman Called Fujiko Mine') })
+    expect(await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Lupin III: Goodbye Lady Liberty')).toBeNull()
+  })
+
+  describe('old title entries (no matchVersion)', () => {
+    const seed = (title, entry) => { const file = fileFor(normKey(title)); fs.writeFileSync(file, JSON.stringify(entry)); return file }
+    const LUPIN = 'Lupin III: Goodbye Lady Liberty'
+    const wrongLupin = () => oldEntry(13203, 'Lupin III: Mine Fujiko to Iu Onna', 'The Woman Called Fujiko Mine')
+
+    it('translates an old exact entry offline: match written, zero requests', async () => {
+      const file = seed('Attack on Titan', oldEntry(1, 'Shingeki no Kyojin', 'Attack on Titan'))
+      const f = vi.fn(async () => { throw new Error('no network expected') })
+      const info = await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Attack on Titan')
+      expect(info).toMatchObject({ id: 1, match: 'exact', matchVersion: 3 })
+      expect(f).not.toHaveBeenCalled()
+      expect(read(file)).toMatchObject({ id: 1, match: 'exact', matchVersion: 3, poster: 'data:image/jpeg;base64,AQID' })
+    })
+    it('translates through the romaji title too', async () => {
+      const file = seed('Shingeki no Kyojin', oldEntry(1, 'Shingeki no Kyojin', 'Attack on Titan'))
+      const f = vi.fn(async () => { throw new Error('no network expected') })
+      expect((await createAniList({ cacheDir, fetchImpl: f }).getForTitle('Shingeki no Kyojin')).match).toBe('exact')
+      expect(f).not.toHaveBeenCalled()
+      expect(read(file).matchVersion).toBe(3)
+    })
+    it('a translated airing entry that is stale is refreshed like any current-version entry', async () => {
+      const file = seed('Frieren', oldEntry(1, 'Frieren', 'Frieren', { status: 'RELEASING', fetchedAt: 1 }))
+      const f = mkFetch([media(1, 'Frieren', 'Frieren', { status: 'RELEASING' })])
+      const info = await createAniList({ cacheDir, fetchImpl: f, now: () => 10 * 24 * HOUR }).getForTitle('Frieren')
+      expect(info).toMatchObject({ id: 1, match: 'exact', matchVersion: 3, fetchedAt: 10 * 24 * HOUR })
+      expect(read(file).matchVersion).toBe(3)
+    })
+    it('an old non-exact entry is searched again even though it is fresh, and overwritten by the hit', async () => {
+      const file = seed(LUPIN, wrongLupin())
+      const f = mkSearchFetch({ [LUPIN]: media(5000, LUPIN, LUPIN) })
+      const info = await createAniList({ cacheDir, fetchImpl: f }).getForTitle(LUPIN)
+      expect(info).toMatchObject({ id: 5000, match: 'exact', matchVersion: 3 })
+      expect(read(file).id).toBe(5000)
+    })
+    it('a complete search without a hit writes a notFound marker, returns null and clears the retry guard', async () => {
+      let t = 5_000_000
+      const file = seed(LUPIN, wrongLupin())
+      const f = mkSearchFetch({ [LUPIN]: media(13203, 'Lupin III: Mine Fujiko to Iu Onna', 'The Woman Called Fujiko Mine') })
+      const al = createAniList({ cacheDir, fetchImpl: f, now: () => t })
+      expect(await al.getForTitle(LUPIN)).toBeNull()
+      expect(read(file)).toEqual({ notFound: true, at: t, searchVersion: 3 })
+      expect(al.getCached(LUPIN)).toBeNull()
+      const calls = apiCount(f)
+      expect(await al.getForTitle(LUPIN)).toBeNull() // the marker answers, no request
+      expect(apiCount(f)).toBe(calls)
+      t += 8 * 24 * HOUR // marker expired: searched again per the notFound rules
+      await al.getForTitle(LUPIN)
+      expect(apiCount(f)).toBeGreaterThan(calls)
+    })
+    it('clears refreshAttemptAt after a complete miss, so an old entry never comes back from the guard', async () => {
+      const file = seed(LUPIN, wrongLupin())
+      const f = mkSearchFetch({})
+      const al = createAniList({ cacheDir, fetchImpl: f })
+      expect(await al.getForTitle(LUPIN)).toBeNull()
+      fs.writeFileSync(file, JSON.stringify(wrongLupin())) // the old entry reappears (e.g. restored); the guard must not serve it
+      expect(await al.getForTitle(LUPIN)).toBeNull()
+    })
+    it('an incomplete search (network error) returns the old entry and leaves the file unchanged', async () => {
+      const old = wrongLupin()
+      const file = seed(LUPIN, old)
+      const al = createAniList({ cacheDir, fetchImpl: vi.fn(async () => { throw new Error('offline') }) })
+      expect(await al.getForTitle(LUPIN)).toEqual(old)
+      expect(read(file)).toEqual(old)
+    })
+    it('a rate-limited search (429) returns the old entry and leaves the file unchanged', async () => {
+      const old = wrongLupin()
+      const file = seed(LUPIN, old)
+      const f = vi.fn(async () => new Response('', { status: 429, headers: { 'Retry-After': '1' } }))
+      const al = createAniList({ cacheDir, fetchImpl: f, sleep: async () => {} })
+      expect((await al.getForTitle(LUPIN)).id).toBe(13203)
+      expect(read(file)).toEqual(old)
+    })
+    it('a current-version stale entry with a complete empty search keeps its entry (no marker)', async () => {
+      const cur = oldEntry(1, 'Shingeki no Kyojin', 'Attack on Titan', { status: 'RELEASING', fetchedAt: 1, match: 'exact', matchVersion: 3 })
+      const file = seed('Attack on Titan', cur)
+      const al = createAniList({ cacheDir, fetchImpl: mkFetch([]), now: () => 10 * 24 * HOUR })
+      expect((await al.getForTitle('Attack on Titan')).id).toBe(1)
+      expect(read(file)).toEqual(cur)
     })
   })
 })

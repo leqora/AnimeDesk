@@ -5,6 +5,7 @@ import { AIRED_GRACE_MS } from '../shared/airing.js'
 import { sequelsFromMedia } from '../shared/sequels.js'
 import { SEARCH, AIRING_BATCH, RELATIONS_BATCH, VIEWER, LIST_ENTRY, SAVE_PROGRESS, CANDIDATES } from './anilistQueries.js'
 import { createAniListBatcher } from './anilistBatch.js'
+import { MATCH_VERSION, searchQueries, pickMatch, isExactName } from '../shared/titleMatch.js'
 
 const ENDPOINT = 'https://graphql.anilist.co'
 const AIRING_CHUNK = 50
@@ -18,35 +19,6 @@ export function cleanDescription(s) {
     .replace(/<[^>]+>/g, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
-}
-
-export function bestMatch(title, results) {
-  const n = norm(title)
-  return results.find((r) => [r.title.romaji, r.title.english, r.title.native].some((t) => t && norm(t) === n)) ?? results[0] ?? null
-}
-
-// ani-cli titles often differ from AniList's ("Naruto: Shippuuden Movie 6: Road to Ninja"), and AniList
-// returns nothing for the full string. Retry with the subtitle (after the last ":" or " - "), then with the part before it — never with
-// a single word, which would match the wrong show (a wrong poster is worse than none). Last resort: the
-// title without "Movie N" / "OVA N" and punctuation ("Naruto: Shippuden the Movie 2 -Bonds-" → "Naruto Shippuden Bonds").
-export function searchCandidates(title) {
-  const full = String(title ?? '').trim()
-  const seps = [...full.matchAll(/:|\s-\s/g)]
-  const last = seps.at(-1)
-  const words = (s) => s.split(/\s+/).filter(Boolean).length
-  const out = [full]
-  if (last && last.index > 0) {
-    for (const part of [full.slice(last.index + last[0].length).trim(), full.slice(0, last.index).trim()]) {
-      if (words(part) >= 2 && !out.includes(part)) out.push(part)
-    }
-  }
-  const cleaned = full
-    .replace(/\b(?:the\s+)?movie\s*\d*\b|\bova\s*\d*\b/gi, ' ')
-    .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-  if (words(cleaned) >= 2 && cleaned !== full && !out.includes(cleaned)) out.push(cleaned)
-  return out
 }
 
 // Only the episode number and air time (AniList gives seconds) — fail closed on anything odd.
@@ -95,9 +67,9 @@ const MAX_WAIT_MS = 65_000
 const NOTIFY_MIN_WAIT_MS = 3000
 const NOTIFY_EVERY_MS = 30_000
 const NOT_FOUND_TTL_MS = 7 * 24 * 3600 * 1000
-// Stored with every "not found" entry. Bump it whenever searchCandidates/bestMatch change, so misses
-// remembered by older logic are retried right after an update instead of waiting out the 7 days.
-export const SEARCH_VERSION = 2
+// Stored with every "not found" entry and every title-keyed hit. It is MATCH_VERSION, so it changes whenever titleMatch
+// changes: misses and hits remembered by older matching logic are rechecked right after an update.
+export const SEARCH_VERSION = MATCH_VERSION
 
 export class AniListAuthError extends Error {
   constructor(message) {
@@ -220,16 +192,16 @@ export function createAniList({
   // `complete` is true only when every query got an answer, so a miss caused by errors is never remembered.
   async function findByTitle(title) {
     let complete = true
-    for (const query of searchCandidates(title)) {
+    for (const query of searchQueries(title)) {
       try {
-        const m = bestMatch(title, await batcher.search(query))
-        if (m) return { m, complete }
+        const hit = pickMatch(title, await batcher.search(query))
+        if (hit) return { m: hit.media, match: hit.match, complete }
       } catch (err) {
         complete = false // one failing query (network, server error) should not stop the next one
         if (err?.status === 429) break // rate-limited for good: more candidates would only add load
       }
     }
-    return { m: null, complete }
+    return { m: null, match: null, complete }
   }
 
   const refreshAttemptAt = new Map() // file -> start of the in-progress refresh, then the moment of its failure
@@ -237,10 +209,21 @@ export function createAniList({
 
   async function getForTitle(title, { aniListId = null } = {}) {
     const file = cacheFile(cacheKey(title, aniListId))
-    const cached = readJson(file, null).data
+    let cached = readJson(file, null).data
+    // A title-keyed hit made by older matching logic (no/other matchVersion) may be the wrong series: it is rechecked.
+    let oldMatch = false
     if (cached?.notFound) {
       if (cached.searchVersion === SEARCH_VERSION && now() - cached.at < NOT_FOUND_TTL_MS) return null
-    } else if (cached && isFresh(cached, now())) return cached
+    } else if (cached) {
+      oldMatch = !aniListId && cached.matchVersion !== SEARCH_VERSION
+      // Offline upgrade: an old hit whose names equal the title is certainly right, so no request is needed.
+      if (oldMatch && (isExactName(title, cached.title) || isExactName(title, cached.romaji))) {
+        cached = { ...cached, match: 'exact', matchVersion: SEARCH_VERSION }
+        writeJsonAtomic(file, cached)
+        oldMatch = false
+      }
+      if (!oldMatch && isFresh(cached, now())) return cached
+    }
     // Expired, or saved before malId/status/nextAiring existed: refresh it (a failed refresh is retried only after RETRY_AFTER_FAIL_MS), but never lose it.
     const stale = cached && !cached.notFound ? cached : null
     const fallback = () => (stale ? { malId: null, ...stale } : null)
@@ -259,14 +242,22 @@ export function createAniList({
     const run = (async () => {
       try {
         let m
+        let found = null
         if (aniListId) m = await batcher.byId(aniListId)
         else {
-          const found = await findByTitle(title)
+          found = await findByTitle(title)
           m = found.m
-          if (!m && found.complete && !stale) writeJsonAtomic(file, { notFound: true, at: now(), searchVersion: SEARCH_VERSION })
+          if (!m && found.complete && (!stale || oldMatch)) writeJsonAtomic(file, { notFound: true, at: now(), searchVersion: SEARCH_VERSION })
         }
-        if (!m) return failed()
-        const info = { ...toInfo(m), fetchedAt: now() }
+        if (!m) {
+          // A complete search that finds nothing replaces an old (probably wrong) hit; never hand it back.
+          if (oldMatch && found?.complete) {
+            refreshAttemptAt.delete(file)
+            return null
+          }
+          return failed()
+        }
+        const info = { ...toInfo(m), ...(found ? { match: found.match, matchVersion: SEARCH_VERSION } : { match: 'id' }), fetchedAt: now() }
         info.poster = stale?.poster && stale.coverUrl === info.coverUrl
           ? stale.poster
           : await posterDataUrl(info.coverUrl).catch(() => null)

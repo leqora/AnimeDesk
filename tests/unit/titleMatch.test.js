@@ -120,6 +120,12 @@ describe('pickMatch: exact', () => {
 })
 
 describe('pickMatch: close and null', () => {
+  it('prefers an exact match on any title and no longer falls back to the first result (was bestMatch)', () => {
+    const list = [media(1, 'A', { english: 'B' }), media(2, 'Shingeki no Kyojin', { english: 'Attack on Titan' })]
+    expect(pick('attack on titan', list)).toEqual({ id: 2, match: 'exact' })
+    expect(pickMatch('Something else', list)).toBeNull()
+    expect(pickMatch('x', [])).toBeNull()
+  })
   it('returns null for empty results and tolerates media without synonyms / other titles', () => {
     expect(pickMatch('Foo Bar', [])).toBeNull()
     expect(pickMatch('Foo Bar', [{ id: 1, title: { romaji: 'Foo Bar Baz' } }])).toMatchObject({ match: 'close' })
