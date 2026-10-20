@@ -219,7 +219,7 @@ export function createAniList({
       // Offline upgrade: an old hit whose names equal the title is certainly right, so no request is needed.
       if (oldMatch && (isExactName(title, cached.title) || isExactName(title, cached.romaji))) {
         cached = { ...cached, match: 'exact', matchVersion: SEARCH_VERSION }
-        writeJsonAtomic(file, cached)
+        try { writeJsonAtomic(file, cached) } catch { /* keep serving the upgraded entry from memory; the next call retries the write */ }
         oldMatch = false
       }
       if (!oldMatch && isFresh(cached, now())) return cached
@@ -229,7 +229,11 @@ export function createAniList({
     const fallback = () => (stale ? { malId: null, ...stale } : null)
     if (stale) {
       const attemptedAt = refreshAttemptAt.get(file)
-      if (attemptedAt != null && now() - attemptedAt < RETRY_AFTER_FAIL_MS) return fallback()
+      if (attemptedAt != null && now() - attemptedAt < RETRY_AFTER_FAIL_MS) {
+        // An old (possibly wrong) hit is never handed out while its recheck is still running: join that lookup instead.
+        if (oldMatch && inflight.has(file)) return inflight.get(file)
+        return fallback()
+      }
       refreshAttemptAt.set(file, now()) // set before the first await so concurrent calls are deduped
     }
     // Share one lookup per cache file; the retry pause is measured from the moment of failure, not from the start.

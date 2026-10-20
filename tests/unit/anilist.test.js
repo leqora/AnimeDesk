@@ -1088,11 +1088,14 @@ describe('title matching and cache versions', () => {
       expect(read(file).matchVersion).toBe(3)
     })
     it('an old non-exact entry is searched again even though it is fresh, and overwritten by the hit', async () => {
-      const file = seed(LUPIN, wrongLupin())
+      const file = seed(LUPIN, { ...wrongLupin(), poster: 'data:image/jpeg;base64,T0xE' })
       const f = mkSearchFetch({ [LUPIN]: media(5000, LUPIN, LUPIN) })
       const info = await createAniList({ cacheDir, fetchImpl: f }).getForTitle(LUPIN)
       expect(info).toMatchObject({ id: 5000, match: 'exact', matchVersion: 3 })
       expect(read(file).id).toBe(5000)
+      expect(read(file).coverUrl).toBe('https://img/5000.jpg')
+      expect(read(file).poster).toBe('data:image/jpeg;base64,AQID') // fetched for the new cover, the old poster is dropped
+      expect(info.poster).not.toContain('T0xE')
     })
     it('a complete search without a hit writes a notFound marker, returns null and clears the retry guard', async () => {
       let t = 5_000_000
@@ -1116,6 +1119,19 @@ describe('title matching and cache versions', () => {
       expect(await al.getForTitle(LUPIN)).toBeNull()
       fs.writeFileSync(file, JSON.stringify(wrongLupin())) // the old entry reappears (e.g. restored); the guard must not serve it
       expect(await al.getForTitle(LUPIN)).toBeNull()
+    })
+    it('two concurrent calls on an old wrong entry both get null (the second joins the lookup)', async () => {
+      seed(LUPIN, wrongLupin())
+      const al = createAniList({ cacheDir, fetchImpl: mkSearchFetch({}) })
+      expect(await Promise.all([al.getForTitle(LUPIN), al.getForTitle(LUPIN)])).toEqual([null, null])
+    })
+    it('a failing write during the offline upgrade does not break the lookup', async () => {
+      seed('Attack on Titan', oldEntry(1, 'Shingeki no Kyojin', 'Attack on Titan'))
+      const spy = vi.spyOn(fs, 'renameSync').mockImplementation(() => { throw Object.assign(new Error('busy'), { code: 'EBUSY' }) })
+      try {
+        const info = await createAniList({ cacheDir, fetchImpl: vi.fn(async () => { throw new Error('no network expected') }) }).getForTitle('Attack on Titan')
+        expect(info).toMatchObject({ id: 1, match: 'exact', matchVersion: 3 })
+      } finally { spy.mockRestore() }
     })
     it('an incomplete search (network error) returns the old entry and leaves the file unchanged', async () => {
       const old = wrongLupin()
