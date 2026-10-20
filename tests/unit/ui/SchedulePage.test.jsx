@@ -207,22 +207,74 @@ describe('SchedulePage', () => {
     expect(screen.getByRole('button', { name: /^Fresh/ })).toBeInTheDocument()
   })
 
-  it('reloads after midnight and resets a day that left the window', async () => {
+  it('reloads after midnight, resets a day that left the window and keeps one still inside', async () => {
     vi.useRealTimers()
     vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] })
     vi.setSystemTime(new Date(2026, 9, 21, 23, 30).getTime())
     const api = apiWith(data([item({ airingAt: at(1, 9) })]))
-    page(api)
+    const { unmount } = page(api)
     await act(async () => { await Promise.resolve() })
-    fireEvent.click(dayButtons()[6]) // the last day, then pick today explicitly below
-    fireEvent.click(dayButtons()[0])
-    expect(api.schedule.list).toHaveBeenCalledTimes(1)
+    fireEvent.click(dayButtons()[3]) // 24th: still inside after midnight
+    expect(dayButtons()[3]).toHaveAttribute('aria-pressed', 'true')
     vi.setSystemTime(new Date(2026, 9, 22, 0, 30).getTime())
     await act(async () => { await vi.advanceTimersByTimeAsync(60_000) })
     expect(api.schedule.list).toHaveBeenCalledTimes(2)
+    expect(dayButtons().filter((b) => b.getAttribute('aria-pressed') === 'true')).toHaveLength(1)
+    expect(dayButtons()[2]).toHaveAttribute('aria-pressed', 'true') // the 24th is index 2 now
+    unmount()
+
+    vi.setSystemTime(new Date(2026, 9, 21, 23, 30).getTime())
+    const api2 = apiWith(data([item({ airingAt: at(1, 9) })]))
+    page(api2)
+    await act(async () => { await Promise.resolve() })
+    fireEvent.click(dayButtons()[0]) // today leaves the window at midnight
+    vi.setSystemTime(new Date(2026, 9, 22, 0, 30).getTime())
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000) })
+    expect(api2.schedule.list).toHaveBeenCalledTimes(2)
     expect(dayButtons()[0]).toHaveTextContent('Danas')
     expect(dayButtons()[0]).toHaveAttribute('aria-pressed', 'true')
-    expect(dayButtons().filter((b) => b.getAttribute('aria-pressed') === 'true')).toHaveLength(1)
+  })
+
+  it('requests posters in chunks of 40 and settles every row', async () => {
+    const many = Array.from({ length: 45 }, (_, i) => item({ mediaId: 100 + i, title: `S${String(i).padStart(2, '0')}`, airingAt: at(0, 11, i) }))
+    const posters = vi.fn(async (ids) => Object.fromEntries(ids.map((id) => [id, null])))
+    const { container } = page(apiWith(data(many), { posters }))
+    await waitFor(() => expect(posters).toHaveBeenCalledTimes(2))
+    expect(posters.mock.calls.map((c) => c[0].length)).toEqual([40, 5])
+    await waitFor(() => expect(container.querySelector('.poster--skeleton')).toBeNull())
+  })
+
+  it('shows a poster from the second chunk', async () => {
+    const many = Array.from({ length: 45 }, (_, i) => item({ mediaId: 100 + i, title: `S${i}`, airingAt: at(0, 11, i) }))
+    const posters = vi.fn(async (ids) => (ids.includes(144) ? { 144: 'data:image/png;base64,ZZZZ' } : {}))
+    const { container } = page(apiWith(data(many), { posters }))
+    await waitFor(() => expect(container.querySelector('img[src="data:image/png;base64,ZZZZ"]')).not.toBeNull())
+  })
+
+  it('falls back to the empty frame when posters() rejects', async () => {
+    const posters = vi.fn(async () => { throw new Error('boom') })
+    const { container } = page(apiWith(data([item()]), { posters }))
+    await screen.findByRole('button', { name: /^Alpha/ })
+    await waitFor(() => expect(container.querySelector('.poster--skeleton')).toBeNull())
+    expect(container.querySelector('.poster--empty')).not.toBeNull()
+  })
+
+  it('keeps a shown poster when a later answer omits it', async () => {
+    let onSched
+    const posters = vi.fn().mockResolvedValueOnce({ 1: 'data:image/png;base64,KEEP' }).mockResolvedValue({})
+    const { container } = page(apiWith(null, { list: vi.fn(async () => data([item()])), posters, onChanged: vi.fn((cb) => { onSched = cb; return () => {} }) }))
+    await waitFor(() => expect(container.querySelector('img[src="data:image/png;base64,KEEP"]')).not.toBeNull())
+    await act(async () => { onSched() })
+    await waitFor(() => expect(posters).toHaveBeenCalledTimes(2))
+    expect(container.querySelector('img[src="data:image/png;base64,KEEP"]')).not.toBeNull()
+  })
+
+  it('counts only the 7-day window for chips and the default mode', async () => {
+    page(apiWith(data([item(), item({ mediaId: 2, title: 'Far', entryId: 'e9', airingAt: at(8, 9) }), item({ mediaId: 3, title: 'Past', entryId: 'e8', airingAt: at(-1, 9) })])))
+    const all = await screen.findByRole('button', { name: /^Sve/ })
+    expect(all).toHaveAttribute('aria-pressed', 'true')
+    expect(all).toHaveTextContent('1')
+    expect(screen.getByRole('button', { name: /Moje serije/ })).toHaveTextContent('0')
   })
 })
 

@@ -75,7 +75,8 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
     return () => { seq.current++; offSchedule(); offLibrary() }
   }, [api, dayKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const items = data?.items ?? []
+  // only the 7-day window counts (chips, default mode, rows)
+  const items = (data?.items ?? []).filter((i) => i.airingAt >= window7.from && i.airingAt < window7.to)
   const mineItems = items.filter((i) => i.entryId != null)
   const mode = modeChoice ?? (mineItems.length > 0 ? 'mine' : 'all')
   const shown = mode === 'mine' ? mineItems : items
@@ -93,16 +94,22 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
   }
 
   // Posters for the selected day's rows, never for rows whose poster is held back.
-  const idsKey = rows.filter((r) => !r.posterHidden).slice(0, MAX_POSTERS).map((r) => r.mediaId).join(',')
+  const idsKey = rows.filter((r) => !r.posterHidden).map((r) => r.mediaId).join(',')
   useEffect(() => {
     if (!idsKey) return undefined
     let alive = true
-    const ids = idsKey.split(',').map(Number)
-    api.schedule.posters(ids).then((map) => {
-      if (!alive || !map || typeof map !== 'object') return
-      // an id missing from the answer gets the empty frame instead of a skeleton that never ends
-      setPosters((prev) => ({ ...prev, ...Object.fromEntries(ids.map((id) => [id, null])), ...map }))
-    }).catch(() => {})
+    const all = idsKey.split(',').map(Number)
+    // an id missing from an answer (or a failed chunk) gets the empty frame, never a skeleton that never ends;
+    // a poster already shown is kept unless the new answer brings another one
+    const settle = (ids, map) => setPosters((prev) => {
+      const next = { ...prev }
+      for (const id of ids) next[id] = (map && typeof map === 'object' ? map[id] : null) ?? prev[id] ?? null
+      return next
+    })
+    for (let k = 0; k < all.length; k += MAX_POSTERS) {
+      const ids = all.slice(k, k + MAX_POSTERS)
+      api.schedule.posters(ids).then((map) => { if (alive) settle(ids, map) }).catch(() => { if (alive) settle(ids, null) })
+    }
     return () => { alive = false }
   }, [api, idsKey, data])
 
