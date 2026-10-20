@@ -49,6 +49,7 @@ import { createAutoDownloader } from './autoDownloader.js'
 import { createAniListAuth } from './anilistAuth.js'
 import { createAniListSync } from './anilistSync.js'
 import { createSequels } from './sequels.js'
+import { createRecommendations } from './recommendations.js'
 import { createTray } from './tray.js'
 import { shouldHideOnClose, startHidden, notificationText, shouldNotifyDownload, trayLabels } from './background.js'
 
@@ -218,6 +219,8 @@ async function main() {
   aniListSync.onChange(() => send(EVENTS.anilistSyncChanged))
   const sequels = createSequels({ file: paths.sequels, library, anilist, settings })
   sequels.onChange(() => send(EVENTS.sequelsChanged))
+  const recommendations = createRecommendations({ file: paths.recommendations, library, anilist, settings })
+  recommendations.onChange(() => send(EVENTS.recommendationsChanged))
   const applyLoginItem = () => {
     if (!app.isPackaged) return
     try { app.setLoginItemSettings({ openAtLogin: Boolean(settings.get().launchAtLogin), args: ['--hidden'] }) } catch (err) { console.warn('login item failed', err?.message) }
@@ -226,7 +229,7 @@ async function main() {
   // Auto-tracking and IPC both announce library changes through here; a newly "watching" series gets seeded promptly.
   const sendAndWatch = (channel, payload) => {
     send(channel, payload)
-    if (channel === EVENTS.libraryChanged) { airingWatcher.check(); autoDownloader.check(); aniListSync.check(); sequels.check() }
+    if (channel === EVENTS.libraryChanged) { airingWatcher.check(); autoDownloader.check(); aniListSync.check(); sequels.check(); recommendations.check() }
   }
   const watch = createWatchService({ mpvExtraArgs, skipsFor: skipLookup, aniCli, player, internalPlayer, positions, library: { recordWatched: (p) => tracker.recordWatched(p, 'auto') }, settings, notify: sendAndWatch, seriesPrefs, celebrations, getTotalEpisodes: totalEpisodes, episodeLists })
   const downloads = createDownloads({
@@ -264,11 +267,11 @@ async function main() {
   })
 
   registerIpc(ipcMain, createHandlers({
-    paths, dataBackup, settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, autoDownloader, updater, whatsNew, notifications: notificationsStore, aniListAuth, aniListSync, sequels,
+    paths, dataBackup, settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, autoDownloader, updater, whatsNew, notifications: notificationsStore, aniListAuth, aniListSync, sequels, recommendations,
     send: sendAndWatch,
-    onLibraryChanged: () => { airingWatcher.check(); autoDownloader.check(); aniListSync.check(); sequels.check() },
+    onLibraryChanged: () => { airingWatcher.check(); autoDownloader.check(); aniListSync.check(); sequels.check(); recommendations.check() },
     onSettingsChanged,
-    onCacheCleared: () => { fillerInfo.forget(); airingWatcher.refresh().catch(() => {}).finally(() => { autoDownloader.check(); sequels.check() }) },
+    onCacheCleared: () => { fillerInfo.forget(); airingWatcher.refresh().catch(() => {}).finally(() => { autoDownloader.check(); sequels.check(); recommendations.check() }) },
     window: { get: () => fullscreen?.get() ?? false, set: (v) => fullscreen?.set(v) },
     electron: {
       pickFolder: async () => {
@@ -314,6 +317,7 @@ async function main() {
   powerMonitor.on('resume', () => { downloads.rearm(); aniListSync.resume(); dataBackup.resume(); airingWatcher.refresh().finally(() => autoDownloader.check()) })
   airingWatcher.start()
   sequels.start()
+  recommendations.start()
   dataBackup.start()
   aniListSync.start()
   autoDownloader.start()
@@ -324,7 +328,7 @@ async function main() {
   setInterval(() => { if (health.get().reason === 'source-down') health.run() }, SIX_HOURS)
 
   app.on('window-all-closed', () => { if (!shouldHideOnClose({ closeToTray: settings.get().closeToTray, quitting })) app.quit() })
-  app.on('before-quit', () => { quitting = true; airingWatcher.stop(); autoDownloader.stop(); aniListSync.stop(); sequels.stop(); dataBackup.stop(); aniListAuth.dispose(); downloads.dispose(); tray?.destroy(); stopPositionEvents(); watch.dispose(); server.stop(); streams.stop() })
+  app.on('before-quit', () => { quitting = true; airingWatcher.stop(); autoDownloader.stop(); aniListSync.stop(); sequels.stop(); recommendations.stop(); dataBackup.stop(); aniListAuth.dispose(); downloads.dispose(); tray?.destroy(); stopPositionEvents(); watch.dispose(); server.stop(); streams.stop() })
 }
 
 // A failed startup must not leave a silent background process; a stray rejection must not go unnoticed.

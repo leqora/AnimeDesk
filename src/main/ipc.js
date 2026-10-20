@@ -210,6 +210,10 @@ export function createHandlers(s) {
     [INVOKE.sequelsList]: () => s.sequels.list(),
     [INVOKE.sequelsHide]: (id) => (Number.isInteger(id) && id > 0 ? s.sequels.hide(id) : { ok: false }),
     [INVOKE.sequelsUnhide]: (id) => (Number.isInteger(id) && id > 0 ? s.sequels.unhide(id) : { ok: false }),
+    [INVOKE.recommendationsList]: () => s.recommendations.list(),
+    [INVOKE.recommendationsHide]: (id) => (Number.isInteger(id) && id > 0 ? s.recommendations.hide(id) : { ok: false }),
+    [INVOKE.recommendationsUnhide]: (id) => (Number.isInteger(id) && id > 0 ? s.recommendations.unhide(id) : { ok: false }),
+    [INVOKE.recommendationsForSeries]: (id) => (Number.isInteger(id) && id > 0 ? s.recommendations.forSeries(id) : { items: [] }),
   }
 }
 
