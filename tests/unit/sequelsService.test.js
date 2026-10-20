@@ -132,7 +132,15 @@ describe('createSequels', () => {
 
   it('uses the getCached id for entries without aniListId and skips unresolved ones', async () => {
     entries = [entry('a1', null), entry('a2', null)]
-    anilist.getCached = vi.fn((title) => (title === 'Title a1' ? { id: 100 } : null))
+    anilist.getCached = vi.fn((title) => (title === 'Title a1' ? { id: 100, match: 'exact' } : null))
+    build()
+    await svc.refresh()
+    expect(anilist.relations.mock.calls[0][0]).toEqual([100])
+  })
+
+  it('only an exact title match yields an id (close and unversioned entries do not)', async () => {
+    entries = [entry('a1', null), entry('a2', null), entry('a3', null)]
+    anilist.getCached = vi.fn((title) => ({ 'Title a1': { id: 100, match: 'exact' }, 'Title a2': { id: 200, match: 'close' }, 'Title a3': { id: 300 } })[title] ?? null)
     build()
     await svc.refresh()
     expect(anilist.relations.mock.calls[0][0]).toEqual([100])

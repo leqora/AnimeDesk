@@ -33,6 +33,11 @@ describe('newEpisodeCount', () => {
     expect(newEpisodeCount(entry(), info({ nextAiring: null }), T - 1)).toBe(0)
     expect(newEpisodeCount(entry(), null, T - 1)).toBe(0)
   })
+  it('ignores a fuzzy (close) title match', () => {
+    expect(newEpisodeCount(entry(), info({ match: 'close' }), T - 1)).toBe(0)
+    expect(newEpisodeCount(entry(), info({ match: 'exact' }), T - 1)).toBe(3)
+    expect(newEpisodeCount(entry(), info({ match: 'id' }), T - 1)).toBe(3)
+  })
   it('ignores fractional specials and never goes negative', () => {
     expect(newEpisodeCount(entry({ watchedEpisodes: [1, 2, 2.5] }), info(), T - 1)).toBe(10)
     expect(newEpisodeCount(entry({ watchedEpisodes: [20] }), info(), T - 1)).toBe(0)
@@ -45,6 +50,10 @@ describe('upcoming', () => {
     expect(upcoming(info(), T)).toBeNull()
     expect(upcoming(info({ nextAiring: null }), T - 1)).toBeNull()
     expect(upcoming(undefined, T)).toBeNull()
+  })
+  it('ignores a fuzzy (close) title match', () => {
+    expect(upcoming(info({ match: 'close' }), T - 1)).toBeNull()
+    expect(upcoming(info({ match: 'exact' }), T - 1)).toEqual({ episode: 13, airingAt: T })
   })
 })
 

@@ -44,6 +44,8 @@ export function createSeriesEpisodes({ library, seriesPrefs, settings, anilist, 
       info = knownId
         ? (anilist.getCached(at, { aniListId: knownId }) ?? null)
         : await anilist.getForTitle(at, { aniListId: null }).catch(() => null)
+      // A title-only lookup must be an exact match to drive episode data or filler marks; a fuzzy guess drives nothing.
+      if (!knownId && info?.match !== 'exact') info = null
       id = knownId ?? info?.id ?? null
       anizip = id ? await episodeMeta.get(id, { airing: AIRING.has(info?.status) }) : null
       if (anizip && Object.keys(anizip.episodes ?? {}).length) meta = metaReliability(episodes, anizip)
