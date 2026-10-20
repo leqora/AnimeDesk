@@ -480,6 +480,8 @@
   "schedule.error": "The schedule is not available right now.",
   "schedule.stale": "Showing the schedule from {time} — refreshing failed.",
   "schedule.retry": "Try again",
+  "schedule.refreshing": "Refreshing…",
+  "schedule.retryIn": "Try again in {n} s",
   "schedule.mineEmpty": "None of your Watchlist series air in the next 7 days.",
   "schedule.showAll": "Show all",
   "schedule.dayEmpty": "No episodes this day.",

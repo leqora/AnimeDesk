@@ -67,6 +67,29 @@ describe('groupDay', () => {
     ], s, e)
     expect(rows.map((r) => r.mediaId)).toEqual([3, 2, 1])
   })
+  it('groupDay orders equal times by title with a fixed collator, then mediaId', () => {
+    const base = [
+      it0({ mediaId: 4, title: 'beta', airingAt: s + 5 }),
+      it0({ mediaId: 3, title: 'Alpha', airingAt: s + 5 }),
+      it0({ mediaId: 2, title: 'Ábc', airingAt: s + 5 }),
+      it0({ mediaId: 1, title: 'alpha', airingAt: s + 5 }),
+    ]
+    const perms = (a) => (a.length <= 1 ? [a] : a.flatMap((x, i) => perms([...a.slice(0, i), ...a.slice(i + 1)]).map((p) => [x, ...p])))
+    const orders = perms(base).map((p) => groupDay(p, s, e).map((r) => r.mediaId).join(','))
+    expect(new Set(orders).size).toBe(1)
+    // 'Ábc' folds to 'abc' (before 'alpha'); 'alpha' and 'Alpha' compare equal, so mediaId breaks the tie
+    expect(orders[0]).toBe('2,1,3,4')
+    // case alone never decides: the higher id comes first only when it really is later
+    const tie = groupDay([it0({ mediaId: 7, title: 'alpha', airingAt: s + 5 }), it0({ mediaId: 6, title: 'Alpha', airingAt: s + 5 })], s, e)
+    expect(tie.map((r) => r.mediaId)).toEqual([6, 7])
+  })
+  it('groupDay uses romaji when title is null', () => {
+    const rows = groupDay([
+      it0({ mediaId: 1, title: null, romaji: 'Zed', airingAt: s + 5 }),
+      it0({ mediaId: 2, title: 'Omega', airingAt: s + 5 }),
+    ], s, e)
+    expect(rows.map((r) => r.mediaId)).toEqual([2, 1])
+  })
   it('passes posterHidden through from the item', () => {
     const rows = groupDay([
       it0({ mediaId: 1, posterHidden: true }),

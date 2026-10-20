@@ -57,6 +57,10 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
   const [modeChoice, setMode] = useRouteState('mode', null)
   const [dayChoice, setDay] = useRouteState('day', null)
 
+  // Own 1 s clock for the retry countdown (useNow only ticks every minute); runs only while a countdown is on.
+  const [retryNow, setRetryNow] = useState(() => Date.now())
+  const [announced, setAnnounced] = useState({ at: null, n: 0 })
+
   const window7 = dayWindow(now)
   const dayKey = window7.from
 
@@ -77,16 +81,34 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
     return () => { seq.current++; offSchedule(); offLibrary() }
   }, [api, dayKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const retryAt = typeof data?.retryAt === 'number' ? data.retryAt : null
+  useEffect(() => {
+    const start = Date.now()
+    setRetryNow(start)
+    if (retryAt == null || retryAt <= start) return undefined
+    // the live region gets the message once, with the first count, so a screen reader does not read every second
+    setAnnounced({ at: retryAt, n: Math.ceil((retryAt - start) / 1000) })
+    const id = setInterval(() => {
+      const n = Date.now()
+      setRetryNow(n)
+      if (n >= retryAt) clearInterval(id)
+    }, 1000)
+    return () => clearInterval(id)
+  }, [retryAt])
+
   // only the 7-day window counts (chips, default mode, rows)
   const items = (data?.items ?? []).filter((i) => i.airingAt >= window7.from && i.airingAt < window7.to)
   const mineItems = items.filter((i) => i.entryId != null)
   const mode = modeChoice ?? (mineItems.length > 0 ? 'mine' : 'all')
   const shown = mode === 'mine' ? mineItems : items
-  // a stored day that left the window (past midnight) falls back to today
-  const dayStart = window7.days.includes(dayChoice) ? dayChoice : window7.days[0]
+  const dayRange = (i) => [window7.days[i], i + 1 < window7.days.length ? window7.days[i + 1] : window7.to]
+  const dayCount = (i) => groupDay(shown, ...dayRange(i)).length
+  // Until the user picks a day (or when the picked one left the window) the first day with rows is shown;
+  // derived, never stored, so it follows the mode and the data and never writes to the route history.
+  const firstFilled = window7.days.findIndex((_, i) => dayCount(i) > 0)
+  const dayStart = window7.days.includes(dayChoice) ? dayChoice : window7.days[Math.max(firstFilled, 0)]
   const dayIndex = window7.days.indexOf(dayStart)
-  const dayEnd = dayIndex + 1 < window7.days.length ? window7.days[dayIndex + 1] : window7.to
-  const rows = groupDay(shown, dayStart, dayEnd)
+  const rows = groupDay(shown, ...dayRange(dayIndex))
 
   const dayLabel = (i) => {
     if (i === 0) return t('schedule.today')
@@ -125,7 +147,20 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
   const state = data?.state ?? 'loading'
   const usable = state === 'ok' || state === 'stale'
   const staleTime = data?.fetchedAt != null ? new Date(data.fetchedAt).toLocaleString(t.locale, { day: 'numeric', month: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''
-  const dayCount = (i) => groupDay(shown, window7.days[i], i + 1 < window7.days.length ? window7.days[i + 1] : window7.to).length
+
+  const counting = retryAt != null && retryAt > retryNow
+  const refreshing = data?.refreshing === true
+  const retryBlocked = refreshing || counting
+  const retryLabel = refreshing ? t('schedule.refreshing') : counting ? t('schedule.retryIn', { n: Math.ceil((retryAt - retryNow) / 1000) }) : t('schedule.retry')
+  // aria-disabled, not disabled: a disabled button loses keyboard focus in Chromium
+  const retryButton = (
+    <button
+      type="button" aria-disabled={retryBlocked ? 'true' : undefined} aria-busy={refreshing ? 'true' : undefined}
+      onClick={() => { if (!retryBlocked) load(true) }}
+    >
+      {retryLabel}
+    </button>
+  )
 
   return (
     <section className="page schedule-page" aria-busy={state === 'loading' ? 'true' : undefined}>
@@ -136,10 +171,11 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
       <div className="schedule-live" role="status">
         {state === 'error' && <p className="muted">{t('schedule.error')}</p>}
         {state === 'stale' && <p className="muted">{t('schedule.stale', { time: staleTime })}</p>}
+        {counting && announced.at === retryAt && <p className="muted">{t('schedule.retryIn', { n: announced.n })}</p>}
       </div>
       {state === 'error' && (
         <div className="schedule-state">
-          <button type="button" onClick={() => load(true)}>{t('schedule.retry')}</button>
+          {retryButton}
         </div>
       )}
       {state === 'loading' && (
@@ -151,7 +187,7 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
         <>
           {state === 'stale' && (
             <div className="schedule-state schedule-state--stale">
-              <button type="button" onClick={() => load(true)}>{t('schedule.retry')}</button>
+              {retryButton}
             </div>
           )}
           <div className="status-chips" role="group" aria-label={t('schedule.modeGroup')}>
