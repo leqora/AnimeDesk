@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -1176,5 +1176,43 @@ describe('title matching and cache versions', () => {
       expect((await al.getForTitle('Attack on Titan')).id).toBe(1)
       expect(read(file)).toEqual(cur)
     })
+  })
+})
+
+describe('poster timeout', () => {
+  const url = 'http://img/1.jpg'
+  const mk = (fetchMock) => createAniList({ cacheDir, fetchImpl: fetchMock, setTimeoutFn: setTimeout, clearTimeoutFn: clearTimeout })
+
+  beforeEach(() => { vi.useFakeTimers() })
+  afterEach(() => { vi.useRealTimers() })
+
+  it('poster without options calls fetchImpl with the url only', async () => {
+    const f = vi.fn(async () => new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/jpeg' } }))
+    await mk(f).poster(url)
+    expect(f).toHaveBeenCalledWith(url)
+    expect(f.mock.calls[0].length).toBe(1)
+  })
+
+  it('poster aborts a hanging fetch after timeoutMs', async () => {
+    const f = vi.fn((u, { signal }) => new Promise((_, rej) => signal.addEventListener('abort', () => rej(new Error('aborted')))))
+    const p = mk(f).poster(url, { timeoutMs: 8000 })
+    await vi.advanceTimersByTimeAsync(8000)
+    expect(await p).toBeNull()
+    expect(f.mock.calls[0][1].signal.aborted).toBe(true)
+  })
+
+  it('poster times out a hanging body read', async () => {
+    const f = vi.fn(async () => ({ ok: true, headers: new Headers({ 'content-type': 'image/jpeg' }), arrayBuffer: () => new Promise(() => {}) }))
+    const p = mk(f).poster(url, { timeoutMs: 8000 })
+    await vi.advanceTimersByTimeAsync(8000)
+    expect(await p).toBeNull()
+  })
+
+  it('poster with timeout still returns the data url when fast', async () => {
+    const f = vi.fn(async () => new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/jpeg' } }))
+    const p = mk(f).poster(url, { timeoutMs: 8000 })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(await p).toBe('data:image/jpeg;base64,AQID')
+    expect(vi.getTimerCount()).toBe(0)
   })
 })

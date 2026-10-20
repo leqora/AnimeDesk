@@ -186,7 +186,11 @@ export function createSchedule({
     let state
     if (!record) state = !inflight && failedAt != null ? 'error' : 'loading'
     else state = failedAt != null ? 'stale' : 'ok'
-    return { state, refreshing: !!inflight, fetchedAt: record?.fetchedAt ?? null, from: w.from, days: w.days, items }
+    // When a forced retry becomes allowed again (null when it is allowed now or nothing is waiting for it).
+    const retryAt = !inflight && needsRefresh(t, w) && isPaused(t) && lastForceAt != null && lastForceAt <= t && t - lastForceAt < FORCE_MIN_MS
+      ? lastForceAt + FORCE_MIN_MS
+      : null
+    return { state, refreshing: !!inflight, fetchedAt: record?.fetchedAt ?? null, from: w.from, days: w.days, items, retryAt }
   }
 
   // Service-wide download limiter: at most POSTER_CONCURRENCY downloads at once across all posters() calls. A slot is freed
@@ -202,18 +206,21 @@ export function createSchedule({
     if (next) next() // the slot passes straight on
     else activeDownloads--
   }
-  const downloads = new Map() // `mediaId|coverUrl` -> { started, done }
+  const downloads = new Map() // `gen|mediaId|coverUrl` -> { started, done }
 
   function startDownload(key, url) {
     let d = downloads.get(key)
     if (d) return d
+    const g = gen
     let markStarted
     const started = new Promise((resolve) => { markStarted = resolve })
     const done = (async () => {
       await acquireSlot()
       markStarted()
       try {
-        return await Promise.resolve().then(() => anilist.poster(url)).catch(() => null)
+        // Stopped or forgotten while waiting for a slot: do not start the download (the slot still passes on below).
+        if (stopped || g !== gen) return null
+        return await Promise.resolve().then(() => anilist.poster(url, { timeoutMs: posterTimeoutMs })).catch(() => null)
       } finally {
         releaseSlot()
         downloads.delete(key)
@@ -259,7 +266,7 @@ export function createSchedule({
       todo.push({ id, item })
     }
     await Promise.all(todo.map(async ({ id, item }) => {
-      const dataUrl = await download(`${item.mediaId}|${item.coverUrl}`, item.coverUrl)
+      const dataUrl = await download(`${g}|${item.mediaId}|${item.coverUrl}`, item.coverUrl)
       if (stopped || g !== gen) return
       if (typeof dataUrl === 'string' && dataUrl) {
         posters[item.mediaId] = { coverUrl: item.coverUrl, dataUrl }
