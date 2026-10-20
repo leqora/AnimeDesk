@@ -76,7 +76,7 @@ export function AniListMatch({ entry, info, onChanged = () => {} }) {
       {!confirmed && info !== undefined && (
         entry.aniListId == null ? (
           <div className="row">
-            <span className="muted">{t(info?.match === 'close' ? 'anilist.uncertain' : 'anilist.notFound')}</span>
+            <span className="muted">{t(info ? 'anilist.uncertain' : 'anilist.notFound')}</span>
             <button type="button" onClick={() => setPicker(true)}>{t('anilist.choose')}</button>
           </div>
         ) : info && (

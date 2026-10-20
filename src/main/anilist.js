@@ -226,7 +226,9 @@ export function createAniList({
     }
     // Expired, or saved before malId/status/nextAiring existed: refresh it (a failed refresh is retried only after RETRY_AFTER_FAIL_MS), but never lose it.
     const stale = cached && !cached.notFound ? cached : null
-    const fallback = () => (stale ? { malId: null, ...stale } : null)
+    // An old title-keyed hit that could not be rechecked may be the wrong series: it is served as display-only
+    // (match 'close', in memory only, never written) so no consumer acts on its ids.
+    const fallback = () => (stale ? { malId: null, ...stale, ...(oldMatch ? { match: 'close' } : {}) } : null)
     if (stale) {
       const attemptedAt = refreshAttemptAt.get(file)
       if (attemptedAt != null && now() - attemptedAt < RETRY_AFTER_FAIL_MS) {

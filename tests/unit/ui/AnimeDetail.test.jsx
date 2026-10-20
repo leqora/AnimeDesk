@@ -215,6 +215,7 @@ describe('AnimeDetail fuzzy AniList match', () => {
     expect(screen.queryByText(/24 min/)).not.toBeInTheDocument()
     expect(screen.queryByText(/izlazi/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/novih|nova|nove/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Emituje se')).not.toBeInTheDocument()
     expect(screen.getByText(/2011/)).toBeInTheDocument()
   })
   it('a skipped close info does not consume the patch: a later exact info patches the same entry', async () => {

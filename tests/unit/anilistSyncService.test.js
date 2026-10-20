@@ -343,6 +343,16 @@ describe('anilistSync service', () => {
     expect(saveProgress).toHaveBeenCalledTimes(1)
   })
 
+  it('syncNow with no token makes no request and keeps the item queued', async () => {
+    tokenValue = null
+    const s = make()
+    s.syncNow('e1')
+    await clock.advance(10 * MIN)
+    expect(listEntry).not.toHaveBeenCalled()
+    expect(saveProgress).not.toHaveBeenCalled()
+    expect(stored().pending['100']).toBeTruthy()
+  })
+
   it('syncNow ignores entries that are not eligible', async () => {
     entries[0].aniListConfirmed = false
     const s = make()

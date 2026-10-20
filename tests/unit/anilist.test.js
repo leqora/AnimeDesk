@@ -1137,8 +1137,29 @@ describe('title matching and cache versions', () => {
       const old = wrongLupin()
       const file = seed(LUPIN, old)
       const al = createAniList({ cacheDir, fetchImpl: vi.fn(async () => { throw new Error('offline') }) })
-      expect(await al.getForTitle(LUPIN)).toEqual(old)
+      expect(await al.getForTitle(LUPIN)).toEqual({ ...old, match: 'close' }) // display-only, memory only
       expect(read(file)).toEqual(old)
+    })
+    it('an old entry is display-only (match close, not written) during the retry pause with nothing in flight', async () => {
+      const old = wrongLupin()
+      const file = seed(LUPIN, old)
+      const al = createAniList({ cacheDir, fetchImpl: vi.fn(async () => { throw new Error('offline') }) })
+      await al.getForTitle(LUPIN)
+      const again = await al.getForTitle(LUPIN) // inside the 1 h pause
+      expect(again).toMatchObject({ id: 13203, malId: old.malId, match: 'close' })
+      expect(read(file)).toEqual(old)
+    })
+    it('an old entry without malId gets malId null when served as display-only', async () => {
+      const { malId, ...noMal } = wrongLupin()
+      seed(LUPIN, noMal)
+      const al = createAniList({ cacheDir, fetchImpl: vi.fn(async () => { throw new Error('offline') }) })
+      expect(await al.getForTitle(LUPIN)).toMatchObject({ malId: null, match: 'close' })
+    })
+    it('a current-version stale entry hit by a network error is returned unchanged (no forced close)', async () => {
+      const cur = oldEntry(1, 'Shingeki no Kyojin', 'Attack on Titan', { status: 'RELEASING', fetchedAt: 1, match: 'exact', matchVersion: 3 })
+      seed('Attack on Titan', cur)
+      const al = createAniList({ cacheDir, fetchImpl: vi.fn(async () => { throw new Error('offline') }), now: () => 10 * 24 * HOUR })
+      expect(await al.getForTitle('Attack on Titan')).toEqual(cur)
     })
     it('a rate-limited search (429) returns the old entry and leaves the file unchanged', async () => {
       const old = wrongLupin()

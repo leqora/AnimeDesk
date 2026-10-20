@@ -51,6 +51,11 @@ describe('AniListMatch', () => {
       await waitFor(() => expect(api.anilistSync.confirm).toHaveBeenCalledWith('e1', 7))
       await waitFor(() => expect(onChanged).toHaveBeenCalled())
     })
+    it('a non-close info without id (exact before the id patch lands) is "uncertain", never "not found"', async () => {
+      setup({ status: OFF, entry: { id: 'e1', title: 'Naruto', aniListId: null }, infoProp: { ...info, id: 5, match: 'exact' } })
+      expect(await screen.findByText('Nije sigurno koja je ovo serija na AniList-u.')).toBeTruthy()
+      expect(screen.queryByText('Serija nije pronađena na AniList-u.')).toBeNull()
+    })
     it('a close match without id says it is not sure (sr and en) and still offers "Izaberi"', async () => {
       const closeInfo = { ...info, id: 5, match: 'close' }
       const a = setup({ status: OFF, entry: { id: 'e1', title: 'Naruto', aniListId: null }, infoProp: closeInfo })
