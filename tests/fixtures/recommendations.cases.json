@@ -1,0 +1,6720 @@
+{
+ "source": "AniList recommendations of the 100 most popular anime + trending 50, 2026-10-20T03:41:45.181Z; reviewed by hand 2026-10-20",
+ "cases": [
+  {
+   "id": 21,
+   "title": "ONE PIECE",
+   "romaji": "ONE PIECE",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 1999,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 97940,
+   "title": "Black Clover",
+   "romaji": "Black Clover",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21459,
+   "title": "My Hero Academia",
+   "romaji": "Boku no Hero Academia",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 269,
+   "title": "Bleach",
+   "romaji": "BLEACH",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2004,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 113415,
+   "title": "JUJUTSU KAISEN",
+   "romaji": "Jujutsu Kaisen",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "MOVIE",
+     "year": 2021
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 97938,
+   "title": "Boruto: Naruto Next Generations",
+   "romaji": "BORUTO: NARUTO NEXT GENERATIONS",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2007
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 11061,
+   "title": "Hunter x Hunter (2011)",
+   "romaji": "HUNTER×HUNTER (2011)",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 223,
+   "title": "Dragon Ball",
+   "romaji": "Dragon Ball",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 1986,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 101922,
+   "title": "Demon Slayer: Kimetsu no Yaiba",
+   "romaji": "Kimetsu no Yaiba",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 813,
+   "title": "Dragon Ball Z",
+   "romaji": "Dragon Ball Z",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 1989,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 1986
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 20,
+   "title": "Naruto",
+   "romaji": "NARUTO",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2002,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 1735,
+   "title": "Naruto: Shippuden",
+   "romaji": "NARUTO: Shippuuden",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2007,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2002
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 6702,
+   "title": "Fairy Tail",
+   "romaji": "FAIRY TAIL",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2009,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 5114,
+   "title": "Fullmetal Alchemist: Brotherhood",
+   "romaji": "Hagane no Renkinjutsushi: FULLMETAL ALCHEMIST",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2009,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 116674,
+   "title": "BLEACH: Thousand-Year Blood War",
+   "romaji": "BLEACH: Sennen Kessen-hen",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2004
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 392,
+   "title": "Yu Yu Hakusho: Ghostfiles",
+   "romaji": "Yuu☆Yuu☆Hakusho",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 1992,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 116673,
+   "title": "BURN THE WITCH",
+   "romaji": "BURN THE WITCH",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "SPECIAL",
+     "year": 2023
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 145064,
+   "title": "JUJUTSU KAISEN Season 2",
+   "romaji": "Jujutsu Kaisen 2nd Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2020
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 1482,
+   "title": "D.Gray-man",
+   "romaji": "D.Gray-man",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2006,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 1575,
+   "title": "Code Geass: Lelouch of the Rebellion",
+   "romaji": "Code Geass: Hangyaku no Lelouch",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2006,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 19,
+   "title": "Monster",
+   "romaji": "MONSTER",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2004,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 2904,
+   "title": "Code Geass: Lelouch of the Rebellion R2",
+   "romaji": "Code Geass: Hangyaku no Lelouch R2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2008,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2006
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 101759,
+   "title": "The Promised Neverland",
+   "romaji": "Yakusoku no Neverland",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20623,
+   "title": "Parasyte -the maxim-",
+   "romaji": "Kiseijuu: Sei no Kakuritsu",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20661,
+   "title": "Terror in Resonance",
+   "romaji": "Zankyou no Terror",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 114124,
+   "title": "Moriarty the Patriot",
+   "romaji": "Yuukoku no Moriarty",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20931,
+   "title": "Death Parade",
+   "romaji": "Death Parade",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 117343,
+   "title": "Talentless Nana",
+   "romaji": "Munou na Nana",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 127401,
+   "title": "Platinum End",
+   "romaji": "Platinum End",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 1535,
+   "title": "Death Note",
+   "romaji": "DEATH NOTE",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2006,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 116589,
+   "title": "86 EIGHTY-SIX",
+   "romaji": "86: Eighty Six",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 131586,
+   "title": "86 EIGHTY-SIX Part 2",
+   "romaji": "86: Eighty Six Part 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2021
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 10793,
+   "title": "Guilty Crown",
+   "romaji": "Guilty Crown",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "SPECIAL",
+     "year": 2012
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 104578,
+   "title": "Attack on Titan Season 3 Part 2",
+   "romaji": "Shingeki no Kyojin Season 3 Part 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2018
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 2001,
+   "title": "Gurren Lagann",
+   "romaji": "Tengen Toppa Gurren Lagann",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2007,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 162314,
+   "title": "Attack on Titan Final Season THE FINAL CHAPTERS Special 2",
+   "romaji": "Shingeki no Kyojin: The Final Season - Kanketsu-hen Kouhen",
+   "format": "SPECIAL",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "SPECIAL",
+     "year": 2023
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 130298,
+   "title": "The Eminence in Shadow",
+   "romaji": "Kage no Jitsuryokusha ni Naritakute!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 16498,
+   "title": "Attack on Titan",
+   "romaji": "Shingeki no Kyojin",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 2015
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 13759,
+   "title": "The Pet Girl of Sakurasou",
+   "romaji": "Sakurasou no Pet na Kanojo",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 101921,
+   "title": "Kaguya-sama: Love is War",
+   "romaji": "Kaguya-sama wa Kokurasetai: Tensaitachi no Renai Zunousen",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 17895,
+   "title": "Golden Time",
+   "romaji": "Golden Time",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 14813,
+   "title": "My Teen Romantic Comedy SNAFU",
+   "romaji": "Yahari Ore no Seishun Love Come wa Machigatteiru.",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 124080,
+   "title": "Horimiya",
+   "romaji": "Horimiya",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 7054,
+   "title": "Maid-Sama!",
+   "romaji": "Kaichou wa Maid-sama!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2010,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 141949,
+   "title": "More than a Married Couple, but Not Lovers.",
+   "romaji": "Fuufu Ijou, Koibito Miman.",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 101291,
+   "title": "Rascal Does Not Dream of Bunny Girl Senpai",
+   "romaji": "Seishun Buta Yarou wa Bunny Girl Senpai no Yume wo Minai",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 14227,
+   "title": "My Little Monster",
+   "romaji": "Tonari no Kaibutsu-kun",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 14741,
+   "title": "Love, Chunibyo & Other Delusions",
+   "romaji": "Chuunibyou demo Koi ga Shitai!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 3588,
+   "title": "Soul Eater",
+   "romaji": "Soul Eater",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2008,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 195600,
+   "title": "Daemons of the Shadow Realm",
+   "romaji": "Yomi no Tsugai",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 147105,
+   "title": "Witch Hat Atelier",
+   "romaji": "Tongari Boushi no Atelier",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21234,
+   "title": "ERASED",
+   "romaji": "Boku dake ga Inai Machi",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21355,
+   "title": "Re:ZERO -Starting Life in Another World-",
+   "romaji": "Re:Zero kara Hajimeru Isekai Seikatsu",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 129201,
+   "title": "Summer Time Rendering",
+   "romaji": "Summer Time Render",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 9756,
+   "title": "Puella Magi Madoka Magica",
+   "romaji": "Mahou Shoujo Madoka☆Magica",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 108632,
+   "title": "Re:ZERO -Starting Life in Another World- Season 2",
+   "romaji": "Re:Zero kara Hajimeru Isekai Seikatsu 2nd Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2016
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 128546,
+   "title": "Vivy -Fluorite Eye's Song-",
+   "romaji": "Vivy: Fluorite Eye’s Song",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 126403,
+   "title": "Link Click",
+   "romaji": "Shiguang Dailiren",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": null,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 120120,
+   "title": "Tokyo Revengers",
+   "romaji": "Tokyo Revengers",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21127,
+   "title": "Steins;Gate 0",
+   "romaji": "Steins;Gate 0",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 2015
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 119661,
+   "title": "Re:ZERO -Starting Life in Another World- Season 2 Part 2",
+   "romaji": "Re:Zero kara Hajimeru Isekai Seikatsu 2nd Season Part 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2020
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 115230,
+   "title": "Tower of God",
+   "romaji": "Kami no Tou: Tower of God",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 14719,
+   "title": "JoJo's Bizarre Adventure (TV)",
+   "romaji": "JoJo no Kimyou na Bouken (TV)",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21507,
+   "title": "Mob Psycho 100",
+   "romaji": "Mob Psycho 100",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 99263,
+   "title": "The Rising of the Shield Hero",
+   "romaji": "Tate no Yuusha no Nariagari",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 17265,
+   "title": "Log Horizon",
+   "romaji": "Log Horizon",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20920,
+   "title": "Is It Wrong to Try to Pick Up Girls in a Dungeon?",
+   "romaji": "Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 151807,
+   "title": "Solo Leveling",
+   "romaji": "Ore dake Level Up na Ken",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 151970,
+   "title": "Shangri-La Frontier",
+   "romaji": "Shangri-La Frontier",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 101280,
+   "title": "That Time I Got Reincarnated as a Slime",
+   "romaji": "Tensei Shitara Slime Datta Ken",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 106479,
+   "title": "BOFURI: I Don't Want to Get Hurt, so I'll Max Out My Defense.",
+   "romaji": "Itai no wa Iya nano de Bougyoryoku ni Kyokufuri Shitai to Omoimasu.",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 11759,
+   "title": "Accel World",
+   "romaji": "Accel World",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 107420,
+   "title": "Infinite Dendrogram",
+   "romaji": "Infinite Dendrogram",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 126791,
+   "title": "Full Dive: This Ultimate Next-Gen Full Dive RPG Is Even Shittier than Real Life!",
+   "romaji": "Kyuukyoku Shinka Shita Full Dive RPG ga Genjitsu yori mo Kusogee Dattara",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 101348,
+   "title": "Vinland Saga",
+   "romaji": "VINLAND SAGA",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21196,
+   "title": "Kabaneri of the Iron Fortress",
+   "romaji": "Koutetsujou no Kabaneri",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20829,
+   "title": "Seraph of the End: Vampire Reign",
+   "romaji": "Owari no Seraph",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 153288,
+   "title": "Kaiju No. 8",
+   "romaji": "Kaijuu 8-gou",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 110353,
+   "title": "DECA-DENCE",
+   "romaji": "Deca-Dence",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 98314,
+   "title": "Kakegurui",
+   "romaji": "Kakegurui",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 15315,
+   "title": "Problem Children Are Coming From Another World, Aren't They?",
+   "romaji": "Mondaiji-tachi ga Isekai kara Kuru Sou desu yo?",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20832,
+   "title": "Overlord",
+   "romaji": "Overlord",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 98659,
+   "title": "Classroom of the Elite",
+   "romaji": "Youkoso Jitsuryoku Shijou Shugi no Kyoushitsu e",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 131863,
+   "title": "Liar, Liar",
+   "romaji": "Liar Liar",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20994,
+   "title": "Gate",
+   "romaji": "GATE: Jieitai Kanochi nite, Kaku Tatakaeri",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 108463,
+   "title": "Toilet-bound Hanako-kun",
+   "romaji": "Jibaku Shounen Hanako-kun",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 14713,
+   "title": "Kamisama Kiss",
+   "romaji": "Kamisama Hajimemashita",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 15809,
+   "title": "The Devil is a Part-Timer!",
+   "romaji": "Hataraku Maou-sama!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 18153,
+   "title": "Beyond the Boundary",
+   "romaji": "Kyoukai no Kanata",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 2014
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 142877,
+   "title": "Rurouni Kenshin (2023)",
+   "romaji": "Rurouni Kenshin: Meiji Kenkaku Romantan (2023)",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 107201,
+   "title": "In/Spectre",
+   "romaji": "Kyokou Suiri",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21311,
+   "title": "Bungo Stray Dogs",
+   "romaji": "Bungou Stray Dogs",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 131646,
+   "title": "The Case Study of Vanitas",
+   "romaji": "Vanitas no Carte",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 101903,
+   "title": "Run with the Wind",
+   "romaji": "Kaze ga Tsuyoku Fuiteiru",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 134732,
+   "title": "Aoashi",
+   "romaji": "Aoashi",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 11771,
+   "title": "Kuroko's Basketball",
+   "romaji": "Kuroko no Basket",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "SPECIAL",
+     "year": 2013
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 137822,
+   "title": "BLUE LOCK",
+   "romaji": "Blue Lock",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 101239,
+   "title": "Ahiru no Sora",
+   "romaji": "Ahiru no Sora",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 125839,
+   "title": "Backflip!!",
+   "romaji": "Bakuten!!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 18507,
+   "title": "Free! -Iwatobi Swim Club-",
+   "romaji": "Free!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "MOVIE",
+     "year": 2015
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 113231,
+   "title": "2.43: Seiin High School Boys Volleyball Team",
+   "romaji": "2.43: Seiin Koukou Danshi Volley-bu",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 10800,
+   "title": "Chihayafuru",
+   "romaji": "Chihayafuru",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 98005,
+   "title": "Welcome to the Ballroom",
+   "romaji": "Ballroom e Youkoso",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 127230,
+   "title": "Chainsaw Man",
+   "romaji": "Chainsaw Man",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 226,
+   "title": "Elfen Lied",
+   "romaji": "Elfen Lied",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2004,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21341,
+   "title": "AJIN: Demi-Human",
+   "romaji": "Ajin",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 6880,
+   "title": "Deadman Wonderland",
+   "romaji": "Deadman Wonderland",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 114085,
+   "title": "Kemono Jihen",
+   "romaji": "Kemono Jihen",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 99531,
+   "title": "Devils' Line",
+   "romaji": "Devils' Line",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 108725,
+   "title": "The Promised Neverland Season 2",
+   "romaji": "Yakusoku no Neverland 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2019
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 116566,
+   "title": "Akudama Drive",
+   "romaji": "Akudama Drive",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 120377,
+   "title": "Cyberpunk: Edgerunners",
+   "romaji": "Cyberpunk: Edgerunners",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20789,
+   "title": "The Seven Deadly Sins",
+   "romaji": "Nanatsu no Taizai",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21123,
+   "title": "DRIFTERS",
+   "romaji": "DRIFTERS",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 146493,
+   "title": "Ragna Crimson",
+   "romaji": "Ragna Crimson",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 141821,
+   "title": "Chained Soldier",
+   "romaji": "Mato Seihei no Slave",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 1818,
+   "title": "Claymore",
+   "romaji": "CLAYMORE",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2007,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20958,
+   "title": "Attack on Titan Season 2",
+   "romaji": "Shingeki no Kyojin Season 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2013
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 160900,
+   "title": "The Kingdoms of Ruin",
+   "romaji": "Hametsu no Oukoku",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20605,
+   "title": "Tokyo Ghoul",
+   "romaji": "Tokyo Ghoul",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 2015
+    },
+    {
+     "format": "OVA",
+     "year": 2015
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 98460,
+   "title": "Devilman Crybaby",
+   "romaji": "DEVILMAN crybaby",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 97922,
+   "title": "INUYASHIKI LAST HERO",
+   "romaji": "Inuyashiki",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 99750,
+   "title": "I Want to Eat Your Pancreas",
+   "romaji": "Kimi no Suizou wo Tabetai",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20954,
+   "title": "A Silent Voice",
+   "romaji": "Koe no Katachi",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21827,
+   "title": "Violet Evergarden",
+   "romaji": "Violet Evergarden",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 4181,
+   "title": "Clannad: After Story",
+   "romaji": "CLANNAD: After Story",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2008,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2007
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 9989,
+   "title": "Anohana: The Flower We Saw That Day",
+   "romaji": "Ano Hi Mita Hana no Namae wo Bokutachi wa Mada Shiranai.",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21366,
+   "title": "March comes in like a lion",
+   "romaji": "3-gatsu no Lion",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 98478,
+   "title": "March comes in like a lion Season 2",
+   "romaji": "3-gatsu no Lion 2nd Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2016
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 20872,
+   "title": "Plastic Memories",
+   "romaji": "Plastic Memories",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 202269,
+   "title": "Love Unseen Beneath the Clear Night Sky",
+   "romaji": "Toumei na Yoru ni Kakeru Kimi to, Me ni Mienai Koi wo Shita.",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 16592,
+   "title": "Danganronpa: The Animation",
+   "romaji": "Danganronpa: Kibou no Gakuen to Zetsubou no Koukousei - The Animation",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2016
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 245,
+   "title": "GTO: Great Teacher Onizuka",
+   "romaji": "GTO",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 1999,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 1994
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 104276,
+   "title": "My Hero Academia Season 4",
+   "romaji": "Boku no Hero Academia 4",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2018
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 146323,
+   "title": "Spy Classroom",
+   "romaji": "Spy Kyoushitsu",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 117193,
+   "title": "My Hero Academia Season 5",
+   "romaji": "Boku no Hero Academia 5",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2019
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 145545,
+   "title": "Classroom of the Elite Season 2",
+   "romaji": "Youkoso Jitsuryoku Shijou Shugi no Kyoushitsu e 2nd Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2017
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 146066,
+   "title": "Classroom of the Elite Season 3",
+   "romaji": "Youkoso Jitsuryoku Shijou Shugi no Kyoushitsu e 3rd Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2022
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 20613,
+   "title": "Akame ga Kill!",
+   "romaji": "Akame ga Kill!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 101168,
+   "title": "Plunderer",
+   "romaji": "Plunderer",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 14513,
+   "title": "Magi: The Labyrinth of Magic",
+   "romaji": "Magi: The labyrinth of magic",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2016
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 116752,
+   "title": "The Seven Deadly Sins: Dragon's Judgement",
+   "romaji": "Nanatsu no Taizai: Funnu no Shinpan",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2019
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 99540,
+   "title": "The Seven Deadly Sins the Movie: Prisoners of the Sky",
+   "romaji": "Nanatsu no Taizai Movie: Tenkuu no Torawarebito",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "eligible": false
+  },
+  {
+   "id": 114236,
+   "title": "Fire Force Season 2",
+   "romaji": "Enen no Shouboutai: Ni no Shou",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2019
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 21519,
+   "title": "Your Name.",
+   "romaji": "Kimi no Na wa.",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20665,
+   "title": "Your lie in April",
+   "romaji": "Shigatsu wa Kimi no Uso",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 2015
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 113596,
+   "title": "Josee, the Tiger and the Fish",
+   "romaji": "Josee to Tora to Sakanatachi",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 166794,
+   "title": "A Sign of Affection",
+   "romaji": "Yubisaki to Renren",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20968,
+   "title": "The Anthem of the Heart",
+   "romaji": "Kokoro ga Sakebitagatterun da.",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 100178,
+   "title": "Liz and the Blue Bird",
+   "romaji": "Liz to Aoi Tori",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2016
+    },
+    {
+     "format": "MOVIE",
+     "year": 2017
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 114535,
+   "title": "To Your Eternity",
+   "romaji": "Fumetsu no Anata e",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 131573,
+   "title": "JUJUTSU KAISEN 0",
+   "romaji": "Jujutsu Kaisen 0",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 113108,
+   "title": "Kingdom Season 3",
+   "romaji": "Kingdom 3rd Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2013
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 136430,
+   "title": "Vinland Saga Season 2",
+   "romaji": "VINLAND SAGA SEASON 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2019
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 151801,
+   "title": "MASHLE: MAGIC AND MUSCLES",
+   "romaji": "MASHLE",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 101338,
+   "title": "Mob Psycho 100 II",
+   "romaji": "Mob Psycho 100 II",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2016
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 21804,
+   "title": "The Disastrous Life of Saiki K.",
+   "romaji": "Saiki Kusuo no Ψ-nan",
+   "format": "TV_SHORT",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 140439,
+   "title": "Mob Psycho 100 III",
+   "romaji": "Mob Psycho 100 III",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2019
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 166610,
+   "title": "MASHLE: MAGIC AND MUSCLES Season 2",
+   "romaji": "MASHLE: Kami Shinkakusha Kouho Senbatsu Shiken-hen",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2023
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 122434,
+   "title": "The Idaten Deities Know Only Peace",
+   "romaji": "Heion Sedai no Idaten-tachi",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 156092,
+   "title": "To Be Hero X",
+   "romaji": "Tu Bian Yingxiong X",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": null,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 105156,
+   "title": "Cautious Hero: The Hero Is Overpowered but Overly Cautious",
+   "romaji": "Shinchou Yuusha: Kono Yuusha ga Ore TUEEE Kuse ni Shinchou Sugiru",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 116588,
+   "title": "Combatants Will Be Dispatched!",
+   "romaji": "Sentouin, Hakenshimasu!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 107871,
+   "title": "Princess Connect! Re:Dive",
+   "romaji": "Princess Connect! Re:Dive",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 135806,
+   "title": "Uncle from Another World",
+   "romaji": "Isekai Oji-san",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 104454,
+   "title": "Isekai Quartet",
+   "romaji": "Isekai Quartet",
+   "format": "TV_SHORT",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 125206,
+   "title": "TSUKIMICHI -Moonlit Fantasy-",
+   "romaji": "Tsuki ga Michibiku Isekai Douchuu",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 107339,
+   "title": "Kemono Michi: Rise Up",
+   "romaji": "Hataage! Kemono Michi",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 148048,
+   "title": "KamiKatsu: Working for God in a Godless World",
+   "romaji": "Kaminaki Sekai no Kamisama Katsudou",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 9253,
+   "title": "Steins;Gate",
+   "romaji": "Steins;Gate",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 150672,
+   "title": "OSHI NO KO",
+   "romaji": "[Oshi no Ko]",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21049,
+   "title": "ReLIFE",
+   "romaji": "ReLIFE",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21647,
+   "title": "Orange",
+   "romaji": "orange",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 185407,
+   "title": "Takopi's Original Sin",
+   "romaji": "Takopii no Genzai",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2025,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 127720,
+   "title": "Mushoku Tensei: Jobless Reincarnation Cour 2",
+   "romaji": "Mushoku Tensei: Isekai Ittara Honki Dasu Part 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2021
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 108465,
+   "title": "Mushoku Tensei: Jobless Reincarnation",
+   "romaji": "Mushoku Tensei: Isekai Ittara Honki Dasu",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21613,
+   "title": "Saga of Tanya the Evil",
+   "romaji": "Youjo Senki",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 146065,
+   "title": "Mushoku Tensei: Jobless Reincarnation Season 2",
+   "romaji": "Mushoku Tensei II: Isekai Ittara Honki Dasu",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2021
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 21087,
+   "title": "One-Punch Man",
+   "romaji": "One Punch Man",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 2015
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20755,
+   "title": "Assassination Classroom",
+   "romaji": "Ansatsu Kyoushitsu",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 105310,
+   "title": "Fire Force",
+   "romaji": "Enen no Shouboutai",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 112151,
+   "title": "Demon Slayer -Kimetsu no Yaiba- The Movie: Mugen Train",
+   "romaji": "Kimetsu no Yaiba: Mugen Ressha-hen",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2019
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 171018,
+   "title": "DAN DA DAN",
+   "romaji": "Dandadan",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 113717,
+   "title": "Ranking of Kings",
+   "romaji": "Ousama Ranking",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 100077,
+   "title": "HINAMATSURI",
+   "romaji": "Hinamatsuri",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 97668,
+   "title": "One-Punch Man Season 2",
+   "romaji": "One Punch Man 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2015
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 21450,
+   "title": "JoJo's Bizarre Adventure: Diamond is Unbreakable",
+   "romaji": "JoJo no Kimyou na Bouken: Diamond wa Kudakenai",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2015
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 106286,
+   "title": "Weathering With You",
+   "romaji": "Tenki no Ko",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 1689,
+   "title": "5 Centimeters per Second",
+   "romaji": "Byousoku 5 Centimeter",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2007,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 16782,
+   "title": "The Garden of Words",
+   "romaji": "Kotonoha no Niwa",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 142770,
+   "title": "Suzume",
+   "romaji": "Suzume no Tojimari",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 104157,
+   "title": "Rascal Does Not Dream of a Dreaming Girl",
+   "romaji": "Seishun Buta Yarou wa Yumemiru Shoujo no Yume wo Minai",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2018
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 114963,
+   "title": "A Whisker Away",
+   "romaji": "Nakitai Watashi wa Neko wo Kaburu",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 2236,
+   "title": "The Girl Who Leapt Through Time",
+   "romaji": "Toki wo Kakeru Shoujo",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2006,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 154587,
+   "title": "Frieren: Beyond Journey’s End",
+   "romaji": "Sousou no Frieren",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 99457,
+   "title": "Maquia: When the Promised Flower Blooms",
+   "romaji": "Sayonara no Asa ni Yakusoku no Hana wo Kazarou",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 112609,
+   "title": "Wandering Witch: The Journey of Elaina",
+   "romaji": "Majo no Tabitabi",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 98436,
+   "title": "The Ancient Magus' Bride",
+   "romaji": "Mahoutsukai no Yome",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 178781,
+   "title": "Go! Go! Loser Ranger! Season 2",
+   "romaji": "Sentai Daishikkaku 2nd Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2025,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 158417,
+   "title": "Go! Go! Loser Ranger!",
+   "romaji": "Sentai Daishikkaku",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 104462,
+   "title": "A Certain Scientific Railgun T",
+   "romaji": "Toaru Kagaku no Railgun T",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2013
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 20521,
+   "title": "Hamatora",
+   "romaji": "Hamatora THE ANIMATION",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 116006,
+   "title": "The God of High School",
+   "romaji": "THE GOD OF HIGH SCHOOL",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 174576,
+   "title": "Wistoria: Wand and Sword",
+   "romaji": "Tsue to Tsurugi no Wistoria",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 110277,
+   "title": "Attack on Titan Final Season",
+   "romaji": "Shingeki no Kyojin: The Final Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2019
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 97984,
+   "title": "Altair: A Record of Battles",
+   "romaji": "Shoukoku no Altair",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 100240,
+   "title": "Tokyo Ghoul:re",
+   "romaji": "Tokyo Ghoul:re",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2015
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 21421,
+   "title": "Kiznaiver",
+   "romaji": "Kiznaiver",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 30,
+   "title": "Neon Genesis Evangelion",
+   "romaji": "Shin Seiki Evangelion",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 1995,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 3287,
+   "title": "Tenkuu Danzai Skelter Heaven",
+   "romaji": "Tenkuu Danzai Skelter Heaven",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 2004,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 155783,
+   "title": "Tengoku Daimakyo",
+   "romaji": "Tengoku Daimakyou",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 108241,
+   "title": "Gleipnir",
+   "romaji": "Gleipnir",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 9919,
+   "title": "Blue Exorcist",
+   "romaji": "Ao no Exorcist",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 9941,
+   "title": "Tiger & Bunny",
+   "romaji": "TIGER & BUNNY",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "SPECIAL",
+     "year": 2011
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 5081,
+   "title": "Bakemonogatari",
+   "romaji": "Bakemonogatari",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2009,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2012
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 108489,
+   "title": "My Teen Romantic Comedy SNAFU Climax!",
+   "romaji": "Yahari Ore no Seishun Love Come wa Machigatteiru. Kan",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2015
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 132405,
+   "title": "My Dress-Up Darling",
+   "romaji": "Sono Bisque Doll wa Koi wo Suru",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 11887,
+   "title": "Kokoro Connect",
+   "romaji": "Kokoro Connect",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 849,
+   "title": "The Melancholy of Haruhi Suzumiya",
+   "romaji": "Suzumiya Haruhi no Yuuutsu",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2006,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20997,
+   "title": "Charlotte",
+   "romaji": "Charlotte",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 33,
+   "title": "Berserk",
+   "romaji": "Kenpuu Denki Berserk",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 1997,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 101347,
+   "title": "Dororo",
+   "romaji": "Dororo",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 151514,
+   "title": "Orb: On the Movements of the Earth",
+   "romaji": "Chi. Chikyuu no Undou ni Tsuite",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 99699,
+   "title": "Golden Kamuy",
+   "romaji": "Golden Kamuy",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 12031,
+   "title": "Kingdom",
+   "romaji": "Kingdom",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 190569,
+   "title": "Jaadugar: A Witch in Mongolia",
+   "romaji": "Tenmaku no Jaadugar",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 97986,
+   "title": "Made in Abyss",
+   "romaji": "Made in Abyss",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 125038,
+   "title": "SHADOWS HOUSE",
+   "romaji": "Shadows House",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 13125,
+   "title": "From the New World",
+   "romaji": "Shinsekai yori",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 114745,
+   "title": "Made in Abyss: The Golden City of the Scorching Sun",
+   "romaji": "Made in Abyss: Retsujitsu no Ougonkyou",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "MOVIE",
+     "year": 2020
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 140960,
+   "title": "SPY x FAMILY",
+   "romaji": "SPY×FAMILY",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 4224,
+   "title": "Toradora!",
+   "romaji": "Toradora!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2008,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 107067,
+   "title": "Science Fell in Love, So I Tried to Prove It",
+   "romaji": "Rikei ga Koi ni Ochita no de Shoumei shitemita.",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20668,
+   "title": "Monthly Girls' Nozaki-kun",
+   "romaji": "Gekkan Shoujo Nozaki-kun",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 99468,
+   "title": "Teasing Master Takagi-san",
+   "romaji": "Karakai Jouzu no Takagi-san",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 116267,
+   "title": "TONIKAWA: Over The Moon For You",
+   "romaji": "Tonikaku Kawaii",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 104464,
+   "title": "ORESUKI: Are you the only one who loves me?",
+   "romaji": "Ore wo Suki nano wa Omae dake ka yo",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 98291,
+   "title": "Tsuredure Children",
+   "romaji": "Tsurezure Children",
+   "format": "TV_SHORT",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 128893,
+   "title": "Hell’s Paradise",
+   "romaji": "Jigokuraku",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 87486,
+   "title": "Boku no Hero Academia: Sukue! Kyuujo Kunren!",
+   "romaji": "Boku no Hero Academia: Sukue! Kyuujo Kunren!",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "eligible": false
+  },
+  {
+   "id": 130183,
+   "title": "Boku no Hero Academia: Training of the Dead",
+   "romaji": "Boku no Hero Academia: Training of the Dead",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "eligible": false
+  },
+  {
+   "id": 21861,
+   "title": "Blue Exorcist: Kyoto Saga",
+   "romaji": "Ao no Exorcist: Kyoto Fujouou-hen",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2011
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 21281,
+   "title": "Attack on Titan: Junior High",
+   "romaji": "Shingeki! Kyojin Chuugakkou",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "eligible": false
+  },
+  {
+   "id": 20853,
+   "title": "ALDNOAH.ZERO Season 2",
+   "romaji": "Aldnoah.Zero Part 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2014
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 139630,
+   "title": "My Hero Academia Season 6",
+   "romaji": "Boku no Hero Academia 6",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2021
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 108268,
+   "title": "Ascendance of a Bookworm",
+   "romaji": "Honzuki no Gekokujou: Shisho ni Naru Tame ni wa Shudan wo Erandeiraremasen",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 112444,
+   "title": "APPARE-RANMAN!",
+   "romaji": "Appare-Ranman!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 107663,
+   "title": "ASTRA LOST IN SPACE",
+   "romaji": "Kanata no Astra",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 100977,
+   "title": "Cells at Work!",
+   "romaji": "Hataraku Saibou",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20923,
+   "title": "Food Wars!",
+   "romaji": "Shokugeki no Souma",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 142876,
+   "title": "Dr. STONE Special Episode – RYUSUI",
+   "romaji": "Dr. STONE: Ryuusui",
+   "format": "SPECIAL",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2021
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 113693,
+   "title": "Ascendance of a Bookworm Part 2",
+   "romaji": "Honzuki no Gekokujou: Shisho ni Naru Tame ni wa Shudan wo Erandeiraremasen 2nd Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2019
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 121176,
+   "title": "Ascendance of a Bookworm Season 3",
+   "romaji": "Honzuki no Gekokujou: Shisho ni Naru Tame ni wa Shudan wo Erandeiraremasen 3rd Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2020
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 99147,
+   "title": "Attack on Titan Season 3",
+   "romaji": "Shingeki no Kyojin Season 3",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2017
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 178788,
+   "title": "Demon Slayer: Kimetsu no Yaiba Infinity Castle",
+   "romaji": "Kimetsu no Yaiba: Mugenjou-hen Movie 1 - Akaza Sairai",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2025,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 108553,
+   "title": "My Hero Academia: Heroes Rising",
+   "romaji": "Boku no Hero Academia THE MOVIE: Heroes:Rising",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "eligible": false
+  },
+  {
+   "id": 21719,
+   "title": "Fate/stay night [Heaven’s Feel] III. spring song",
+   "romaji": "Fate/stay night [Heaven's Feel] III. spring song",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "MOVIE",
+     "year": 2019
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 166240,
+   "title": "Demon Slayer: Kimetsu no Yaiba Hashira Training Arc",
+   "romaji": "Kimetsu no Yaiba: Hashira Geiko-hen",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2023
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 20447,
+   "title": "Noragami",
+   "romaji": "Noragami",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 142329,
+   "title": "Demon Slayer: Kimetsu no Yaiba Entertainment District Arc",
+   "romaji": "Kimetsu no Yaiba: Yuukaku-hen",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2021
+    },
+    {
+     "format": "MOVIE",
+     "year": 2020
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 99578,
+   "title": "Wotakoi: Love is Hard for Otaku",
+   "romaji": "Wotaku ni Koi wa Muzukashii",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 112641,
+   "title": "Kaguya-sama: Love is War?",
+   "romaji": "Kaguya-sama wa Kokurasetai?: Tensaitachi no Renai Zunousen",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2019
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 127911,
+   "title": "Shikimori's Not Just a Cutie",
+   "romaji": "Kawaii dake ja Nai Shikimori-san",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 143338,
+   "title": "The Angel Next Door Spoils Me Rotten",
+   "romaji": "Otonari no Tenshi-sama ni Itsunomanika Dame Ningen ni Sareteita Ken",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 105228,
+   "title": "Dorohedoro",
+   "romaji": "Dorohedoro",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 159831,
+   "title": "Zom 100: Bucket List of the Dead",
+   "romaji": "Zom 100: Zombie ni Naru Made ni Shitai 100 no Koto",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 155907,
+   "title": "Buddy Daddies",
+   "romaji": "Buddy Daddies",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 125367,
+   "title": "Kaguya-sama: Love is War -Ultra Romantic-",
+   "romaji": "Kaguya-sama wa Kokurasetai: Ultra Romantic",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2020
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 110349,
+   "title": "Great Pretender",
+   "romaji": "GREAT PRETENDER",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 114888,
+   "title": "The Millionaire Detective - Balance: UNLIMITED",
+   "romaji": "Fugou Keiji: Balance:UNLIMITED",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 177709,
+   "title": "SAKAMOTO DAYS",
+   "romaji": "SAKAMOTO DAYS",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2025,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 138882,
+   "title": "The Yakuza's Guide to Babysitting",
+   "romaji": "Kumichou Musume to Sewagakari",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 113311,
+   "title": "Kakushigoto",
+   "romaji": "Kakushigoto",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 158927,
+   "title": "SPY x FAMILY Season 2",
+   "romaji": "SPY×FAMILY Season 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2022
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 205,
+   "title": "Samurai Champloo",
+   "romaji": "Samurai Champloo",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2004,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 6,
+   "title": "Trigun",
+   "romaji": "TRIGUN",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 1998,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20057,
+   "title": "Space Dandy",
+   "romaji": "Space☆Dandy",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 889,
+   "title": "Black Lagoon",
+   "romaji": "BLACK LAGOON",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2006,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 167336,
+   "title": "LAZARUS",
+   "romaji": "Lazarus",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2025,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 2251,
+   "title": "Baccano!",
+   "romaji": "Baccano!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2007,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 4087,
+   "title": "Michiko & Hatchin",
+   "romaji": "Michiko to Hatchin",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2008,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 467,
+   "title": "Ghost in the Shell: Stand Alone Complex",
+   "romaji": "Koukaku Kidoutai: STAND ALONE COMPLEX",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2002,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 400,
+   "title": "Outlaw Star",
+   "romaji": "Seihou Bukyou Outlaw Star",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 1998,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 339,
+   "title": "Serial Experiments Lain",
+   "romaji": "serial experiments lain",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 1998,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 47,
+   "title": "Akira",
+   "romaji": "AKIRA",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 1988,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 227,
+   "title": "FLCL",
+   "romaji": "FLCL",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 2000,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 949,
+   "title": "Gunbuster",
+   "romaji": "Top wo Nerae! GunBuster",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 1988,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 132126,
+   "title": "Sonny Boy",
+   "romaji": "Sonny Boy",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 440,
+   "title": "Revolutionary Girl Utena",
+   "romaji": "Shoujo Kakumei Utena",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 1997,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 145,
+   "title": "His and Her Circumstances",
+   "romaji": "Kareshi Kanojo no Jijou",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 1998,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 431,
+   "title": "Howl‘s Moving Castle",
+   "romaji": "Howl no Ugoku Shiro",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2004,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 523,
+   "title": "My Neighbor Totoro",
+   "romaji": "Tonari no Totoro",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 1988,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 512,
+   "title": "Kiki's Delivery Service",
+   "romaji": "Majo no Takkyuubin",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 1989,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 2890,
+   "title": "Ponyo",
+   "romaji": "Gake no Ue no Ponyo",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2008,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 164,
+   "title": "Princess Mononoke",
+   "romaji": "Mononoke-hime",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 1997,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 109979,
+   "title": "The Boy and the Heron",
+   "romaji": "Kimitachi wa Dou Ikiru ka",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 7711,
+   "title": "The Secret World of Arrietty",
+   "romaji": "Karigurashi no Arrietty",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2010,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 572,
+   "title": "Nausicaä of the Valley of the Wind",
+   "romaji": "Kaze no Tani no Nausicaä",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 1984,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20981,
+   "title": "The Boy and the Beast",
+   "romaji": "Bakemono no Ko",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 18679,
+   "title": "Kill la Kill",
+   "romaji": "Kill la Kill",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 99425,
+   "title": "Promare",
+   "romaji": "Promare",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "SPECIAL",
+     "year": 2019
+    },
+    {
+     "format": "SPECIAL",
+     "year": 2019
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 1002,
+   "title": "Gunbuster 2: Diebuster",
+   "romaji": "Top wo Nerae 2! DIEBUSTER",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 2004,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 1988
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 99424,
+   "title": "SSSS.GRIDMAN",
+   "romaji": "SSSS.GRIDMAN",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 99423,
+   "title": "DARLING in the FRANXX",
+   "romaji": "Darling in the Franxx",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 178025,
+   "title": "Gachiakuta",
+   "romaji": "Gachiakuta",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2025,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 119675,
+   "title": "SHAMAN KING (2021)",
+   "romaji": "SHAMAN KING (2021)",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 179062,
+   "title": "Fire Force Season 3 Part 2",
+   "romaji": "Enen no Shouboutai: San no Shou Part 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 154,
+   "title": "Shaman King",
+   "romaji": "Shaman King",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2001,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 2167,
+   "title": "Clannad",
+   "romaji": "CLANNAD",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2007,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 118419,
+   "title": "The Day I Became a God",
+   "romaji": "Kamisama ni Natta Hi",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21339,
+   "title": "Charlotte: Strong People",
+   "romaji": "Charlotte: Tsuyoimono-tachi",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "eligible": false
+  },
+  {
+   "id": 13655,
+   "title": "Little Busters!",
+   "romaji": "Little Busters!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 119683,
+   "title": "EDENS ZERO",
+   "romaji": "EDENS ZERO",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 246,
+   "title": "Rave Master",
+   "romaji": "GROOVE ADVENTURE RAVE",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2001,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 139095,
+   "title": "FAIRY TAIL 100 YEARS QUEST",
+   "romaji": "FAIRY TAIL: 100 YEARS QUEST",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2018
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 101024,
+   "title": "RADIANT",
+   "romaji": "Radiant",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 177474,
+   "title": "TOUGEN ANKI",
+   "romaji": "Tougen Anki",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2025,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 187901,
+   "title": "Dead Account",
+   "romaji": "Dead Account",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 6547,
+   "title": "Angel Beats!",
+   "romaji": "Angel Beats!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2010,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 16067,
+   "title": "A Lull in the Sea",
+   "romaji": "Nagi no Asukara",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 108577,
+   "title": "Her Blue Sky",
+   "romaji": "Sora no Aosa wo Shiru Hito yo",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 105190,
+   "title": "Darwin's Game",
+   "romaji": "Darwin's Game",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 101351,
+   "title": "Happy Sugar Life",
+   "romaji": "Happy Sugar Life",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 11111,
+   "title": "Another",
+   "romaji": "Another",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 2012
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 125428,
+   "title": "High-Rise Invasion",
+   "romaji": "Tenkuu Shinpan",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 14345,
+   "title": "BTOOOM!",
+   "romaji": "BTOOOM!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 934,
+   "title": "When They Cry",
+   "romaji": "Higurashi no Naku Koro ni",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2006,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 10620,
+   "title": "The Future Diary",
+   "romaji": "Mirai Nikki",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 15037,
+   "title": "Corpse Party",
+   "romaji": "Corpse Party: Tortured Souls - Bougyakusareta Tamashii no Jukyou",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 2012
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 114446,
+   "title": "Higurashi: When They Cry - GOU",
+   "romaji": "Higurashi no Naku Koro ni Gou",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 2009
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 12445,
+   "title": "Dusk Maiden of Amnesia",
+   "romaji": "Tasogare Otome × Amnesia",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 7724,
+   "title": "Shiki",
+   "romaji": "Shiki",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2010,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 99698,
+   "title": "King's Game",
+   "romaji": "Ousama Game The Animation",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 152802,
+   "title": "Dark Gathering",
+   "romaji": "Dark Gathering",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 967,
+   "title": "Fist of the North Star",
+   "romaji": "Hokuto no Ken",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 1984,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2006
+    },
+    {
+     "format": "ONA",
+     "year": 2018
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21778,
+   "title": "Thus Spoke Rohan Kishibe",
+   "romaji": "Kishibe Rohan wa Ugokanai",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "eligible": false
+  },
+  {
+   "id": 1468,
+   "title": "Baoh the Visitor",
+   "romaji": "Baoh Raihousha",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 1989,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 97888,
+   "title": "BAKI",
+   "romaji": "Baki",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2001
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 287,
+   "title": "Baki the Grappler",
+   "romaji": "Grappler Baki (TV)",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2001,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 777,
+   "title": "Hellsing Ultimate",
+   "romaji": "HELLSING OVA",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 2006,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "SPECIAL",
+     "year": 2011
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 12189,
+   "title": "Hyouka",
+   "romaji": "Hyouka",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 112443,
+   "title": "Bottom-Tier Character Tomozaki",
+   "romaji": "Jaku-Chara Tomozaki-kun",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20657,
+   "title": "Saekano: How to Raise a Boring Girlfriend",
+   "romaji": "Saenai Heroine no Sodatekata",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21202,
+   "title": "KONOSUBA -God's blessing on this wonderful world!",
+   "romaji": "Kono Subarashii Sekai ni Shukufuku wo!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 132456,
+   "title": "The Great Jahy Will Not Be Defeated!",
+   "romaji": "Jahy-sama wa Kujikenai!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21776,
+   "title": "Miss Kobayashi's Dragon Maid",
+   "romaji": "Kobayashi-san Chi no Maidragon",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20602,
+   "title": "Amagi Brilliant Park",
+   "romaji": "Amagi Brilliant Park",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 107717,
+   "title": "Miss Kobayashi's Dragon Maid S",
+   "romaji": "Kobayashi-san Chi no Maidragon S",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 2017
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 163135,
+   "title": "DEMON LORD 2099",
+   "romaji": "Maou 2099",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21128,
+   "title": "Noragami Aragoto",
+   "romaji": "Noragami ARAGOTO",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2014
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 8795,
+   "title": "Panty & Stocking with Garterbelt",
+   "romaji": "Panty & Stocking with Garterbelt",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2010,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 110354,
+   "title": "BNA",
+   "romaji": "BNA",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21637,
+   "title": "Space Patrol Luluco",
+   "romaji": "Uchuu Patrol Luluco",
+   "format": "TV_SHORT",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 151,
+   "title": "Re: Cutie Honey",
+   "romaji": "Re: Cutie Honey",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 2004,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 134131,
+   "title": "Magical Destroyers",
+   "romaji": "Mahou Shoujo Magical Destroyers",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 162780,
+   "title": "Gushing Over Magical Girls",
+   "romaji": "Mahou Shoujo ni Akogarete",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 100183,
+   "title": "Sword Art Online Alternative: Gun Gale Online",
+   "romaji": "Sword Art Online Alternative: Gun Gale Online",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "eligible": false
+  },
+  {
+   "id": 873,
+   "title": ".hack//Roots",
+   "romaji": ".hack//Roots",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2006,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2003
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 20671,
+   "title": "Log Horizon 2",
+   "romaji": "Log Horizon 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2013
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 18247,
+   "title": "Infinite Stratos 2",
+   "romaji": "IS: Infinite Stratos 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 2011
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 131150,
+   "title": "Scarlet Nexus",
+   "romaji": "SCARLET NEXUS",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 19163,
+   "title": "Date A Live II",
+   "romaji": "Date A Live II",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": null
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 108511,
+   "title": "That Time I Got Reincarnated as a Slime Season 2",
+   "romaji": "Tensei Shitara Slime Datta Ken 2nd Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 2023
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 103632,
+   "title": "So I'm a Spider, So What?",
+   "romaji": "Kumo desu ga, Nani ka?",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 101004,
+   "title": "How NOT to Summon a Demon Lord",
+   "romaji": "Isekai Maou to Shoukan Shoujo no Dorei Majutsu",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 132474,
+   "title": "Skeleton Knight in Another World",
+   "romaji": "Gaikotsu Kishi-sama, Tadaima Isekai e Odekakechuu",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 19815,
+   "title": "No Game, No Life",
+   "romaji": "No Game No Life",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "MOVIE",
+     "year": 2017
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 180523,
+   "title": "A Wild Last Boss Appeared!",
+   "romaji": "Yasei no Last Boss ga Arawareta!",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2025,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21799,
+   "title": "AJIN: Demi-Human 2",
+   "romaji": "Ajin 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2016
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 131773,
+   "title": "WONDER EGG PRIORITY: My Priority",
+   "romaji": "Wonder Egg Priority: Tokubetsu-hen",
+   "format": "SPECIAL",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2021
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 21326,
+   "title": "Tokyo Ghoul: [PINTO]",
+   "romaji": "Tokyo Ghoul: [PINTO]",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 6707,
+   "title": "Black Butler II",
+   "romaji": "Kuroshitsuji II",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2010,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2008
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 102498,
+   "title": "B: The Beginning: Succession",
+   "romaji": "B: The Beginning Succession",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": 2018
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 11757,
+   "title": "Sword Art Online",
+   "romaji": "Sword Art Online",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 100668,
+   "title": "Arifureta: From Commonplace to World's Strongest",
+   "romaji": "Arifureta Shokugyou de Sekai Saikyou",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": 2020
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 108759,
+   "title": "Sword Art Online: Alicization - War of Underworld",
+   "romaji": "Sword Art Online: Alicization - War of Underworld",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2018
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 118375,
+   "title": "The Hidden Dungeon Only I Can Enter",
+   "romaji": "Ore dake Haireru Kakushi Dungeon",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 105333,
+   "title": "Dr. STONE",
+   "romaji": "Dr. STONE",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 156067,
+   "title": "Campfire Cooking in Another World with my Absurd Skill",
+   "romaji": "Tondemo Skill de Isekai Hourou Meshi",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 28,
+   "title": "Yakitate!! Japan",
+   "romaji": "Yakitate!! Japan",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2004,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 204060,
+   "title": "Iron Wok Jan!",
+   "romaji": "Tetsunabe no Jan!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 10396,
+   "title": "Ben-To",
+   "romaji": "Ben-To",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 97617,
+   "title": "Restaurant to Another World",
+   "romaji": "Isekai Shokudou",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 10033,
+   "title": "Toriko",
+   "romaji": "Toriko",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "MOVIE",
+     "year": 2011
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 186003,
+   "title": "Fermat Kitchen",
+   "romaji": "Fermat no Ryouri",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2025,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 176529,
+   "title": "WcDonald's",
+   "romaji": "WcDonalds",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 141014,
+   "title": "Tomodachi Game",
+   "romaji": "Tomodachi Game",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 228,
+   "title": "Hell Girl",
+   "romaji": "Jigoku Shoujo",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2005,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 8142,
+   "title": "Colorful ~ The Motion Picture",
+   "romaji": "Colorful",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2010,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 155890,
+   "title": "BARTENDER Glass of God",
+   "romaji": "Bartender: Kami no Glass",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 178495,
+   "title": "TASOKARE HOTEL",
+   "romaji": "Tasokare Hotel",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2025,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 101283,
+   "title": "Boogiepop and Others",
+   "romaji": "Boogiepop wa Warawanai",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 1589,
+   "title": "Bartender",
+   "romaji": "Bartender",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2006,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 153658,
+   "title": "HAIKYU!! The Dumpster Battle",
+   "romaji": "Haikyuu!!: Gomi Suteba no Kessen",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2020
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 2159,
+   "title": "Big Windup!",
+   "romaji": "Ookiku Furikabutte",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2007,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 153841,
+   "title": "Tsurune - The Linking Shot -",
+   "romaji": "Tsurune: Tsunagari no Issha",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "OVA",
+     "year": 2019
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 18689,
+   "title": "Ace of the Diamond",
+   "romaji": "Diamond no Ace",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 1550,
+   "title": "Attack No.1",
+   "romaji": "Attack No.1",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 1969,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20966,
+   "title": "Yamada and the Seven Witches",
+   "romaji": "Yamada-kun to 7-nin no Majo",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20457,
+   "title": "Black Bullet",
+   "romaji": "Black Bullet",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21306,
+   "title": "Myriad Colors Phantom World",
+   "romaji": "Musaigen no Phantom World",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20727,
+   "title": "Blood Blockade Battlefront",
+   "romaji": "Kekkai Sensen",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 6746,
+   "title": "Durarara!!",
+   "romaji": "Durarara!!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2010,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 14467,
+   "title": "K",
+   "romaji": "K",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 135136,
+   "title": "The Case Study of Vanitas Part 2",
+   "romaji": "Vanitas no Carte Part 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2021
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 114411,
+   "title": "Bungo and Alchemist -Gears of Judgement-",
+   "romaji": "Bungou to Alchemist: Shinpan no Haguruma",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 170732,
+   "title": "Is It Wrong To Try To Pick Up Girls in a Dungeon? V",
+   "romaji": "Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka V: Houjou no Megami-hen",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2023
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 166873,
+   "title": "Mushoku Tensei: Jobless Reincarnation Season 2 Part 2",
+   "romaji": "Mushoku Tensei II: Isekai Ittara Honki Dasu Part 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2023
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 10165,
+   "title": "Nichijou - My Ordinary Life",
+   "romaji": "Nichijou",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21175,
+   "title": "Dragon Ball Super",
+   "romaji": "Dragon Ball Super",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2014
+    },
+    {
+     "format": "TV",
+     "year": 1989
+    },
+    {
+     "format": "TV",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 21856,
+   "title": "My Hero Academia Season 2",
+   "romaji": "Boku no Hero Academia 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2016
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 139586,
+   "title": "Go! Saitama",
+   "romaji": "Go! Saitama",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": null,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21416,
+   "title": "One-Punch Man OVA",
+   "romaji": "One Punch Man OVA",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "eligible": false
+  },
+  {
+   "id": 99420,
+   "title": "Girls' Last Tour",
+   "romaji": "Shoujo Shuumatsu Ryokou",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 98707,
+   "title": "Land of the Lustrous",
+   "romaji": "Houseki no Kuni",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2017,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 108617,
+   "title": "Somali and the Forest Spirit",
+   "romaji": "Somali to Mori no Kamisama",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 153518,
+   "title": "Delicious in Dungeon",
+   "romaji": "Dungeon Meshi",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 10271,
+   "title": "Kaiji - Against All Rules",
+   "romaji": "Gyakkyou Burai Kaiji: Hakairoku-hen",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2007
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 20807,
+   "title": "Prison School",
+   "romaji": "Prison School",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 20458,
+   "title": "The Irregular at Magic High School",
+   "romaji": "Mahouka Koukou no Rettousei",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2014,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "SPECIAL",
+     "year": 2022
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 21170,
+   "title": "Assassination Classroom Second Season",
+   "romaji": "Ansatsu Kyoushitsu 2nd Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2015
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 20698,
+   "title": "My Teen Romantic Comedy SNAFU TOO!",
+   "romaji": "Yahari Ore no Seishun Love Come wa Machigatteiru. Zoku",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2013
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 113425,
+   "title": "Redo of Healer",
+   "romaji": "Kaifuku Jutsushi no Yarinaoshi",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": true,
+   "prequels": [],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 129898,
+   "title": "The World's Finest Assassin Gets Reincarnated in Another World as an Aristocrat",
+   "romaji": "Sekai Saikou no Ansatsusha, Isekai Kizoku ni Tensei suru",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 126546,
+   "title": "Seirei Gensouki: Spirit Chronicles",
+   "romaji": "Seirei Gensouki",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 10408,
+   "title": "Into the Forest of Fireflies' Light",
+   "romaji": "Hotarubi no Mori e",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2011,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 918,
+   "title": "Gintama",
+   "romaji": "Gintama",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2006,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 100353,
+   "title": "Mob Psycho 100 REIGEN The Miraculous Unknown Psychic",
+   "romaji": "Mob Psycho 100 REIGEN: Shirarezaru Kiseki Reinouryokusha",
+   "format": "OVA",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "eligible": false
+  },
+  {
+   "id": 102449,
+   "title": "Mob Psycho mini",
+   "romaji": "Mob Psycho mini",
+   "format": "SPECIAL",
+   "status": "FINISHED",
+   "year": 2016,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "eligible": false
+  },
+  {
+   "id": 214031,
+   "title": "Mob Psycho 100 10th Anniversary Special Movie",
+   "romaji": "Mob Psycho 100: 10 Shuunen Kinen Tokubetsu Eizou",
+   "format": "SPECIAL",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "eligible": false
+  },
+  {
+   "id": 6594,
+   "title": "Katanagatari",
+   "romaji": "Katanagatari",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2010,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 2418,
+   "title": "Sword of the Stranger",
+   "romaji": "Stranger: Mukou Hadan",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2007,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 154116,
+   "title": "Undead Unluck",
+   "romaji": "Undead Unluck",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 183161,
+   "title": "The Beginning After the End",
+   "romaji": "Saikyou no Ousama, Nidome no Jinsei wa Nani wo Suru?",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2025,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 116742,
+   "title": "That Time I Got Reincarnated as a Slime Season 2 Part 2",
+   "romaji": "Tensei Shitara Slime Datta Ken 2nd Season Part 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2021
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 132473,
+   "title": "The Faraway Paladin",
+   "romaji": "Saihate no Paladin",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 189046,
+   "title": "Re:ZERO -Starting Life in Another World- Season 4",
+   "romaji": "Re:Zero kara Hajimeru Isekai Seikatsu 4th Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 20955,
+   "title": "Rokka -Braves of the Six Flowers-",
+   "romaji": "Rokka no Yuusha",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2015,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 182205,
+   "title": "That Time I Got Reincarnated as a Slime Season 4",
+   "romaji": "Tensei Shitara Slime Datta Ken 4th Season Part 1 & 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 133965,
+   "title": "Komi Can’t Communicate",
+   "romaji": "Komi-san wa, Komyushou desu.",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 142984,
+   "title": "Komi Can't Communicate Part 2",
+   "romaji": "Komi-san wa, Komyushou desu. 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2022,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2021
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 107068,
+   "title": "Teasing Master Takagi-san Season 2",
+   "romaji": "Karakai Jouzu no Takagi-san 2",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2019,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2018
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 126192,
+   "title": "Girlfriend, Girlfriend",
+   "romaji": "Kanojo mo Kanojo",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 163270,
+   "title": "WIND BREAKER",
+   "romaji": "WIND BREAKER",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 165254,
+   "title": "BUCCHIGIRI?!",
+   "romaji": "BUCCHIGIRI?!",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 100388,
+   "title": "BANANA FISH",
+   "romaji": "BANANA FISH",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2018,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 43,
+   "title": "Ghost in the Shell",
+   "romaji": "GHOST IN THE SHELL: Koukaku Kidoutai",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 1995,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 13601,
+   "title": "PSYCHO-PASS",
+   "romaji": "PSYCHO-PASS",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2012,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 6675,
+   "title": "Redline",
+   "romaji": "REDLINE",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2009,
+   "isAdult": false,
+   "prequels": [],
+   "parent": true,
+   "eligible": false
+  },
+  {
+   "id": 147463,
+   "title": "Jujutsu Kaisen PV",
+   "romaji": "Jujutsu Kaisen PV",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": null,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 12115,
+   "title": "Berserk: The Golden Age Arc III - The Advent",
+   "romaji": "Berserk: Ougon Jidai-hen III - Kourin",
+   "format": "MOVIE",
+   "status": "FINISHED",
+   "year": 2013,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "MOVIE",
+     "year": 2012
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 120697,
+   "title": "DON'T TOY WITH ME, MISS NAGATORO",
+   "romaji": "Ijiranaide, Nagatoro-san",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2021,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 158559,
+   "title": "2.5 Dimensional Seduction",
+   "romaji": "2.5 Jigen no Ririsa",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 111501,
+   "title": "Smile Down the Runway",
+   "romaji": "Runway de Waratte",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2020,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 184951,
+   "title": "You and I Are Polar Opposites",
+   "romaji": "Seihantai na Kimi to Boku",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 155963,
+   "title": "Hokkaido Gals Are Super Adorable!",
+   "romaji": "Dosanko Gal wa Namara Menkoi",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 249,
+   "title": "InuYasha",
+   "romaji": "Inuyasha",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2000,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 159322,
+   "title": "BLEACH: Thousand-Year Blood War - The Separation",
+   "romaji": "BLEACH: Sennen Kessen-hen - Ketsubetsu-tan",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2022
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 147103,
+   "title": "My Happy Marriage",
+   "romaji": "Watashi no Shiawase na Kekkon",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 184356,
+   "title": "Tomb Raider King",
+   "romaji": "Dogul Wang",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": null,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 153845,
+   "title": "I Got a Cheat Skill in Another World and Became Unrivaled in The Real World, Too",
+   "romaji": "Isekai de Cheat Skill wo Te ni Shita Ore wa, Genjitsu Sekai wo mo Musou Suru: Level Up wa Jinsei wo Kaeta",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 166442,
+   "title": "Super Cube",
+   "romaji": "Chao Neng Lifang",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": null,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 212888,
+   "title": "Overgeared",
+   "romaji": "Tempal: Item no Chikara",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 98861,
+   "title": "The King's Avatar",
+   "romaji": "Quanzhi Gaoshou",
+   "format": "ONA",
+   "status": "FINISHED",
+   "year": null,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "MOVIE",
+     "year": null
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 153406,
+   "title": "Tower of God Season 2",
+   "romaji": "Kami no Tou: Tower of God 2nd Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2020
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 457,
+   "title": "MUSHI-SHI",
+   "romaji": "Mushishi",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2005,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 161645,
+   "title": "The Apothecary Diaries",
+   "romaji": "Kusuriya no Hitorigoto",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2023,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 486,
+   "title": "Kino's Journey",
+   "romaji": "Kino no Tabi: the Beautiful World",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2003,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "MOVIE",
+     "year": 2005
+    }
+   ],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 179302,
+   "title": "SANDA",
+   "romaji": "SANDA",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2025,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 185874,
+   "title": "BLEACH: Thousand-Year Blood War - The Calamity",
+   "romaji": "BLEACH: Sennen Kessen-hen - Kashin-tan",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 207191,
+   "title": "Hello, I am a Witch and my Crush Wants me to Make a Love Potion!",
+   "romaji": "Doumo, Suki na Hito ni Horegusuri wo Irai Sareta Majo desu.",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 209219,
+   "title": "So What's Wrong with Getting Reborn as a Goblin?",
+   "romaji": "Tensei Goblin Dakedo Shitsumon Aru?",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 204011,
+   "title": "PSYREN",
+   "romaji": "PSYЯEN",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 195516,
+   "title": "The Apothecary Diaries Season 3",
+   "romaji": "Kusuriya no Hitorigoto 3rd Season",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 195604,
+   "title": "Black Clover Season 2",
+   "romaji": "Black Clover 2nd Season",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2017
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 191656,
+   "title": "Even the Student Council Has Its Holes!",
+   "romaji": "Seitokai ni mo Ana wa Aru!",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 195539,
+   "title": "Cyberpunk: Edgerunners 2",
+   "romaji": "Cyberpunk: Edgerunners 2",
+   "format": "ONA",
+   "status": "NOT_YET_RELEASED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 186541,
+   "title": "Reborn as a Space Mercenary: I Woke Up Piloting the Strongest Starship!",
+   "romaji": "Mezametara Saikyou Soubi to Uchuusen-mochi datta node, Ikkodate Mezashite Youhei to shite Jiyuu ni Ikitai",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 206814,
+   "title": "Dragon Ball Super: Beerus",
+   "romaji": "Dragon Ball Super: Beerus",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 1989
+    },
+    {
+     "format": "TV",
+     "year": 2014
+    },
+    {
+     "format": "TV",
+     "year": 2024
+    }
+   ],
+   "parent": true,
+   "eligible": false
+  },
+  {
+   "id": 185756,
+   "title": "As a Reincarnated Aristocrat, I'll Use My Appraisal Skill to Rise in the World Season 3",
+   "romaji": "Tensei Kizoku, Kantei Skill de Nariagaru 3rd Season",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 189123,
+   "title": "Blue Box Season 2",
+   "romaji": "Ao no Hako Season 2",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 208025,
+   "title": "I'm Dating a Dark Summoner",
+   "romaji": "Dark Summoner to Dekiteiru",
+   "format": "TV_SHORT",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 205896,
+   "title": "Full Clearing Another World under a Goddess with Zero Believers",
+   "romaji": "Shinja Zero no Megami-sama to Hajimeru Isekai Kouryaku",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 210482,
+   "title": "STEEL BALL RUN JoJo's Bizarre Adventure 2nd - 3rd STAGE",
+   "romaji": "JoJo no Kimyou na Bouken: Steel Ball Run - 2nd & 3rd STAGE",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": 2026
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 178789,
+   "title": "Mushoku Tensei: Jobless Reincarnation Season 3",
+   "romaji": "Mushoku Tensei III: Isekai Ittara Honki Dasu",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2024
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 210031,
+   "title": "You and I Are Polar Opposites Season 2",
+   "romaji": "Seihantai na Kimi to Boku 2nd Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2026
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 180136,
+   "title": "The Exiled Heavy Knight Knows How to Game the System",
+   "romaji": "Tsuihou Sareta Tensei Juukishi wa Game Chishiki de Musou Suru",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 200455,
+   "title": "Even Though I'm a Super Timid Noble Girl, I Accepted the Bet From My Cunning Fiancé",
+   "romaji": "Yowaki MAX Reijou Nano ni, Ratsuwan Konyakusha-sama no Kake ni Notte Shimatta",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 205909,
+   "title": "Firefly Wedding",
+   "romaji": "Hotaru no Yomeiri",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 207141,
+   "title": "Chainsmoker Cat",
+   "romaji": "Yani Neko",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 196187,
+   "title": "Smoking Behind the Supermarket with You",
+   "romaji": "Super no Ura de Yani Suu Futari",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 169581,
+   "title": "Magical Explorer",
+   "romaji": "Magical★Explorer: Eroge no Yuujin Chara ni Tensei Shitakedo, Game Chishiki Tsukatte Jiyuu ni Ikiru",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 213805,
+   "title": "The Ramparts of Ice Season 2",
+   "romaji": "Koori no Jouheki 2nd Season",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2026
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 202250,
+   "title": "Magic Repo Man: Dumped by My Party, I’ll Cash In With a Cute Support Fairy to Become the Strongest!",
+   "romaji": "Kashita Maryoku wa [Revo Barai] de Kyousei Choushuu",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 135865,
+   "title": "Saga of Tanya the Evil Season 2",
+   "romaji": "Youjo Senki II",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "MOVIE",
+     "year": 2019
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 176301,
+   "title": "The Apothecary Diaries Season 2",
+   "romaji": "Kusuriya no Hitorigoto 2nd Season",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2025,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2023
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 191788,
+   "title": "Aoashi Season 2",
+   "romaji": "Aoashi 2nd Season",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2022
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 164702,
+   "title": "As a Reincarnated Aristocrat, I'll Use My Appraisal Skill to Rise in the World",
+   "romaji": "Tensei Kizoku, Kantei Skill de Nariagaru",
+   "format": "TV",
+   "status": "FINISHED",
+   "year": 2024,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 204389,
+   "title": "A Wild Last Boss Appeared! Season 2",
+   "romaji": "Yasei no Last Boss ga Arawareta! 2nd Season",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "ONA",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  },
+  {
+   "id": 206401,
+   "title": "FX Fighter Kurumi-chan",
+   "romaji": "FX Senshi Kurumi-chan",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 180894,
+   "title": "Romelia War Chronicle",
+   "romaji": "Romelia Senki: Maou wo Taoshita nochi mo Jinrui Yabasou dakara Guntai Soshiki Shita",
+   "format": "ONA",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [],
+   "parent": false,
+   "eligible": true
+  },
+  {
+   "id": 209872,
+   "title": "Ranma1/2 (2024) Season 3",
+   "romaji": "Ranma 1/2 (2024) 3rd Season",
+   "format": "TV",
+   "status": "RELEASING",
+   "year": 2026,
+   "isAdult": false,
+   "prequels": [
+    {
+     "format": "TV",
+     "year": 2025
+    }
+   ],
+   "parent": false,
+   "eligible": false
+  }
+ ]
+}
