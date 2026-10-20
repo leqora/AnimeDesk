@@ -253,6 +253,11 @@ describe('createRecommendations', () => {
     }))
     build()
     expect(svc.list().items).toEqual([])
+    hidden = [101] // keeps the poster of 101 through pruning
+    await svc.refresh()
+    expect(anilist.recommendations).toHaveBeenCalledTimes(1) // old answers dropped: the seeds are queried again
+    expect(disk().posters['101']).toEqual({ coverUrl: good.coverUrl, dataUrl: 'data:x' })
+    hidden = []
     fs.writeFileSync(file, JSON.stringify({
       version: 1, rules: RULES_VERSION, failedAt: null, trending: null, posters: {},
       bySeed: {
@@ -335,7 +340,7 @@ describe('createRecommendations', () => {
     await advance(SEED_TTL_MS + MIN)
     await svc.refresh() // same data again
     expect(cb).toHaveBeenCalledTimes(1)
-    // identical (empty) items, only the hint flips
+    // library emptied: personal list -> trending with hint
     entries = []
     await svc.refresh()
     expect(cb).toHaveBeenCalledTimes(2) // personal -> trending with hint, items changed too
@@ -426,6 +431,38 @@ describe('createRecommendations', () => {
         id: 101, title: 'Rec 101', romaji: 'Rec 101', format: 'TV', status: 'FINISHED', year: 2020, episodes: 12,
         genres: ['Action'], poster: 'data:http://img/101.jpg',
       })
+      expect(anilist.poster).toHaveBeenCalledTimes(3) // the 3 rail posters only: forSeries reused the cached ones
+    })
+
+    it('a cached poster with a different coverUrl is downloaded again', async () => {
+      await svc.refresh()
+      anilist.poster.mockClear()
+      recs.set(100, [rec(101, 0, { coverUrl: 'http://img/101b.jpg' })])
+      await advance(SEED_TTL_MS + MIN)
+      anilist.recommendations.mockResolvedValueOnce(new Map([[100, []], [200, []]]))
+      anilist.poster.mockClear()
+      await svc.refresh() // answers now empty: rail falls back; posters of 101 pruned
+      recs.set(555, [rec(101, 0, { coverUrl: 'http://img/101b.jpg' })])
+      const r = await svc.forSeries(555)
+      expect(anilist.poster.mock.calls.map((c) => c[0])).toContain('http://img/101b.jpg')
+      expect(r.items[0].poster).toBe('data:http://img/101b.jpg')
+    })
+
+    it('a cached poster for a changed coverUrl is not served; the new cover is fetched', async () => {
+      await svc.refresh() // posters cached for 101 with img/101.jpg
+      recs.set(555, [rec(101, 0, { coverUrl: 'http://img/101c.jpg' })])
+      anilist.poster.mockClear()
+      const r = await svc.forSeries(555)
+      expect(anilist.poster.mock.calls.map((c) => c[0])).toEqual(['http://img/101c.jpg'])
+      expect(r.items[0].poster).toBe('data:http://img/101c.jpg')
+    })
+
+    it('a forSeries before the first refresh does not emit a spurious event', async () => {
+      const cb = vi.fn()
+      svc.onChange(cb)
+      recs.set(555, [rec(1)])
+      await svc.forSeries(555)
+      expect(cb).not.toHaveBeenCalled()
     })
 
     it('unknown id: one request shared by concurrent calls, stored, persisted, emits when it matters', async () => {
@@ -563,6 +600,73 @@ describe('createRecommendations', () => {
     svc.stop()
     await advance(10 * DAY)
     expect(anilist.recommendations).not.toHaveBeenCalled()
+  })
+
+  it('stop clears timers armed by earlier runs (daily and retry)', async () => {
+    anilist.recommendations.mockRejectedValueOnce(new Error('offline'))
+    svc.start()
+    await advance(FIRST_RUN_MS) // fails: daily + retry timers armed
+    expect(anilist.recommendations).toHaveBeenCalledTimes(1)
+    svc.stop()
+    await advance(10 * DAY)
+    expect(anilist.recommendations).toHaveBeenCalledTimes(1)
+  })
+
+  it('a seed whose stored time is in the future is treated as stale', async () => {
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, JSON.stringify({
+      version: 1, rules: RULES_VERSION, failedAt: null, trending: null, posters: {},
+      bySeed: { 100: { at: T0 + DAY, recs: [] }, 200: { at: T0 - DAY, recs: [] } },
+    }))
+    build()
+    await svc.refresh()
+    expect(anilist.recommendations.mock.calls[0][0]).toEqual([100])
+  })
+
+  it('seeds succeed, trending fails: the list changed, so an event fires', async () => {
+    await svc.refresh()
+    expect(ids()).toContain(101)
+    const cb = vi.fn()
+    svc.onChange(cb)
+    await advance(SEED_TTL_MS + MIN)
+    recs.clear() // new answers are empty: the personal list becomes empty
+    anilist.trending.mockRejectedValueOnce(new Error('offline'))
+    await svc.refresh()
+    expect(disk().failedAt).toBe(Date.now())
+    expect(svc.list().items).toEqual([])
+    expect(cb).toHaveBeenCalledTimes(1)
+  })
+
+  it('an unreadable library makes no requests and keeps the posters', async () => {
+    await svc.refresh()
+    const posterIds = Object.keys(disk().posters).sort()
+    anilist.recommendations.mockClear(); anilist.trending.mockClear()
+    const broken = createRecommendations({ file, library: { list: () => { throw new Error('library down') } }, anilist, settings })
+    await advance(SEED_TTL_MS + MIN)
+    await broken.refresh()
+    expect(anilist.recommendations).not.toHaveBeenCalled()
+    expect(anilist.trending).not.toHaveBeenCalled()
+    expect(Object.keys(disk().posters).sort()).toEqual(posterIds)
+    broken.stop()
+  })
+
+  it('a card whose coverUrl became null loses its poster', async () => {
+    await svc.refresh()
+    expect(disk().posters['101']).toBeDefined()
+    await advance(SEED_TTL_MS + MIN)
+    recs.set(100, [rec(101, 0, { coverUrl: null }), rec(102, 1)])
+    await svc.refresh()
+    expect(disk().posters['101']).toBeUndefined()
+    expect(svc.list().items.find((i) => i.id === 101).poster).toBeNull()
+  })
+
+  it('list() never serves a poster whose coverUrl differs from the item', async () => {
+    await svc.refresh()
+    const file2 = JSON.parse(fs.readFileSync(file, 'utf8'))
+    file2.posters['101'].coverUrl = 'http://img/old.jpg'
+    fs.writeFileSync(file, JSON.stringify(file2))
+    build()
+    expect(svc.list().items.find((i) => i.id === 101).poster).toBeNull()
   })
 
   it('a refresh with nothing stale and nothing changed does not rewrite the file', async () => {

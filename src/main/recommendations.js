@@ -99,12 +99,15 @@ export function createRecommendations({
     }
   }
 
+  // null = the library could not be read (callers must not mistake that for an empty library).
   const entriesNow = () => {
     try { return library.list() ?? [] } catch (err) {
       console.warn('recommendations: library failed', err?.message)
-      return []
+      return null
     }
   }
+  // A poster is only valid while the cover it was downloaded from is still the item's cover.
+  const posterOf = (i) => (i.coverUrl && posters[i.id]?.coverUrl === i.coverUrl ? posters[i.id].dataUrl : null)
   const getCachedId = (title) => {
     const info = anilist.getCached(title)
     return info?.match === 'exact' ? info.id : null
@@ -124,18 +127,18 @@ export function createRecommendations({
 
   function list() {
     load()
-    const { mode, hint, items } = compute(entriesNow())
+    const { mode, hint, items } = compute(entriesNow() ?? [])
     return {
       mode, hint,
-      items: items.map((i) => card(i, posters[i.id]?.dataUrl ?? null, { fromTitle: i.fromTitle ?? null, fromId: i.fromId ?? null })),
+      items: items.map((i) => card(i, posterOf(i), { fromTitle: i.fromTitle ?? null, fromId: i.fromId ?? null })),
     }
   }
 
   // What the rail renders, minus the data URLs (only whether a poster exists): any visible change must emit.
   const signature = () => {
-    const { mode, hint, items } = compute(entriesNow())
+    const { mode, hint, items } = compute(entriesNow() ?? [])
     return JSON.stringify([mode, hint, ...items.map((i) => [
-      i.id, i.title, i.romaji, i.format, i.status, i.year, i.episodes, i.genres, i.fromTitle ?? null, i.fromId ?? null, i.coverUrl, !!posters[i.id],
+      i.id, i.title, i.romaji, i.format, i.status, i.year, i.episodes, i.genres, i.fromTitle ?? null, i.fromId ?? null, i.coverUrl, !!posterOf(i),
     ])])
   }
 
@@ -165,6 +168,7 @@ export function createRecommendations({
     failedAt = now()
     if (persist()) dirty = false
     armRetry()
+    if (!stopped) emitIfChanged() // seeds may have changed the list before the trending request failed
   }
 
   async function runOnce() {
@@ -172,7 +176,9 @@ export function createRecommendations({
     if (lastSig === null) lastSig = signature()
     const entries = entriesNow()
     const t = now()
-    if (!isPaused(t)) {
+    if (entries === null) {
+      // Unreadable library: no seeds can be told from "no seeds" - no requests, no pruning, nothing is wiped.
+    } else if (!isPaused(t)) {
       const seeds = seedsFrom(entries, getCachedId)
       const age = (id) => (bySeed[id] ? t - bySeed[id].at : Infinity)
       const stale = seeds.filter((s) => !bySeed[s.id] || bySeed[s.id].at > t || age(s.id) + SLACK_MS >= SEED_TTL_MS).map((s) => s.id)
@@ -226,7 +232,11 @@ export function createRecommendations({
   // Posters only for what the rail would show now; a poster that fails to download is retried next refresh.
   async function fetchPosters(entries) {
     for (const i of compute(entries).items) {
-      if (!i.coverUrl || posters[i.id]?.coverUrl === i.coverUrl) continue
+      if (!i.coverUrl) {
+        if (posters[i.id]) { delete posters[i.id]; dirty = true }
+        continue
+      }
+      if (posters[i.id]?.coverUrl === i.coverUrl) continue
       const dataUrl = await anilist.poster(i.coverUrl)
       if (stopped) return false
       if (dataUrl) { posters[i.id] = { coverUrl: i.coverUrl, dataUrl }; dirty = true }
@@ -323,12 +333,13 @@ export function createRecommendations({
       recs = await p
       if (stopped || recs === null) return { items: [] }
       if (bySeed[id]?.recs !== recs) {
+        if (lastSig === null) lastSig = signature() // the first thing that happens must not look like a change
         bySeed[id] = { at: t, recs }
         persist()
         emitIfChanged()
       }
     }
-    const picked = pickSimilar(recs, entriesNow(), hiddenNow(), getCachedId)
+    const picked = pickSimilar(recs, entriesNow() ?? [], hiddenNow(), getCachedId)
     const items = await Promise.all(picked.map(async (i) => card(i, await posterFor(i), {})))
     return stopped ? { items: [] } : { items }
   }
