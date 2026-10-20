@@ -26,7 +26,10 @@ export function dayWindow(nowMs) {
   return { from: days[0], to: new Date(y, m, d + DAYS).getTime(), days }
 }
 
-/** One row per media for airings in [dayStart, dayEnd), sorted by time then title. */
+// One fixed collator: the order never depends on the system language.
+const titleCollator = new Intl.Collator('en', { sensitivity: 'base' })
+
+/** One row per media for airings in [dayStart, dayEnd), sorted by time, title, then mediaId. */
 export function groupDay(items, dayStart, dayEnd) {
   const byMedia = new Map()
   for (const it of items || []) {
@@ -50,7 +53,9 @@ export function groupDay(items, dayStart, dayEnd) {
     if (it.episode > row.episodes[1]) row.episodes[1] = it.episode
   }
   return [...byMedia.values()].sort(
-    (a, b) => a.airingAt - b.airingAt || String(a.title).localeCompare(String(b.title)),
+    (a, b) => a.airingAt - b.airingAt ||
+      titleCollator.compare(a.title ?? a.romaji ?? '', b.title ?? b.romaji ?? '') ||
+      a.mediaId - b.mediaId,
   )
 }
 

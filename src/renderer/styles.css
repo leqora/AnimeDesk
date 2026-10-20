@@ -60,6 +60,8 @@ h3 { font-size: 17px; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 7px 14px; cursor: pointer; transition: transform 150ms var(--ease), opacity 150ms var(--ease); }
 button:hover:not(:disabled) { background: var(--glass-strong); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+.schedule-state button[aria-disabled="true"] { cursor: not-allowed; }
+.schedule-state button[aria-disabled="true"]:hover { background: var(--glass); border-color: var(--glass-border); }
 button:active:not(:disabled) { transform: translateY(1px); }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 button:disabled { opacity: .45; cursor: not-allowed; }
@@ -452,7 +454,8 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 .schedule-state p { margin: 0; }
 .schedule-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .schedule-row { display: grid; grid-template-columns: 48px 56px 1fr auto; align-items: center; gap: 14px; width: 100%; padding: 8px 12px; text-align: left; color: inherit; background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); }
-.schedule-row:disabled { opacity: .6; cursor: not-allowed; }
+.schedule-row:disabled { opacity: 1; cursor: not-allowed; }
+.schedule-row:disabled .schedule-row__poster { opacity: .6; }
 .schedule-row:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 /* aired rows: dim only the poster and use the muted token for the time, never opacity on the text (contrast) */
 .schedule-row--aired .schedule-row__poster { opacity: .6; }

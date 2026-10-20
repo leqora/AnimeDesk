@@ -479,3 +479,114 @@ describe('createSchedule shared poster limiter', () => {
     expect(fs.readFileSync(file, 'utf8')).toBe(before)
   })
 })
+
+describe('createSchedule poster timeout and queued downloads', () => {
+  const deferred = () => { let resolve; const promise = new Promise((r) => { resolve = r }); return { promise, resolve } }
+  const gated = () => {
+    const gates = []
+    anilist.poster.mockImplementation((url) => { const g = deferred(); gates.push(g); return g.promise.then(() => `data:${url}`) })
+    return gates
+  }
+
+  it('passes the poster timeout to anilist.poster', async () => {
+    await refreshed()
+    await svc.posters([1])
+    expect(anilist.poster).toHaveBeenCalledWith('http://img/1.jpg', { timeoutMs: 8000 })
+  })
+
+  it('a download waiting for a slot does not start after stop()', async () => {
+    fetched = Array.from({ length: 5 }, (_, i) => item(i + 1))
+    await refreshed()
+    const gates = gated()
+    const p = svc.posters([1, 2, 3, 4, 5])
+    await flush()
+    expect(anilist.poster).toHaveBeenCalledTimes(4)
+    svc.stop()
+    gates.forEach((g) => g.resolve())
+    const r = await p
+    await flush()
+    expect(anilist.poster).toHaveBeenCalledTimes(4)
+    expect(r[5]).toBeNull()
+  })
+
+  it('a download waiting for a slot does not start after forget(), and a new list gets the poster', async () => {
+    fetched = Array.from({ length: 5 }, (_, i) => item(i + 1))
+    await refreshed()
+    const gates = gated()
+    const p = svc.posters([1, 2, 3, 4, 5])
+    await flush()
+    svc.forget()
+    gates.forEach((g) => g.resolve())
+    const r = await p
+    await flush()
+    expect(anilist.poster).toHaveBeenCalledTimes(4)
+    expect(r[5]).toBeNull()
+    anilist.poster.mockImplementation(async (url) => `data:${url}`)
+    await refreshed()
+    expect(await svc.posters([5])).toEqual({ 5: 'data:http://img/5.jpg' })
+    expect(anilist.poster).toHaveBeenCalledTimes(5)
+  })
+
+  it('rejected poster download returns null, frees the slot and retries next call', async () => {
+    fetched = Array.from({ length: 5 }, (_, i) => item(i + 1))
+    await refreshed()
+    anilist.poster.mockImplementation(async (url) => {
+      if (url.endsWith('/5.jpg')) return `data:${url}`
+      throw new Error('x')
+    })
+    const r = await svc.posters([1, 2, 3, 4, 5])
+    expect(r).toEqual({ 1: null, 2: null, 3: null, 4: null, 5: 'data:http://img/5.jpg' })
+    expect(Object.keys(disk().posters)).toEqual(['5'])
+    await svc.posters([1])
+    expect(anilist.poster).toHaveBeenCalledTimes(6)
+  })
+})
+
+describe('createSchedule retryAt', () => {
+  const fail = () => { anilist.schedule.mockRejectedValue(new Error('down')) }
+
+  it('null when not paused', async () => {
+    expect((await refreshed()).retryAt).toBeNull()
+  })
+
+  it('null when a forced retry is allowed', async () => {
+    fail()
+    await refreshed()
+    clock = T0 + 5 * MIN
+    expect(svc.list().retryAt).toBeNull()
+    clock = T0 + 10 * MIN
+    await refreshed({ force: true })
+    clock = T0 + 10 * MIN + FORCE_MIN_MS
+    expect(svc.list().retryAt).toBeNull()
+  })
+
+  it('lastForceAt + 60 s while paused after a forced retry', async () => {
+    fail()
+    await refreshed()
+    clock = T0 + 10 * MIN
+    await refreshed({ force: true })
+    clock = T0 + 10 * MIN + 5000
+    expect(svc.list().retryAt).toBe(T0 + 10 * MIN + FORCE_MIN_MS)
+  })
+
+  it('null after a successful refresh', async () => {
+    fail()
+    await refreshed()
+    clock = T0 + 10 * MIN
+    await refreshed({ force: true })
+    anilist.schedule.mockImplementation(async () => fetched)
+    clock = T0 + 10 * MIN + FORCE_MIN_MS
+    await refreshed({ force: true })
+    clock = T0 + 10 * MIN + FORCE_MIN_MS + 1000
+    expect(svc.list().retryAt).toBeNull()
+  })
+
+  it('null when lastForceAt is in the future (clock moved back)', async () => {
+    fail()
+    await refreshed()
+    clock = T0 + 10 * MIN
+    await refreshed({ force: true })
+    clock = T0 + 5 * MIN
+    expect(svc.list().retryAt).toBeNull()
+  })
+})

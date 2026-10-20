@@ -208,12 +208,29 @@ export function createAniList({
   // Title and id lookups made within a short window go out together (id_in / aliased searches).
   const batcher = createAniListBatcher({ enqueue, request, setTimeoutFn, clearTimeoutFn, windowMs: batchWindowMs, waitGate: () => pause })
 
-  async function posterDataUrl(url) {
-    if (!url) return null
-    const res = await fetchImpl(url)
+  async function readPoster(res) {
     if (!res.ok) return null
     const type = res.headers.get('content-type') ?? 'image/jpeg'
     return `data:${type};base64,${Buffer.from(await res.arrayBuffer()).toString('base64')}`
+  }
+
+  // With a finite timeoutMs > 0 the whole call (request and body read) is cut off by an AbortController timer, so a hanging
+  // download cannot hold its caller forever. Without it the call is exactly fetchImpl(url).
+  async function posterDataUrl(url, { timeoutMs } = {}) {
+    if (!url) return null
+    if (!(Number.isFinite(timeoutMs) && timeoutMs > 0)) return readPoster(await fetchImpl(url))
+    const controller = new AbortController()
+    let timer
+    const expired = new Promise((_, reject) => {
+      timer = setTimeoutFn(() => { controller.abort(); reject(new Error('poster timeout')) }, timeoutMs)
+    })
+    try {
+      const work = (async () => readPoster(await fetchImpl(url, { signal: controller.signal })))()
+      work.catch(() => {}) // a late failure after the timeout must not become an unhandled rejection
+      return await Promise.race([work, expired])
+    } finally {
+      clearTimeoutFn(timer)
+    }
   }
 
   const cacheFile = (key) => path.join(cacheDir, `${crypto.createHash('sha1').update(key).digest('hex')}.json`)
@@ -430,7 +447,7 @@ export function createAniList({
     return items
   }
 
-  const poster = (url) => posterDataUrl(url).catch(() => null)
+  const poster = (url, opts) => posterDataUrl(url, opts).catch(() => null)
 
   return { search, getForTitle, getCached, refreshAiring, relations, recommendations, trending, schedule, poster, viewer, listEntry, saveProgress, candidates }
 }
