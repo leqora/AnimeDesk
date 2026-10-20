@@ -433,6 +433,44 @@ describe('SchedulePage accessibility and labels', () => {
         expect(api.schedule.list).toHaveBeenLastCalledWith({ force: true })
       })
 
+      // A new retryAt arrives long after the previous countdown stopped: the first paint must use the real clock, not the stale retryNow.
+      const expireThenDeliver = async (retryAtFor) => {
+        let onSched
+        const list = vi.fn(async () => data([item()], { state: 'stale', fetchedAt: at(0, 7), retryAt: NOW + 5000 }))
+        page(makeFakeApi({ schedule: { list, onChanged: vi.fn((cb) => { onSched = cb; return () => {} }) } }))
+        await act(async () => { await Promise.resolve() })
+        await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+        expect(screen.getByRole('button', { name: 'Pokušaj ponovo' })).not.toHaveAttribute('aria-disabled')
+        vi.setSystemTime(NOW + 11 * 60 * 1000) // clock jumps; no interval tick runs
+        const later = Date.now()
+        list.mockImplementation(async () => data([item()], { state: 'stale', fetchedAt: at(0, 7), retryAt: retryAtFor(later) }))
+        // every label the button ever showed (an intermediate stale frame would be committed to the DOM, then replaced)
+        const seen = new Set()
+        const watch = new MutationObserver((recs) => recs.forEach((r) => {
+          if (r.oldValue) seen.add(r.oldValue)
+          r.addedNodes.forEach((n) => seen.add(n.textContent))
+        }))
+        watch.observe(screen.getByRole('button', { name: 'Pokušaj ponovo' }), { subtree: true, childList: true, characterData: true, characterDataOldValue: true })
+        await act(async () => { onSched() })
+        await act(async () => { await Promise.resolve() })
+        watch.takeRecords().forEach((r) => { if (r.oldValue) seen.add(r.oldValue); r.addedNodes.forEach((n) => seen.add(n.textContent)) })
+        watch.disconnect()
+        return seen
+      }
+
+      it('a new retryAt after a long gap counts from the real clock on the first paint', async () => {
+        const seen = await expireThenDeliver((later) => later + 60000)
+        expect([...seen].filter((x) => /\d+ s$/.test(x) && x !== 'Pokušaj ponovo za 60 s')).toEqual([])
+        const btn = screen.getByRole('button', { name: 'Pokušaj ponovo za 60 s' })
+        expect(btn).toHaveAttribute('aria-disabled', 'true')
+      })
+
+      it('a new retryAt already in the past shows no countdown', async () => {
+        const seen = await expireThenDeliver((later) => later - 1000)
+        expect([...seen].filter((x) => /\d+ s$/.test(x))).toEqual([])
+        expect(screen.getByRole('button', { name: 'Pokušaj ponovo' })).not.toHaveAttribute('aria-disabled')
+      })
+
       it('countdown interval is cleared on unmount', async () => {
         const { unmount } = await mount()
         expect(vi.getTimerCount()).toBeGreaterThan(0)

@@ -60,6 +60,8 @@ h3 { font-size: 17px; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 7px 14px; cursor: pointer; transition: transform 150ms var(--ease), opacity 150ms var(--ease); }
 button:hover:not(:disabled) { background: var(--glass-strong); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+.schedule-state button[aria-disabled="true"] { cursor: not-allowed; }
+.schedule-state button[aria-disabled="true"]:hover { background: var(--glass); border-color: var(--glass-border); }
 button:active:not(:disabled) { transform: translateY(1px); }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 button:disabled { opacity: .45; cursor: not-allowed; }

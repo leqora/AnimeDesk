@@ -148,10 +148,12 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
   const usable = state === 'ok' || state === 'stale'
   const staleTime = data?.fetchedAt != null ? new Date(data.fetchedAt).toLocaleString(t.locale, { day: 'numeric', month: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''
 
-  const counting = retryAt != null && retryAt > retryNow
+  // retryNow lags one effect run behind a new retryAt, so the first paint reads the real clock too
+  const clock = Math.max(retryNow, Date.now())
+  const counting = retryAt != null && retryAt > clock
   const refreshing = data?.refreshing === true
   const retryBlocked = refreshing || counting
-  const retryLabel = refreshing ? t('schedule.refreshing') : counting ? t('schedule.retryIn', { n: Math.ceil((retryAt - retryNow) / 1000) }) : t('schedule.retry')
+  const retryLabel = refreshing ? t('schedule.refreshing') : counting ? t('schedule.retryIn', { n: Math.ceil((retryAt - clock) / 1000) }) : t('schedule.retry')
   // aria-disabled, not disabled: a disabled button loses keyboard focus in Chromium
   const retryButton = (
     <button
