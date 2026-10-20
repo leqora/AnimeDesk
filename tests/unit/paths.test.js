@@ -19,6 +19,7 @@ describe('paths', () => {
     expect(p.anilistAuth).toBe(path.join('C:\\Data\\AnimeDesk', 'anilist-auth.bin'))
     expect(p.anilistSync).toBe(path.join('C:\\Data\\AnimeDesk', 'anilist-sync.json'))
     expect(p.recommendations).toBe(path.join('C:\\Data\\AnimeDesk', 'cache', 'recommendations.json'))
+    expect(p.schedule).toBe(path.join('C:\\Data\\AnimeDesk', 'cache', 'schedule.json'))
     expect(p.backups).toBe(path.join('C:\\Data\\AnimeDesk', 'backups'))
   })
   it('converts Windows paths to MSYS paths, keeping spaces and unicode', () => {

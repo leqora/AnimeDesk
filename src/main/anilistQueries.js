@@ -21,3 +21,6 @@ export function searchBatchQuery(n) {
 export const REC_MEDIA_FIELDS = 'id isAdult format status seasonYear episodes genres title { romaji english } coverImage { large } relations { edges { relationType(version: 2) node { id type format seasonYear } } }'
 export const RECS_BATCH = `query ($ids: [Int]) { Page(perPage: 50) { media(id_in: $ids, type: ANIME) { id recommendations(perPage: 10, sort: RATING_DESC) { nodes { rating mediaRecommendation { ${REC_MEDIA_FIELDS} } } } } } }`
 export const TRENDING = `query { Page(perPage: 50) { media(type: ANIME, sort: TRENDING_DESC, isAdult: false) { ${REC_MEDIA_FIELDS} } } }`
+
+// Weekly airing schedule (spec point 7): the window travels only through variables.
+export const SCHEDULE = 'query ($page: Int, $from: Int, $to: Int) { Page(page: $page, perPage: 50) { pageInfo { hasNextPage } airingSchedules(airingAt_greater: $from, airingAt_lesser: $to, sort: TIME) { airingAt episode media { id isAdult format status seasonYear title { romaji english } coverImage { medium } relations { edges { relationType(version: 2) node { id type format seasonYear } } } } } } }'

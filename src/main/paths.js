@@ -23,6 +23,7 @@ export function createPaths(baseDir) {
     anilistSync: path.join(baseDir, 'anilist-sync.json'),
     sequels: path.join(baseDir, 'cache', 'sequels.json'),
     recommendations: path.join(baseDir, 'cache', 'recommendations.json'),
+    schedule: path.join(baseDir, 'cache', 'schedule.json'),
     backups: path.join(baseDir, 'backups'),
     health: path.join(baseDir, 'health.json'),
   }
