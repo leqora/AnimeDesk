@@ -194,6 +194,15 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .sequel-card .sequel-card__hide { background: var(--panel-solid); border: 1px solid var(--text-muted); color: var(--text); }
 .sequel-card .sequel-card__hide:hover { border-color: var(--accent-2); }
 .sequel-card .sequel-card__hide:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+/* recommendations rail (Home) and "Similar" (detail): same card as the sequels, own hide class */
+.rail__hint { margin: 0; font-size: 13px; }
+.rec-card .media-card__open:disabled { opacity: .6; cursor: not-allowed; }
+.rec-card .card__meta { line-height: 1.5; }
+.rec-card__badge { color: var(--accent-2); }
+.rec-card__hide { min-width: 28px; line-height: 1; font-size: 16px; }
+.rec-card .rec-card__hide { background: var(--panel-solid); border: 1px solid var(--text-muted); color: var(--text); }
+.rec-card .rec-card__hide:hover { border-color: var(--accent-2); }
+.rec-card .rec-card__hide:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 .reduce-motion .media-card:hover, .reduce-motion .card.media-card:active, .reduce-motion .media-card:focus-within, .reduce-motion .media-card:hover .poster--in, .reduce-motion .media-card:focus-within .poster--in { transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .card.media-card:hover, .card.media-card:active, .media-card:hover, .media-card:focus-within, .media-card:hover .poster--in, .media-card:focus-within .poster--in { transform: none; }

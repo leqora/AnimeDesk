@@ -315,4 +315,12 @@ describe('App', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Sledeća epizoda' }))
     await waitFor(() => expect(api.watch.start).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '4' }))
   })
+  it('searchAnime from a card lands on Home with the query and runs the search', async () => {
+    const rec = { id: 5, title: 'Rec Show', romaji: 'Rec Romaji', format: 'TV', status: 'FINISHED', year: 2020, episodes: 12, genres: [], poster: null, fromTitle: 'X', fromId: 1 }
+    const api = makeFakeApi({ recommendations: { list: vi.fn(async () => ({ mode: 'personal', hint: false, items: [rec] })) } })
+    render(<App api={api} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Potraži Rec Show' }))
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledWith({ query: 'Rec Romaji' }))
+    expect(document.getElementById('search-input').value).toBe('Rec Romaji')
+  })
 })
