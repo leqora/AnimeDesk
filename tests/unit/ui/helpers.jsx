@@ -63,6 +63,7 @@ export function makeFakeApi(overrides = {}) {
       setEnabled: vi.fn(async () => true), candidates: vi.fn(async () => []), pendingConfirm: vi.fn(async () => []), onChange: sub(),
     },
     sequels: { list: vi.fn(async () => []), hide: vi.fn(async () => ({ ok: true })), unhide: vi.fn(async () => ({ ok: true })), onChanged: vi.fn(() => () => {}) },
+    recommendations: { list: vi.fn(async () => ({ mode: 'trending', hint: false, items: [] })), hide: vi.fn(async () => ({ ok: true })), unhide: vi.fn(async () => ({ ok: true })), forSeries: vi.fn(async () => ({ items: [] })), onChanged: vi.fn(() => () => {}) },
     onNotificationsChanged: sub(),
     onOpenAnime: sub(),
     onOpenPage: sub(),

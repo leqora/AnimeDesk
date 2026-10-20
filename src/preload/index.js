@@ -106,6 +106,13 @@ contextBridge.exposeInMainWorld('animedesk', {
     unhide: invoke(INVOKE.sequelsUnhide),
     onChanged: on(EVENTS.sequelsChanged),
   },
+  recommendations: {
+    list: invoke(INVOKE.recommendationsList),
+    hide: invoke(INVOKE.recommendationsHide),
+    unhide: invoke(INVOKE.recommendationsUnhide),
+    forSeries: invoke(INVOKE.recommendationsForSeries),
+    onChanged: on(EVENTS.recommendationsChanged),
+  },
   onNotificationsChanged: on(EVENTS.notificationsChanged),
   onOpenAnime: on(EVENTS.openAnime),
   onOpenPage: on(EVENTS.openPage),

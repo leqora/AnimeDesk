@@ -368,6 +368,42 @@ describe('sequels handlers', () => {
   })
 })
 
+describe('recommendations handlers', () => {
+  it('uses exact channel names', () => {
+    expect(INVOKE.recommendationsList).toBe('recommendations:list')
+    expect(INVOKE.recommendationsHide).toBe('recommendations:hide')
+    expect(INVOKE.recommendationsUnhide).toBe('recommendations:unhide')
+    expect(INVOKE.recommendationsForSeries).toBe('recommendations:for-series')
+    expect(EVENTS.recommendationsChanged).toBe('event:recommendations-changed')
+  })
+  it('delegates valid calls and rejects invalid ids without calling the service', async () => {
+    const s = services()
+    s.recommendations = {
+      list: vi.fn(() => ({ mode: 'trending', hint: false, items: [] })),
+      hide: vi.fn(() => ({ ok: true })),
+      unhide: vi.fn(() => ({ ok: true })),
+      forSeries: vi.fn(async () => ({ items: [{ id: 1 }] })),
+    }
+    const h = createHandlers(s)
+    expect(h[INVOKE.recommendationsList]()).toEqual({ mode: 'trending', hint: false, items: [] })
+    expect(h[INVOKE.recommendationsHide](5)).toEqual({ ok: true })
+    expect(s.recommendations.hide).toHaveBeenCalledWith(5)
+    expect(h[INVOKE.recommendationsUnhide](5)).toEqual({ ok: true })
+    expect(s.recommendations.unhide).toHaveBeenCalledWith(5)
+    expect(await h[INVOKE.recommendationsForSeries](7)).toEqual({ items: [{ id: 1 }] })
+    expect(s.recommendations.forSeries).toHaveBeenCalledWith(7)
+    s.recommendations.hide.mockClear(); s.recommendations.unhide.mockClear(); s.recommendations.forSeries.mockClear()
+    for (const bad of ['5', -1, 0, 1.5, null, undefined, NaN]) {
+      expect(h[INVOKE.recommendationsHide](bad)).toEqual({ ok: false })
+      expect(h[INVOKE.recommendationsUnhide](bad)).toEqual({ ok: false })
+      expect(await h[INVOKE.recommendationsForSeries](bad)).toEqual({ items: [] })
+    }
+    expect(s.recommendations.hide).not.toHaveBeenCalled()
+    expect(s.recommendations.unhide).not.toHaveBeenCalled()
+    expect(s.recommendations.forSeries).not.toHaveBeenCalled()
+  })
+})
+
 describe('ipc background hooks', () => {
   it('calls onSettingsChanged with the updated settings', () => {
     const s = services()

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useApi } from '../api.js'
 import { useAniListInfo } from '../anilist/useAniListInfo.js'
 import { useT } from '../i18n/I18nContext.jsx'
@@ -7,6 +7,7 @@ import { Poster } from '../components/Poster.jsx'
 import { EpisodePicker } from '../components/EpisodePicker.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { AniListMatch } from '../components/AniListMatch.jsx'
+import { RecommendationCard } from '../components/RecommendationCard.jsx'
 import { useSeriesEpisodes } from '../episodes/useSeriesEpisodes.js'
 import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
 import { usePosterTint } from '../theme/usePosterTint.js'
@@ -17,7 +18,7 @@ import { AiringLine, NewBadge } from '../components/AiringLine.jsx'
 import { newEpisodeCount, upcoming, ANILIST_STATUSES } from '../../shared/airing.js'
 import { formatTime } from '../../shared/player.js'
 
-export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onContinue }) {
+export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onContinue, onSearch = () => {} }) {
   const api = useApi()
   const t = useT()
   const rawInfo = useAniListInfo(entry.title, entry.aniListId, { live: true }) // undefined = loading, null = not found
@@ -25,6 +26,19 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   // A fuzzy (close) title match is shown as poster/title/year/genres only; nothing else is taken from it.
   const closeMatch = info?.match === 'close'
   const tint = usePosterTint(info?.poster ?? null)
+  // "Similar": the linked id, else an exact title match; a close match never counts.
+  const similarId = entry.aniListId ?? (info?.match === 'exact' ? info.id : null)
+  const [similar, setSimilar] = useState([])
+  const similarHeadId = useId()
+  useEffect(() => {
+    setSimilar([])
+    if (similarId == null) return undefined
+    let alive = true
+    api.recommendations.forSeries(similarId)
+      .then((r) => { if (alive && Array.isArray(r?.items)) setSimilar(r.items) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [api, similarId])
   const [showDesc, setShowDesc] = useState(false)
   const [comment, setComment] = useState(entry.comment)
   const [noteEp, setNoteEp] = useState(null)
@@ -287,6 +301,14 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
                 </button>
               </div>
             </div>
+          )}
+          {similar.length > 0 && (
+            <section className="similar" aria-labelledby={similarHeadId}>
+              <h3 id={similarHeadId}>{t('recommendations.similar')}</h3>
+              <div className="similar__grid">
+                {similar.map((s) => <RecommendationCard key={s.id} item={s} ready={ready} onSearch={onSearch} />)}
+              </div>
+            </section>
           )}
           <div className="row">
             <button type="button" onClick={remove}>{t('detail.delete')}</button>

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
+import { useState } from 'react'
 import { screen, fireEvent, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderUi, makeFakeApi } from './helpers.jsx'
@@ -11,7 +12,12 @@ const item = (over = {}) => ({
   poster: null, fromTitle: 'Attack on Titan', fromId: 16498, description: 'SECRET PLOT', ...over,
 })
 
-const home = (api, ready = true) => renderUi(<HomePage ready={ready} settings={{ ...DEFAULT_SETTINGS }} onSettings={() => {}} onOpenWizard={() => {}} pendingWatch={null} onPendingHandled={() => {}} onContinue={() => {}} onOpenAnime={() => {}} />, { api })
+// Stands in for App, which owns pendingSearch since v0.14.0.
+function Shell({ ready }) {
+  const [pendingSearch, setPendingSearch] = useState(null)
+  return <HomePage ready={ready} settings={{ ...DEFAULT_SETTINGS }} onSettings={() => {}} onOpenWizard={() => {}} pendingWatch={null} onPendingHandled={() => {}} onContinue={() => {}} onOpenAnime={() => {}} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onSearch={(query) => setPendingSearch({ query })} />
+}
+const home = (api, ready = true) => renderUi(<Shell ready={ready} />, { api })
 
 const apiWith = (items, extra = {}) => makeFakeApi({ sequels: { list: vi.fn(async () => items), ...extra } })
 

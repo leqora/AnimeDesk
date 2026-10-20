@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Hero } from '../components/Hero.jsx'
 import { MediaCard } from '../components/MediaCard.jsx'
 import { SequelCard } from '../components/SequelCard.jsx'
+import { RecommendationCard } from '../components/RecommendationCard.jsx'
 import { useToast } from '../toast/ToastProvider.jsx'
 import { Icon } from '../components/Icon.jsx'
 import { SearchPage } from './SearchPage.jsx'
@@ -14,8 +15,9 @@ export const pickHeroEntry = (entries) => entries.filter((e) => e.status === 'wa
 export const watchingNow = (entries) => entries.filter((e) => e.status === 'watching').sort(byRecent).slice(0, 10)
 export const pinnedEntries = (entries) => entries.filter((e) => e.pinnedAt).sort((a, b) => String(a.pinnedAt).localeCompare(String(b.pinnedAt)))
 
-function Rail({ title, count, children }) {
+function Rail({ title, count, hint, children }) {
   const t = useT()
+  const hintId = useId()
   const track = useRef(null)
   const [overflow, setOverflow] = useState(false)
   useEffect(() => {
@@ -28,7 +30,7 @@ function Rail({ title, count, children }) {
   }, [count])
   const scroll = (dir) => track.current?.scrollBy?.({ left: dir * track.current.clientWidth, behavior: 'smooth' })
   return (
-    <section className="rail" aria-label={title}>
+    <section className="rail" aria-label={title} aria-describedby={hint ? hintId : undefined}>
       <div className="rail__head">
         <h3 className="hud">{title}</h3>
         {overflow && (
@@ -38,18 +40,19 @@ function Rail({ title, count, children }) {
           </div>
         )}
       </div>
+      {hint && <p id={hintId} className="rail__hint muted">{hint}</p>}
       <div className="rail__track" ref={track}>{children}</div>
     </section>
   )
 }
 
-export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, onContinue, onOpenAnime }) {
+export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, onContinue, onOpenAnime, pendingSearch = null, onPendingSearchHandled = () => {}, onSearch = () => {} }) {
   const api = useApi()
   const t = useT()
   const toast = useToast()
   const [entries, setEntries] = useState([])
   const [sequels, setSequels] = useState([])
-  const [pendingSearch, setPendingSearch] = useState(null)
+  const [recs, setRecs] = useState({ mode: 'trending', hint: false, items: [] })
   const [focused, setFocused] = useState(false)
 
   useEffect(() => {
@@ -72,22 +75,42 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
     return () => { alive = false; off() }
   }, [api])
 
-  const hideSequel = async (item, viaKeyboard = false) => {
+  // Same loading rules as the sequels: no payload on the event, a stale answer is ignored.
+  useEffect(() => {
+    let alive = true
+    let seq = 0
+    const load = () => {
+      const mine = ++seq
+      api.recommendations.list().then((data) => { if (alive && mine === seq && data && Array.isArray(data.items)) setRecs(data) }).catch(() => {})
+    }
+    load()
+    const off = api.recommendations.onChanged(load)
+    return () => { alive = false; off() }
+  }, [api])
+
+  // One hide flow for both rails; only the api group and the copy differ.
+  const hideFrom = (group) => async (item, viaKeyboard = false) => {
     try {
-      await api.sequels.hide(item.id)
+      await api[group].hide(item.id)
     } catch (err) {
-      console.warn('sequels: hide failed', err?.message)
+      console.warn(`${group}: hide failed`, err?.message)
       return
     }
     // The card unmounts; for a keyboard user focus would fall to body, so it goes to "Undo" (a mouse click keeps the old behavior).
-    if (viaKeyboard && document.activeElement?.classList.contains('sequel-card__hide')) document.activeElement.blur()
-    // Only the sequel title goes in the toast; it is already on the card.
+    const cls = document.activeElement?.classList
+    if (viaKeyboard && (cls?.contains('sequel-card__hide') || cls?.contains('rec-card__hide'))) document.activeElement.blur()
+    // Only the item title goes in the toast; it is already on the card.
     toast.show({
-      message: t('sequels.hidden', { title: item.title }),
-      action: { label: t('toast.undo'), onAction: () => api.sequels.unhide(item.id) },
+      message: t(`${group}.hidden`, { title: item.title }),
+      action: { label: t('toast.undo'), onAction: () => api[group].unhide(item.id) },
       focusAction: viaKeyboard,
     })
   }
+  const hideSequel = hideFrom('sequels')
+  const hideRec = hideFrom('recommendations')
+  // The same series is not offered twice: sequels win.
+  const sequelIds = new Set(sequels.map((s) => s.id))
+  const recItems = recs.items.filter((r) => !sequelIds.has(r.id))
 
   const pinned = pinnedEntries(entries)
   const rail = watchingNow(entries)
@@ -101,12 +124,17 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
           {rail.length > 0 && <Rail title={t('home.continueWatching')} count={rail.length}>{rail.map(card)}</Rail>}
           {sequels.length > 0 && (
             <Rail title={t('sequels.title')} count={sequels.length}>
-              {sequels.map((s) => <SequelCard key={s.id} item={s} ready={ready} onSearch={(query) => setPendingSearch({ query })} onHide={hideSequel} />)}
+              {sequels.map((s) => <SequelCard key={s.id} item={s} ready={ready} onSearch={onSearch} onHide={hideSequel} />)}
+            </Rail>
+          )}
+          {recItems.length > 0 && (
+            <Rail title={t(recs.mode === 'personal' ? 'recommendations.titlePersonal' : 'recommendations.titleTrending')} count={recItems.length} hint={recs.hint === 'link' ? t('recommendations.hintLink') : recs.hint ? t('recommendations.hint') : null}>
+              {recItems.map((r) => <RecommendationCard key={r.id} item={r} ready={ready} onSearch={onSearch} onHide={hideRec} />)}
             </Rail>
           )}
         </>
       )}
-      <SearchPage ready={ready} settings={settings} onSettings={onSettings} onOpenWizard={onOpenWizard} pendingWatch={pendingWatch} onPendingHandled={onPendingHandled} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onFocusChange={setFocused} />
+      <SearchPage ready={ready} settings={settings} onSettings={onSettings} onOpenWizard={onOpenWizard} pendingWatch={pendingWatch} onPendingHandled={onPendingHandled} pendingSearch={pendingSearch} onPendingSearchHandled={onPendingSearchHandled} onFocusChange={setFocused} />
     </div>
   )
 }

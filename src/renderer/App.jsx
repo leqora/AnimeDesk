@@ -148,6 +148,7 @@ export default function App({ api, sound: injectedSound }) {
   // FIFO: an ask for episode N must survive the ask for N+1 (askOnClose + autoNext)
   const [asks, setAsks] = useState([])
   const [pendingWatch, setPendingWatch] = useState(null)
+  const [pendingSearch, setPendingSearch] = useState(null)
   const [corrupt, setCorrupt] = useState(false)
   // one-shot: after an import remounts Settings, focus goes to its import button; dropped when leaving Settings
   const [focusImport, setFocusImport] = useState(false)
@@ -331,6 +332,8 @@ export default function App({ api, sound: injectedSound }) {
   // a removed series has no detail to come back to: step back, or swap the entry in place when there is no history
   const onRemoved = () => (nav.canBack ? nav.back() : nav.replace({ page: 'watchlist', animeId: null }))
   const continueWatching = (params) => { setPendingWatch(params); nav.navigate({ page: 'home', animeId: null }) }
+  // Search from anywhere (sequel/recommendation cards, the detail's "Similar"): fills Home's search box and runs it.
+  const searchAnime = (query) => { setPendingSearch({ query }); nav.navigate({ page: 'home', animeId: null }) }
   const openWhatsNew = () => setWhatsNew({ mode: 'before', version: updateState.version, notes: updateState.notes })
   const closeWhatsNew = () => { if (whatsNew?.mode === 'after') api.whatsNew.seen(); setWhatsNew(null) }
 
@@ -363,9 +366,9 @@ export default function App({ api, sound: injectedSound }) {
                 <RouteStateContext.Provider value={{ state: nav.entry.state, set: nav.setRouteState }}>
                 {corrupt && <CorruptBanner />}
                 {page === 'home' && (
-                  <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} />
+                  <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onSearch={searchAnime} />
                 )}
-                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} />}
+                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} onSearch={searchAnime} />}
                 {page === 'downloads' && <DownloadsPage />}
                 {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} />}
                 {page === 'settings' && <SettingsPage key={settingsKey} focusImport={focusImport} settings={settings} onSettings={updateSettings} onImported={onImported} onTestSound={() => sound.play('levelUp')} updateState={updateState} />}
