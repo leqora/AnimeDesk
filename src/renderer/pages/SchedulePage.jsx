@@ -18,7 +18,9 @@ function ScheduleRow({ row, now, ready, poster, inWatchlist, dayLabel, onOpen })
   const [from, to] = row.episodes
   const episode = from === to ? t('schedule.episode', { n: from }) : t('schedule.episodes', { from, to })
   const aired = row.airingAt <= now
-  const label = t('schedule.rowLabel', { title: row.title, episode, day: dayLabel, time }) + (aired ? t('schedule.rowAired') : '')
+  // The visible meta (format) and the Watchlist badge are hidden from the tree, so the label carries them.
+  const label = t('schedule.rowLabel', { title: row.title, episode, day: dayLabel, time }) + (row.format ? `, ${row.format}` : '') +
+    (inWatchlist ? `, ${t('schedule.inWatchlist')}` : '') + (aired ? t('schedule.rowAired') : '')
   const note = t('schedule.noPoster')
   // undefined = still on its way (skeleton), null = nothing to show (empty frame)
   const info = row.posterHidden ? { poster: null } : poster === undefined ? undefined : { poster }
@@ -90,7 +92,8 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
     if (i === 0) return t('schedule.today')
     if (i === 1) return t('schedule.tomorrow')
     const d = new Date(window7.days[i])
-    return `${d.toLocaleDateString(t.locale, { weekday: 'short' })} ${d.getDate()}.`
+    // the trailing period is Serbian date style only
+    return `${d.toLocaleDateString(t.locale, { weekday: 'short' })} ${d.getDate()}${t.locale.startsWith('sr') ? '.' : ''}`
   }
 
   // Posters for the selected day's rows, never for rows whose poster is held back.
@@ -106,10 +109,15 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
       for (const id of ids) next[id] = (map && typeof map === 'object' ? map[id] : null) ?? prev[id] ?? null
       return next
     })
-    for (let k = 0; k < all.length; k += MAX_POSTERS) {
-      const ids = all.slice(k, k + MAX_POSTERS)
-      api.schedule.posters(ids).then((map) => { if (alive) settle(ids, map) }).catch(() => { if (alive) settle(ids, null) })
-    }
+    // chunks go one after another so main's download limiter is never asked for more than one batch from this page
+    ;(async () => {
+      for (let k = 0; k < all.length && alive; k += MAX_POSTERS) {
+        const ids = all.slice(k, k + MAX_POSTERS)
+        let map = null
+        try { map = await api.schedule.posters(ids) } catch { map = null }
+        if (alive) settle(ids, map)
+      }
+    })()
     return () => { alive = false }
   }, [api, idsKey, data])
 
@@ -120,14 +128,17 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
   const dayCount = (i) => groupDay(shown, window7.days[i], i + 1 < window7.days.length ? window7.days[i + 1] : window7.to).length
 
   return (
-    <section className="page schedule-page">
+    <section className="page schedule-page" aria-busy={state === 'loading' ? 'true' : undefined}>
       <header className="page__head">
         <h2 className="hud">{t('schedule.title')}</h2>
         <p className="muted">{t('schedule.subtitle')}</p>
       </header>
+      <div className="schedule-live" role="status">
+        {state === 'error' && <p className="muted">{t('schedule.error')}</p>}
+        {state === 'stale' && <p className="muted">{t('schedule.stale', { time: staleTime })}</p>}
+      </div>
       {state === 'error' && (
         <div className="schedule-state">
-          <p className="muted">{t('schedule.error')}</p>
           <button type="button" onClick={() => load(true)}>{t('schedule.retry')}</button>
         </div>
       )}
@@ -140,7 +151,6 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
         <>
           {state === 'stale' && (
             <div className="schedule-state schedule-state--stale">
-              <p className="muted">{t('schedule.stale', { time: staleTime })}</p>
               <button type="button" onClick={() => load(true)}>{t('schedule.retry')}</button>
             </div>
           )}

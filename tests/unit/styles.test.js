@@ -54,4 +54,10 @@ describe('styles.css', () => {
     expect(css).toContain('@media (prefers-reduced-motion: reduce)')
     expect(css).toContain('.reduce-motion')
   })
+  it('dims aired schedule rows without opacity on the text (contrast)', () => {
+    const body = (sel) => { const at = css.indexOf(sel + ' {'); return at < 0 ? null : css.slice(at, css.indexOf('}', at)) }
+    expect(body('.schedule-row--aired')).toBeNull()
+    expect(body('.schedule-row--aired .schedule-row__poster')).toContain('opacity')
+    expect(body('.schedule-row--aired .schedule-row__time')).toContain('color: var(--text-muted)')
+  })
 })

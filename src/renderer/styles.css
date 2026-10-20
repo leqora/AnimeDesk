@@ -454,7 +454,11 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 .schedule-row { display: grid; grid-template-columns: 48px 56px 1fr auto; align-items: center; gap: 14px; width: 100%; padding: 8px 12px; text-align: left; color: inherit; background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); }
 .schedule-row:disabled { opacity: .6; cursor: not-allowed; }
 .schedule-row:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
-.schedule-row--aired { opacity: .6; }
+/* aired rows: dim only the poster and use the muted token for the time, never opacity on the text (contrast) */
+.schedule-row--aired .schedule-row__poster { opacity: .6; }
+.schedule-row--aired .schedule-row__time { color: var(--text-muted); }
+.schedule-live:empty { display: none; }
+.schedule-live p { margin: 12px 0 0; }
 .schedule-row--skeleton { min-height: 76px; }
 .schedule-row__poster { display: block; width: 48px; }
 .schedule-row__time { font-family: var(--font-hud); font-variant-numeric: tabular-nums; }

@@ -62,7 +62,7 @@ describe('SchedulePage', () => {
     ])))
     await screen.findByRole('button', { name: /^Early/ })
     const rows = screen.getAllByRole('button').filter((b) => /^(Early|Late)/.test(b.getAttribute('aria-label') ?? ''))
-    expect(rows.map((r) => r.getAttribute('aria-label'))).toEqual(['Early, EP 1–2, Danas u 12:30', 'Late, EP 3, Danas u 22:00'])
+    expect(rows.map((r) => r.getAttribute('aria-label'))).toEqual(['Early, EP 1–2, Danas u 12:30, TV', 'Late, EP 3, Danas u 22:00, ONA'])
     expect(rows[0]).toHaveTextContent('12:30')
     expect(rows[0]).toHaveTextContent('EP 1–2')
     expect(rows[1]).toHaveTextContent('ONA')
@@ -293,5 +293,51 @@ describe('schedule menu and copy', () => {
     const load = (l) => Object.keys(JSON.parse(readFileSync(join(__dirname, `../../../src/renderer/i18n/${l}.json`), 'utf8'))).filter((k) => k.startsWith('schedule.') || k === 'nav.schedule').sort()
     expect(load('sr')).toEqual(load('en'))
     expect(load('sr').length).toBeGreaterThan(20)
+  })
+})
+
+describe('SchedulePage accessibility and labels', () => {
+  it('row label carries the format and, in All, the Watchlist state (before the aired suffix)', async () => {
+    page(apiWith(data([item({ entryId: 'e1', format: 'ONA', airingAt: at(0, 8) }), item({ mediaId: 2, title: 'Beta', format: null })])))
+    fireEvent.click(await screen.findByRole('button', { name: /^Sve/ }))
+    expect((await screen.findByRole('button', { name: /^Alpha/ })).getAttribute('aria-label')).toBe('Alpha, EP 5, Danas u 08:00, ONA, U Watchlist-i, izašlo')
+    expect(screen.getByRole('button', { name: /^Beta/ }).getAttribute('aria-label')).toBe('Beta, EP 5, Danas u 20:00')
+  })
+
+  it('does not announce the Watchlist state in My series (every row is in it)', async () => {
+    page(apiWith(data([item({ entryId: 'e1' })])))
+    expect((await screen.findByRole('button', { name: /^Alpha/ })).getAttribute('aria-label')).toBe('Alpha, EP 5, Danas u 20:00, TV')
+  })
+
+  it('marks the page busy only while loading', async () => {
+    const { container } = page(apiWith({ state: 'loading', refreshing: true, fetchedAt: null, from: 0, days: [], items: [] }))
+    await screen.findByTestId('schedule-skeleton')
+    expect(container.querySelector('.schedule-page')).toHaveAttribute('aria-busy', 'true')
+  })
+
+  it('is not busy once loaded', async () => {
+    const { container } = page(apiWith(data([item()])))
+    await screen.findByRole('button', { name: /^Alpha/ })
+    expect(container.querySelector('.schedule-page')).not.toHaveAttribute('aria-busy', 'true')
+  })
+
+  it('puts the error message in a polite live region', async () => {
+    page(makeFakeApi({ schedule: { list: vi.fn(async () => ({ state: 'error', refreshing: false, fetchedAt: null, from: 0, days: [], items: [] })) } }))
+    expect(within(await screen.findByRole('status')).getByText('Raspored trenutno nije dostupan.')).toBeInTheDocument()
+  })
+
+  it('puts the stale message in a polite live region', async () => {
+    page(makeFakeApi({ schedule: { list: vi.fn(async () => data([item()], { state: 'stale', fetchedAt: at(0, 7, 5) })) } }))
+    expect(within(await screen.findByRole('status')).getByText(/Prikazan raspored od/)).toBeInTheDocument()
+  })
+
+  it('short day labels: Serbian keeps the trailing period, English drops it', async () => {
+    const { unmount } = page(apiWith(data([item()])))
+    await screen.findByRole('group', { name: 'Dani' })
+    expect(dayButtons()[2].textContent).toMatch(/^\S+ 23\. ?\d/)
+    unmount()
+    renderUi(<SchedulePage ready onOpenAnime={vi.fn()} onSearch={vi.fn()} />, { api: apiWith(data([item()])), lang: 'en' })
+    const days = await screen.findByRole('group', { name: 'Days' })
+    expect(within(days).getAllByRole('button')[2].textContent).toMatch(/^\S+ 23 ?\d+$/)
   })
 })
