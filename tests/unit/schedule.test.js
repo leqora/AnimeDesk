@@ -49,7 +49,7 @@ describe('dayWindow', () => {
 describe('groupDay', () => {
   const s = 1_000_000
   const e = s + 1000
-  const it0 = (o) => ({ mediaId: 1, episode: 1, airingAt: s + 10, title: 'B', romaji: 'Br', english: null, format: 'TV', entryId: null, poster: true, ...o })
+  const it0 = (o) => ({ mediaId: 1, episode: 1, airingAt: s + 10, title: 'B', romaji: 'Br', english: null, format: 'TV', entryId: null, posterHidden: false, ...o })
   it('merges episodes of one media into one row with the earlier time', () => {
     const rows = groupDay([it0({ episode: 2, airingAt: s + 50 }), it0({ episode: 1, airingAt: s + 10 })], s, e)
     expect(rows).toHaveLength(1)
@@ -67,11 +67,11 @@ describe('groupDay', () => {
     ], s, e)
     expect(rows.map((r) => r.mediaId)).toEqual([3, 2, 1])
   })
-  it('posterHidden is true only when poster is disallowed and not in library', () => {
+  it('passes posterHidden through from the item', () => {
     const rows = groupDay([
-      it0({ mediaId: 1, poster: false }),
-      it0({ mediaId: 2, poster: false, entryId: 'x' }),
-      it0({ mediaId: 3, poster: true }),
+      it0({ mediaId: 1, posterHidden: true }),
+      it0({ mediaId: 2, posterHidden: false }),
+      it0({ mediaId: 3 }),
     ], s, e)
     const by = Object.fromEntries(rows.map((r) => [r.mediaId, r.posterHidden]))
     expect(by).toEqual({ 1: true, 2: false, 3: false })
@@ -98,6 +98,11 @@ describe('libraryMatch', () => {
     const b = entry({ title: 'BAR english', aniCliTitle: 'y' })
     expect(libraryMatch(item, [a], none)).toBe(a)
     expect(libraryMatch(item, [b], none)).toBe(b)
+  })
+  it('matches by item.title alone', () => {
+    const it2 = { mediaId: 11, title: 'Only Title', romaji: 'Zzz', english: null }
+    const e = entry({ title: 'x', aniCliTitle: 'only title' })
+    expect(libraryMatch(it2, [e], none)).toBe(e)
   })
   it('ignores dropped entries even when ids match', () => {
     expect(libraryMatch(item, [entry({ aniListId: 10, status: 'dropped' })], none)).toBeNull()

@@ -39,7 +39,7 @@ export function groupDay(items, dayStart, dayEnd) {
         romaji: it.romaji,
         format: it.format,
         entryId: it.entryId ?? null,
-        posterHidden: it.poster === false && it.entryId == null,
+        posterHidden: !!it.posterHidden,
         airingAt: it.airingAt,
         episodes: [it.episode, it.episode],
       })
@@ -61,7 +61,7 @@ export function libraryMatch(item, entries, getCachedId) {
     const id = e.aniListId ?? getCachedId?.(e.title) ?? null
     if (id != null && id === item.mediaId) return e
   }
-  const keys = [item.romaji, item.english].map(normTitle).filter(Boolean)
+  const keys = [item.romaji, item.english, item.title].map(normTitle).filter(Boolean)
   for (const e of live) {
     for (const t of [e.aniCliTitle, e.title]) {
       const k = normTitle(t)
