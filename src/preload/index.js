@@ -113,6 +113,11 @@ contextBridge.exposeInMainWorld('animedesk', {
     forSeries: invoke(INVOKE.recommendationsForSeries),
     onChanged: on(EVENTS.recommendationsChanged),
   },
+  schedule: {
+    list: invoke(INVOKE.scheduleList),
+    posters: invoke(INVOKE.schedulePosters),
+    onChanged: on(EVENTS.scheduleChanged),
+  },
   onNotificationsChanged: on(EVENTS.notificationsChanged),
   onOpenAnime: on(EVENTS.openAnime),
   onOpenPage: on(EVENTS.openPage),

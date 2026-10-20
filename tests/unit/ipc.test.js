@@ -518,3 +518,36 @@ describe('settings side effects module', () => {
     expect(onSettingsChanged).toHaveBeenLastCalledWith({ autoDownloadUpdates: true, mpvModernUi: true })
   })
 })
+
+describe('schedule handlers', () => {
+  it('uses exact channel names', () => {
+    expect(INVOKE.scheduleList).toBe('schedule:list')
+    expect(INVOKE.schedulePosters).toBe('schedule:posters')
+    expect(EVENTS.scheduleChanged).toBe('event:schedule-changed')
+  })
+  it('list passes only force === true, everything else is force false', async () => {
+    const s = services()
+    s.schedule = { list: vi.fn(async () => ({ items: [] })), posters: vi.fn(async () => ({})) }
+    const h = createHandlers(s)
+    await h[INVOKE.scheduleList]({ force: true })
+    expect(s.schedule.list).toHaveBeenLastCalledWith({ force: true })
+    for (const arg of [undefined, null, {}, { force: 1 }, { force: 'true' }, { force: false }, 'x', true, [true]]) {
+      await h[INVOKE.scheduleList](arg)
+      expect(s.schedule.list).toHaveBeenLastCalledWith({ force: false })
+    }
+  })
+  it('posters keeps only positive integers, at most 40, and ignores non-arrays', async () => {
+    const s = services()
+    s.schedule = { list: vi.fn(), posters: vi.fn(async () => ({ 1: 'p' })) }
+    const h = createHandlers(s)
+    for (const bad of [undefined, null, 5, 'abc', { 0: 1 }]) {
+      expect(await h[INVOKE.schedulePosters](bad)).toEqual({})
+    }
+    expect(s.schedule.posters).not.toHaveBeenCalled()
+    await h[INVOKE.schedulePosters]([1, '2', 0, -3, 1.5, NaN, null, 7])
+    expect(s.schedule.posters).toHaveBeenLastCalledWith([1, 7])
+    const many = Array.from({ length: 60 }, (_, i) => i + 1)
+    await h[INVOKE.schedulePosters](many)
+    expect(s.schedule.posters).toHaveBeenLastCalledWith(many.slice(0, 40))
+  })
+})
