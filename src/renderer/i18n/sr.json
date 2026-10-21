@@ -482,6 +482,8 @@
   "schedule.retry": "Pokušaj ponovo",
   "schedule.refreshing": "Osvežava se…",
   "schedule.retryIn": "Pokušaj ponovo za {n} s",
+  "schedule.clockBack": "Ovog dana se sat vraća unazad — vremena posle promene su po zimskom računanju vremena.",
+  "schedule.clockForward": "Ovog dana se sat pomera unapred — vremena posle promene su po letnjem računanju vremena.",
   "schedule.mineEmpty": "Nijedna serija iz Watchlist-e ne izlazi u narednih 7 dana.",
   "schedule.showAll": "Prikaži sve",
   "schedule.dayEmpty": "Nema epizoda ovog dana.",

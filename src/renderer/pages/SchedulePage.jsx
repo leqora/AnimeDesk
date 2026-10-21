@@ -4,7 +4,7 @@ import { useT } from '../i18n/I18nContext.jsx'
 import { PosterFrame } from '../components/Poster.jsx'
 import { useRouteState } from '../nav/useNavigation.js'
 import { useNow } from '../useNow.js'
-import { dayWindow, groupDay } from '../../shared/schedule.js'
+import { clockChange, dayWindow, groupDay } from '../../shared/schedule.js'
 
 const MAX_POSTERS = 40
 const SKELETON_ROWS = 5
@@ -81,6 +81,18 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
     return () => { seq.current++; offSchedule(); offLibrary() }
   }, [api, dayKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // When the retry block goes away while its button had focus, focus moves to the heading instead of falling to <body>.
+  const headingRef = useRef(null)
+  const retryFocused = useRef(false)
+  const retryShown = data?.state === 'error' || data?.state === 'stale'
+  useEffect(() => {
+    if (retryShown) return
+    if (retryFocused.current) {
+      retryFocused.current = false
+      headingRef.current?.focus()
+    }
+  }, [retryShown])
+
   const retryAt = typeof data?.retryAt === 'number' ? data.retryAt : null
   useEffect(() => {
     const start = Date.now()
@@ -109,6 +121,7 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
   const dayStart = window7.days.includes(dayChoice) ? dayChoice : window7.days[Math.max(firstFilled, 0)]
   const dayIndex = window7.days.indexOf(dayStart)
   const rows = groupDay(shown, ...dayRange(dayIndex))
+  const change = clockChange(...dayRange(dayIndex))
 
   const dayLabel = (i) => {
     if (i === 0) return t('schedule.today')
@@ -157,7 +170,7 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
   // aria-disabled, not disabled: a disabled button loses keyboard focus in Chromium
   const retryButton = (
     <button
-      type="button" aria-disabled={retryBlocked ? 'true' : undefined} aria-busy={refreshing ? 'true' : undefined}
+      type="button" onFocus={() => { retryFocused.current = true }} onBlur={() => { retryFocused.current = false }} aria-disabled={retryBlocked ? 'true' : undefined} aria-busy={refreshing ? 'true' : undefined}
       onClick={() => { if (!retryBlocked) load(true) }}
     >
       {retryLabel}
@@ -167,7 +180,7 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
   return (
     <section className="page schedule-page" aria-busy={state === 'loading' ? 'true' : undefined}>
       <header className="page__head">
-        <h2 className="hud">{t('schedule.title')}</h2>
+        <h2 className="hud" ref={headingRef} tabIndex={-1}>{t('schedule.title')}</h2>
         <p className="muted">{t('schedule.subtitle')}</p>
       </header>
       <div className="schedule-live" role="status">
@@ -208,6 +221,7 @@ export function SchedulePage({ ready, onOpenAnime, onSearch }) {
               </button>
             ))}
           </div>
+          {change && <p className="muted schedule-note">{t(change === 'back' ? 'schedule.clockBack' : 'schedule.clockForward')}</p>}
           {mode === 'mine' && mineItems.length === 0 ? (
             <div className="schedule-state">
               <p className="muted">{t('schedule.mineEmpty')}</p>

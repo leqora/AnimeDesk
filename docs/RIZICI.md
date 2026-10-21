@@ -25,7 +25,7 @@ Rizici koji se posebno prate tokom razvoja. Svaki ima test koji ga „zakucava�
 
 | Rizik | Šta bi se desilo | Kako je rešeno |
 |---|---|---|
-| jikan-edge (nezvaničan, jedna osoba) nestane ili počne da odbija zahteve — kao javni Jikan 1. 10. 2026. | nema oznaka | tiho `marks: 'none'`, lista se nikad ne čeka, pauza 1 h po seriji i 10 min za ceo modul; keš 30 dana i dalje služi; izvor je jedna konstanta (`JIKAN_URL`) |
+| jikan-edge (nezvaničan, jedna osoba) nestane ili počne da odbija zahteve — kao javni Jikan 1. 10. 2026. | nema oznaka | **v0.15.2:** drugi izvor Tenrai (Jikan-kompatibilan, Cloudflare; u 10. 2026 bio jedno vreme iza Cloudflare provere) — oba se pitaju i spajaju, pad jednog = zapis od drugog (`partial`, rok 1 dan), oznake u kešu se nikad ne brišu; pauza 10 min po izvoru, 1 h po seriji; izvori su u `SOURCES` |
 | Izvor vrati pogrešne/preuveličane brojeve ili druga numeracija | pogrešne oznake | `unreliable` kad ani-cli ima više celih epizoda od MAL-a; brojevi > 5000 i > 200 stavki po strani se odbacuju; na disk samo brojevi |
 | Pretraga upari pogrešan AniList zapis po naslovu | oznake druge serije | isti model poverenja kao ani.zip; isključivo po seriji preko „Isključi metapodatke” |
 | Servis vidi IP i koje serije korisnik otvara | privatnost | samo `malId`, bez naloga/tokena; prekidač „Prikaži filler i recap oznake” isključuje sve zahteve |
@@ -64,3 +64,8 @@ Rizici koji se posebno prate tokom razvoja. Svaki ima test koji ga „zakucava�
 | Titl u nepodržanom formatu (ASS/SSA) | ugrađeni plejer ne može da ga prikaže | proxy vraća 415, plejer jednom po epizodi javlja poruku sa predlogom za mpv; JASSUB tek ako se pokaže potreba |
 | Lokalni SRT u kodnoj strani koja nije UTF-8 | druga slova mogu biti pogrešna | UTF-16 se prepoznaje po BOM-u, inače UTF-8, a ako nije ispravan UTF-8 čita se kao Windows-1250 (srpski latinični); druge kodne strane (npr. Windows-1251 ćirilica) mogu i dalje da prikažu pogrešna slova; titl sa strima se ne menja |
 | Pomak titla je za seriju i režim, ne za pojedinačnu epizodu | epizoda sa drugačijim vremenom titla traži ručno podešavanje | `G`/`H` + „Resetuj” u meniju titla; pomak se ne prenosi u spoljni mpv |
+
+## Održavanje (v0.15.2)
+
+- **Electron mora redovno da se podiže** u okviru iste glavne verzije: aplikacija u Chromium-u dekodira video i slike sa interneta. Do 0.15.2 je stajao na 44.5.1 od početka projekta (44.7/44.8 su donele Chromium/V8 bezbednosne zakrpe). Pre svakog izdanja: `npm outdated electron` i `npm audit --omit=dev`.
+- **Preuzeti alati** se proveravaju SHA-256 iz GitHub `digest`-a i raspakuju kroz `safeUnzip.js`; izdanje bez `digest`-a prolazi uz upozorenje.

@@ -164,6 +164,59 @@ describe('SchedulePage', () => {
     expect(list).toHaveBeenLastCalledWith({ force: true })
   })
 
+  it('moves focus to the heading after a successful retry from stale', async () => {
+    const list = vi.fn()
+      .mockResolvedValueOnce(data([item()], { state: 'stale', fetchedAt: at(0, 7, 5) }))
+      .mockResolvedValue(data([item()]))
+    page(makeFakeApi({ schedule: { list } }))
+    const btn = await screen.findByRole('button', { name: 'Pokušaj ponovo' })
+    btn.focus()
+    fireEvent.click(btn)
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Pokušaj ponovo' })).toBeNull())
+    // the focus effect is passive, so it may land a tick after the button is gone
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Raspored' })))
+    expect(document.activeElement).not.toBe(document.body)
+  })
+
+  it('same from the error state', async () => {
+    const list = vi.fn()
+      .mockResolvedValueOnce({ state: 'error', refreshing: false, fetchedAt: null, from: 0, days: [], items: [] })
+      .mockResolvedValue(data([item()]))
+    page(makeFakeApi({ schedule: { list } }))
+    const btn = await screen.findByRole('button', { name: 'Pokušaj ponovo' })
+    btn.focus()
+    fireEvent.click(btn)
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Pokušaj ponovo' })).toBeNull())
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Raspored' })))
+  })
+
+  it('does not move focus when the retry button was not focused', async () => {
+    let onSched
+    const list = vi.fn()
+      .mockResolvedValueOnce(data([item()], { state: 'stale', fetchedAt: at(0, 7, 5) }))
+      .mockResolvedValue(data([item()]))
+    page(makeFakeApi({ schedule: { list, onChanged: vi.fn((cb) => { onSched = cb; return () => {} }) } }))
+    await screen.findByRole('button', { name: 'Pokušaj ponovo' })
+    const chip = dayButtons()[1]
+    chip.focus()
+    await act(async () => { onSched() })
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Pokušaj ponovo' })).toBeNull())
+    expect(document.activeElement).toBe(dayButtons()[1])
+  })
+
+  it('shows the clock-change note only on the day with the change', async () => {
+    vi.spyOn(Date.prototype, 'getTimezoneOffset').mockImplementation(function () { return this.getTime() < at(4, 3) ? -120 : -60 })
+    try {
+      page(apiWith(data([item()])))
+      await screen.findByRole('group', { name: 'Dani' })
+      const note = 'Ovog dana se sat vraća unazad — vremena posle promene su po zimskom računanju vremena.'
+      fireEvent.click(dayButtons()[3])
+      expect(screen.queryByText(note)).toBeNull()
+      fireEvent.click(dayButtons()[4])
+      expect(screen.getByText(note)).toBeInTheDocument()
+    } finally { vi.restoreAllMocks() }
+  })
+
   it('offers Show all when My series is empty', async () => {
     page(apiWith(data([item()])))
     fireEvent.click(await screen.findByRole('button', { name: /Moje serije/ }))

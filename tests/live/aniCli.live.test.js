@@ -1,7 +1,7 @@
 import { it, expect } from 'vitest'
 import os from 'node:os'
 import path from 'node:path'
-import extractZip from 'extract-zip'
+import { safeUnzip } from '../../src/main/safeUnzip.js'
 import { createPaths } from '../../src/main/paths.js'
 import { createToolManager } from '../../src/main/toolManager.js'
 import { getJson, download } from '../../src/main/http.js'
@@ -17,7 +17,7 @@ it('real ani-cli returns a stream link for One Piece episode 1', async () => {
   const toolManager = createToolManager({
     paths,
     http: { getJson, download },
-    extractZip: (file, dir) => extractZip(file, { dir }),
+    extractZip: (file, dir) => safeUnzip(file, dir),
     runExe: (file, args) => run(file, args).done,
   })
   const errors = await toolManager.installMissing((p) => { if (p.phase !== 'download') console.log(p.id, p.phase, p.message ?? '') })

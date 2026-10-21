@@ -6,7 +6,7 @@ process.env.TZ = 'Europe/Belgrade'
 
 import { describe, it, expect, afterAll } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { posterAllowed, shownInAll, dayWindow, groupDay, libraryMatch } from '../../src/shared/schedule.js'
+import { posterAllowed, shownInAll, dayWindow, groupDay, libraryMatch, clockChange } from '../../src/shared/schedule.js'
 
 afterAll(() => {
   if (PREV_TZ === undefined) delete process.env.TZ
@@ -138,5 +138,34 @@ describe('libraryMatch', () => {
   it('handles empty input', () => {
     expect(libraryMatch(item, [], none)).toBeNull()
     expect(libraryMatch(item, null, none)).toBeNull()
+  })
+})
+
+describe('clockChange', () => {
+  const D = 24 * H
+  const start = 1_000 * D
+  const SWITCH = start + 3 * H
+  const back = (ms) => (ms < SWITCH ? -120 : -60)
+  const fwd = (ms) => (ms < SWITCH ? -60 : -120)
+  it('detects clocks going back on the day containing the switch only', () => {
+    expect(clockChange(start, start + D, back)).toBe('back')
+    expect(clockChange(start - D, start, back)).toBeNull()
+    expect(clockChange(start + D, start + 2 * D, back)).toBeNull()
+  })
+  it('detects clocks going forward', () => {
+    expect(clockChange(start, start + D, fwd)).toBe('forward')
+  })
+  it('a switch exactly at dayStart means the whole day has the new offset', () => {
+    expect(clockChange(SWITCH, SWITCH + D, back)).toBeNull()
+  })
+  it('detects a switch at dayEnd - 1', () => {
+    const end = start + D
+    const late = (ms) => (ms < end - 1 ? -120 : -60)
+    expect(clockChange(start, end, late)).toBe('back')
+  })
+  it('uses the real zone by default (Europe/Belgrade 2026-10-25)', () => {
+    const w = dayWindow(new Date(2026, 9, 21, 10).getTime())
+    expect(clockChange(w.days[4], w.days[5])).toBe('back')
+    expect(clockChange(w.days[3], w.days[4])).toBeNull()
   })
 })

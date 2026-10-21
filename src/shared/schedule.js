@@ -26,6 +26,16 @@ export function dayWindow(nowMs) {
   return { from: days[0], to: new Date(y, m, d + DAYS).getTime(), days }
 }
 
+/**
+ * Whether the clock changes inside [dayStart, dayEnd): 'back' (offset grows, e.g. CEST -> CET),
+ * 'forward', or null. A switch exactly at dayStart leaves the whole day in the new offset.
+ */
+export function clockChange(dayStart, dayEnd, offsetAt = (ms) => new Date(ms).getTimezoneOffset()) {
+  const a = offsetAt(dayStart)
+  const b = offsetAt(dayEnd - 1)
+  return b > a ? 'back' : b < a ? 'forward' : null
+}
+
 // One fixed collator: the order never depends on the system language.
 const titleCollator = new Intl.Collator('en', { sensitivity: 'base' })
 

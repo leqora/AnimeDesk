@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, Notification, powerMonitor, safeStorage } from 'electron'
 import path from 'node:path'
 import os from 'node:os'
-import extractZip from 'extract-zip'
+import { safeUnzip } from './safeUnzip.js'
 import { createPaths } from './paths.js'
 import { createSettings } from './settings.js'
 import { createLibrary } from './library.js'
@@ -159,7 +159,7 @@ async function main() {
   const toolManager = createToolManager({
     paths,
     http: { getJson, download },
-    extractZip: (file, dir) => extractZip(file, { dir }),
+    extractZip: (file, dir) => safeUnzip(file, dir),
     runExe: (file, args) => run(file, args).done,
   })
   const server = createBridgeServer()

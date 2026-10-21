@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import crypto from 'node:crypto'
 import { TOOL_IDS, OPTIONAL_TOOL_IDS } from '../shared/domain.js'
 import { SOURCES, AUTO_UPDATE_TOOLS, resolveDownload, systemBashCandidates } from './toolSources.js'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
@@ -21,9 +22,16 @@ export function findFile(dir, name) {
   return null
 }
 
+export function sha256File(file) {
+  return new Promise((resolve, reject) => {
+    const h = crypto.createHash('sha256')
+    fs.createReadStream(file).on('data', (c) => h.update(c)).on('error', reject).on('end', () => resolve(h.digest('hex')))
+  })
+}
+
 export function createToolManager({
   paths, http, extractZip, runExe, env = process.env, exists = fs.existsSync,
-  rename = fs.renameSync, sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+  rename = fs.renameSync, hashFile = sha256File, sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
 }) {
   const load = () => readJson(paths.manifest, { tools: {}, lastUpdateCheck: null }).data
   const save = (m) => writeJsonAtomic(paths.manifest, m)
@@ -77,27 +85,37 @@ export function createToolManager({
 
   async function install(id, onProgress = () => {}) {
     const src = SOURCES[id]
-    const { url, name, version } = resolveDownload(id, await latest(id))
+    const { url, name, version, sha256 } = resolveDownload(id, await latest(id))
     const dir = path.join(paths.tools, id)
     const staging = `${dir}.new`
     fs.rmSync(staging, { recursive: true, force: true })
     fs.mkdirSync(staging, { recursive: true })
-    const file = path.join(staging, name)
-    await http.download(url, file, ({ received, total }) => onProgress({ id, phase: 'download', received, total }))
-    if (src.kind === 'zip' || src.kind === 'sfx') {
-      onProgress({ id, phase: 'extract' })
-      if (src.kind === 'zip') await extractZip(file, staging)
-      else {
-        const r = await runExe(file, [`-o${staging}`, '-y'])
-        if (r.code !== 0) throw new Error(`${id}: extraction failed (${r.stderr})`)
+    let exe
+    try {
+      const file = path.join(staging, name)
+      await http.download(url, file, ({ received, total }) => onProgress({ id, phase: 'download', received, total }))
+      if (sha256) {
+        if ((await hashFile(file)) !== sha256) throw new Error(`${id}: checksum mismatch`)
+      } else console.warn(`${id}: no SHA-256 digest published for ${name}, skipping integrity check`)
+      if (src.kind === 'zip' || src.kind === 'sfx') {
+        onProgress({ id, phase: 'extract' })
+        if (src.kind === 'zip') await extractZip(file, staging)
+        else {
+          const r = await runExe(file, [`-o${staging}`, '-y'])
+          if (r.code !== 0) throw new Error(`${id}: extraction failed (${r.stderr})`)
+        }
+        fs.rmSync(file, { force: true })
       }
-      fs.rmSync(file, { force: true })
+      exe = src.kind === 'zip' ? findFile(staging, src.exe)
+        : src.kind === 'sfx' ? path.join(staging, src.exe)
+        : path.join(staging, name)
+      if (!exe || !exists(exe)) throw new Error(`${id}: executable not found after install`)
+    } catch (err) {
+      fs.rmSync(staging, { recursive: true, force: true })
+      throw err
     }
     await swapIn(staging, dir)
-    const exe = src.kind === 'zip' ? findFile(dir, src.exe)
-      : src.kind === 'sfx' ? path.join(dir, src.exe)
-      : path.join(dir, name)
-    if (!exe || !exists(exe)) throw new Error(`${id}: executable not found after install`)
+    exe = path.join(dir, path.relative(staging, exe))
     const m = load()
     m.tools[id] = { version, path: exe, installedAt: new Date().toISOString() }
     save(m)

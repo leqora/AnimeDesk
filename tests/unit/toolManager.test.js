@@ -1,17 +1,20 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import fs from 'node:fs'
+import crypto from 'node:crypto'
 import os from 'node:os'
 import path from 'node:path'
 import { createPaths } from '../../src/main/paths.js'
 import { createToolManager, findSystemBash } from '../../src/main/toolManager.js'
 
+const sha = (s) => 'sha256:' + crypto.createHash('sha256').update(s).digest('hex')
+
 const RELEASES = {
-  'git-for-windows/git': { tag_name: 'v2.56.0.windows.1', assets: [{ name: 'PortableGit-2.56.0-64-bit.7z.exe', browser_download_url: 'u/git' }] },
-  'pystardust/ani-cli': { tag_name: 'v5.1', assets: [{ name: 'ani-cli', browser_download_url: 'u/ani' }] },
-  'mpv-player/mpv': { tag_name: 'v0.41.0', assets: [{ name: 'mpv-v0.41.0-x86_64-pc-windows-msvc.zip', browser_download_url: 'u/mpv' }] },
-  'yt-dlp/yt-dlp': { tag_name: '2026.08.19', assets: [{ name: 'yt-dlp.exe', browser_download_url: 'u/ytdlp' }] },
-  'tomasklaen/uosc': { tag_name: '5.13.0', assets: [{ name: 'uosc.zip', browser_download_url: 'u/uosc' }] },
-  'GyanD/codexffmpeg': { tag_name: '9.0.2', assets: [{ name: 'ffmpeg-9.0.2-essentials_build.zip', browser_download_url: 'u/ffmpeg' }] },
+  'git-for-windows/git': { tag_name: 'v2.56.0.windows.1', assets: [{ name: 'PortableGit-2.56.0-64-bit.7z.exe', browser_download_url: 'u/git', digest: sha('u/git') }] },
+  'pystardust/ani-cli': { tag_name: 'v5.1', assets: [{ name: 'ani-cli', browser_download_url: 'u/ani', digest: sha('u/ani') }] },
+  'mpv-player/mpv': { tag_name: 'v0.41.0', assets: [{ name: 'mpv-v0.41.0-x86_64-pc-windows-msvc.zip', browser_download_url: 'u/mpv', digest: sha('u/mpv') }] },
+  'yt-dlp/yt-dlp': { tag_name: '2026.08.19', assets: [{ name: 'yt-dlp.exe', browser_download_url: 'u/ytdlp', digest: sha('u/ytdlp') }] },
+  'tomasklaen/uosc': { tag_name: '5.13.0', assets: [{ name: 'uosc.zip', browser_download_url: 'u/uosc', digest: sha('u/uosc') }] },
+  'GyanD/codexffmpeg': { tag_name: '9.0.2', assets: [{ name: 'ffmpeg-9.0.2-essentials_build.zip', browser_download_url: 'u/ffmpeg', digest: sha('u/ffmpeg') }] },
 }
 
 let base, paths, releases, tm, events
@@ -184,6 +187,59 @@ describe('toolManager', () => {
     await tm.installMissing()
     fs.rmSync(tm.toolPaths().ytDlp)
     expect(tm.missing()).toEqual(['yt-dlp'])
+  })
+  describe('integrity and failure safety', () => {
+    const installMpv = async () => { await tm.install('mpv'); return fs.readFileSync(tm.toolPaths().mpv, 'utf8') }
+    it('installs when the hash matches', async () => {
+      await tm.install('mpv')
+      expect(tm.status().mpv.installed).toBe(true)
+    })
+    it('hashes every kind of download (file, zip, sfx)', async () => {
+      const hashed = []
+      const t = make({ hashFile: async (f) => { hashed.push(path.basename(f)); return (await import('../../src/main/toolManager.js')).sha256File(f) } })
+      await t.installMissing()
+      expect(hashed).toEqual(['PortableGit-2.56.0-64-bit.7z.exe', 'ani-cli', 'mpv-v0.41.0-x86_64-pc-windows-msvc.zip', 'yt-dlp.exe', 'ffmpeg-9.0.2-essentials_build.zip'])
+    })
+    it('rejects a hash mismatch: old tool and manifest untouched, no staging left', async () => {
+      await installMpv()
+      const before = tm.toolPaths().mpv
+      releases['mpv-player/mpv'].tag_name = 'v0.42.0'
+      releases['mpv-player/mpv'].assets[0].digest = 'sha256:' + '0'.repeat(64)
+      await expect(tm.install('mpv')).rejects.toThrow(/mpv: checksum mismatch/)
+      expect(tm.toolPaths().mpv).toBe(before)
+      expect(fs.existsSync(before)).toBe(true)
+      expect(tm.version('mpv')).toBe('v0.41.0')
+      expect(fs.existsSync(path.join(paths.tools, 'mpv.new'))).toBe(false)
+    })
+    it('installs without a digest and warns', async () => {
+      delete releases['pystardust/ani-cli'].assets[0].digest
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        await tm.install('ani-cli')
+        expect(warn).toHaveBeenCalledTimes(1)
+        expect(tm.status()['ani-cli'].installed).toBe(true)
+      } finally { warn.mockRestore() }
+    })
+    it('extraction failure keeps the old tool and removes staging', async () => {
+      await installMpv()
+      const before = tm.toolPaths().mpv
+      releases['mpv-player/mpv'].tag_name = 'v0.42.0'
+      const t = make({ extractZip: async () => { throw new Error('bad zip') } })
+      await expect(t.install('mpv')).rejects.toThrow(/bad zip/)
+      expect(fs.existsSync(before)).toBe(true)
+      expect(t.version('mpv')).toBe('v0.41.0')
+      expect(fs.existsSync(path.join(paths.tools, 'mpv.new'))).toBe(false)
+    })
+    it('missing executable fails before swapIn', async () => {
+      await installMpv()
+      const before = tm.toolPaths().mpv
+      releases['mpv-player/mpv'].tag_name = 'v0.42.0'
+      const t = make({ extractZip: async () => {} })
+      await expect(t.install('mpv')).rejects.toThrow(/executable not found/)
+      expect(fs.existsSync(before)).toBe(true)
+      expect(t.version('mpv')).toBe('v0.41.0')
+      expect(fs.existsSync(path.join(paths.tools, 'mpv.new'))).toBe(false)
+    })
   })
   it('findSystemBash returns null when Git is not installed', () => {
     expect(findSystemBash({ ProgramFiles: path.join(base, 'nothing') }, () => false)).toBeNull()
