@@ -290,8 +290,8 @@
   },
   {
    "query": "magical explorer",
-   "first": "Magical★Explorer: Eroge no Yuujin Chara ni Tensei Shitakedo, Game Chishiki Tsukatte Jiyuu ni Ikiru",
-   "why": "★ is a separator"
+   "first": "Magical Explorer",
+   "why": "exact (level 1) beats the ★ variant (level 2, ★ is a separator)"
   },
   {
    "query": "hug tto precure",
@@ -315,18 +315,14 @@
   },
   {
    "query": "dark machine",
-   "first": "DARK MACHINE: The Animation",
-   "why": "prefix, case"
+   "first": "DARK MACHINE THE ANIMATION",
+   "why": "both level 2; shorter title wins the tie"
   },
   {
    "query": "jojos bizarre",
-   "firstIn": [
-    "JoJo's Bizarre Adventure: Stone Ocean Part 3",
-    "JoJo's Bizarre Adventure Part 2: Stardust Crusaders (Uncensored)",
-    "JoJo's Bizarre Adventure Part 3: Stardust Crusaders 2nd Season (Uncensored)"
-   ],
    "notFirst": "Steel Ball Run: JoJo's Bizarre Adventure",
-   "why": "apostrophe dropped (compact form); title start beats middle"
+   "why": "apostrophe removed -> level 2 prefix; shortest wins; title start beats middle",
+   "first": "JoJo's Bizarre Adventure (Uncensored)"
   },
   {
    "query": "conan",
@@ -352,6 +348,11 @@
    "query": "   ",
    "blank": true,
    "why": "blank query -> no series filter (default groups)"
+  },
+  {
+   "query": "magical explorer eroge",
+   "first": "Magical★Explorer: Eroge no Yuujin Chara ni Tensei Shitakedo, Game Chishiki Tsukatte Jiyuu ni Ikiru",
+   "why": "★ is a separator"
   }
  ]
 }
