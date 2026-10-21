@@ -75,7 +75,7 @@ export function createSeriesEpisodes({ library, seriesPrefs, settings, anilist, 
     const airing = AIRING.has(r.info?.status)
     const rec = fillerInfo.cached(malId, { airing })
     const m = markEpisodes(r.episodes, rec && !rec.missing ? rec : null, { airing })
-    if (!rec || rec.expired) fillerInfo.ensure(malId, { airing }).then((ok) => { if (ok) onMarksChanged() }, () => {})
+    if (!rec || rec.expired) fillerInfo.ensure(malId, { airing, onPartial: onMarksChanged }).then((ok) => { if (ok) onMarksChanged() }, () => {})
     return m
   }
 
