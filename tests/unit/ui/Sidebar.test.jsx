@@ -45,4 +45,12 @@ describe('Sidebar', () => {
     rerender(<Sidebar {...props({ fullscreen: true, onToggleFullscreen })} />)
     expect(screen.getByRole('button', { name: 'Izađi iz celog ekrana (Esc)' })).toBeInTheDocument()
   })
+  it('has a quick-search button above the pages that calls onOpenPalette', () => {
+    const onOpenPalette = vi.fn()
+    renderUi(<Sidebar {...props({ onOpenPalette })} />)
+    const b = screen.getByRole('button', { name: 'Brza pretraga' })
+    expect(b).toHaveAttribute('aria-keyshortcuts', 'Control+K')
+    fireEvent.click(b)
+    expect(onOpenPalette).toHaveBeenCalled()
+  })
 })

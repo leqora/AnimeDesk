@@ -21,6 +21,7 @@ import { ErrorBoundary } from './components/ErrorBoundary.jsx'
 import { nextEpisodeNumber } from '../shared/player.js'
 import { createSound } from './sound.js'
 import { useNavigation, RouteStateContext } from './nav/useNavigation.js'
+import { CommandPalette } from './components/CommandPalette.jsx'
 import { restoreScroll } from './nav/restoreScroll.js'
 
 function CorruptBanner() {
@@ -56,6 +57,25 @@ function UndoShortcut({ disabled }) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [runLatestAction])
+  return null
+}
+
+// Ctrl/Cmd+K toggles the command palette. Works while typing; not over the player or another dialog.
+function PaletteShortcut({ open, disabled, onToggle }) {
+  const latest = useRef({})
+  latest.current = { open, disabled, onToggle }
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.repeat || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || (e.code !== 'KeyK' && e.key !== 'k' && e.key !== 'K')) return
+      const { open, disabled, onToggle } = latest.current
+      if (open) { e.preventDefault(); onToggle(false); return }
+      if (disabled || document.querySelector('[aria-modal="true"]')) return
+      e.preventDefault()
+      onToggle(true)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
   return null
 }
 
@@ -146,6 +166,14 @@ export default function App({ api, sound: injectedSound }) {
   // bumped after an import so SettingsPage (which keeps local copies of some settings) remounts with the new values
   const [settingsKey, setSettingsKey] = useState(0)
   const [wizardOpen, setWizardOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  // one-shot: after the palette has unmounted (so Modal's opener restore is done) focus goes to the page
+  const [focusMain, setFocusMain] = useState(false)
+  useEffect(() => {
+    if (!focusMain || paletteOpen) return
+    mainRef.current?.focus()
+    setFocusMain(false)
+  }, [focusMain, paletteOpen])
   // FIFO: an ask for episode N must survive the ask for N+1 (askOnClose + autoNext)
   const [asks, setAsks] = useState([])
   const [pendingWatch, setPendingWatch] = useState(null)
@@ -339,12 +367,22 @@ export default function App({ api, sound: injectedSound }) {
   const closeWhatsNew = () => { if (whatsNew?.mode === 'after') api.whatsNew.seen(); setWhatsNew(null) }
 
   const overlay = player != null || reconnecting != null
+  const runPalette = (a) => {
+    setPaletteOpen(false)
+    if (a.type === 'anime') openAnime(a.id)
+    else if (a.type === 'page') navigate(a.page)
+    else if (a.type === 'search') searchAnime(a.query)
+    else if (a.type === 'fullscreen') api.window.setFullscreen(!fullscreen)
+    else if (a.type === 'wizard') setWizardOpen(true)
+    if (a.type === 'anime' || a.type === 'page' || a.type === 'search') setFocusMain(true)
+  }
 
   return (
     <ApiContext.Provider value={api}>
       <I18nProvider lang={settings.language}>
         <ToastProvider hold={Boolean(levelUp) && !motionOff}>
         <UndoShortcut disabled={overlay} />
+        <PaletteShortcut open={paletteOpen} disabled={overlay} onToggle={setPaletteOpen} />
         <div className="app-shell" inert={overlay} aria-hidden={overlay ? 'true' : undefined}>
           <Sidebar
             page={page}
@@ -359,6 +397,7 @@ export default function App({ api, sound: injectedSound }) {
             playerOpen={Boolean(player)}
             fullscreen={fullscreen}
             onToggleFullscreen={() => api.window.setFullscreen(!fullscreen)}
+            onOpenPalette={() => { if (!overlay) setPaletteOpen(true) }}
           />
           <main className="content" ref={mainRef} tabIndex={-1}>
             <UpdateBanner state={updateState} onWhatsNew={openWhatsNew} />
@@ -408,6 +447,7 @@ export default function App({ api, sound: injectedSound }) {
             onBack={() => { if (reconnecting.state === 'reconnecting' && reconnecting.sessionId) api.watch.cancel(reconnecting.sessionId); setReconnecting(null) }}
           />
         )}
+        {paletteOpen && <CommandPalette fullscreen={fullscreen} onRun={runPalette} onClose={() => setPaletteOpen(false)} />}
         {wizardOpen && <SetupWizard health={health} onClose={() => setWizardOpen(false)} />}
         {asks.length > 0 && <AskDialog ask={asks[0]} onDone={() => setAsks((q) => q.slice(1))} />}
         <Celebrations levelUp={levelUp} toast={toast} stats={stats} motionOff={motionOff} onLevelUpDone={() => setLevelUp(null)} onToastDone={() => setToast(null)} />

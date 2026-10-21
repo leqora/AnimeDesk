@@ -6,12 +6,17 @@ import { NotificationBell } from './NotificationBell.jsx'
 
 const PAGES = ['home', 'watchlist', 'schedule', 'downloads', 'profile', 'settings']
 
-export function Sidebar({ page, onNavigate, health, onSemaphoreClick, profileName, stats, version = '', onOpenAnime = () => {}, libraryIds = new Set(), fullscreen = false, onToggleFullscreen = () => {}, playerOpen = false }) {
+export function Sidebar({ page, onNavigate, health, onSemaphoreClick, profileName, stats, version = '', onOpenAnime = () => {}, libraryIds = new Set(), fullscreen = false, onToggleFullscreen = () => {}, playerOpen = false, onOpenPalette = () => {} }) {
   const t = useT()
   return (
     <aside className="sidebar">
       <div className="sidebar__logo"><span className="sidebar__logo-text">{t('app.name')}</span></div>
       <nav className="sidebar__nav">
+        <button type="button" className="nav-item sidebar__palette" aria-keyshortcuts="Control+K" aria-label={t('palette.open')} onClick={onOpenPalette}>
+          <Icon name="search" size={20} />
+          <span className="nav-item__label">{t('palette.open')}</span>
+          <kbd aria-hidden="true">Ctrl K</kbd>
+        </button>
         {PAGES.map((p) => (
           <button
             key={p}
