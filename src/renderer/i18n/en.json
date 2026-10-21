@@ -482,6 +482,8 @@
   "schedule.retry": "Try again",
   "schedule.refreshing": "Refreshing…",
   "schedule.retryIn": "Try again in {n} s",
+  "schedule.clockBack": "Clocks go back this day — times after the change use the new time.",
+  "schedule.clockForward": "Clocks go forward this day — times after the change use the new time.",
   "schedule.mineEmpty": "None of your Watchlist series air in the next 7 days.",
   "schedule.showAll": "Show all",
   "schedule.dayEmpty": "No episodes this day.",
