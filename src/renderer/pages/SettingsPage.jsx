@@ -8,6 +8,7 @@ import { AniListPicker } from '../components/AniListPicker.jsx'
 import { DataSection } from '../components/DataSection.jsx'
 import { SubtitleOverlay } from '../components/SubtitleOverlay.jsx'
 import { DEFAULT_SUBTITLES, SUBTITLE_FONT_STACKS, SUBTITLE_COLORS } from '../../shared/subtitles.js'
+import { BOOST_LEVELS, formatBoost } from '../../shared/volumeBoost.js'
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 const FONT_NAMES = { segoe: 'Segoe UI', arial: 'Arial', verdana: 'Verdana', trebuchet: 'Trebuchet MS', georgia: 'Georgia', exo2: 'Exo 2' }
@@ -153,6 +154,13 @@ export function SettingsPage({ settings, onSettings, onImported = () => {}, focu
           <option value="external">{t('settings.playerMode.external')}</option>
         </select>
       </label>
+      <label className="field">
+        <span>{t('settings.volumeBoost')}</span>
+        <select aria-label={t('settings.volumeBoost')} value={settings.volumeBoost ?? 1} onChange={(e) => onSettings({ volumeBoost: Number(e.target.value) })}>
+          {BOOST_LEVELS.map((v) => <option key={v} value={v}>{v === 1 ? t('boost.off') : formatBoost(v, settings.language)}</option>)}
+        </select>
+      </label>
+      <p className="check-hint muted">{t('settings.volumeBoostHint')}</p>
       <label className="check">
         <input type="checkbox" checked={settings.autoSkip} onChange={(e) => onSettings({ autoSkip: e.target.checked })} />
         {t('settings.autoSkip')}

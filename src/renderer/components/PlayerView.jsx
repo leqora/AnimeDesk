@@ -13,6 +13,8 @@ import { useLatest } from '../player/useLatest.js'
 import { useFlash } from '../player/useFlash.js'
 import { useIdle } from '../player/useIdle.js'
 import { usePlayerVolume } from '../player/usePlayerVolume.js'
+import { useVolumeBoost } from '../player/useVolumeBoost.js'
+import { formatBoost } from '../../shared/volumeBoost.js'
 import { usePlayerSubtitles } from '../player/usePlayerSubtitles.js'
 import { usePlaybackRate } from '../player/usePlaybackRate.js'
 import { useHlsSource } from '../player/useHlsSource.js'
@@ -52,6 +54,8 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
 
   const flash = useFlash()
   const volume = usePlayerVolume({ video, settings, onSettings })
+  const boost = settings.volumeBoost ?? 1
+  useVolumeBoost(video, boost)
   const subs = usePlayerSubtitles({ video, trackEl, open, mode, settings, onSettings, probeSub, flash: flash.show })
   const rate = usePlaybackRate({ video, flash: flash.show, language: settings.language, initial: initialRate, onChange: onRate })
   const { idle, poke, show: showControls } = useIdle({ video, hold: menuOpen })
@@ -213,6 +217,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
         menu={{
           open: menuOpen, onOpen: setMenuOpen,
           rate: rate.rate, language: settings.language, onRate: rate.setRate,
+          boost, onBoost: (v) => { onSettings({ volumeBoost: v }); flash.show(v === 1 ? t('boost.flashOff') : t('boost.flash', { value: formatBoost(v, settings.language) })) },
           subs: { on: subs.on, available: subs.available, hint: subs.hint, offsetLabel: subs.offsetLabel, size: settings.subtitles.size },
           onToggleSubs: subs.toggle, onSubOffset: subs.shift, onSubOffsetReset: subs.reset, onSubSize: (n) => onSettings({ subtitles: { size: n } }),
         }}

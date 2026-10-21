@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Icon } from './Icon.jsx'
 import { RATES, formatRate } from '../../shared/player.js'
+import { BOOST_LEVELS, formatBoost } from '../../shared/volumeBoost.js'
 
 // The gear menu: always available; sections that do not apply to this episode are disabled with the reason.
-export function PlayerMenu({ rate, language, onRate, open, onOpen, subs, onToggleSubs, onSubOffset, onSubOffsetReset, onSubSize }) {
+export function PlayerMenu({ rate, language, onRate, boost = 1, onBoost, open, onOpen, subs, onToggleSubs, onSubOffset, onSubOffsetReset, onSubSize }) {
   const t = useT()
   const menuRef = useRef(null)
   const button = useRef(null)
@@ -27,6 +28,14 @@ export function PlayerMenu({ rate, language, onRate, open, onOpen, subs, onToggl
             <div className="player__rates" role="group" aria-label={t('player.speed')}>
               {RATES.map((r) => (
                 <button key={r} type="button" aria-pressed={r === rate} onClick={() => onRate(r)}>{formatRate(r, language)}×</button>
+              ))}
+            </div>
+          </section>
+          <section className="player__menu-section">
+            <h3 className="player__menu-title">{t('boost.title')}</h3>
+            <div className="player__rates" role="group" aria-label={t('boost.title')}>
+              {BOOST_LEVELS.map((v) => (
+                <button key={v} type="button" aria-pressed={v === boost} onClick={() => onBoost(v)}>{v === 1 ? t('boost.off') : formatBoost(v, language)}</button>
               ))}
             </div>
           </section>
