@@ -147,6 +147,11 @@ describe('mergeSources', () => {
     })
     expect(mergeSources([out('tenrai', 'missing'), out('edge', 'missing')], existing)).toEqual({ kind: 'none', markFailed: true })
   })
+  it('missing counts as failed only for a source listed in existing.sources', () => {
+    const existing = { filler: [50], recap: [], count: 60, sources: ['edge'] }
+    expect(mergeSources([out('tenrai', 'missing'), data('edge', [8], [], 10)], existing)).toMatchObject({ kind: 'data', sources: ['edge'], partial: false })
+    expect(mergeSources([out('tenrai', 'missing'), out('edge', 'missing')], existing)).toEqual({ kind: 'none', markFailed: true })
+  })
   it('keeps extra source ids of the existing record after the known ones', () => {
     const existing = { filler: [], recap: [], count: 1, sources: ['other', 'edge'] }
     expect(mergeSources([data('tenrai', [1], [], 1), out('edge', 'failed')], existing).sources).toEqual(['tenrai', 'edge', 'other'])
@@ -432,6 +437,49 @@ describe('fillerInfo.ensure', () => {
     await info.ensure(21)
     expect(readRec(21)).toMatchObject({ filler: [3, 4, 101], recap: [50], count: 101, partial: true })
     expect(readRec(21).sources).toEqual(['tenrai', 'edge'])
+  })
+
+  describe('missing from a source that never had the series', () => {
+    const legacy = () => fs.writeFileSync(file(21), JSON.stringify({ filler: [3, 4], recap: [50], count: 101, fetchedAt: clock }))
+    it('a whole record from edge only does not loop daily while tenrai stays missing', async () => {
+      tenrai.fn = () => res({}, 404)
+      await info.ensure(21)
+      expect(readRec(21)).toMatchObject({ sources: ['edge'] })
+      expect(readRec(21).partial).toBeUndefined()
+      clock += TTL_MS + 1
+      expect(await info.ensure(21)).toBe(true)
+      expect(readRec(21).partial).toBeUndefined()
+      expect(readRec(21).sources).toEqual(['edge'])
+      expect(info.cached(21).expired).toBe(false)
+      clock += PARTIAL_TTL_MS + 1
+      expect(info.cached(21).expired).toBe(false)
+    })
+    it('legacy record (no sources) + edge missing + tenrai data: marks kept, partial', async () => {
+      legacy()
+      clock += TTL_MS + 1
+      tenrai.fn = onePage(tenraiPage, [[3, 'filler']])
+      edge.fn = () => res({}, 404)
+      await info.ensure(21)
+      expect(readRec(21)).toMatchObject({ filler: [3, 4], recap: [50], count: 101, partial: true })
+    })
+    it('legacy record + both missing: nothing is replaced', async () => {
+      legacy()
+      const before = fs.readFileSync(file(21), 'utf8')
+      clock += TTL_MS + 1
+      tenrai.fn = () => res({}, 404)
+      edge.fn = () => res({}, 404)
+      expect(await info.ensure(21)).toBe(false)
+      expect(fs.readFileSync(file(21), 'utf8')).toBe(before)
+    })
+    it('legacy record + tenrai missing + edge data: whole record', async () => {
+      legacy()
+      clock += TTL_MS + 1
+      tenrai.fn = () => res({}, 404)
+      edge.fn = onePage(edgePage, [[3, 'filler'], [5, 'filler']])
+      await info.ensure(21)
+      expect(readRec(21).partial).toBeUndefined()
+      expect(readRec(21).sources).toEqual(['edge'])
+    })
   })
 
   it('existing filler 50 + a source saying recap 50 gives recap only', async () => {

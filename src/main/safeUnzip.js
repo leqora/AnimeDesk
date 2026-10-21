@@ -106,7 +106,7 @@ export async function safeUnzip(file, destDir, opts = {}) {
         const segments = entry.fileName.replace(/\/$/, '').split('/')
         const target = path.resolve(root, ...segments)
         const rel = path.relative(root, target)
-        if (!rel || path.isAbsolute(rel) || rel.startsWith('..')) {
+        if (!rel || path.isAbsolute(rel) || rel === '..' || rel.startsWith('..' + path.sep)) {
           throw unsafe('path escapes destination', entry.fileName)
         }
         if (verdict.kind === 'dir') {

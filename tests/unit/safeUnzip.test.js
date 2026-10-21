@@ -53,6 +53,14 @@ describe('safeUnzip', () => {
     expect(fs.statSync(path.join(dest, 'empty')).isDirectory()).toBe(true)
   })
 
+  it('extracts a file whose name merely starts with two dots', async () => {
+    const root = tmpRoot()
+    const zipPath = path.join(root, 'dots.zip')
+    await makeZip(zipPath, (z) => z.addBuffer(Buffer.from('x'), '..foo'))
+    const dest = path.join(root, 'out')
+    await safeUnzip(zipPath, dest)
+    expect(fs.readFileSync(path.join(dest, '..foo'), 'utf8')).toBe('x')
+  })
   it('rejects a symlink entry and writes nothing outside dest', async () => {
     const root = tmpRoot()
     const zipPath = path.join(root, 'link.zip')

@@ -50,12 +50,15 @@ const ascending = (a, b) => a - b
 const sourceOrder = (id) => { const i = SOURCES.findIndex((s) => s.id === id); return i < 0 ? SOURCES.length : i }
 
 // Merges the per-source results (and, for a partial result, the record already on disk) into what gets stored.
-// With an existing good record a "missing" answer counts as a failure: a mirror may break, and "no data" never wipes marks.
+// With an existing good record, "missing" from a source that gave that record data counts as a failure (a mirror may break);
+// "missing" from a source that never had the series stays missing, so it does not force a daily refresh.
+// "No data" never replaces an existing good record.
 export function mergeSources(results, existing = null) {
-  const out = results.map((r) => (existing && r.outcome === 'missing' ? { ...r, outcome: 'failed' } : r))
+  const known = existing?.sources ?? []
+  const out = results.map((r) => (existing && r.outcome === 'missing' && known.includes(r.id) ? { ...r, outcome: 'failed' } : r))
   const data = out.filter((r) => r.outcome === 'data')
   if (data.length === 0) {
-    if (out.length > 0 && out.every((r) => r.outcome === 'missing')) return { kind: 'missing' }
+    if (out.length > 0 && out.every((r) => r.outcome === 'missing')) return existing ? { kind: 'none', markFailed: true } : { kind: 'missing' }
     return { kind: 'none', markFailed: out.length > 0 && !out.some((r) => r.outcome === 'skipped') }
   }
   const partial = out.some((r) => r.outcome === 'failed' || r.outcome === 'skipped')
@@ -216,7 +219,7 @@ export function createFillerInfo({ cacheDir, fetchImpl = fetch, now = Date.now, 
     if (now() - (failedAt.get(id) ?? -Infinity) < RETRY_AFTER_MS) return false
     if (queues.every(isDown)) return false
     const existing = rec && !rec.missing
-      ? { filler: numbers(rec.filler), recap: numbers(rec.recap), count: Number.isInteger(rec.count) ? rec.count : 0, sources: Array.isArray(rec.sources) ? rec.sources : [] }
+      ? { filler: numbers(rec.filler), recap: numbers(rec.recap), count: Number.isInteger(rec.count) ? rec.count : 0, sources: Array.isArray(rec.sources) ? rec.sources : ['edge'] }
       : null
     let fast = null // with nothing usable cached (and someone listening), the first source with data is written at once
     const results = await Promise.all(queues.map(async (q) => {
