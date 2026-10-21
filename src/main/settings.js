@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
+import { isBoostLevel } from '../shared/volumeBoost.js'
 import { DEFAULT_SUBTITLES, SUBTITLE_FONT_STACKS, SUBTITLE_COLORS } from '../shared/subtitles.js'
 
 export const DEFAULT_SETTINGS = Object.freeze({
@@ -24,6 +25,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   autoNext: true,
   subtitles: DEFAULT_SUBTITLES,
   mpvModernUi: true,
+  volumeBoost: 1,
   playerVolume: 1,
   playerMuted: false,
   hideSpoilers: true,
@@ -96,6 +98,7 @@ export function sanitizeSettings(input = {}) {
   if (typeof input.autoNext === 'boolean') s.autoNext = input.autoNext
   s.subtitles = sanitizeSubtitles(input.subtitles, input.subtitleSize)
   if (typeof input.mpvModernUi === 'boolean') s.mpvModernUi = input.mpvModernUi
+  if (isBoostLevel(input.volumeBoost)) s.volumeBoost = input.volumeBoost
   if (Number.isFinite(input.playerVolume)) s.playerVolume = Math.min(1, Math.max(0, input.playerVolume))
   if (typeof input.playerMuted === 'boolean') s.playerMuted = input.playerMuted
   if (typeof input.hideSpoilers === 'boolean') s.hideSpoilers = input.hideSpoilers

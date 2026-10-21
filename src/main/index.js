@@ -8,6 +8,7 @@ import { createLibrary } from './library.js'
 import { createSeriesPrefs } from './seriesPrefs.js'
 import { createToolManager } from './toolManager.js'
 import { ensureMpvConfig } from './mpvConfig.js'
+import { buildMpvExtraArgs } from './mpvArgs.js'
 import { getJson, download, isOnline } from './http.js'
 import { run } from './run.js'
 import { createBridgeServer } from './bridgeServer.js'
@@ -179,13 +180,14 @@ async function main() {
     getTotalEpisodes: totalEpisodes,
   })
   const mpvConfigDir = path.join(paths.base, 'mpv-config')
-  const mpvExtraArgs = () => {
-    if (!settings.get().mpvModernUi) return []
-    try {
-      const dir = ensureMpvConfig({ dir: mpvConfigDir, uoscRoot: toolManager.toolPaths().uoscRoot, version: toolManager.version('uosc') })
-      return dir ? [`--config-dir=${dir}`] : []
-    } catch { return [] }
-  }
+  const mpvExtraArgs = () => buildMpvExtraArgs({
+    settings: settings.get(),
+    configDir: () => {
+      try {
+        return ensureMpvConfig({ dir: mpvConfigDir, uoscRoot: toolManager.toolPaths().uoscRoot, version: toolManager.version('uosc') })
+      } catch { return null }
+    },
+  })
   const iconPath = app.isPackaged ? path.join(process.resourcesPath, 'icon.ico') : path.join(app.getAppPath(), 'build', 'icon.ico')
   // OS toast; the object is kept referenced until it is clicked, closed or failed (Windows GC drops handlers otherwise).
   const osNotify = (kind, data, onClick) => {

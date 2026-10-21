@@ -17,7 +17,7 @@ describe('settings', () => {
       playerMode: 'internal', autoSkip: false, autoNext: true, subtitles: { enabled: { sub: true, dub: false }, size: 25, lineSpacing: 0, font: 'default', color: 'white', box: true, boxOpacity: 60 }, mpvModernUi: true,
       playerVolume: 1, playerMuted: false, hideSpoilers: true, episodeMarks: true, episodeView: 'numbers',
       closeToTray: true, launchAtLogin: false, notifyNewEpisodes: true, notifyDownloads: true, trayHintShown: false,
-      hiddenSequels: [], hiddenRecommendations: [],
+      hiddenSequels: [], hiddenRecommendations: [], volumeBoost: 1,
     })
   })
   it('clamps the threshold and ignores invalid values', () => {
@@ -177,6 +177,14 @@ describe('settings snapshot / replace', () => {
     const snap = s.snapshot()
     expect(snap.language).toBe('en')
     for (const k of [...LOCAL_SETTINGS, 'systemName', 'isPackaged']) expect(snap).not.toHaveProperty(k)
+  })
+  it('sanitizes volumeBoost and keeps it in the snapshot', () => {
+    expect(sanitizeSettings({ volumeBoost: 2 }).volumeBoost).toBe(2)
+    expect(sanitizeSettings({ volumeBoost: 1.75 }).volumeBoost).toBe(1)
+    expect(sanitizeSettings({}).volumeBoost).toBe(1)
+    const s = createSettings(file)
+    s.update({ volumeBoost: 3 })
+    expect(s.snapshot().volumeBoost).toBe(3)
   })
   it('replace keeps local settings, drops a missing downloadDir and persists', () => {
     const s = createSettings(file)
