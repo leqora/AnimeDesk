@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import { createPosterLimiter } from './posterLimiter.js'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 import { RULES_VERSION } from '../shared/recommendations.js'
 import { libraryMatch } from '../shared/schedule.js'
@@ -111,7 +112,8 @@ export function createDiscover({
     }
   }
   const hiddenNow = () => {
-    try { return settings.get().hiddenRecommendations ?? [] } catch { return [] }
+    const v = settings.get().hiddenRecommendations
+    return Array.isArray(v) ? v.filter(Number.isInteger) : []
   }
   // The AniList title cache is read synchronously; ids only when the match is exact.
   function lookups() {
@@ -211,56 +213,10 @@ export function createDiscover({
     }
   }
 
-  // Service-wide download limiter: at most POSTER_CONCURRENCY downloads at once across all posters() calls. A slot is freed
-  // when the download really settles, not when a caller gave up on it; the same poster requested twice shares one download.
-  let activeDownloads = 0
-  const slotWaiters = []
-  const acquireSlot = () => {
-    if (activeDownloads < POSTER_CONCURRENCY) { activeDownloads++; return Promise.resolve() }
-    return new Promise((resolve) => slotWaiters.push(resolve))
-  }
-  const releaseSlot = () => {
-    const next = slotWaiters.shift()
-    if (next) next() // the slot passes straight on
-    else activeDownloads--
-  }
-  const downloads = new Map() // `gen|id|coverUrl` -> { started, done }
-
-  function startDownload(key, url) {
-    let d = downloads.get(key)
-    if (d) return d
-    const g = gen
-    let markStarted
-    const started = new Promise((resolve) => { markStarted = resolve })
-    const done = (async () => {
-      await acquireSlot()
-      markStarted()
-      try {
-        // Stopped or forgotten while waiting for a slot: do not start the download (the slot still passes on below).
-        if (stopped || g !== gen) return null
-        return await Promise.resolve().then(() => anilist.poster(url, { timeoutMs: posterTimeoutMs })).catch(() => null)
-      } finally {
-        releaseSlot()
-        downloads.delete(key)
-      }
-    })()
-    d = { started, done }
-    downloads.set(key, d)
-    return d
-  }
-
-  // The caller gets null (timeout counted from the moment the download actually starts) while the download itself keeps its slot.
-  async function download(key, url) {
-    const d = startDownload(key, url)
-    await d.started
-    let timer
-    const timeout = new Promise((resolve) => { timer = setT(() => resolve(null), posterTimeoutMs) })
-    try {
-      return await Promise.race([d.done, timeout])
-    } finally {
-      clearT(timer)
-    }
-  }
+  // At most POSTER_CONCURRENCY downloads at once across all posters() calls (shared limiter).
+  const limiter = createPosterLimiter({ concurrency: POSTER_CONCURRENCY, timeoutMs: posterTimeoutMs, setTimeout: setT, clearTimeout: clearT })
+  // Stopped or forgotten while waiting for a slot: the download is not started (the slot still passes on).
+  const download = (g, key, url) => limiter.download(key, () => ((stopped || g !== gen) ? null : anilist.poster(url, { timeoutMs: posterTimeoutMs })))
 
   async function posterList(ids) {
     load()
@@ -281,7 +237,7 @@ export function createDiscover({
       todo.push({ id, item })
     }
     await Promise.all(todo.map(async ({ id, item }) => {
-      const dataUrl = await download(`${g}|${item.id}|${item.coverUrl}`, item.coverUrl)
+      const dataUrl = await download(g, `${g}|${item.id}|${item.coverUrl}`, item.coverUrl)
       if (stopped || g !== gen) return
       if (typeof dataUrl === 'string' && dataUrl) {
         posters[item.id] = { coverUrl: item.coverUrl, dataUrl }

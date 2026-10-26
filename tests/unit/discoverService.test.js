@@ -3,8 +3,14 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { createDiscover, TTL_MS, RETRY_AFTER_FAIL_MS, FORCE_MIN_MS, MAX_POSTER_IDS, POSTER_CONCURRENCY } from '../../src/main/discover.js'
+import { writeJsonAtomic } from '../../src/main/jsonStore.js'
 import { RULES_VERSION } from '../../src/shared/recommendations.js'
 import { seasonOf, nextSeason, buildRails } from '../../src/shared/discover.js'
+
+vi.mock('../../src/main/jsonStore.js', async (orig) => {
+  const actual = await orig()
+  return { ...actual, writeJsonAtomic: vi.fn(actual.writeJsonAtomic) }
+})
 
 const MIN = 60_000
 const H = 60 * MIN
@@ -208,6 +214,13 @@ describe('createDiscover library and settings', () => {
     expect(ids(svc.list(), 'season')).toEqual([1, 2])
   })
 
+  it('hiddenIds keeps only integers', async () => {
+    svc.stop()
+    build({ settings: { get: () => ({ hiddenRecommendations: [1, 'x', 2.5, null, 7] }) } })
+    expect(svc.list().hiddenIds).toEqual([1, 7])
+    await flush()
+  })
+
   it('hiddenIds default to []', async () => {
     svc.stop()
     build({ settings: { get: () => ({}) } })
@@ -225,12 +238,15 @@ describe('createDiscover posters', () => {
   })
 
   it('downloads, caches by coverUrl, one persist per call', async () => {
+    writeJsonAtomic.mockClear()
     expect(await svc.posters([1, 2])).toEqual({ 1: 'data:http://img/1.jpg', 2: 'data:http://img/2.jpg' })
+    expect(writeJsonAtomic).toHaveBeenCalledTimes(1)
     expect(anilist.poster).toHaveBeenCalledTimes(2)
     expect(anilist.poster).toHaveBeenCalledWith('http://img/1.jpg', { timeoutMs: 8000 })
     expect(disk().posters[1]).toEqual({ coverUrl: 'http://img/1.jpg', dataUrl: 'data:http://img/1.jpg' })
     await svc.posters([1, 2])
     expect(anilist.poster).toHaveBeenCalledTimes(2)
+    expect(writeJsonAtomic).toHaveBeenCalledTimes(1) // nothing new downloaded, nothing written
   })
 
   it('answers only the first 40 ids', async () => {
