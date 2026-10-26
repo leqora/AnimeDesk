@@ -64,7 +64,7 @@ button:hover:not(:disabled) { background: var(--glass-strong); border-color: col
 .schedule-state button[aria-disabled="true"]:hover { background: var(--glass); border-color: var(--glass-border); }
 button:active:not(:disabled) { transform: translateY(1px); }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
-button:disabled { opacity: .45; cursor: not-allowed; }
+button:disabled, .external-bar button[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
 button.primary { background: var(--cta); border-color: var(--cta); color: var(--on-accent); font-weight: 600; }
 button.primary:hover:not(:disabled) { background: var(--cta); border-color: var(--cta); box-shadow: 0 0 16px color-mix(in srgb, var(--cta) 55%, transparent); }
 button.danger { background: var(--bad); border-color: var(--bad); color: var(--on-accent); }

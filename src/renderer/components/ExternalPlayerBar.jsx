@@ -13,17 +13,13 @@ export function ExternalPlayerBar({ onGone }) {
   const ref = useRef(null)
   const goneRef = useRef(onGone)
   goneRef.current = onGone
-  const stoppingRef = useRef(null)
-  stoppingRef.current = stoppingId
 
   useEffect(() => {
     let pushed = false
     const off = api.externalPlayer.onChange((next) => {
       pushed = true
       if (!next) {
-        const active = document.activeElement
-        // a disabled button may already have dropped focus to <body>
-        const inside = ref.current && (ref.current.contains(active) || (stoppingRef.current != null && (!active || active === document.body)))
+        const inside = ref.current?.contains(document.activeElement)
         if (inside) goneRef.current?.()
       }
       setCurrent(next ?? null)
@@ -41,7 +37,7 @@ export function ExternalPlayerBar({ onGone }) {
     <div className="external-bar" role="region" aria-label={t('externalPlayer.label')} ref={ref}>
       <Icon name="play" />
       <span className="external-bar__text" aria-live="polite">{text}</span>
-      <button type="button" disabled={stopping} onClick={() => { setStoppingId(current.id); Promise.resolve(api.externalPlayer.stop(current.id)).catch(() => setStoppingId(null)) }}>
+      <button type="button" aria-disabled={stopping} onClick={() => { if (stopping) return; setStoppingId(current.id); Promise.resolve(api.externalPlayer.stop(current.id)).catch(() => setStoppingId(null)) }}>
         {stopping ? t('externalPlayer.stopping') : t('externalPlayer.stop')}
       </button>
     </div>
