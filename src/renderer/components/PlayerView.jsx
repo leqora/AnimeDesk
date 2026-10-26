@@ -32,7 +32,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   const api = useApi()
   const t = useT()
   const root = useRef(null)
-const video = useRef(null)
+  const video = useRef(null)
   const trackEl = useRef(null)
   const maxPercent = useRef(0)
   const closed = useRef(false)
@@ -114,12 +114,12 @@ const video = useRef(null)
       .then((r) => { if (!r?.ok) setFailed('final') }, () => setFailed('final'))
   }
   useEffect(() => () => clearTimeout(clickTimer.current), [])
-// Take focus on show, unless it is already inside the player (ResumePrompt autoFocus) or in a modal dialog.
-useEffect(() => {
-  const a = document.activeElement
-  if (root.current?.contains(a) || a?.closest?.('[aria-modal="true"]')) return
-  root.current?.focus()
-}, [])
+  // Take focus on show, unless it is already inside the player (ResumePrompt autoFocus) or in a modal dialog.
+  useEffect(() => {
+    const a = document.activeElement
+    if (root.current?.contains(a) || a?.closest?.('[aria-modal="true"]')) return
+    root.current?.focus()
+  }, [])
   useHlsSource({ video, open, HlsImpl, onFatal: fail })
   useEffect(() => {
     const id = setInterval(() => latest.current.api.player.progress(snapshot()), PROGRESS_MS)
