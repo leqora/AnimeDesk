@@ -92,14 +92,15 @@ export function DiscoverPage({ ready, onOpenAnime, onSearch }) {
     onSearch(pick.romaji ?? pick.title)
   }
 
-  // Posters for the shown items; ids that already have an image are not asked again.
-  const postersRef = useRef(posters)
-  postersRef.current = posters
+  // Posters for the shown items; ids already asked (even if the answer was empty) are not asked again.
+  // every id is asked at most once per page session; a null answer counts as answered
+  const requested = useRef(new Set())
   const idsKey = [...new Set(railDefs.flatMap(([key]) => shown[key].map((i) => i.id)))].join(',')
   useEffect(() => {
     if (!idsKey) return undefined
     let alive = true
-    const all = idsKey.split(',').map(Number).filter((id) => typeof postersRef.current[id] !== 'string')
+    const all = idsKey.split(',').map(Number).filter((id) => !requested.current.has(id))
+    for (const id of all) requested.current.add(id)
     // an id missing from an answer (or a failed chunk) gets the empty frame, never a skeleton that never ends
     const settle = (ids, map) => setPosters((prev) => {
       const next = { ...prev }
@@ -116,7 +117,7 @@ export function DiscoverPage({ ready, onOpenAnime, onSearch }) {
       }
     })()
     return () => { alive = false }
-  }, [api, idsKey, data])
+  }, [api, idsKey])
 
   const staleTime = data?.fetchedAt != null ? new Date(data.fetchedAt).toLocaleString(t.locale, { day: 'numeric', month: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''
   // retryNow lags one effect run behind a new retryAt, so the first paint reads the real clock too

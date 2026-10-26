@@ -202,22 +202,49 @@ describe('DiscoverPage', () => {
       movies: Array.from({ length: 5 }, (_, i) => it_(300 + i)),
       trending: [],
     }
-    const posters = vi.fn(async () => ({}))
+    let release
+    const first = new Promise((r) => { release = r })
+    const posters = vi.fn().mockReturnValueOnce(first).mockResolvedValue({})
     page(apiWith(data({ rails }), { posters }))
+    await waitFor(() => expect(posters.mock.calls.length).toBe(1))
+    // the second chunk is not sent while the first is still pending
+    await act(async () => { await new Promise((r) => setTimeout(r, 30)) })
+    expect(posters.mock.calls.length).toBe(1)
+    await act(async () => { release({}) })
     await waitFor(() => expect(posters.mock.calls.length).toBe(2))
     expect(posters.mock.calls.map(([ids]) => ids.length)).toEqual([40, 5])
     expect(new Set(posters.mock.calls.flat(2)).size).toBe(45)
   })
 
-  it('asks posters only for the filtered items', async () => {
+  it('does not ask again for ids that were already answered (even with null) after a reload; new ids are asked', async () => {
+    let onChanged
+    const first = data({ rails: { ...NONE, season: [it_(1), it_(2)] } })
+    const second = data({ rails: { ...NONE, season: [it_(1), it_(2), it_(3)] } })
+    const list = vi.fn().mockResolvedValueOnce(first).mockResolvedValue(second)
+    const posters = vi.fn(async (ids) => Object.fromEntries(ids.map((id) => [id, id === 1 ? 'data:image/png;base64,AAAA' : null])))
+    page(makeFakeApi({ discover: { list, posters, onChanged: vi.fn((cb) => { onChanged = cb; return () => {} }) } }))
+    await waitFor(() => expect(posters).toHaveBeenCalledTimes(1))
+    expect(posters.mock.calls[0][0]).toEqual([1, 2])
+    await act(async () => { onChanged() })
+    await screen.findByRole('button', { name: 'Potraži Title 3' })
+    await waitFor(() => expect(posters).toHaveBeenCalledTimes(2))
+    expect(posters.mock.calls[1][0]).toEqual([3])
+    await act(async () => { onChanged() })
+    await act(async () => { await new Promise((r) => setTimeout(r, 30)) })
+    expect(posters).toHaveBeenCalledTimes(2)
+  })
+
+  it('changing the genre filter does not ask again for ids already requested', async () => {
     const posters = vi.fn(async () => ({}))
     page(apiWith(data(), { posters }))
     await screen.findByRole('button', { name: 'Potraži Title 1' })
     await waitFor(() => expect(posters).toHaveBeenCalled())
+    expect(new Set(posters.mock.calls.flat(2))).toEqual(new Set([1, 2, 3, 4, 5, 6, 7]))
     posters.mockClear()
     fireEvent.change(genreSelect(), { target: { value: 'Fantasy' } })
-    await waitFor(() => expect(posters).toHaveBeenCalled())
-    for (const [ids] of posters.mock.calls) expect(ids.every((id) => id === 5 || id === 6)).toBe(true)
+    await screen.findByRole('button', { name: 'Potraži Title 5' }).catch(() => null)
+    await act(async () => { await new Promise((r) => setTimeout(r, 30)) })
+    expect(posters).not.toHaveBeenCalled()
   })
 
   it('an id missing from the answer gets an empty frame, never an endless skeleton', async () => {

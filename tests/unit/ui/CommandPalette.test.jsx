@@ -86,6 +86,14 @@ describe('CommandPalette', () => {
     expect(onRun).toHaveBeenCalledWith({ type: 'anime', id: 'a1' })
   })
 
+  it('offers the Discover page ("Otkrij") and navigates to it', async () => {
+    const { user, onRun } = await setup()
+    expect(screen.getByRole('option', { name: /Otkrij/ })).toBeTruthy()
+    await user.type(screen.getByRole('combobox'), 'otkrij')
+    await user.keyboard('{Enter}')
+    expect(onRun).toHaveBeenCalledWith({ type: 'page', page: 'discover' })
+  })
+
   it('Enter on a page runs page', async () => {
     const { user, onRun } = await setup()
     await user.type(screen.getByRole('combobox'), 'raspored')

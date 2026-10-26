@@ -40,6 +40,16 @@ describe('styles.css', () => {
     expect(rule).toMatch(/(^|[\s;])width: \d+px/)
     expect(rule).toMatch(/flex: 0 0 \d+px/)
   })
+  it('the non-clickable (not yet released) recommendation card gets no hover lift, glow or poster zoom', () => {
+    const rule = (sel) => {
+      const at = css.indexOf(`
+${sel} {`)
+      return at < 0 ? '' : css.slice(at, css.indexOf('}', at))
+    }
+    expect(rule('.card.rec-card:has(.rec-card__static):hover')).toContain('transform: none')
+    expect(rule('.rec-card:has(.rec-card__static):hover::after')).toContain('opacity: 0')
+    expect(rule('.rec-card:has(.rec-card__static):hover .poster--in')).toContain('transform: none')
+  })
   it('uses no raw hex colors outside :root', () => {
     expect(css.slice(rootEnd).match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull()
   })

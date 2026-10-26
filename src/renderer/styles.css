@@ -505,3 +505,7 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 .discover-skeleton { display: flex; flex-direction: column; gap: 10px; }
 .rec-card__watchlist { position: absolute; z-index: var(--z-card-badge); top: 6px; left: 6px; }
 .rec-card__static { cursor: default; }
+/* a not-yet-released card is not clickable: no lift, glow or poster zoom on hover */
+.card.rec-card:has(.rec-card__static):hover { transform: none; box-shadow: none; }
+.rec-card:has(.rec-card__static):hover::after { opacity: 0; }
+.rec-card:has(.rec-card__static):hover .poster--in { transform: none; }
