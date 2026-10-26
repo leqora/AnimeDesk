@@ -9,6 +9,13 @@ import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
 vi.mock('hls.js', async () => ({ default: (await import('./fakeHls.js')).FakeHls }))
 
 describe('App', () => {
+  it('opens the Discover page from the menu', async () => {
+    const api = makeFakeApi()
+    render(<App api={api} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Otkrij' }))
+    expect(await screen.findByRole('heading', { level: 2, name: 'Otkrij' })).toBeInTheDocument()
+    expect(api.discover.list).toHaveBeenCalled()
+  })
   it('shows reconnecting between the stalled player and the new one, and back cancels it', async () => {
     let retry, openPlayer
     const api = makeFakeApi({ player: { onRetry: vi.fn((cb) => { retry = cb; return () => {} }), onOpen: vi.fn((cb) => { openPlayer = cb; return () => {} }) } })

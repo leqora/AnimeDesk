@@ -8,6 +8,7 @@ import { AskDialog } from './components/AskDialog.jsx'
 import { SetupWizard } from './pages/SetupWizard.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { WatchlistPage } from './pages/WatchlistPage.jsx'
+import { DiscoverPage } from './pages/DiscoverPage.jsx'
 import { SchedulePage } from './pages/SchedulePage.jsx'
 import { DownloadsPage } from './pages/DownloadsPage.jsx'
 import { SettingsPage } from './pages/SettingsPage.jsx'
@@ -415,6 +416,7 @@ export default function App({ api, sound: injectedSound }) {
                   <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onSearch={searchAnime} />
                 )}
                 {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} onSearch={searchAnime} />}
+                {page === 'discover' && <DiscoverPage ready={ready} onOpenAnime={openAnime} onSearch={searchAnime} />}
                 {page === 'schedule' && <SchedulePage ready={ready} onOpenAnime={openAnime} onSearch={searchAnime} />}
                 {page === 'downloads' && <DownloadsPage />}
                 {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} />}
