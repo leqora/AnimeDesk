@@ -185,6 +185,9 @@ Svaka stavka ide kroz TDD i po pravilima iz `CLAUDE.md`; veće (★) kroz brains
 - JSDoc + `@ts-check` od `src/shared`; `hls.js/light`; fontovi samo latin/latin-ext.
 - Preview sličice na seek baru, prilagodljive prečice, mini plejer.
 
+### Iz novih Seanime izdanja (prati se pri svakom planiranju: `git fetch` u `_ref/seanime`, CHANGELOG)
+- **v3.10.4 (2026-10-14):** pojačanje zvuka do 300 % (#964) → **uzeto u v0.16.0** (Web Audio gain + limiter; mpv `lavfi` `volume` + `alimiter`); komandna paleta (Seanime `sea-command`, „/” komande) → **v0.16.0** u našem obliku (bez mreže, jedna lista sa grupama). Kandidati: klizač brzine (#865; mi imamo dugmad), ukupan broj epizoda na hover-u kartice nezapočete serije (#872), prečica za pojačanje (korak 0,25). Ne treba nam: ispravka VTT konverzije sa pozicijom (#975) — naš `srtToVtt` čuva `{\an8}` redove (provereno 2026-10-21); Tenrai za likove (mi ga već koristimo za filler od v0.15.2).
+
 ---
 
 ## 4. Šta NE preuzimati od Seanime-a
