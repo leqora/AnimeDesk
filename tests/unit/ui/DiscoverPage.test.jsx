@@ -2,6 +2,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, fireEvent, waitFor, act, within } from '@testing-library/react'
 import { renderUi, makeFakeApi } from './helpers.jsx'
+import { useState } from 'react'
+import { RouteStateContext } from '../../../src/renderer/nav/useNavigation.js'
 import { DiscoverPage } from '../../../src/renderer/pages/DiscoverPage.jsx'
 
 // A genre taken from genreOptions always matches at least one item, so the "no series for this genre" state cannot be reached
@@ -242,9 +244,48 @@ describe('DiscoverPage', () => {
     expect(new Set(posters.mock.calls.flat(2))).toEqual(new Set([1, 2, 3, 4, 5, 6, 7]))
     posters.mockClear()
     fireEvent.change(genreSelect(), { target: { value: 'Fantasy' } })
-    await screen.findByRole('button', { name: 'Potraži Title 5' }).catch(() => null)
-    await act(async () => { await new Promise((r) => setTimeout(r, 30)) })
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Potraži Title 1' })).toBeNull())
+    expect(screen.getByText('Title 5')).toBeInTheDocument()
+    await act(async () => { await Promise.resolve() })
     expect(posters).not.toHaveBeenCalled()
+  })
+
+  it('an answer that arrives after the shown ids changed is still applied, and unsent ids are asked later', async () => {
+    let onChanged
+    let release
+    const pending = new Promise((r) => { release = r })
+    const first = data({ rails: { ...NONE, season: [it_(1)] } })
+    const second = data({ rails: { ...NONE, season: [it_(1), it_(2)] } })
+    const list = vi.fn().mockResolvedValueOnce(first).mockResolvedValue(second)
+    const posters = vi.fn().mockReturnValueOnce(pending).mockImplementation(async (ids) => Object.fromEntries(ids.map((id) => [id, `data:image/png;base64,P${id}`])))
+    const { container } = page(makeFakeApi({ discover: { list, posters, onChanged: vi.fn((cb) => { onChanged = cb; return () => {} }) } }))
+    await waitFor(() => expect(posters).toHaveBeenCalledTimes(1))
+    await act(async () => { onChanged() })
+    await screen.findByRole('button', { name: 'Potraži Title 2' })
+    await act(async () => { release({ 1: 'data:image/png;base64,P1' }) })
+    await waitFor(() => expect(posters).toHaveBeenCalledTimes(2))
+    expect(posters.mock.calls[1][0]).toEqual([2])
+    await waitFor(() => expect(container.querySelectorAll('img.poster')).toHaveLength(2))
+  })
+
+  it('a filtered-out id is not requested until it becomes visible', async () => {
+    const posters = vi.fn(async () => ({}))
+    function Wrapper() {
+      const [state, setState] = useState({ genre: 'Fantasy' })
+      const value = { state, set: (k, v) => setState((p) => ({ ...p, [k]: v })) }
+      return <RouteStateContext.Provider value={value}><DiscoverPage ready onOpenAnime={vi.fn()} onSearch={vi.fn()} /></RouteStateContext.Provider>
+    }
+    renderUi(<Wrapper />, { api: apiWith(data(), { posters }) })
+    await screen.findByText('Title 5')
+    await waitFor(() => expect(posters).toHaveBeenCalled())
+    expect(new Set(posters.mock.calls.flat(2))).toEqual(new Set([5, 6]))
+    posters.mockClear()
+    fireEvent.change(genreSelect(), { target: { value: '' } })
+    await waitFor(() => expect(posters).toHaveBeenCalled())
+    const asked = posters.mock.calls.flat(2)
+    expect(asked).toContain(1)
+    expect(asked).not.toContain(5)
+    expect(asked).not.toContain(6)
   })
 
   it('an id missing from the answer gets an empty frame, never an endless skeleton', async () => {

@@ -92,30 +92,32 @@ export function DiscoverPage({ ready, onOpenAnime, onSearch }) {
     onSearch(pick.romaji ?? pick.title)
   }
 
-  // Posters for the shown items; ids already asked (even if the answer was empty) are not asked again.
-  // every id is asked at most once per page session; a null answer counts as answered
+  // Posters for the shown items. An id is marked requested only when its chunk is actually sent (a null answer counts as answered),
+  // so each id is asked at most once per page session and an id whose chunk was never sent is asked again later.
   const requested = useRef(new Set())
+  // runs are chained, so chunks from successive effect runs also go one after another
+  const queue = useRef(Promise.resolve())
   const idsKey = [...new Set(railDefs.flatMap(([key]) => shown[key].map((i) => i.id)))].join(',')
   useEffect(() => {
     if (!idsKey) return undefined
     let alive = true
-    const all = idsKey.split(',').map(Number).filter((id) => !requested.current.has(id))
-    for (const id of all) requested.current.add(id)
+    const wanted = idsKey.split(',').map(Number)
     // an id missing from an answer (or a failed chunk) gets the empty frame, never a skeleton that never ends
     const settle = (ids, map) => setPosters((prev) => {
       const next = { ...prev }
       for (const id of ids) next[id] = (map && typeof map === 'object' ? map[id] : null) ?? null
       return next
     })
-    // chunks go one after another so main's download limiter is never asked for more than one batch from this page
-    ;(async () => {
+    queue.current = queue.current.then(async () => {
+      const all = wanted.filter((id) => !requested.current.has(id))
       for (let k = 0; k < all.length && alive; k += MAX_POSTERS) {
         const ids = all.slice(k, k + MAX_POSTERS)
+        for (const id of ids) requested.current.add(id)
         let map = null
         try { map = await api.discover.posters(ids) } catch { map = null }
-        if (alive) settle(ids, map)
+        settle(ids, map) // applied even when the filter changed meanwhile: the answer is for ids that stay marked requested
       }
-    })()
+    })
     return () => { alive = false }
   }, [api, idsKey])
 
