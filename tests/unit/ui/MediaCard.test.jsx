@@ -112,6 +112,14 @@ describe('MediaCard', () => {
       expect(screen.getByRole('button', { name: /^Show — 3\/12, Gledam, 3 nove epizode$/ })).toBeInTheDocument()
     } finally { vi.useRealTimers() }
   })
+  it('shows no new-episodes badge when nothing has been watched yet', async () => {
+    const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => airingInfo()) } })
+    card({ entry: entry({ status: 'watching', watchedEpisodes: [] }) }, api)
+    await waitFor(() => expect(api.anilist.forTitle).toHaveBeenCalled())
+    await act(async () => {})
+    expect(document.querySelector('.badge--new')).toBeNull()
+    expect(screen.getByRole('button', { name: /^Show —/ }).getAttribute('aria-label')).not.toMatch(/nov/)
+  })
   it('shows no badge for a planned series or a finished show', async () => {
     const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => airingInfo()) } })
     card({ entry: entry({ status: 'planned' }) }, api)
