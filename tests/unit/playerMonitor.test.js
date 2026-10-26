@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { EventEmitter } from 'node:events'
 import { decideWatched, createPercentTracker, createPlayer } from '../../src/main/playerMonitor.js'
 
@@ -174,6 +174,84 @@ describe('createPlayer', () => {
       child.emit('exit', 2)
       expect(await done).toEqual({ exitCode: 2, maxPercent: 0, position: 0, duration: 0 })
       expect(onProgress).not.toHaveBeenCalled()
+    })
+  })
+  describe('quit', () => {
+    afterEach(() => { vi.useRealTimers() })
+    function setupQuit() {
+      vi.useFakeTimers()
+      const child = new EventEmitter()
+      child.kill = vi.fn()
+      const socket = new EventEmitter()
+      socket.write = vi.fn()
+      socket.destroy = vi.fn()
+      const player = createPlayer({ getMpvPath: () => 'mpv.exe', spawnImpl: () => child, connect: () => socket, retryMs: 10, maxRetries: 1, quitTimeoutMs: 5000 })
+      let quit
+      const done = player.play(['https://v'], { onStart: (c) => { quit = c.quit } })
+      return { child, socket, quit, done }
+    }
+    const QUIT = '{"command":["quit"]}' + String.fromCharCode(10)
+    it('onStart is called synchronously right after spawn', () => {
+      const { quit } = setupQuit()
+      expect(typeof quit).toBe('function')
+      vi.useRealTimers()
+    })
+    it('quit sends the mpv quit command once connected', () => {
+      const { child, socket, quit } = setupQuit()
+      vi.advanceTimersByTime(10)
+      socket.emit('connect')
+      socket.write.mockClear()
+      quit()
+      expect(socket.write).toHaveBeenCalledWith(QUIT)
+      expect(child.kill).not.toHaveBeenCalled()
+      vi.useRealTimers()
+    })
+    it('quit before the pipe connects kills the child', () => {
+      const { child, socket, quit } = setupQuit()
+      quit()
+      expect(child.kill).toHaveBeenCalled()
+      expect(socket.write).not.toHaveBeenCalled()
+      vi.useRealTimers()
+    })
+    it('quit after a failed connect attempt still kills', () => {
+      const { child, socket, quit } = setupQuit()
+      vi.advanceTimersByTime(10)
+      socket.emit('error', new Error('ENOENT'))
+      quit()
+      expect(child.kill).toHaveBeenCalled()
+      expect(socket.write).not.toHaveBeenCalledWith(QUIT)
+      vi.useRealTimers()
+    })
+    it('a hung mpv is killed after quitTimeoutMs', () => {
+      const { child, socket, quit } = setupQuit()
+      vi.advanceTimersByTime(10)
+      socket.emit('connect')
+      quit()
+      vi.advanceTimersByTime(4999)
+      expect(child.kill).not.toHaveBeenCalled()
+      vi.advanceTimersByTime(1)
+      expect(child.kill).toHaveBeenCalledTimes(1)
+      vi.useRealTimers()
+    })
+    it('repeated quit does not stack timers and exit clears the timer', async () => {
+      const { child, socket, quit, done } = setupQuit()
+      vi.advanceTimersByTime(10)
+      socket.emit('connect')
+      socket.write.mockClear()
+      const before = vi.getTimerCount()
+      quit()
+      quit()
+      expect(socket.write.mock.calls.filter(([w]) => w === QUIT)).toHaveLength(1)
+      expect(vi.getTimerCount()).toBe(before + 1)
+      child.emit('exit', 0)
+      expect(vi.getTimerCount()).toBe(before)
+      vi.advanceTimersByTime(10000)
+      expect(child.kill).not.toHaveBeenCalled()
+      expect(await done).toEqual({ exitCode: 0, maxPercent: 0, position: 0, duration: 0 })
+      quit()
+      expect(socket.write.mock.calls.filter(([w]) => w === QUIT)).toHaveLength(1)
+      expect(child.kill).not.toHaveBeenCalled()
+      vi.useRealTimers()
     })
   })
   it('rejects when mpv is missing', async () => {

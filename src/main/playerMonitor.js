@@ -39,13 +39,13 @@ export function createPercentTracker(onProperty = null) {
   }
 }
 
-export function createPlayer({ getMpvPath, spawnImpl = spawn, connect = net.connect, retryMs = 250, maxRetries = 40, now = Date.now }) {
+export function createPlayer({ getMpvPath, spawnImpl = spawn, connect = net.connect, retryMs = 250, maxRetries = 40, now = Date.now, quitTimeoutMs = 5000, setTimer = setTimeout, clearTimer = clearTimeout }) {
   const running = new Set()
   return {
     stop() {
       for (const child of running) child.kill()
     },
-    play(args, { extraArgs = [], autoSkip = false, skips = null, language = 'sr', onProgress = null, resumeAt = null } = {}) {
+    play(args, { extraArgs = [], autoSkip = false, skips = null, language = 'sr', onProgress = null, resumeAt = null, onStart = null } = {}) {
       return new Promise((resolve, reject) => {
         const mpv = getMpvPath()
         if (!mpv) return reject(new Error('mpv-missing'))
@@ -82,11 +82,22 @@ export function createPlayer({ getMpvPath, spawnImpl = spawn, connect = net.conn
         const tracker = createPercentTracker(onProperty)
         let tries = 0
         let exited = false
+        let connected = false
+        let quitTimer = null
+        let quitting = false
+        const quit = () => {
+          if (exited || quitting) return
+          quitting = true
+          if (connected) socket.write(`${JSON.stringify({ command: ['quit'] })}\n`)
+          else child.kill()
+          quitTimer = setTimer(() => { if (!exited) child.kill() }, quitTimeoutMs)
+        }
 
         const tryConnect = () => {
           if (exited) return
           socket = connect(pipe)
           socket.on('connect', () => {
+            connected = true
             for (const [id, name] of [[1, 'percent-pos'], [2, 'time-pos'], [3, 'duration']]) socket.write(`${JSON.stringify({ command: ['observe_property', id, name] })}\n`)
             if (Number.isFinite(resumeAt) && resumeAt > 0) {
               socket.write(`${JSON.stringify({ command: ['show-text', `${RESUME_TEXT[language] ?? RESUME_TEXT.sr} ${formatTime(resumeAt)}`, 3000] })}\n`)
@@ -94,15 +105,19 @@ export function createPlayer({ getMpvPath, spawnImpl = spawn, connect = net.conn
           })
           socket.on('data', (d) => tracker.feed(d.toString()))
           socket.on('error', () => {
+            connected = false
             socket.destroy()
             if (!exited && ++tries < maxRetries) setTimeout(tryConnect, retryMs)
           })
         }
         setTimeout(tryConnect, retryMs)
+        onStart?.({ quit })
 
         child.on('error', reject)
         child.on('exit', (code) => {
           exited = true
+          connected = false
+          if (quitTimer) clearTimer(quitTimer)
           running.delete(child)
           socket?.destroy()
           resolve({ exitCode: code ?? 0, maxPercent: tracker.max, position, duration })
