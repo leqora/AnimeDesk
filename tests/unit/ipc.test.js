@@ -558,3 +558,34 @@ describe('schedule handlers', () => {
     expect(s.schedule.posters).toHaveBeenLastCalledWith(many.slice(0, 40))
   })
 })
+
+describe('discover handlers', () => {
+  it('uses exact channel names', () => {
+    expect(INVOKE.discoverList).toBe('discover:list')
+    expect(INVOKE.discoverPosters).toBe('discover:posters')
+    expect(EVENTS.discoverChanged).toBe('event:discover-changed')
+  })
+  it('list passes only force === true', async () => {
+    const s = services()
+    s.discover = { list: vi.fn(async () => ({})), posters: vi.fn(async () => ({})) }
+    const h = createHandlers(s)
+    await h[INVOKE.discoverList]({ force: true })
+    expect(s.discover.list).toHaveBeenLastCalledWith({ force: true })
+    for (const arg of [undefined, null, {}, { force: 1 }, { force: 'true' }, 'x', true, [true]]) {
+      await h[INVOKE.discoverList](arg)
+      expect(s.discover.list).toHaveBeenLastCalledWith({ force: false })
+    }
+  })
+  it('posters keeps only positive integers, at most 40, and ignores non-arrays', async () => {
+    const s = services()
+    s.discover = { list: vi.fn(), posters: vi.fn(async () => ({ 1: 'p' })) }
+    const h = createHandlers(s)
+    for (const bad of [undefined, null, 5, 'abc', { 0: 1 }]) expect(await h[INVOKE.discoverPosters](bad)).toEqual({})
+    expect(s.discover.posters).not.toHaveBeenCalled()
+    await h[INVOKE.discoverPosters]([1, '2', 0, -3, 1.5, NaN, null, 7])
+    expect(s.discover.posters).toHaveBeenLastCalledWith([1, 7])
+    const many = Array.from({ length: 60 }, (_, i) => i + 1)
+    await h[INVOKE.discoverPosters](many)
+    expect(s.discover.posters).toHaveBeenLastCalledWith(many.slice(0, 40))
+  })
+})

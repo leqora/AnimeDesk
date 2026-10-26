@@ -81,6 +81,8 @@ export const INVOKE = {
   recommendationsForSeries: 'recommendations:for-series',
   scheduleList: 'schedule:list',
   schedulePosters: 'schedule:posters',
+  discoverList: 'discover:list',
+  discoverPosters: 'discover:posters',
   externalPlayerState: 'external-player:state',
   externalPlayerStop: 'external-player:stop',
 }
@@ -112,6 +114,7 @@ export const EVENTS = {
   sequelsChanged: 'event:sequels-changed',
   recommendationsChanged: 'event:recommendations-changed',
   scheduleChanged: 'event:schedule-changed',
+  discoverChanged: 'event:discover-changed',
   episodesChanged: 'event:episodes-changed',
   externalPlayer: 'event:external-player',
 }

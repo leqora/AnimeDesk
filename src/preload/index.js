@@ -119,6 +119,11 @@ contextBridge.exposeInMainWorld('animedesk', {
     posters: invoke(INVOKE.schedulePosters),
     onChanged: on(EVENTS.scheduleChanged),
   },
+  discover: {
+    list: invoke(INVOKE.discoverList),
+    posters: invoke(INVOKE.discoverPosters),
+    onChanged: on(EVENTS.discoverChanged),
+  },
   onNotificationsChanged: on(EVENTS.notificationsChanged),
   onOpenAnime: on(EVENTS.openAnime),
   onOpenPage: on(EVENTS.openPage),
