@@ -26,6 +26,20 @@ describe('styles.css', () => {
     const rule = /(^|\n)\.content \{([^}]*)\}/.exec(css)?.[2] ?? ''
     expect(rule).toContain('scrollbar-gutter: stable')
   })
+  it('external bar background is fully opaque', () => {
+    const root = css.slice(0, rootEnd)
+    const tok = /--panel-opaque:\s*([^;]+);/.exec(root)?.[1] ?? ''
+    expect(tok).not.toBe('')
+    const alpha = /rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\s*\)/.exec(tok)?.[1]
+    if (alpha !== undefined) expect(Number(alpha)).toBe(1)
+    const rule = /(^|\n)\.external-bar \{([^}]*)\}/.exec(css)?.[2] ?? ''
+    expect(rule).toContain('background: var(--panel-opaque)')
+  })
+  it('genre select has a fixed width', () => {
+    const rule = /(^|\n)\.watchlist-genre \{([^}]*)\}/.exec(css)?.[2] ?? ''
+    expect(rule).toMatch(/(^|[\s;])width: \d+px/)
+    expect(rule).toMatch(/flex: 0 0 \d+px/)
+  })
   it('uses no raw hex colors outside :root', () => {
     expect(css.slice(rootEnd).match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull()
   })
