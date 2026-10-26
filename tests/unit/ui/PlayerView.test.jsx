@@ -842,4 +842,43 @@ describe('PlayerView subtitles', () => {
     expect(screen.getByRole('button', { name: '150 %' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Isključeno' })).toHaveAttribute('aria-pressed', 'false')
   })
+  describe('focus on show', () => {
+    it('moves focus to the player root without a resume prompt', () => {
+      view(open({ resumeAt: null }))
+      expect(document.activeElement).toBe(document.querySelector('.player'))
+    })
+    it('moves focus to the player root with autoResume', () => {
+      view(open({ resumeAt: 120, autoResume: true }))
+      expect(document.activeElement).toBe(document.querySelector('.player'))
+    })
+    it('keeps the focus on the resume button when the resume prompt shows', () => {
+      view(open({ resumeAt: 120 }))
+      const btn = screen.getByRole('button', { name: /Nastavi od/ })
+      expect(document.activeElement).toBe(btn)
+    })
+    it('keeps the focus inside an already open modal dialog', () => {
+      const dlg = document.createElement('div')
+      dlg.setAttribute('aria-modal', 'true')
+      const btn = document.createElement('button')
+      dlg.appendChild(btn)
+      document.body.appendChild(dlg)
+      btn.focus()
+      try {
+        view(open({ resumeAt: null }))
+        expect(document.activeElement).toBe(btn)
+      } finally { dlg.remove() }
+    })
+    it('focusing the root wakes the idle controls', () => {
+      vi.useFakeTimers()
+      try {
+        const { meta } = view()
+        meta()
+        act(() => { vi.advanceTimersByTime(8000) })
+        const root = document.querySelector('.player')
+        expect(root).toHaveClass('player--idle')
+        act(() => { root.blur(); root.focus() })
+        expect(root).not.toHaveClass('player--idle')
+      } finally { vi.useRealTimers() }
+    })
+  })
 })

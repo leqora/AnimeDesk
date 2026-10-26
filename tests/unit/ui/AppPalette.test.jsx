@@ -37,7 +37,27 @@ describe('App command palette', () => {
     await screen.findByRole('dialog', { name: 'Brza pretraga' })
     act(() => openPlayer({ playbackId: 'p1', title: 'Show', episode: '3', kind: 'hls', src: 'http://127.0.0.1:9/s/t/p1/playlist', subtitleUrl: null, resumeAt: null, totalEpisodes: 12 }))
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Brza pretraga' })).not.toBeInTheDocument())
-    expect(document.activeElement).not.toBe(document.querySelector('main.content'))
+    // first playback: the lazy PlayerView resolves through Suspense
+    await waitFor(() => expect(document.querySelector('.player')).not.toBeNull())
+    await waitFor(() => expect(document.activeElement).toBe(document.querySelector('.player')))
+  })
+  it('moves focus into the player on a second playback (component already loaded)', async () => {
+    let openPlayer, closePlayer
+    await boot({ player: {
+      onOpen: vi.fn((cb) => { openPlayer = cb; return () => {} }),
+      onClose: vi.fn((cb) => { closePlayer = cb; return () => {} }),
+    } })
+    const p = (id) => ({ playbackId: id, title: 'Show', episode: '3', kind: 'hls', src: `http://127.0.0.1:9/s/t/${id}/playlist`, subtitleUrl: null, resumeAt: null, totalEpisodes: 12 })
+    act(() => openPlayer(p('p1')))
+    await waitFor(() => expect(document.activeElement).toBe(document.querySelector('.player')))
+    act(() => closePlayer())
+    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)) })
+    ctrlK()
+    await screen.findByRole('dialog', { name: 'Brza pretraga' })
+    act(() => openPlayer(p('p2')))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Brza pretraga' })).not.toBeInTheDocument())
+    expect(document.activeElement).toBe(document.querySelector('.player'))
   })
   it('running a series action focuses main', async () => {
     await boot({ library: { list: vi.fn(async () => [{ id: 'a1', title: 'Pokémon', aniCliTitle: 'Pokémon', status: 'watching', lastWatchedAt: '2026-01-02T10:00:00.000Z' }]) } })

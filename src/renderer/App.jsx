@@ -314,6 +314,7 @@ export default function App({ api, sound: injectedSound }) {
       lastRate.current = { title: p.title, episode: p.episode, rate }
       setPlayerRate(rate)
       setReconnecting(null)
+      setPaletteOpen(false) // unmount the palette Modal in the same commit, before the player takes focus
       setPlayer(p)
     }
     const offs = [

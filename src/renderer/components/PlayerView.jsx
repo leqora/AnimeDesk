@@ -31,7 +31,8 @@ const headStatus = (url) => fetch(url, { method: 'HEAD' }).then((r) => r.status)
 export function PlayerView({ open, settings, fullscreen, onSettings, onClose, initialRate = 1, onRate, HlsImpl = Hls, probeSub = headStatus }) {
   const api = useApi()
   const t = useT()
-  const video = useRef(null)
+  const root = useRef(null)
+const video = useRef(null)
   const trackEl = useRef(null)
   const maxPercent = useRef(0)
   const closed = useRef(false)
@@ -113,6 +114,12 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
       .then((r) => { if (!r?.ok) setFailed('final') }, () => setFailed('final'))
   }
   useEffect(() => () => clearTimeout(clickTimer.current), [])
+// Take focus on show, unless it is already inside the player (ResumePrompt autoFocus) or in a modal dialog.
+useEffect(() => {
+  const a = document.activeElement
+  if (root.current?.contains(a) || a?.closest?.('[aria-modal="true"]')) return
+  root.current?.focus()
+}, [])
   useHlsSource({ video, open, HlsImpl, onFatal: fail })
   useEffect(() => {
     const id = setInterval(() => latest.current.api.player.progress(snapshot()), PROGRESS_MS)
@@ -183,7 +190,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   const startAt = (sec) => { video.current.currentTime = sec; setResume(null); play() }
 
   return (
-    <div className={`player${idle ? ' player--idle' : ''}`} onMouseMove={poke}>
+    <div ref={root} tabIndex={-1} className={`player${idle ? ' player--idle' : ''}`} onMouseMove={poke} onFocus={poke}>
       <video
         ref={video} className="player__video" crossOrigin="anonymous"
         onLoadedMetadata={onLoadedMetadata} onTimeUpdate={onTimeUpdate} onProgress={readBuffered}
