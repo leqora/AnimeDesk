@@ -61,8 +61,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 button { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 7px 14px; cursor: pointer; transition: transform 150ms var(--ease), opacity 150ms var(--ease); }
 button:hover:not(:disabled) { background: var(--glass-strong); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
 .schedule-state button[aria-disabled="true"] { cursor: not-allowed; }
-.schedule-state button[aria-disabled="true"]:hover { background: var(--glass); border-color: var(--glass-border); }
+.schedule-state button[aria-disabled="true"]:hover, .external-bar button[aria-disabled="true"]:hover { background: var(--glass); border-color: var(--glass-border); }
 button:active:not(:disabled) { transform: translateY(1px); }
+.external-bar button[aria-disabled="true"]:active { transform: none; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 button:disabled, .external-bar button[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
 button.primary { background: var(--cta); border-color: var(--cta); color: var(--on-accent); font-weight: 600; }
@@ -80,7 +81,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 /* shell */
 .app-shell { display: grid; grid-template-columns: 232px 1fr; height: 100vh; overflow: hidden; }
 .content { overflow-y: auto; scrollbar-gutter: stable; padding: 24px 28px 40px; }
-.content { scroll-padding-top: 64px; } /* keep focused items clear of the sticky .external-bar */
+.content:has(> .external-bar) { scroll-padding-top: 88px; } /* keep focused items clear of the sticky .external-bar (one line + margin) */
 .content:focus { outline: none; } /* programmatic focus target only */
 .schedule-page h2:focus { outline: none; } /* programmatic focus target only */
 .page-enter { animation: page-in 200ms var(--ease); }

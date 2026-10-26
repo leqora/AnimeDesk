@@ -37,7 +37,7 @@ export function ExternalPlayerBar({ onGone }) {
     <div className="external-bar" role="region" aria-label={t('externalPlayer.label')} ref={ref}>
       <Icon name="play" />
       <span className="external-bar__text" aria-live="polite">{text}</span>
-      <button type="button" aria-disabled={stopping} onClick={() => { if (stopping) return; setStoppingId(current.id); Promise.resolve(api.externalPlayer.stop(current.id)).catch(() => setStoppingId(null)) }}>
+      <button type="button" aria-disabled={stopping || undefined} onClick={() => { if (stopping) return; setStoppingId(current.id); Promise.resolve(api.externalPlayer.stop(current.id)).catch(() => setStoppingId(null)) }}>
         {stopping ? t('externalPlayer.stopping') : t('externalPlayer.stop')}
       </button>
     </div>

@@ -70,6 +70,9 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
         console.warn('watch: recording at the threshold failed, retrying on close', err?.message)
       }
     }
+    const safeNotify = () => {
+      try { notify(EVENTS.externalPlayer, externalState()) } catch (err) { console.warn('watch: externalPlayer notify failed', err?.message) }
+    }
     const mpv = async (args, extra = {}) => {
       let id = null
       try {
@@ -84,11 +87,11 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
             extra.onStart?.(h)
             id = crypto.randomUUID()
             externals.set(id, { title: info.title, episode: info.episode ?? null, quit: h.quit })
-            notify(EVENTS.externalPlayer, externalState())
+            safeNotify()
           },
         })
       } finally {
-        if (id != null && externals.delete(id)) notify(EVENTS.externalPlayer, externalState())
+        if (id != null && externals.delete(id)) safeNotify()
       }
     }
     const mpvResumed = () => {

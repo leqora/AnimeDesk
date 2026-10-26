@@ -64,7 +64,7 @@ describe('ExternalPlayerBar', () => {
     fireEvent.click(busy)
     expect(api.externalPlayer.stop).toHaveBeenCalledTimes(1)
     push({ id: 'b', title: 'Frieren', episode: '2' })
-    expect(screen.getByRole('button', { name: 'Zaustavi' })).toHaveAttribute('aria-disabled', 'false')
+    expect(screen.getByRole('button', { name: 'Zaustavi' })).not.toHaveAttribute('aria-disabled')
   })
   it('calls onGone when it vanishes while focus is inside', async () => {
     const onGone = vi.fn()

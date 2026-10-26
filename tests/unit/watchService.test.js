@@ -622,6 +622,23 @@ describe('external player state', () => {
     expect(library.recordWatched).toHaveBeenCalledTimes(1)
     expect(positions.save).toHaveBeenCalledWith('A', '1', { position: 120, duration: 1400 })
   })
+  it('a throwing notify does not mask the play result or leave state behind', async () => {
+    const runs = []
+    const player = { play: (a, o) => new Promise((res) => { o.onStart({ quit() {} }); runs.push(() => res({ exitCode: 0, maxPercent: 0 })) }), stop: vi.fn() }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const svc = createWatchService({
+      aniCli: { startSession: vi.fn() }, player, library: { recordWatched: vi.fn() },
+      settings: { get: () => ({ ...DEFAULT_SETTINGS, playerMode: 'external' }) },
+      notify: (ch) => { if (ch === EVENTS.externalPlayer) throw new Error('notify-boom') },
+    })
+    const done = svc.playLocal(local('1'))
+    expect(svc.externalState()).not.toBeNull()
+    runs[0]()
+    await expect(done).resolves.toBeDefined()
+    expect(svc.externalState()).toBeNull()
+    expect(warn).toHaveBeenCalledWith('watch: externalPlayer notify failed', 'notify-boom')
+    warn.mockRestore()
+  })
   it('leaves no state when mpv cannot start', async () => {
     const { svc, runs, ep } = ext()
     const done = svc.playLocal(local('1'))

@@ -111,7 +111,6 @@ export function createPlayer({ getMpvPath, spawnImpl = spawn, connect = net.conn
           })
         }
         setTimeout(tryConnect, retryMs)
-        onStart?.({ quit })
 
         child.on('error', reject)
         child.on('exit', (code) => {
@@ -122,6 +121,7 @@ export function createPlayer({ getMpvPath, spawnImpl = spawn, connect = net.conn
           socket?.destroy()
           resolve({ exitCode: code ?? 0, maxPercent: tracker.max, position, duration })
         })
+        try { onStart?.({ quit }) } catch (err) { console.warn('player: onStart failed', err?.message) }
       })
     },
   }
