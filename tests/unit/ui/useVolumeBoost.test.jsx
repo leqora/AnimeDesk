@@ -146,6 +146,13 @@ describe('useVolumeBoost', () => {
     el.dispatchEvent(new Event('play'))
     expect(c.resume).toHaveBeenCalledTimes(1)
   })
+  it('keydown and pointerdown do not resume a running context', () => {
+    const { ctx } = setup(2)
+    ctx().state = 'running'
+    fireEvent.keyDown(window, { key: 'a' })
+    fireEvent.pointerDown(window)
+    expect(ctx().resume).not.toHaveBeenCalled()
+  })
   it('does not leak unhandled rejections from resume or suspend', async () => {
     const { els, unmount, ctx } = setup(2)
     ctx().resume = vi.fn(() => Promise.reject(new Error('x')))
