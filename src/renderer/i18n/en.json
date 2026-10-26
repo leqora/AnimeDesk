@@ -512,5 +512,10 @@
   "boost.flashOff": "Boost off",
   "boost.shortcutHint": "Shift + ↑ / ↓",
   "settings.volumeBoost": "Volume boost",
-  "settings.volumeBoostHint": "For quiet episodes. In external mpv it applies from the next launch."
+  "settings.volumeBoostHint": "For quiet episodes. In external mpv it applies from the next launch.",
+  "externalPlayer.label": "External player",
+  "externalPlayer.playing": "Playing in mpv: {title} · EP {episode}",
+  "externalPlayer.playingNoEpisode": "Playing in mpv: {title}",
+  "externalPlayer.stop": "Stop",
+  "externalPlayer.stopping": "Stopping…"
 }
