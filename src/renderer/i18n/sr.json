@@ -384,6 +384,9 @@
   "card.remaining": "EP {episode} · ostalo {min} min",
   "card.next": "Sledeća: EP {episode}",
   "card.completed": "✓ Završeno",
+  "card.episodes_one": "{n} epizoda",
+  "card.episodes_few": "{n} epizode",
+  "card.episodes_other": "{n} epizoda",
   "airing.new_one": "{count} nova",
   "airing.new_few": "{count} nove",
   "airing.new_other": "{count} novih",
@@ -507,6 +510,7 @@
   "boost.off": "Isključeno",
   "boost.flash": "Pojačanje: {value}",
   "boost.flashOff": "Pojačanje isključeno",
+  "boost.shortcutHint": "Shift + ↑ / ↓",
   "settings.volumeBoost": "Pojačanje zvuka",
   "settings.volumeBoostHint": "Za tihe epizode. U spoljnom mpv-u važi od sledećeg pokretanja."
 }
