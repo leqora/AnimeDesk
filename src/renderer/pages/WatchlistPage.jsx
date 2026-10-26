@@ -114,7 +114,7 @@ export function WatchlistPage({ ready, onContinue, animeId = null, onOpen, onBac
           onKeyDown={onSearchKey}
         />
         {genres.length > 0 && (
-          <select aria-label={t('watchlist.genre')} value={genre} onChange={(e) => setGenre(e.target.value)}>
+          <select className="watchlist-genre" aria-label={t('watchlist.genre')} value={genre} onChange={(e) => setGenre(e.target.value)}>
             <option value="all">{t('watchlist.allGenres')}</option>
             {genres.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>

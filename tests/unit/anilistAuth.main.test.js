@@ -14,14 +14,36 @@ function jwt(expMs) {
 }
 
 // Reversible fake: prefix + reversed bytes, so the plaintext never appears verbatim.
+// Async like Electron's safeStorage async API: decrypt resolves { result, shouldReEncrypt } and rejects on a bad blob.
 const fakeCrypt = (available = true) => ({
-  isAvailable: () => available,
-  encrypt: (s) => Buffer.concat([Buffer.from('ENC:'), Buffer.from(s, 'utf8').reverse()]),
-  decrypt: (b) => {
+  isAvailable: async () => available,
+  encrypt: async (s) => Buffer.concat([Buffer.from('ENC:'), Buffer.from(s, 'utf8').reverse()]),
+  decrypt: async (b) => {
     if (b.subarray(0, 4).toString() !== 'ENC:') throw new Error('bad blob')
-    return Buffer.from(b.subarray(4)).reverse().toString('utf8')
+    return { result: Buffer.from(b.subarray(4)).reverse().toString('utf8'), shouldReEncrypt: false }
   },
 })
+
+function deferred() {
+  let resolve
+  const promise = new Promise((res) => { resolve = res })
+  return { promise, resolve }
+}
+
+// Wraps one crypt method so a test can hold every call back until it releases it.
+function gate(crypt, which) {
+  const real = crypt[which]
+  const gates = []
+  crypt[which] = vi.fn(async (...args) => {
+    const d = deferred()
+    gates.push(d)
+    await d.promise
+    return real(...args)
+  })
+  return { gates, release: (i = 0) => gates[i].resolve() }
+}
+
+const tick = () => new Promise((r) => setTimeout(r, 0))
 
 describe('anilistAuth main', () => {
   let dir, file, clock, anilist, crypt
@@ -37,8 +59,9 @@ describe('anilistAuth main', () => {
   })
   afterEach(() => fs.rmSync(dir, { recursive: true, force: true }))
 
-  it('starts as none', () => {
+  it('starts as none', async () => {
     const a = make()
+    await a.ready
     expect(a.status()).toEqual({ connected: false, name: null, expiresAt: null, state: 'none' })
     expect(a.token()).toBeNull()
   })
@@ -60,6 +83,7 @@ describe('anilistAuth main', () => {
     const token = jwt(NOW + 30 * DAY)
     await make().connect(token)
     const b = make()
+    await b.ready
     expect(b.status()).toEqual({ connected: true, name: 'leqora', expiresAt: NOW + 30 * DAY, state: 'ok' })
     expect(b.token()).toBe(token)
   })
@@ -123,6 +147,7 @@ describe('anilistAuth main', () => {
     await make().connect(jwt(NOW + 1 * DAY))
     clock = NOW + 2 * DAY
     const b = make()
+    await b.ready
     expect(b.status()).toMatchObject({ connected: true, name: 'leqora', state: 'expired' })
     expect(b.token()).toBeNull()
   })
@@ -154,7 +179,9 @@ describe('anilistAuth main', () => {
     expect(fn).not.toHaveBeenCalled()
     expect(a.status().state).toBe('ok')
     expect(a.token()).toBe(fresh)
-    expect(make().status().state).toBe('ok')
+    const reloaded = make()
+    await reloaded.ready
+    expect(reloaded.status().state).toBe('ok')
     a.markExpired(fresh)
     expect(a.status().state).toBe('expired')
   })
@@ -175,7 +202,9 @@ describe('anilistAuth main', () => {
     anilist.viewer = vi.fn(async () => { throw new AniListAuthError('no') })
     expect(await a.connect('bad')).toEqual({ ok: false, error: 'rejected' })
     expect(a.token()).toBe(old)
-    expect(make().token()).toBe(old)
+    const b = make()
+    await b.ready
+    expect(b.token()).toBe(old)
   })
 
   it('connect while connected replaces the account', async () => {
@@ -185,7 +214,9 @@ describe('anilistAuth main', () => {
     const t2 = jwt(NOW + 50 * DAY)
     await a.connect(t2)
     expect(a.status().name).toBe('other')
-    expect(make().token()).toBe(t2)
+    const b = make()
+    await b.ready
+    expect(b.token()).toBe(t2)
   })
 
   it('disconnect removes the file', async () => {
@@ -198,22 +229,27 @@ describe('anilistAuth main', () => {
     a.disconnect() // idempotent
   })
 
-  it('corrupt file means not connected and is left in place', () => {
+  it('corrupt file means not connected and is left in place', async () => {
     fs.writeFileSync(file, Buffer.from('garbage'))
     const a = make()
+    await a.ready
     expect(a.status().connected).toBe(false)
     expect(fs.readFileSync(file).toString()).toBe('garbage')
   })
 
-  it('a decryptable payload of the wrong shape means not connected', () => {
-    fs.writeFileSync(file, crypt.encrypt(JSON.stringify({ nope: 1 })))
-    expect(make().status().connected).toBe(false)
+  it('a decryptable payload of the wrong shape means not connected', async () => {
+    fs.writeFileSync(file, await crypt.encrypt(JSON.stringify({ nope: 1 })))
+    const a = make()
+    await a.ready
+    expect(a.status().connected).toBe(false)
   })
 
   it('file is not read when encryption is unavailable', async () => {
     await make().connect(jwt(NOW + 30 * DAY))
     crypt = fakeCrypt(false)
-    expect(make().status().connected).toBe(false)
+    const b = make()
+    await b.ready
+    expect(b.status().connected).toBe(false)
   })
 
   it('onChange fires on connect, markExpired, disconnect and can unsubscribe', async () => {
@@ -238,13 +274,16 @@ describe('anilistAuth main', () => {
     const tok = jwt(NOW + 30 * DAY)
     await a.connect(tok)
     a.markExpired(tok)
+    await tick() // the expired marker is written asynchronously
     const b = make()
+    await b.ready
     expect(b.status()).toMatchObject({ connected: true, state: 'expired' })
     expect(b.token()).toBeNull()
     const fresh = jwt(NOW + 40 * DAY)
     expect((await b.connect(fresh)).ok).toBe(true)
     expect(b.status().state).toBe('ok')
     const c = make()
+    await c.ready
     expect(c.status().state).toBe('ok')
     expect(c.token()).toBe(fresh)
   })
@@ -281,11 +320,13 @@ describe('anilistAuth main', () => {
     const old = jwt(NOW + 30 * DAY)
     const a = make()
     await a.connect(old)
-    crypt.encrypt = () => { throw new Error('dpapi') }
+    crypt.encrypt = async () => { throw new Error('dpapi') }
     expect(await a.connect(jwt(NOW + 50 * DAY))).toEqual({ ok: false, error: 'unavailable' })
     expect(a.token()).toBe(old)
     crypt = fakeCrypt()
-    expect(make().token()).toBe(old)
+    const b = make()
+    await b.ready
+    expect(b.token()).toBe(old)
   })
 
   it('failed rename removes the tmp file holding the new token', async () => {
@@ -302,6 +343,7 @@ describe('anilistAuth main', () => {
     anilist.viewer = vi.fn(() => new Promise((r) => { release = () => r({ id: 7, name: 'leqora' }) }))
     const a = make()
     const p = a.connect(jwt(NOW + 30 * DAY))
+    await vi.waitFor(() => expect(anilist.viewer).toHaveBeenCalled())
     a.disconnect()
     release()
     expect(await p).toEqual({ ok: false, error: 'cancelled' })
@@ -316,12 +358,191 @@ describe('anilistAuth main', () => {
     const t1 = jwt(NOW + 30 * DAY)
     const t2 = jwt(NOW + 40 * DAY)
     const p1 = a.connect(t1)
+    await vi.waitFor(() => expect(releases.length).toBe(1))
     const p2 = a.connect(t2)
+    await vi.waitFor(() => expect(releases.length).toBe(2))
     releases[0]({ id: 1, name: 'one' })
     releases[1]({ id: 2, name: 'two' })
     expect(await p1).toEqual({ ok: false, error: 'cancelled' })
     expect((await p2).ok).toBe(true)
     expect(a.token()).toBe(t2)
+  })
+
+  describe('async storage', () => {
+    const writeAccount = async (token) => {
+      const a = make()
+      await a.connect(token)
+      a.dispose()
+    }
+
+    it('ready resolves and loads the account written earlier', async () => {
+      const token = jwt(NOW + 30 * DAY)
+      await writeAccount(token)
+      const b = make()
+      await b.ready
+      expect(b.status().connected).toBe(true)
+      expect(b.token()).toBe(token)
+    })
+
+    it('before ready the store reports none', async () => {
+      const token = jwt(NOW + 30 * DAY)
+      await writeAccount(token)
+      const g = gate(crypt, 'decrypt')
+      const b = make()
+      await tick()
+      expect(b.status().state).toBe('none')
+      expect(b.token()).toBeNull()
+      g.release()
+      await b.ready
+      expect(b.status().connected).toBe(true)
+      expect(b.token()).toBe(token)
+    })
+
+    it('undecryptable file: ready resolves, status none, file kept', async () => {
+      fs.writeFileSync(file, Buffer.from('garbage'))
+      const a = make()
+      await a.ready
+      expect(a.status().state).toBe('none')
+      expect(fs.existsSync(file)).toBe(true)
+    })
+
+    it('async isAvailable false: load leaves none and connect returns unavailable without writing', async () => {
+      await writeAccount(jwt(NOW + 30 * DAY))
+      const before = fs.readFileSync(file)
+      anilist.viewer.mockClear()
+      crypt = fakeCrypt(false)
+      const a = make()
+      await a.ready
+      expect(a.status().state).toBe('none')
+      expect(await a.connect('tok')).toEqual({ ok: false, error: 'unavailable' })
+      expect(anilist.viewer).not.toHaveBeenCalled()
+      expect(fs.readFileSync(file).equals(before)).toBe(true)
+    })
+
+    it('a throwing isAvailable counts as unavailable', async () => {
+      crypt.isAvailable = async () => { throw new Error('boom') }
+      const a = make()
+      await a.ready
+      expect(await a.connect('tok')).toEqual({ ok: false, error: 'unavailable' })
+    })
+
+    it('shouldReEncrypt true rewrites the file with fresh ciphertext', async () => {
+      const token = jwt(NOW + 30 * DAY)
+      await writeAccount(token)
+      const plain = (await crypt.decrypt(fs.readFileSync(file))).result
+      const realDecrypt = crypt.decrypt
+      crypt.decrypt = vi.fn(async (b) => ({ ...(await realDecrypt(b)), shouldReEncrypt: true }))
+      const realEncrypt = crypt.encrypt
+      crypt.encrypt = vi.fn(async (s) => Buffer.concat([await realEncrypt(s), Buffer.from('v2')]))
+      const b = make()
+      await b.ready
+      expect(b.token()).toBe(token)
+      await vi.waitFor(() => expect(fs.readFileSync(file).subarray(-2).toString()).toBe('v2'))
+      expect(crypt.encrypt).toHaveBeenCalledWith(plain)
+      expect(fs.existsSync(`${file}.tmp`)).toBe(false)
+      expect(b.status().connected).toBe(true)
+    })
+
+    it('failed re-encrypt keeps the account loaded', async () => {
+      const token = jwt(NOW + 30 * DAY)
+      await writeAccount(token)
+      const original = fs.readFileSync(file)
+      const realDecrypt = crypt.decrypt
+      crypt.decrypt = async (b) => ({ ...(await realDecrypt(b)), shouldReEncrypt: true })
+      const encrypt = vi.fn(async () => { throw new Error('dpapi') })
+      crypt.encrypt = encrypt
+      const b = make()
+      await b.ready
+      await vi.waitFor(() => expect(encrypt).toHaveBeenCalled())
+      await tick()
+      expect(b.status().connected).toBe(true)
+      expect(b.token()).toBe(token)
+      expect(fs.readFileSync(file).equals(original)).toBe(true)
+    })
+
+    it('disconnect during connect encryption leaves no file', async () => {
+      const g = gate(crypt, 'encrypt')
+      const a = make()
+      const p = a.connect(jwt(NOW + 30 * DAY))
+      await vi.waitFor(() => expect(g.gates.length).toBe(1))
+      expect(a.disconnect()).toEqual({ ok: true })
+      g.release()
+      expect(await p).toEqual({ ok: false, error: 'cancelled' })
+      expect(fs.existsSync(file)).toBe(false)
+      expect(fs.existsSync(`${file}.tmp`)).toBe(false)
+      expect(a.status().state).toBe('none')
+    })
+
+    it('markExpired with slow encryption then a new connect: disk holds the new account', async () => {
+      const tokenA = jwt(NOW + 30 * DAY)
+      const tokenB = jwt(NOW + 40 * DAY)
+      const a = make()
+      await a.connect(tokenA)
+      const g = gate(crypt, 'encrypt')
+      a.markExpired(tokenA)
+      expect(a.status().state).toBe('expired')
+      anilist.viewer = vi.fn(async () => ({ id: 9, name: 'second' }))
+      const p = a.connect(tokenB)
+      await vi.waitFor(() => expect(g.gates.length).toBe(1))
+      g.release(0) // the slow expired-marker write finishes; connect's own encrypt is queued behind it
+      await vi.waitFor(() => expect(g.gates.length).toBe(2))
+      g.release(1)
+      expect((await p).ok).toBe(true)
+      const fresh = make()
+      await fresh.ready
+      expect(fresh.status()).toMatchObject({ connected: true, name: 'second', state: 'ok' })
+      expect(fresh.token()).toBe(tokenB)
+    })
+
+    it('writes land in request order', async () => {
+      const tokenA = jwt(NOW + 30 * DAY)
+      const a = make()
+      await a.connect(tokenA)
+      const real = crypt.encrypt
+      const slow = deferred()
+      let n = 0
+      crypt.encrypt = vi.fn(async (s) => {
+        if (n++ === 0) await slow.promise // the first (markExpired) write is the slower one
+        return real(s)
+      })
+      a.markExpired(tokenA)
+      const tokenB = jwt(NOW + 40 * DAY)
+      const p = a.connect(tokenB)
+      await tick()
+      slow.resolve()
+      expect((await p).ok).toBe(true)
+      const b = make()
+      await b.ready
+      expect(b.token()).toBe(tokenB)
+    })
+
+    it('markExpired then disconnect: the pending write does not recreate the file', async () => {
+      const tokenA = jwt(NOW + 30 * DAY)
+      const a = make()
+      await a.connect(tokenA)
+      const g = gate(crypt, 'encrypt')
+      a.markExpired(tokenA)
+      await vi.waitFor(() => expect(g.gates.length).toBe(1))
+      expect(a.disconnect()).toEqual({ ok: true })
+      g.release()
+      await tick()
+      await tick()
+      expect(fs.existsSync(file)).toBe(false)
+      expect(fs.existsSync(`${file}.tmp`)).toBe(false)
+      expect(a.status().state).toBe('none')
+    })
+
+    it('a disconnect before ready wins over the late load', async () => {
+      await writeAccount(jwt(NOW + 30 * DAY))
+      const g = gate(crypt, 'decrypt')
+      const b = make()
+      await tick()
+      expect(b.disconnect()).toEqual({ ok: true })
+      g.release()
+      await b.ready
+      expect(b.status().state).toBe('none')
+      expect(fs.existsSync(file)).toBe(false)
+    })
   })
 
   describe('expiry timer', () => {
@@ -378,11 +599,13 @@ describe('anilistAuth main', () => {
       a.dispose()
       timers.clear()
       const b = makeT()
+      await b.ready
       expect(timers.size).toBe(1)
       b.dispose()
       await b.disconnect()
       anilist.viewer = vi.fn(async () => ({ id: 7, name: 'leqora' }))
       const c = makeT()
+      await c.ready
       await c.connect('opaque-token-no-exp')
       expect(timers.size).toBe(0)
     })

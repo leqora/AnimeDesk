@@ -14,6 +14,8 @@ Rizici koji se posebno prate tokom razvoja. Svaki ima test koji ga „zakucava�
 
 - **npm 11.19+ ne pokreće install-skripte paketa bez `allowScripts`** (nađeno 2026-10-26 pri Electron 44.9.2 → 44.9.3): `npm install` tada ne preuzme Electron binar (`node_modules/electron/dist` i `path.txt` ne postoje → `npm run dev`/e2e ne rade). Posle svakog `npm install electron@…`: `node node_modules/electron/install.js` (zvanična skripta paketa, preuzima sa GitHub-a i proverava prema `checksums.json`), pa proveriti `node_modules/electron/dist/version`. `npm install-scripts ls` pokazuje šta je još preskočeno (esbuild, electron-winstaller — do sada bez posledica: build i e2e prolaze).
 
+- **Electron 46 uklanja sinhroni `safeStorage`** (`isEncryptionAvailable`/`encryptString`/`decryptString`): rešeno u 0.16.3 prelaskom na Electron 45 i `isAsyncEncryptionAvailable`/`encryptStringAsync`/`decryptStringAsync` u `anilistAuth.js` (učitavanje preko `ready`, upisi u jednom redu, `shouldReEncrypt` osvežava fajl). Format fajla je isti u oba smera (izmereno na pravim binarima: 45 čita blobove iz 44 i obrnuto), pa nadogradnja i povratak na 44 ne gube nalog. Test `noSyncSafeStorage.test.js` brani povratak na sinhroni API.
+
 | Rizik | Ublažavanje |
 |---|---|
 | Sajt koji ani-cli koristi prestane da radi | HealthCheck + automatski update ani-cli; semafor 🔴 „čeka se popravka od ani-cli tima” |
