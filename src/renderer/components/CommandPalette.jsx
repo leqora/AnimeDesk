@@ -109,7 +109,6 @@ export function CommandPalette({ fullscreen, onRun, onClose }) {
                 aria-selected={idx === safeActive}
                 className={`palette__row${idx === safeActive ? ' palette__row--active' : ''}${r.status ? ' palette__row--series' : ''}`}
                 onMouseMove={() => { if (idx !== safeActive) setActive(idx) }}
-                onMouseEnter={() => setActive(idx)}
                 onClick={() => onRun(r.action)}
               >
                 <span className="palette__label">{r.label}</span>
@@ -117,7 +116,7 @@ export function CommandPalette({ fullscreen, onRun, onClose }) {
               </div>
             )
           })
-          if (!g.title) return <div key={g.id} role="group" className="palette__group">{body}</div>
+          if (!g.title) return <div key={g.id} className="palette__group">{body}</div>
           const hid = `${uid}-g-${g.id}`
           return (
             <div key={g.id} role="group" aria-labelledby={hid} className="palette__group">

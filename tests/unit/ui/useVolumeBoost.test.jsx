@@ -15,6 +15,7 @@ function makeFakeContext() {
       this.gains = []
       this.limiters = []
       this.resume = vi.fn(() => { this.state = 'running'; return Promise.resolve() })
+      this.suspend = vi.fn(() => { this.state = 'suspended'; return Promise.resolve() })
       instances.push(this)
     }
     createMediaElementSource(el) { const n = makeNode('source'); n.el = el; this.sources.push(n); return n }
@@ -120,6 +121,26 @@ describe('useVolumeBoost', () => {
     fireEvent.pointerDown(window)
     expect(ctx().resume).not.toHaveBeenCalled()
   })
+  it('suspends the context on unmount and a new mount resumes it on play', () => {
+    const { unmount, ctx } = setup(2)
+    unmount()
+    expect(ctx().suspend).toHaveBeenCalledTimes(1)
+    const el = document.createElement('video')
+    const { FakeContext } = makeFakeContext()
+    renderHook(() => useVolumeBoost({ current: el }, 2, { AudioContextImpl: FakeContext }))
+    el.dispatchEvent(new Event('play'))
+    expect(ctx().resume).toHaveBeenCalledTimes(1)
+  })
+  it('does not leak unhandled rejections from resume or suspend', async () => {
+    const { els, unmount, ctx } = setup(2)
+    ctx().resume = vi.fn(() => Promise.reject(new Error('x')))
+    ctx().suspend = vi.fn(() => Promise.reject(new Error('y')))
+    els[0].dispatchEvent(new Event('play'))
+    unmount()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(ctx().resume).toHaveBeenCalled()
+    expect(ctx().suspend).toHaveBeenCalled()
+  })
   it('does nothing and warns once when the context cannot be created', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const Boom = class { constructor() { throw new Error('nope') } }
@@ -129,11 +150,15 @@ describe('useVolumeBoost', () => {
     expect(warn).toHaveBeenCalledTimes(1)
   })
   it('does nothing when createMediaElementSource throws', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const { FakeContext } = makeFakeContext()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { FakeContext, instances } = makeFakeContext()
     FakeContext.prototype.createMediaElementSource = () => { throw new Error('InvalidStateError') }
     const el = document.createElement('video')
     expect(() => renderHook(() => useVolumeBoost({ current: el }, 2, { AudioContextImpl: FakeContext }))).not.toThrow()
+    expect(warn).toHaveBeenCalledTimes(1)
+    const c = instances[0]
+    expect(c.gains.concat(c.limiters).every((n) => n.targets.length === 0)).toBe(true)
+    expect(c.destination.targets).toEqual([])
   })
   it('does nothing without an AudioContext implementation', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})

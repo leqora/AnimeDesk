@@ -33,7 +33,7 @@ function getGraph(el, Impl) {
   const c = getContext(Impl)
   if (!c) return null
   try {
-    const source = c.createMediaElementSource(el)
+    // create the nodes first: a failure below must not leave the element captured by an output-less source
     const gain = c.createGain()
     const limiter = c.createDynamicsCompressor()
     limiter.threshold.value = -1
@@ -41,6 +41,7 @@ function getGraph(el, Impl) {
     limiter.ratio.value = 20
     limiter.attack.value = 0.003
     limiter.release.value = 0.25
+    const source = c.createMediaElementSource(el)
     const graph = { source, gain, limiter }
     graphs.set(el, graph)
     return graph
@@ -69,7 +70,7 @@ export function useVolumeBoost(video, boost, { AudioContextImpl = typeof window 
   useEffect(() => {
     const el = video.current
     if (!el) return undefined
-    const wake = () => { if (ctx && ctx.state === 'suspended') ctx.resume() }
+    const wake = () => { if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {}) }
     el.addEventListener('play', wake)
     window.addEventListener('keydown', wake)
     window.addEventListener('pointerdown', wake)
@@ -77,6 +78,8 @@ export function useVolumeBoost(video, boost, { AudioContextImpl = typeof window 
       el.removeEventListener('play', wake)
       window.removeEventListener('keydown', wake)
       window.removeEventListener('pointerdown', wake)
+      // player closed: do not keep the output stream open for the rest of the session (play/keydown/pointerdown resume it)
+      if (ctx) ctx.suspend().catch(() => {})
     }
   }, [video])
 }

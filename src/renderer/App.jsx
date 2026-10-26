@@ -205,6 +205,9 @@ export default function App({ api, sound: injectedSound }) {
   // Alt+Left/Right and the mouse back/forward buttons walk the history; not while the player or a modal is up.
   const navKeys = useRef({})
   navKeys.current = { back: nav.back, forward: nav.forward, blocked: player != null || reconnecting != null }
+  // the palette must not stay open over the player / reconnecting overlay (no focus move to main here)
+  const overlayOpen = player != null || reconnecting != null
+  useEffect(() => { if (overlayOpen) setPaletteOpen(false) }, [overlayOpen])
   useEffect(() => {
     const blocked = () => navKeys.current.blocked || document.querySelector('[aria-modal="true"]') != null
     const onKey = (e) => {

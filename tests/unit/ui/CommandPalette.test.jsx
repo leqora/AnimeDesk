@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor, within, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CommandPalette } from '../../../src/renderer/components/CommandPalette.jsx'
 import { renderUi, makeFakeApi } from './helpers.jsx'
@@ -61,6 +61,23 @@ describe('CommandPalette', () => {
     expect(opts[1].getAttribute('aria-selected')).toBe('true')
     await user.keyboard('{ArrowUp}{ArrowUp}')
     expect(input.getAttribute('aria-activedescendant')).toBe(opts[opts.length - 1].id)
+  })
+
+  it('mousemove moves the active row but mouseenter (keyboard scroll under a still pointer) does not', async () => {
+    await setup()
+    const input = screen.getByRole('combobox')
+    const opts = screen.getAllByRole('option')
+    fireEvent.mouseEnter(opts[2])
+    expect(input.getAttribute('aria-activedescendant')).toBe(opts[0].id)
+    fireEvent.mouseMove(opts[2])
+    expect(input.getAttribute('aria-activedescendant')).toBe(opts[2].id)
+  })
+
+  it('the search row wrapper is not an unlabeled group', async () => {
+    const { user } = await setup()
+    await user.type(screen.getByRole('combobox'), 'poke')
+    const row = screen.getByRole('option', { name: /u pretrazi/ })
+    expect(row.parentElement.getAttribute('role')).toBeNull()
   })
 
   it('Enter on a series runs anime', async () => {

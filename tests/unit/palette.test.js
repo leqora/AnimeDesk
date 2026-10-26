@@ -36,8 +36,8 @@ describe('rankSeries', () => {
   it('breaks ties by lastWatchedAt, length, alphabet', () => {
     const e = [
       { id: '1', title: 'Naruto B', aniCliTitle: 'x' },
-      { id: '2', title: 'Naruto A', aniCliTitle: 'x', lastWatchedAt: 10 },
-      { id: '3', title: 'Naruto C', aniCliTitle: 'x', lastWatchedAt: 20 },
+      { id: '2', title: 'Naruto A', aniCliTitle: 'x', lastWatchedAt: '2026-01-10T10:00:00.000Z' },
+      { id: '3', title: 'Naruto C', aniCliTitle: 'x', lastWatchedAt: '2026-01-20T10:00:00.000Z' },
       { id: '4', title: 'Naruto', aniCliTitle: 'x' },
       { id: '5', title: 'Naruto A', aniCliTitle: 'x' }
     ]
@@ -56,8 +56,8 @@ describe('rankSeries', () => {
 
 describe('continueSeries', () => {
   it('keeps watching only, sorted, capped at 5', () => {
-    const e = Array.from({ length: 7 }, (_, i) => ({ id: String(i), title: `T${i}`, status: 'watching', lastWatchedAt: i }))
-    e.push({ id: 'x', title: 'X', status: 'completed', lastWatchedAt: 99 })
+    const e = Array.from({ length: 7 }, (_, i) => ({ id: String(i), title: `T${i}`, status: 'watching', lastWatchedAt: `2026-01-0${i + 1}T10:00:00.000Z` }))
+    e.push({ id: 'x', title: 'X', status: 'completed', lastWatchedAt: '2026-02-01T10:00:00.000Z' })
     const r = continueSeries(e)
     expect(r).toHaveLength(5)
     expect(r[0].id).toBe('6')
@@ -76,6 +76,7 @@ describe('filterByLabel', () => {
 })
 
 describe('real-title corpus', () => {
+  it('has all 15 cases', () => { expect(corpus.cases).toHaveLength(15) })
   const entries = corpus.titles.map((title, i) => ({ id: String(i), title, aniCliTitle: title }))
   for (const c of corpus.cases) {
     it(`query ${JSON.stringify(c.query)}`, () => {

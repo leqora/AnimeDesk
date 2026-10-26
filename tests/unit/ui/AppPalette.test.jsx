@@ -24,8 +24,31 @@ describe('App command palette', () => {
     const ev = ctrlK()
     expect(ev.defaultPrevented).toBe(true)
     expect(await screen.findByRole('dialog', { name: 'Brza pretraga' })).toBeInTheDocument()
-    ctrlK(screen.getByRole('combobox'))
+    const closing = ctrlK(screen.getByRole('combobox'))
+    expect(closing.defaultPrevented).toBe(true)
     expect(screen.queryByRole('dialog', { name: 'Brza pretraga' })).not.toBeInTheDocument()
+  })
+  it('closes when the player opens while the palette is open', async () => {
+    let openPlayer
+    await boot({ player: { onOpen: vi.fn((cb) => { openPlayer = cb; return () => {} }) } })
+    ctrlK()
+    await screen.findByRole('dialog', { name: 'Brza pretraga' })
+    act(() => openPlayer({ playbackId: 'p1', title: 'Show', episode: '3', kind: 'hls', src: 'http://127.0.0.1:9/s/t/p1/playlist', subtitleUrl: null, resumeAt: null, totalEpisodes: 12 }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Brza pretraga' })).not.toBeInTheDocument())
+    expect(document.activeElement).not.toBe(document.querySelector('main.content'))
+  })
+  it('running a series action focuses main', async () => {
+    await boot({ library: { list: vi.fn(async () => [{ id: 'a1', title: 'Pokémon', aniCliTitle: 'Pokémon', status: 'watching', lastWatchedAt: '2026-01-02T10:00:00.000Z' }]) } })
+    ctrlK()
+    fireEvent.click(await screen.findByRole('option', { name: /Pokémon/ }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Brza pretraga' })).not.toBeInTheDocument())
+    await waitFor(() => expect(document.activeElement).toBe(document.querySelector('main.content')))
+  })
+  it('the wizard action opens the setup wizard', async () => {
+    await boot()
+    ctrlK()
+    fireEvent.click(await screen.findByRole('option', { name: 'Komponente i provera' }))
+    expect(await screen.findByRole('heading', { name: 'Podešavanje' })).toBeInTheDocument()
   })
   it('opens while focus is in the Home search input, which keeps its value', async () => {
     await boot()
