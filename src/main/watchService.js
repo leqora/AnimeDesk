@@ -24,6 +24,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
   let lastFailed = null // { params, resume } of the last recovery that never reached the player
   let prefetch = null // the one quiet session for the next episode (running or parked at onPlay)
   let prefetchTimer = null
+  const externals = new Map() // id -> { title, episode, quit } for every running external mpv, in start order
   const sameKey = (a, b) => a != null && b != null && a.forTitle === b.forTitle && a.episode === b.episode && a.quality === b.quality && a.mode === b.mode
   const budgetKey = (info) => `${info.title}|${info.episode}`
 
@@ -39,6 +40,16 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     if (decision === 'ask') notify(EVENTS.ask, { aniCliTitle: title, episode })
     return decision
   }
+
+  // The newest running mpv (Map keeps start order), as a plain object that is safe to send over IPC.
+  function externalState() {
+    let newest = null
+    for (const [id, e] of externals) newest = { id, title: e.title, episode: e.episode }
+    return newest
+  }
+
+  // Only asks mpv to close: the normal end path (position, watched threshold) then runs as on a manual close.
+  function stopExternal(id) { externals.get(id)?.quit() }
 
   // Both players report progress here; positions and the watched threshold are decided once, for either player.
   async function runPlayer(info, isCancelled = () => false, { onInternalProgress = null } = {}) {
@@ -59,14 +70,30 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
         console.warn('watch: recording at the threshold failed, retrying on close', err?.message)
       }
     }
-    const mpv = (args, extra = {}) => player.play(args, {
-      extraArgs: mpvExtraArgs(),
-      autoSkip: s.autoSkip,
-      language: s.language,
-      skips: skipsFor && info.episode != null ? (duration) => skipsFor(info.title, info.episode, duration) : null,
-      onProgress,
-      ...extra,
-    })
+    const safeNotify = () => {
+      try { notify(EVENTS.externalPlayer, externalState()) } catch (err) { console.warn('watch: externalPlayer notify failed', err?.message) }
+    }
+    const mpv = async (args, extra = {}) => {
+      let id = null
+      try {
+        return await player.play(args, {
+          extraArgs: mpvExtraArgs(),
+          autoSkip: s.autoSkip,
+          language: s.language,
+          skips: skipsFor && info.episode != null ? (duration) => skipsFor(info.title, info.episode, duration) : null,
+          onProgress,
+          ...extra,
+          onStart: (h) => {
+            extra.onStart?.(h)
+            id = crypto.randomUUID()
+            externals.set(id, { title: info.title, episode: info.episode ?? null, quit: h.quit })
+            safeNotify()
+          },
+        })
+      } finally {
+        if (id != null && externals.delete(id)) safeNotify()
+      }
+    }
     const mpvResumed = () => {
       const saved = info.episode != null ? positions?.get(info.title, info.episode) ?? null : null
       return saved ? mpv([...info.mpvArgs, `--start=${Math.floor(saved.position)}`], { resumeAt: saved.position }) : mpv(info.mpvArgs)
@@ -328,5 +355,5 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
     for (const entry of sessions.values()) entry.probe?.kill()
   }
 
-  return { watch, answerMenu, cancel, playLocal, afterPlayback, recover, retryAgain, dispose, discardPrefetch }
+  return { watch, answerMenu, cancel, playLocal, afterPlayback, recover, retryAgain, dispose, discardPrefetch, externalState, stopExternal }
 }

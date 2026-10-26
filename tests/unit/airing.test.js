@@ -23,7 +23,7 @@ describe('newEpisodeCount', () => {
   it('counts aired episodes after the highest watched one', () => {
     expect(newEpisodeCount(entry(), info(), T - 1)).toBe(3)
     expect(newEpisodeCount(entry(), info(), T)).toBe(4)
-    expect(newEpisodeCount(entry({ watchedEpisodes: [] }), info(), T - 1)).toBe(12)
+    expect(newEpisodeCount(entry({ watchedEpisodes: [] }), info(), T - 1)).toBe(0)
   })
   it('only counts series the user is watching that are still airing', () => {
     expect(newEpisodeCount(entry({ status: 'planned' }), info(), T - 1)).toBe(0)
@@ -41,6 +41,11 @@ describe('newEpisodeCount', () => {
   it('ignores fractional specials and never goes negative', () => {
     expect(newEpisodeCount(entry({ watchedEpisodes: [1, 2, 2.5] }), info(), T - 1)).toBe(10)
     expect(newEpisodeCount(entry({ watchedEpisodes: [20] }), info(), T - 1)).toBe(0)
+  })
+  it('shows nothing before the first watched episode', () => {
+    expect(newEpisodeCount(entry({ watchedEpisodes: [2.5] }), info(), T - 1)).toBe(0)
+    expect(newEpisodeCount(entry({ watchedEpisodes: [0] }), info(), T - 1)).toBe(0)
+    expect(newEpisodeCount(entry({ watchedEpisodes: undefined }), info(), T - 1)).toBe(0)
   })
 })
 

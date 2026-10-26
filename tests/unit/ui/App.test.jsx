@@ -323,4 +323,22 @@ describe('App', () => {
     await waitFor(() => expect(api.watch.start).toHaveBeenCalledWith({ query: 'Rec Romaji' }))
     expect(document.getElementById('search-input').value).toBe('Rec Romaji')
   })
+  it('shows the external mpv bar first in main.content and refocuses main when it disappears', async () => {
+    let push
+    const upd = { status: 'ready', currentVersion: '0.3.0', version: '0.3.1', percent: null, notes: null, lastCheckedAt: null, error: null }
+    const api = makeFakeApi({
+      externalPlayer: { state: vi.fn(async () => ({ id: 'a', title: 'Frieren', episode: '1' })), onChange: vi.fn((cb) => { push = cb; return () => {} }) },
+      update: { getState: vi.fn(async () => upd) },
+    })
+    const { container } = render(<App api={api} sound={{ play: vi.fn() }} />)
+    const region = await screen.findByRole('region', { name: 'Spoljni plejer' })
+    await screen.findByText('Verzija 0.3.1 je spremna')
+    const main = container.querySelector('main.content')
+    expect(main.firstElementChild).toBe(region)
+    expect(region.nextElementSibling).toHaveClass('update-banner')
+    screen.getByRole('button', { name: 'Zaustavi' }).focus()
+    await act(async () => {})
+    act(() => push(null))
+    await waitFor(() => expect(document.activeElement).toBe(main))
+  })
 })

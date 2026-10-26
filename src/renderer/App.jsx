@@ -13,6 +13,7 @@ import { DownloadsPage } from './pages/DownloadsPage.jsx'
 import { SettingsPage } from './pages/SettingsPage.jsx'
 import { LevelUpOverlay } from './components/LevelUpOverlay.jsx'
 import { ToastProvider, useToast } from './toast/ToastProvider.jsx'
+import { ExternalPlayerBar } from './components/ExternalPlayerBar.jsx'
 import { UpdateBanner } from './components/UpdateBanner.jsx'
 import { WhatsNewDialog } from './components/WhatsNewDialog.jsx'
 import { loadPlayer } from './player/loadPlayer.js'
@@ -404,6 +405,7 @@ export default function App({ api, sound: injectedSound }) {
             onOpenPalette={() => { if (!overlay) setPaletteOpen(true) }}
           />
           <main className="content" ref={mainRef} tabIndex={-1}>
+            <ExternalPlayerBar onGone={() => setFocusMain(true)} />
             <UpdateBanner state={updateState} onWhatsNew={openWhatsNew} />
             <div key={`${page}:${animeId ?? ''}`} className="page-enter">
               <ErrorBoundary>

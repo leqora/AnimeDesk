@@ -61,10 +61,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 button { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 7px 14px; cursor: pointer; transition: transform 150ms var(--ease), opacity 150ms var(--ease); }
 button:hover:not(:disabled) { background: var(--glass-strong); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
 .schedule-state button[aria-disabled="true"] { cursor: not-allowed; }
-.schedule-state button[aria-disabled="true"]:hover { background: var(--glass); border-color: var(--glass-border); }
+.schedule-state button[aria-disabled="true"]:hover, .external-bar button[aria-disabled="true"]:hover { background: var(--glass); border-color: var(--glass-border); }
 button:active:not(:disabled) { transform: translateY(1px); }
+.external-bar button[aria-disabled="true"]:active { transform: none; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
-button:disabled { opacity: .45; cursor: not-allowed; }
+button:disabled, .external-bar button[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
 button.primary { background: var(--cta); border-color: var(--cta); color: var(--on-accent); font-weight: 600; }
 button.primary:hover:not(:disabled) { background: var(--cta); border-color: var(--cta); box-shadow: 0 0 16px color-mix(in srgb, var(--cta) 55%, transparent); }
 button.danger { background: var(--bad); border-color: var(--bad); color: var(--on-accent); }
@@ -80,6 +81,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 /* shell */
 .app-shell { display: grid; grid-template-columns: 232px 1fr; height: 100vh; overflow: hidden; }
 .content { overflow-y: auto; scrollbar-gutter: stable; padding: 24px 28px 40px; }
+.content:has(> .external-bar) { scroll-padding-top: 88px; } /* keep focused items clear of the sticky .external-bar (one line + margin) */
 .content:focus { outline: none; } /* programmatic focus target only */
 .schedule-page h2:focus { outline: none; } /* programmatic focus target only */
 .page-enter { animation: page-in 200ms var(--ease); }
@@ -342,6 +344,8 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 /* updates */
 .update-banner { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 16px; border-radius: var(--radius); background: var(--glass); border: 1px solid color-mix(in srgb, var(--accent-2) 50%, transparent); box-shadow: var(--glow-cyan); }
 .update-banner__text { flex: 1; }
+.external-bar { position: sticky; top: -24px; z-index: 5; display: flex; gap: 12px; align-items: center; padding: 10px 14px; margin-bottom: 16px; border-radius: var(--radius); background: var(--panel-solid); border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent); box-shadow: var(--glow); } /* -24px = .content top padding: sticks flush to the scrollport top so no content shows above the bar */
+.external-bar__text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .update-banner__hint { display: block; font-size: 12px; color: var(--text-muted); }
 .update-banner .xp-bar { width: 160px; }
 .whats-new__notes { white-space: pre-wrap; max-height: 50vh; overflow-y: auto; background: var(--glass); padding: 12px; border-radius: var(--radius-sm); }

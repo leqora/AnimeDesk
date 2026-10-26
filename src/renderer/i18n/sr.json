@@ -512,5 +512,10 @@
   "boost.flashOff": "Pojačanje isključeno",
   "boost.shortcutHint": "Shift + ↑ / ↓",
   "settings.volumeBoost": "Pojačanje zvuka",
-  "settings.volumeBoostHint": "Za tihe epizode. U spoljnom mpv-u važi od sledećeg pokretanja."
+  "settings.volumeBoostHint": "Za tihe epizode. U spoljnom mpv-u važi od sledećeg pokretanja.",
+  "externalPlayer.label": "Spoljni plejer",
+  "externalPlayer.playing": "Pušta se u mpv-u: {title} · EP {episode}",
+  "externalPlayer.playingNoEpisode": "Pušta se u mpv-u: {title}",
+  "externalPlayer.stop": "Zaustavi",
+  "externalPlayer.stopping": "Zaustavlja se…"
 }

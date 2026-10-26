@@ -14,11 +14,14 @@ export function airedCount(info, now) {
 }
 
 // "N new" = aired episodes after the highest watched one. Skipped episodes are not counted on purpose.
+// Nothing watched yet (no integer episode >= 1) -> nothing new.
 export function newEpisodeCount(entry, info, now) {
   if (entry?.status !== 'watching' || info?.status !== 'RELEASING' || info?.match === 'close') return 0
   const aired = airedCount(info, now)
   if (aired == null) return 0
-  const maxWatched = Math.max(0, ...(entry.watchedEpisodes ?? []).filter(Number.isInteger))
+  const watched = (entry.watchedEpisodes ?? []).filter((n) => Number.isInteger(n) && n >= 1)
+  if (!watched.length) return 0
+  const maxWatched = Math.max(...watched)
   return Math.max(0, aired - maxWatched)
 }
 

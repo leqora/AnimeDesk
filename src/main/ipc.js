@@ -152,6 +152,8 @@ export function createHandlers(s) {
     [INVOKE.playerClosed]: (p) => s.internalPlayer.closed(p),
     [INVOKE.playerRecover]: (snapshot, opts) => s.watch.recover(snapshot, opts),
     [INVOKE.playerRetryAgain]: () => s.watch.retryAgain(),
+    [INVOKE.externalPlayerState]: () => s.watch.externalState(),
+    [INVOKE.externalPlayerStop]: (id) => s.watch.stopExternal(id),
     [INVOKE.skipGet]: (title, episode, duration) => s.skipLookup(title, episode, duration),
     [INVOKE.anilistAuthStatus]: () => s.aniListAuth.status(),
     [INVOKE.anilistAuthConnect]: async (token) => {
