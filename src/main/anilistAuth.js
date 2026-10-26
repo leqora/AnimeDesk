@@ -1,5 +1,6 @@
 // Encrypted AniList account store. The token lives only here (main process); everything else
-// gets the non-secret status(). crypt is a thin adapter over Electron safeStorage.
+// gets the non-secret status(). crypt is an async adapter over Electron safeStorage
+// (isAvailable/encrypt/decrypt all return Promises; decrypt resolves { result, shouldReEncrypt }).
 import fs from 'node:fs'
 import path from 'node:path'
 import { AniListAuthError } from './anilist.js'
@@ -37,16 +38,42 @@ export function createAniListAuth({
   let generation = 0 // bumped by connect/disconnect so an in-flight connect can tell it was superseded
   const listeners = new Set()
 
-  function load() {
+  // Every encrypt+write goes through one Promise chain, so slower earlier writes can never land after later ones.
+  let writeQueue = Promise.resolve()
+  function enqueue(task) {
+    const run = writeQueue.then(task)
+    writeQueue = run.catch(() => {})
+    return run
+  }
+
+  // Persists `json` for `acct` unless that account was replaced or removed meanwhile (checked before
+  // encrypting and again before touching the disk, since encryption is asynchronous).
+  function queueAccountWrite(acct, json) {
+    return enqueue(async () => {
+      if (account !== acct) return
+      const blob = await crypt.encrypt(json)
+      if (account !== acct) return
+      writeBufferAtomic(file, blob)
+    })
+  }
+
+  // Never rejects. Until it settles the store reports "not connected". A connect/disconnect that happens
+  // first wins: the late result is dropped.
+  async function load() {
+    const startedAt = generation
     try {
-      if (!crypt.isAvailable()) return
-      const a = JSON.parse(crypt.decrypt(fs.readFileSync(file)))
-      if (validAccount(a)) {
-        account = { token: a.token, userId: a.userId ?? null, name: a.name, expiresAt: a.expiresAt }
-        expired = a.invalid === true
-      }
+      if (!(await crypt.isAvailable())) return
+      const { result, shouldReEncrypt } = await crypt.decrypt(fs.readFileSync(file))
+      const a = JSON.parse(result)
+      if (!validAccount(a) || generation !== startedAt || account) return
+      account = { token: a.token, userId: a.userId ?? null, name: a.name, expiresAt: a.expiresAt }
+      expired = a.invalid === true
+      armExpiry()
+      emit()
+      // The blob was written with an older key/format: refresh it in the background. Failure is harmless.
+      if (shouldReEncrypt) queueAccountWrite(account, result).catch(() => {})
     } catch {
-      account = null // missing, unreadable or undecryptable: not connected, file left in place
+      // missing, unreadable or undecryptable: not connected, file left in place
     }
   }
 
@@ -95,8 +122,13 @@ export function createAniListAuth({
   async function connect(raw) {
     const token = typeof raw === 'string' ? raw.trim() : ''
     if (!token) return { ok: false, error: 'empty' }
-    if (!crypt.isAvailable()) return { ok: false, error: 'unavailable' }
     const mine = ++generation
+    try {
+      if (!(await crypt.isAvailable())) return { ok: false, error: 'unavailable' }
+    } catch {
+      return { ok: false, error: 'unavailable' }
+    }
+    if (mine !== generation) return { ok: false, error: 'cancelled' }
     let viewer
     try {
       viewer = await anilist.viewer(token)
@@ -106,11 +138,21 @@ export function createAniListAuth({
     }
     if (mine !== generation) return { ok: false, error: 'cancelled' }
     const next = { token, userId: viewer.id, name: viewer.name, expiresAt: tokenExpiry(token) }
+    let stored = false
     try {
-      writeBufferAtomic(file, crypt.encrypt(JSON.stringify(next)))
+      stored = await enqueue(async () => {
+        if (mine !== generation) return false
+        const blob = await crypt.encrypt(JSON.stringify(next))
+        if (mine !== generation) return false
+        writeBufferAtomic(file, blob)
+        return true
+      })
     } catch {
+      if (mine !== generation) return { ok: false, error: 'cancelled' }
       return { ok: false, error: 'unavailable' } // could not store securely; old account unchanged
     }
+    if (!stored || mine !== generation) return { ok: false, error: 'cancelled' }
+    // No await from here to the return: ipc.js relies on emit() and the result being delivered together.
     account = next
     expired = false
     armExpiry()
@@ -124,9 +166,8 @@ export function createAniListAuth({
     expired = true
     clearExpiryTimer()
     // Persist so a revoked token stays unusable after a restart.
-    try {
-      writeBufferAtomic(file, crypt.encrypt(JSON.stringify({ ...account, invalid: true })))
-    } catch { /* still expired in memory; a later 401 will mark it again */ }
+    // Still expired in memory if this fails; a later 401 will mark it again.
+    queueAccountWrite(account, JSON.stringify({ ...account, invalid: true })).catch(() => {})
     emit()
   }
 
@@ -155,9 +196,9 @@ export function createAniListAuth({
     return () => listeners.delete(fn)
   }
 
-  load()
-  armExpiry()
+  const ready = load()
   return {
+    ready,
     dispose,
     connect,
     status,

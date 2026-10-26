@@ -212,11 +212,12 @@ async function main() {
     },
   })
   const crypt = {
-    isAvailable: () => safeStorage.isEncryptionAvailable(),
-    encrypt: (s) => safeStorage.encryptString(s),
-    decrypt: (b) => safeStorage.decryptString(b),
+    isAvailable: () => safeStorage.isAsyncEncryptionAvailable(),
+    encrypt: (s) => safeStorage.encryptStringAsync(s),
+    decrypt: (b) => safeStorage.decryptStringAsync(b),
   }
   const aniListAuth = createAniListAuth({ file: paths.anilistAuth, crypt, anilist })
+  await aniListAuth.ready // the saved account must be loaded before sync starts reading the token
   const aniListSync = createAniListSync({ file: paths.anilistSync, library, seriesPrefs, anilist, auth: aniListAuth })
   aniListAuth.onChange((status) => send(EVENTS.anilistAuthChanged, status))
   aniListSync.onChange(() => send(EVENTS.anilistSyncChanged))
