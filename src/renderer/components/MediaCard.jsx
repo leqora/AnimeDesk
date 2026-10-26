@@ -24,6 +24,15 @@ export function cardLine(entry, progress) {
   return null
 }
 
+// Only numbers (count, minutes) — never episode titles. Hidden for a "close" AniList match, which may be a different show.
+export function episodesLine(entry, info, t) {
+  if (info?.match === 'close') return null
+  const n = entry.totalEpisodes ?? info?.episodes
+  if (!Number.isInteger(n) || n <= 0) return null
+  const text = t.n('card.episodes', n, { n })
+  return info?.duration > 0 ? `${text} · ${t('detail.duration', { min: info.duration })}` : text
+}
+
 // Open and the actions are sibling buttons (a button cannot contain a button).
 export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null, showScore = false }) {
   const t = useT()
@@ -40,12 +49,13 @@ export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null
   const ratio = Number.isInteger(total) && total > 0 ? Math.min(1, watched / total) : null
   const next = nextEpisode(entry)
   const line = cardLine(entry, progress)
+  const peek = line ? null : episodesLine(entry, info, t)
   return (
     <div className="card media-card" data-status={entry.status} data-complete={complete ? 'true' : undefined}>
       <button
         type="button" className="media-card__open" onClick={() => onOpen(entry.id)}
         aria-label={t('card.label', { title: entry.title, watched, total: total ?? '?', status: t(`status.${entry.status}`) }) + (fresh > 0 ? t.n('airing.newLabel', fresh) : '')}
-        aria-describedby={line ? lineId : undefined}
+        aria-describedby={line || peek ? lineId : undefined}
       >
         <PosterFrame info={info}>
           <span className="media-card__fade" aria-hidden="true" />
@@ -59,6 +69,7 @@ export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null
         </PosterFrame>
         <span className="card__title">{entry.title}</span>
         {line && <span className="card__meta" id={lineId}>{t(line.key, line.vars)}</span>}
+        {!line && <span className="card__meta media-card__peek" id={lineId}>{peek}</span>}
       </button>
       <div className="media-card__actions">
         {!finished && (

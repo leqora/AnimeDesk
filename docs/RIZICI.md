@@ -12,6 +12,8 @@ Rizici koji se posebno prate tokom razvoja. Svaki ima test koji ga „zakucava�
 
 ## Ostali poznati rizici (iz spec-a)
 
+- **npm 11.19+ ne pokreće install-skripte paketa bez `allowScripts`** (nađeno 2026-10-26 pri Electron 44.9.2 → 44.9.3): `npm install` tada ne preuzme Electron binar (`node_modules/electron/dist` i `path.txt` ne postoje → `npm run dev`/e2e ne rade). Posle svakog `npm install electron@…`: `node node_modules/electron/install.js` (zvanična skripta paketa, preuzima sa GitHub-a i proverava prema `checksums.json`), pa proveriti `node_modules/electron/dist/version`. `npm install-scripts ls` pokazuje šta je još preskočeno (esbuild, electron-winstaller — do sada bez posledica: build i e2e prolaze).
+
 | Rizik | Ublažavanje |
 |---|---|
 | Sajt koji ani-cli koristi prestane da radi | HealthCheck + automatski update ani-cli; semafor 🔴 „čeka se popravka od ani-cli tima” |

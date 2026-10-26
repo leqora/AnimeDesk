@@ -14,7 +14,7 @@ import { useFlash } from '../player/useFlash.js'
 import { useIdle } from '../player/useIdle.js'
 import { usePlayerVolume } from '../player/usePlayerVolume.js'
 import { useVolumeBoost } from '../player/useVolumeBoost.js'
-import { formatBoost } from '../../shared/volumeBoost.js'
+import { formatBoost, stepBoost } from '../../shared/volumeBoost.js'
 import { usePlayerSubtitles } from '../player/usePlayerSubtitles.js'
 import { usePlaybackRate } from '../player/usePlaybackRate.js'
 import { useHlsSource } from '../player/useHlsSource.js'
@@ -31,6 +31,7 @@ const headStatus = (url) => fetch(url, { method: 'HEAD' }).then((r) => r.status)
 export function PlayerView({ open, settings, fullscreen, onSettings, onClose, initialRate = 1, onRate, HlsImpl = Hls, probeSub = headStatus }) {
   const api = useApi()
   const t = useT()
+  const root = useRef(null)
   const video = useRef(null)
   const trackEl = useRef(null)
   const maxPercent = useRef(0)
@@ -56,6 +57,16 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   const volume = usePlayerVolume({ video, settings, onSettings })
   const boost = settings.volumeBoost ?? 1
   useVolumeBoost(video, boost)
+  // The level a shortcut just asked for, until the saved setting catches up (quick repeats must keep stepping).
+  const pendingBoost = useRef(null)
+  useEffect(() => { if (settings.volumeBoost === pendingBoost.current) pendingBoost.current = null }, [settings.volumeBoost])
+  const showBoost = (v) => flash.show(v === 1 ? t('boost.flashOff') : t('boost.flash', { value: formatBoost(v, settings.language) }))
+  const nudgeBoost = (dir) => {
+    const cur = pendingBoost.current ?? boost
+    const next = stepBoost(cur, dir)
+    if (next !== cur) { pendingBoost.current = next; onSettings({ volumeBoost: next }) }
+    showBoost(next)
+  }
   const subs = usePlayerSubtitles({ video, trackEl, open, mode, settings, onSettings, probeSub, flash: flash.show })
   const rate = usePlaybackRate({ video, flash: flash.show, language: settings.language, initial: initialRate, onChange: onRate })
   const { idle, poke, show: showControls } = useIdle({ video, hold: menuOpen })
@@ -103,6 +114,12 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
       .then((r) => { if (!r?.ok) setFailed('final') }, () => setFailed('final'))
   }
   useEffect(() => () => clearTimeout(clickTimer.current), [])
+  // Take focus on show, unless it is already inside the player (ResumePrompt autoFocus) or in a modal dialog.
+  useEffect(() => {
+    const a = document.activeElement
+    if (root.current?.contains(a) || a?.closest?.('[aria-modal="true"]')) return
+    root.current?.focus()
+  }, [])
   useHlsSource({ video, open, HlsImpl, onFatal: fail })
   useEffect(() => {
     const id = setInterval(() => latest.current.api.player.progress(snapshot()), PROGRESS_MS)
@@ -122,8 +139,8 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
     ' ': togglePlay,
     ArrowLeft: () => step(-10),
     ArrowRight: () => step(10),
-    ArrowUp: () => volume.nudge(0.1),
-    ArrowDown: () => volume.nudge(-0.1),
+    ArrowUp: (e) => (e.shiftKey ? nudgeBoost(1) : volume.nudge(0.1)),
+    ArrowDown: (e) => (e.shiftKey ? nudgeBoost(-1) : volume.nudge(-0.1)),
     f: toggleFullscreen,
     m: volume.toggleMute,
     s: subs.toggle,
@@ -173,7 +190,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   const startAt = (sec) => { video.current.currentTime = sec; setResume(null); play() }
 
   return (
-    <div className={`player${idle ? ' player--idle' : ''}`} onMouseMove={poke}>
+    <div ref={root} tabIndex={-1} className={`player${idle ? ' player--idle' : ''}`} onMouseMove={poke} onFocus={poke}>
       <video
         ref={video} className="player__video" crossOrigin="anonymous"
         onLoadedMetadata={onLoadedMetadata} onTimeUpdate={onTimeUpdate} onProgress={readBuffered}
@@ -217,7 +234,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
         menu={{
           open: menuOpen, onOpen: setMenuOpen,
           rate: rate.rate, language: settings.language, onRate: rate.setRate,
-          boost, onBoost: (v) => { onSettings({ volumeBoost: v }); flash.show(v === 1 ? t('boost.flashOff') : t('boost.flash', { value: formatBoost(v, settings.language) })) },
+          boost, onBoost: (v) => { pendingBoost.current = v; onSettings({ volumeBoost: v }); showBoost(v) },
           subs: { on: subs.on, available: subs.available, hint: subs.hint, offsetLabel: subs.offsetLabel, size: settings.subtitles.size },
           onToggleSubs: subs.toggle, onSubOffset: subs.shift, onSubOffsetReset: subs.reset, onSubSize: (n) => onSettings({ subtitles: { size: n } }),
         }}

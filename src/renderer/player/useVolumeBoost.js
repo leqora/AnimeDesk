@@ -71,11 +71,14 @@ export function useVolumeBoost(video, boost, { AudioContextImpl = typeof window 
     const el = video.current
     if (!el) return undefined
     const wake = () => { if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {}) }
-    el.addEventListener('play', wake)
+    // On play always resume: the previous player's suspend() may still be pending (state still 'running'),
+    // and calls run in order, so resume() queued after it leaves the context running.
+    const onPlay = () => { if (ctx) ctx.resume().catch(() => {}) }
+    el.addEventListener('play', onPlay)
     window.addEventListener('keydown', wake)
     window.addEventListener('pointerdown', wake)
     return () => {
-      el.removeEventListener('play', wake)
+      el.removeEventListener('play', onPlay)
       window.removeEventListener('keydown', wake)
       window.removeEventListener('pointerdown', wake)
       // player closed: do not keep the output stream open for the rest of the session (play/keydown/pointerdown resume it)

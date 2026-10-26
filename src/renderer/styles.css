@@ -188,6 +188,9 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .media-card:hover .media-card__actions, .media-card:focus-within .media-card__actions { opacity: 1; transform: none; }
 /* The hover actions land on the poster badge; hide it while they are shown. */
 .media-card:hover .badge--new:not(.badge--inline), .media-card:focus-within .badge--new:not(.badge--inline) { opacity: 0; }
+/* Reserved line for a not-started series: always takes the space so the grid does not jump when AniList info arrives. */
+.media-card__peek { min-height: 1lh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity var(--dur) var(--ease); }
+.media-card:hover .media-card__peek, .media-card:focus-within .media-card__peek { opacity: 1; }
 .media-card__actions button { padding: 6px; border-radius: 50%; }
 .media-card__pin[aria-pressed="true"] { color: var(--accent-2); }
 /* missed sequels card (Home) */
@@ -394,6 +397,7 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 
 /* player */
 .player { container-type: size; position: fixed; inset: 0; z-index: 15; background: var(--bg); display: flex; flex-direction: column; }
+.player:focus { outline: none; }
 .player__video { flex: 1; width: 100%; min-height: 0; background: var(--bg); }
 .player__top, .player__bar { position: absolute; left: 0; right: 0; padding: 14px 18px; display: flex; gap: 12px; align-items: center; background: linear-gradient(0deg, transparent, color-mix(in srgb, var(--bg) 85%, transparent)); transition: opacity 200ms var(--ease); }
 .player__top { top: 0; }
