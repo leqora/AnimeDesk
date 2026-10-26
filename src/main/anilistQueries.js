@@ -24,3 +24,13 @@ export const TRENDING = `query { Page(perPage: 50) { media(type: ANIME, sort: TR
 
 // Weekly airing schedule (spec point 7): the window travels only through variables.
 export const SCHEDULE = 'query ($page: Int, $from: Int, $to: Int) { Page(page: $page, perPage: 50) { pageInfo { hasNextPage } airingSchedules(airingAt_greater: $from, airingAt_lesser: $to, sort: TIME) { airingAt episode media { id isAdult format status seasonYear title { romaji english } coverImage { medium } relations { edges { relationType(version: 2) node { id type format seasonYear } } } } } } }'
+
+// Discover page (spec point 6): one query, four aliases; season/year only through variables.
+export const DISCOVER_FIELDS = `${REC_MEDIA_FIELDS} startDate { year month }`
+const discoverAlias = (alias, args) => `${alias}: Page(perPage: 50) { media(type: ANIME, isAdult: false, ${args}) { ${DISCOVER_FIELDS} } }`
+export const DISCOVER = `query ($season: MediaSeason, $year: Int, $nextSeason: MediaSeason, $nextYear: Int) { ${[
+  discoverAlias('season', 'season: $season, seasonYear: $year, sort: POPULARITY_DESC'),
+  discoverAlias('upcoming', 'season: $nextSeason, seasonYear: $nextYear, sort: POPULARITY_DESC'),
+  discoverAlias('movies', 'format: MOVIE, sort: TRENDING_DESC'),
+  discoverAlias('trending', 'sort: TRENDING_DESC'),
+].join(' ')} }`
