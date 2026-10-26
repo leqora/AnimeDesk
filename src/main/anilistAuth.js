@@ -27,6 +27,17 @@ function validAccount(a) {
 
 const MAX_TIMER_MS = 24 * 3600 * 1000
 
+export const AUTH_READY_TIMEOUT_MS = 5000
+
+// true if `promise` settles (either way) within `ms`, false otherwise. Never rejects; the timer is always cleared.
+export function waitAtMost(promise, ms, { setTimeout: setT = globalThis.setTimeout, clearTimeout: clearT = globalThis.clearTimeout } = {}) {
+  return new Promise((resolve) => {
+    const timer = setT(() => { clearT(timer); resolve(false) }, ms)
+    const done = () => { clearT(timer); resolve(true) }
+    Promise.resolve(promise).then(done, done)
+  })
+}
+
 export function createAniListAuth({
   file, crypt, anilist, now = Date.now,
   setTimeout: setT = globalThis.setTimeout,

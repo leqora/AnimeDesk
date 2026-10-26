@@ -47,7 +47,7 @@ import { EVENTS } from '../shared/channels.js'
 import { createNotificationsStore } from './notificationsStore.js'
 import { createAiringWatcher } from './airingWatcher.js'
 import { createAutoDownloader } from './autoDownloader.js'
-import { createAniListAuth } from './anilistAuth.js'
+import { createAniListAuth, waitAtMost, AUTH_READY_TIMEOUT_MS } from './anilistAuth.js'
 import { createAniListSync } from './anilistSync.js'
 import { createSequels } from './sequels.js'
 import { createRecommendations } from './recommendations.js'
@@ -217,7 +217,9 @@ async function main() {
     decrypt: (b) => safeStorage.decryptStringAsync(b),
   }
   const aniListAuth = createAniListAuth({ file: paths.anilistAuth, crypt, anilist })
-  await aniListAuth.ready // the saved account must be loaded before sync starts reading the token
+  // The saved account should be loaded before sync starts reading the token, but a stuck keychain must not block startup:
+  // a late load still reaches the UI via onChange and resumes sync via auth.onChange.
+  if (!(await waitAtMost(aniListAuth.ready, AUTH_READY_TIMEOUT_MS))) console.warn('anilist auth: load still pending, starting without it')
   const aniListSync = createAniListSync({ file: paths.anilistSync, library, seriesPrefs, anilist, auth: aniListAuth })
   aniListAuth.onChange((status) => send(EVENTS.anilistAuthChanged, status))
   aniListSync.onChange(() => send(EVENTS.anilistSyncChanged))
