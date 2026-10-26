@@ -15,6 +15,8 @@ const boot = async (over) => {
   const api = makeFakeApi(over)
   render(<App api={api} />)
   await waitFor(() => screen.getByRole('button', { name: 'Podešavanja' }))
+  // the first render can be on screen before its passive effects (the Ctrl+K listener) have run
+  await act(async () => { await new Promise((r) => setTimeout(r, 0)) })
   return api
 }
 
