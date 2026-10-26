@@ -12,7 +12,7 @@ function services() {
     toolManager: { status: vi.fn(), installMissing: vi.fn(async (cb) => { cb({ id: 'mpv', phase: 'done' }); return {} }), updateAll: vi.fn(async () => []), installOptional: vi.fn(async () => {}) },
     health: { get: vi.fn(), run: vi.fn(), updateTools: vi.fn(async () => ['ani-cli']) },
     internalPlayer: { progress: vi.fn(), closed: vi.fn() },
-    watch: { watch: vi.fn(), cancel: vi.fn(), answerMenu: vi.fn(), playLocal: vi.fn(async () => 'watched'), recover: vi.fn(() => ({ ok: true })), retryAgain: vi.fn() },
+    watch: { watch: vi.fn(), cancel: vi.fn(), answerMenu: vi.fn(), playLocal: vi.fn(async () => 'watched'), recover: vi.fn(() => ({ ok: true })), retryAgain: vi.fn(), externalState: vi.fn(() => ({ id: 'x', title: 'A', episode: '1' })), stopExternal: vi.fn() },
     downloads: { enqueue: vi.fn(), pause: vi.fn(), resume: vi.fn(), cancel: vi.fn(), queueItems: vi.fn(), listDownloaded: vi.fn(), removeDownloaded: vi.fn(), getDownloaded: vi.fn((id) => (id === 'd1' ? { path: 'D:\\A\\A Episode 1.mp4', title: 'A', episode: '1', mode: 'dub' } : null)) },
     electron: { pickFolder: vi.fn(async () => 'D:\\X'), showItemInFolder: vi.fn(), openRepo: vi.fn(), saveFile: vi.fn(async () => 'D:\\out.json'), openFile: vi.fn(async () => 'D:\\in.json'), openPath: vi.fn(async () => '') },
     paths: { base: 'D:\\Data' },
@@ -100,6 +100,13 @@ describe('ipc', () => {
     expect(s.watch.recover).toHaveBeenCalledWith({ playbackId: 'p', position: 3 }, { manual: true })
     h[INVOKE.playerRetryAgain]()
     expect(s.watch.retryAgain).toHaveBeenCalled()
+  })
+  it('exposes the running external mpv and stops it by id', () => {
+    const s = services()
+    const h = createHandlers(s)
+    expect(h[INVOKE.externalPlayerState]()).toEqual({ id: 'x', title: 'A', episode: '1' })
+    h[INVOKE.externalPlayerStop]('x')
+    expect(s.watch.stopExternal).toHaveBeenCalledWith('x')
   })
   it('notifies the renderer after library update and remove', () => {
     const s = services()

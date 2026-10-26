@@ -510,3 +510,130 @@ describe('watchService recovery', () => {
     expect(internalPlayer.play).toHaveBeenCalledWith(expect.objectContaining({ qualityFallback: '720', resume: null }), expect.objectContaining({ onProgress: expect.any(Function) }))
   })
 })
+
+describe('external player state', () => {
+  function ext({ settings = { playerMode: 'external' }, internalPlayer = null, positions = null } = {}) {
+    const events = []
+    const runs = []
+    const player = {
+      play: vi.fn((args, opts) => new Promise((resolve, reject) => {
+        const run = { quit: vi.fn(), exit: (r = {}) => resolve({ exitCode: 0, maxPercent: 0, ...r }), fail: reject }
+        runs.push(run)
+        opts.onStart?.({ quit: run.quit })
+      })),
+      stop: vi.fn(),
+    }
+    const library = { recordWatched: vi.fn() }
+    const svc = createWatchService({
+      aniCli: { startSession: vi.fn() }, player, library, internalPlayer, positions,
+      settings: { get: () => ({ ...DEFAULT_SETTINGS, ...settings }) },
+      notify: (ch, p) => events.push([ch, p]),
+    })
+    const ep = (e) => events.filter(([ch]) => ch === EVENTS.externalPlayer).map(([, p]) => p)
+    return { svc, player, library, runs, events, ep }
+  }
+  const local = (n) => ({ file: `D:\A\A Episode ${n}.mp4`, title: 'A', episode: n })
+
+  it('reports an external mpv while it runs, and clears it on exit', async () => {
+    const { svc, runs, ep } = ext()
+    const done = svc.playLocal(local('1'))
+    const st = svc.externalState()
+    expect(st).toEqual({ id: expect.any(String), title: 'A', episode: '1' })
+    expect(Object.keys(st).sort()).toEqual(['episode', 'id', 'title'])
+    expect(ep()).toEqual([st])
+    runs[0].exit()
+    await done
+    expect(svc.externalState()).toBeNull()
+    expect(ep()).toEqual([st, null])
+  })
+  it('reports the mpv started through watch() in external mode', async () => {
+    const runs = []
+    const events = []
+    const aniCli = { startSession: vi.fn((opts) => {
+      const done = new Promise((r) => { queueMicrotask(async () => { await opts.onPlay({ args: ['--force-media-title=Fake Anime Episode 2', 'https://v'] }); r({ ok: true, error: null, stderr: '' }) }) })
+      return { sessionId: 'sid', done, kill: vi.fn() }
+    }) }
+    const player = { play: (a, o) => new Promise((res) => { o.onStart({ quit() {} }); runs.push(() => res({ exitCode: 0, maxPercent: 0 })) }), stop: vi.fn() }
+    const svc = createWatchService({ aniCli, player, library: { recordWatched: vi.fn() }, settings: { get: () => ({ ...DEFAULT_SETTINGS, playerMode: 'external' }) }, notify: (ch, p) => events.push([ch, p]) })
+    svc.watch({ query: 'fake' })
+    await flush()
+    expect(svc.externalState()).toMatchObject({ title: 'Fake Anime', episode: '2' })
+    runs[0]()
+    await flush()
+    expect(svc.externalState()).toBeNull()
+    expect(events.filter(([ch]) => ch === EVENTS.externalPlayer).map(([, p]) => p)).toEqual([expect.objectContaining({ title: 'Fake Anime' }), null])
+  })
+  it('reports the mpv that takes over from the in-app player (reason external)', async () => {
+    const internalPlayer = { play: vi.fn(async () => ({ reason: 'external', position: 30 })), stop: vi.fn() }
+    const { svc, runs, ep } = ext({ settings: { playerMode: 'internal' }, internalPlayer })
+    const done = svc.playLocal(local('2'))
+    await flush()
+    expect(svc.externalState()).toMatchObject({ title: 'A', episode: '2' })
+    expect(ep()).toHaveLength(1)
+    runs[0].exit()
+    await done
+    expect(svc.externalState()).toBeNull()
+    expect(ep().at(-1)).toBeNull()
+  })
+  it('reports the mpv the internal player falls back to when it fails', async () => {
+    const internalPlayer = { play: vi.fn(async () => { throw new Error('bad referrer') }), stop: vi.fn() }
+    const { svc, runs } = ext({ settings: { playerMode: 'internal' }, internalPlayer })
+    const done = svc.playLocal(local('2'))
+    await flush()
+    expect(svc.externalState()).toMatchObject({ title: 'A', episode: '2' })
+    runs[0].exit()
+    await done
+    expect(svc.externalState()).toBeNull()
+  })
+  it('shows the newest of two and stops only the one asked for', async () => {
+    const { svc, runs } = ext()
+    const d1 = svc.playLocal(local('1'))
+    const first = svc.externalState()
+    const d2 = svc.playLocal(local('2'))
+    const second = svc.externalState()
+    expect(second.episode).toBe('2')
+    expect(second.id).not.toBe(first.id)
+    svc.stopExternal(second.id)
+    expect(runs[1].quit).toHaveBeenCalledTimes(1)
+    expect(runs[0].quit).not.toHaveBeenCalled()
+    runs[1].exit()
+    await d2
+    expect(svc.externalState()).toEqual(first)
+    runs[0].exit()
+    await d1
+  })
+  it('ignores an unknown or already finished id', async () => {
+    const { svc, runs } = ext()
+    expect(() => svc.stopExternal('nope')).not.toThrow()
+    const done = svc.playLocal(local('1'))
+    const { id } = svc.externalState()
+    runs[0].exit()
+    await done
+    expect(() => svc.stopExternal(id)).not.toThrow()
+    expect(runs[0].quit).not.toHaveBeenCalled()
+  })
+  it('stopping does not cancel: position and watched are handled as on a manual close', async () => {
+    const positions = { save: vi.fn(), get: vi.fn(() => null), clear: vi.fn() }
+    const { svc, runs, library } = ext({ positions })
+    const done = svc.playLocal(local('1'))
+    svc.stopExternal(svc.externalState().id)
+    runs[0].exit({ maxPercent: 95, position: 120, duration: 1400 })
+    expect(await done).toBe('watched')
+    expect(library.recordWatched).toHaveBeenCalledTimes(1)
+    expect(positions.save).toHaveBeenCalledWith('A', '1', { position: 120, duration: 1400 })
+  })
+  it('leaves no state when mpv cannot start', async () => {
+    const { svc, runs, ep } = ext()
+    const done = svc.playLocal(local('1'))
+    runs[0].fail(new Error('mpv-missing'))
+    await expect(done).rejects.toThrow('mpv-missing')
+    expect(svc.externalState()).toBeNull()
+    expect(ep().at(-1)).toBeNull()
+  })
+  it('leaves no state when play rejects before onStart ran', async () => {
+    const { svc, player } = ext()
+    player.play.mockImplementationOnce(async () => { throw new Error('mpv-missing') })
+    await expect(svc.playLocal(local('1'))).rejects.toThrow('mpv-missing')
+    expect(svc.externalState()).toBeNull()
+  })
+})
