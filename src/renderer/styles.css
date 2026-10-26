@@ -189,7 +189,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 /* The hover actions land on the poster badge; hide it while they are shown. */
 .media-card:hover .badge--new:not(.badge--inline), .media-card:focus-within .badge--new:not(.badge--inline) { opacity: 0; }
 /* Reserved line for a not-started series: always takes the space so the grid does not jump when AniList info arrives. */
-.media-card__peek { min-height: 1lh; opacity: 0; transition: opacity var(--dur) var(--ease); }
+.media-card__peek { min-height: 1lh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity var(--dur) var(--ease); }
 .media-card:hover .media-card__peek, .media-card:focus-within .media-card__peek { opacity: 1; }
 .media-card__actions button { padding: 6px; border-radius: 50%; }
 .media-card__pin[aria-pressed="true"] { color: var(--accent-2); }

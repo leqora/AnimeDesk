@@ -151,7 +151,7 @@ describe('MediaCard', () => {
       await act(async () => {})
       const peek = container.querySelector('.media-card__peek')
       expect(peek).not.toBeNull()
-      expect(peek).toHaveTextContent('')
+      expect(peek).toBeEmptyDOMElement()
       expect(open()).not.toHaveAttribute('aria-describedby')
     })
     it('shows nothing for a close match', async () => {
@@ -159,7 +159,7 @@ describe('MediaCard', () => {
       const { container } = card({ entry: planned() }, api)
       await waitFor(() => expect(api.anilist.forTitle).toHaveBeenCalled())
       await act(async () => {})
-      expect(container.querySelector('.media-card__peek')).toHaveTextContent('')
+      expect(container.querySelector('.media-card__peek')).toBeEmptyDOMElement()
       expect(open()).not.toHaveAttribute('aria-describedby')
     })
     it('prefers entry.totalEpisodes over the AniList count', async () => {
