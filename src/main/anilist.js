@@ -3,9 +3,10 @@ import crypto from 'node:crypto'
 import { readJson, writeJsonAtomic } from './jsonStore.js'
 import { AIRED_GRACE_MS } from '../shared/airing.js'
 import { sequelsFromMedia } from '../shared/sequels.js'
-import { SEARCH, AIRING_BATCH, RELATIONS_BATCH, VIEWER, LIST_ENTRY, SAVE_PROGRESS, CANDIDATES, RECS_BATCH, TRENDING, SCHEDULE } from './anilistQueries.js'
+import { SEARCH, AIRING_BATCH, RELATIONS_BATCH, VIEWER, LIST_ENTRY, SAVE_PROGRESS, CANDIDATES, RECS_BATCH, TRENDING, SCHEDULE, DISCOVER } from './anilistQueries.js'
 import { createAniListBatcher } from './anilistBatch.js'
 import { toCase, eligible } from '../shared/recommendations.js'
+import { shownInDiscover, RAIL_KEYS } from '../shared/discover.js'
 import { posterAllowed } from '../shared/schedule.js'
 import { MATCH_VERSION, searchQueries, pickMatch, isExactName } from '../shared/titleMatch.js'
 
@@ -48,6 +49,27 @@ function toRecItem(m, rank, rating) {
     rank,
     rating,
     eligible: eligible(toCase(m)),
+  }
+}
+
+// A Discover media reduced to the card shape (all genres kept so the genre filter sees them). No description, nothing that could spoil.
+function toDiscoverItem(m) {
+  if (!Number.isInteger(m?.id) || m.id < 1) return null
+  const sy = m.startDate?.year
+  const sm = m.startDate?.month
+  return {
+    id: m.id,
+    title: m.title?.english ?? m.title?.romaji ?? null,
+    romaji: m.title?.romaji ?? null,
+    english: m.title?.english ?? null,
+    format: m.format ?? null,
+    status: m.status ?? null,
+    year: m.seasonYear ?? null,
+    episodes: m.episodes ?? null,
+    genres: Array.isArray(m.genres) ? m.genres.filter((g) => typeof g === 'string') : [],
+    start: Number.isInteger(sy) ? { year: sy, month: Number.isInteger(sm) ? sm : null } : null,
+    coverUrl: m.coverImage?.large ?? null,
+    shown: shownInDiscover(toCase(m)),
   }
 }
 
@@ -447,7 +469,17 @@ export function createAniList({
     return items
   }
 
+  // One request, four rails. Never touches the cache dir; any failure rejects the whole call.
+  async function discover({ season, year, nextSeason, nextYear }) {
+    const data = await gql(DISCOVER, { season, year, nextSeason, nextYear })
+    const out = {}
+    for (const key of RAIL_KEYS) {
+      out[key] = (Array.isArray(data?.[key]?.media) ? data[key].media : []).map(toDiscoverItem).filter(Boolean)
+    }
+    return out
+  }
+
   const poster = (url, opts) => posterDataUrl(url, opts).catch(() => null)
 
-  return { search, getForTitle, getCached, refreshAiring, relations, recommendations, trending, schedule, poster, viewer, listEntry, saveProgress, candidates }
+  return { search, getForTitle, getCached, refreshAiring, relations, recommendations, trending, schedule, discover, poster, viewer, listEntry, saveProgress, candidates }
 }

@@ -217,6 +217,10 @@ export function createHandlers(s) {
     [INVOKE.recommendationsUnhide]: (id) => (Number.isInteger(id) && id > 0 ? s.recommendations.unhide(id) : { ok: false }),
     [INVOKE.recommendationsForSeries]: (id) => (Number.isInteger(id) && id > 0 ? s.recommendations.forSeries(id) : { items: [] }),
     [INVOKE.scheduleList]: (opts) => s.schedule.list({ force: Boolean(opts) && typeof opts === 'object' && opts.force === true }),
+    [INVOKE.discoverList]: (opts) => s.discover.list({ force: Boolean(opts) && typeof opts === 'object' && opts.force === true }),
+    [INVOKE.discoverPosters]: (ids) => (Array.isArray(ids)
+      ? s.discover.posters(ids.filter((id) => Number.isInteger(id) && id > 0).slice(0, 40))
+      : {}),
     [INVOKE.schedulePosters]: (ids) => (Array.isArray(ids)
       ? s.schedule.posters(ids.filter((id) => Number.isInteger(id) && id > 0).slice(0, 40))
       : {}),

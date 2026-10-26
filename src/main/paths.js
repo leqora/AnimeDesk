@@ -24,6 +24,7 @@ export function createPaths(baseDir) {
     sequels: path.join(baseDir, 'cache', 'sequels.json'),
     recommendations: path.join(baseDir, 'cache', 'recommendations.json'),
     schedule: path.join(baseDir, 'cache', 'schedule.json'),
+    discover: path.join(baseDir, 'cache', 'discover.json'),
     backups: path.join(baseDir, 'backups'),
     health: path.join(baseDir, 'health.json'),
   }

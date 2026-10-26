@@ -8,6 +8,15 @@ import { EMPTY_STATS } from '../../../src/shared/stats.js'
 const props = (over = {}) => ({ page: 'home', onNavigate: vi.fn(), health: { light: 'green', reason: 'ok' }, onSemaphoreClick: vi.fn(), profileName: 'Nikola', stats: EMPTY_STATS, ...over })
 
 describe('Sidebar', () => {
+  it('puts Otkrij between Početna and Watchlist and navigates to discover', () => {
+    const p = props()
+    renderUi(<Sidebar {...p} />)
+    const names = screen.getAllByRole('button').map((b) => b.getAttribute('aria-label')).filter(Boolean)
+    expect(names.indexOf('Otkrij')).toBe(names.indexOf('Početna') + 1)
+    expect(names.indexOf('Watchlist')).toBe(names.indexOf('Otkrij') + 1)
+    fireEvent.click(screen.getByRole('button', { name: 'Otkrij' }))
+    expect(p.onNavigate).toHaveBeenCalledWith('discover')
+  })
   it('lists the five pages and marks the active one', () => {
     renderUi(<Sidebar {...props({ page: 'watchlist' })} />)
     for (const name of ['Početna', 'Watchlist', 'Preuzeto', 'Profil', 'Podešavanja']) expect(screen.getByRole('button', { name })).toBeInTheDocument()

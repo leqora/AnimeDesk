@@ -4,7 +4,7 @@ import { useT } from '../i18n/I18nContext.jsx'
 import { Modal } from './Modal.jsx'
 import { rankSeries, continueSeries, filterByLabel, isBlankQuery } from '../../shared/palette.js'
 
-const PAGES = ['home', 'watchlist', 'schedule', 'downloads', 'profile', 'settings']
+const PAGES = ['home', 'discover', 'watchlist', 'schedule', 'downloads', 'profile', 'settings']
 const MAX_QUERY = 100
 
 export function CommandPalette({ fullscreen, onRun, onClose }) {

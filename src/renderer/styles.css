@@ -495,3 +495,17 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 .palette__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .palette__status { flex: none; font-size: 12px; color: var(--text-muted); }
 .palette__help { font-size: 12px; color: var(--text-muted); text-align: center; }
+
+/* Discover (v0.17.0) */
+.discover-page h2:focus { outline: none; } /* programmatic focus target only */
+.discover-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.discover-genre { width: 180px; max-width: 100%; text-overflow: ellipsis; }
+.discover-controls button[aria-disabled="true"] { cursor: not-allowed; opacity: .6; }
+.discover-controls button[aria-disabled="true"]:hover { background: var(--glass); border-color: var(--glass-border); }
+.discover-skeleton { display: flex; flex-direction: column; gap: 10px; }
+.rec-card__watchlist { position: absolute; z-index: var(--z-card-badge); top: 6px; left: 6px; }
+.rec-card__static { cursor: default; }
+/* a not-yet-released card is not clickable: no lift, glow or poster zoom on hover */
+.card.rec-card:has(.rec-card__static):hover { transform: none; box-shadow: none; }
+.rec-card:has(.rec-card__static):hover::after { opacity: 0; }
+.rec-card:has(.rec-card__static):hover .poster--in { transform: none; }

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createAniListAuth } from '../../src/main/anilistAuth.js'
+import { createAniListAuth, waitAtMost, AUTH_READY_TIMEOUT_MS } from '../../src/main/anilistAuth.js'
 import { AniListAuthError } from '../../src/main/anilist.js'
 
 const DAY = 24 * 3600 * 1000
@@ -632,5 +632,51 @@ describe('anilistAuth main', () => {
     await a.connect('t')
     for (const s of spies) expect(s).not.toHaveBeenCalled()
     spies.forEach((s) => s.mockRestore())
+  })
+  describe('waitAtMost / late load', () => {
+    it('exports a 5 s timeout', () => { expect(AUTH_READY_TIMEOUT_MS).toBe(5000) })
+
+    it('resolves true for a settled promise and clears the timer', async () => {
+      const clearTimeout = vi.fn()
+      expect(await waitAtMost(Promise.resolve(), 5000, { setTimeout: () => 42, clearTimeout })).toBe(true)
+      expect(clearTimeout).toHaveBeenCalledWith(42)
+    })
+
+    it('resolves false when the timer fires first, and clears the timer too', async () => {
+      let fire
+      const clearTimeout = vi.fn()
+      const p = waitAtMost(new Promise(() => {}), 5000, { setTimeout: (fn) => { fire = fn; return 1 }, clearTimeout })
+      fire()
+      expect(await p).toBe(false)
+      expect(clearTimeout).toHaveBeenCalledWith(1)
+    })
+
+    it('resolves true for a rejecting promise', async () => {
+      expect(await waitAtMost(Promise.reject(new Error('x')), 5000)).toBe(true)
+    })
+
+    it('a late load still reaches listeners after the cap', async () => {
+      const token = jwt(NOW + 30 * DAY)
+      const first = make()
+      await first.ready
+      expect((await first.connect(token)).ok).toBe(true)
+      const g = gate(crypt, 'decrypt')
+      const a = make()
+      const listener = vi.fn()
+      a.onChange(listener)
+      vi.useFakeTimers()
+      try {
+        const p = waitAtMost(a.ready, AUTH_READY_TIMEOUT_MS)
+        await vi.advanceTimersByTimeAsync(AUTH_READY_TIMEOUT_MS)
+        expect(await p).toBe(false)
+      } finally { vi.useRealTimers() }
+      expect(a.status().connected).toBe(false)
+      while (!g.gates.length) await tick()
+      g.release()
+      await a.ready
+      expect(a.status().connected).toBe(true)
+      expect(listener).toHaveBeenCalledTimes(1)
+      expect(listener.mock.calls[0][0].state).toBe('ok')
+    })
   })
 })
