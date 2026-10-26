@@ -33,7 +33,8 @@ export function PlayerMenu({ rate, language, onRate, boost = 1, onBoost, open, o
           </section>
           <section className="player__menu-section">
             <h3 className="player__menu-title">{t('boost.title')}</h3>
-            <div className="player__rates" role="group" aria-label={t('boost.title')}>
+            <span className="player__menu-hint">{t('boost.shortcutHint')}</span>
+            <div className="player__rates" role="group" aria-label={t('boost.title')} aria-keyshortcuts="Shift+ArrowUp Shift+ArrowDown">
               {BOOST_LEVELS.map((v) => (
                 <button key={v} type="button" aria-pressed={v === boost} onClick={() => onBoost(v)}>{v === 1 ? t('boost.off') : formatBoost(v, language)}</button>
               ))}
