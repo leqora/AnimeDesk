@@ -131,6 +131,21 @@ describe('useVolumeBoost', () => {
     el.dispatchEvent(new Event('play'))
     expect(ctx().resume).toHaveBeenCalledTimes(1)
   })
+  it('resumes on play even while the suspend from the previous player is still pending', () => {
+    const { unmount, ctx } = setup(2)
+    const c = ctx()
+    c.state = 'running'
+    // suspend() is async: the state only changes once the audio thread has stopped
+    c.suspend = vi.fn(() => new Promise(() => {}))
+    unmount()
+    expect(c.suspend).toHaveBeenCalledTimes(1)
+    expect(c.state).toBe('running')
+    const el = document.createElement('video')
+    const { FakeContext } = makeFakeContext()
+    renderHook(() => useVolumeBoost({ current: el }, 2, { AudioContextImpl: FakeContext }))
+    el.dispatchEvent(new Event('play'))
+    expect(c.resume).toHaveBeenCalledTimes(1)
+  })
   it('does not leak unhandled rejections from resume or suspend', async () => {
     const { els, unmount, ctx } = setup(2)
     ctx().resume = vi.fn(() => Promise.reject(new Error('x')))
