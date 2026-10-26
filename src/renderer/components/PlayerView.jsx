@@ -227,7 +227,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
         menu={{
           open: menuOpen, onOpen: setMenuOpen,
           rate: rate.rate, language: settings.language, onRate: rate.setRate,
-          boost, onBoost: (v) => { onSettings({ volumeBoost: v }); showBoost(v) },
+          boost, onBoost: (v) => { pendingBoost.current = v; onSettings({ volumeBoost: v }); showBoost(v) },
           subs: { on: subs.on, available: subs.available, hint: subs.hint, offsetLabel: subs.offsetLabel, size: settings.subtitles.size },
           onToggleSubs: subs.toggle, onSubOffset: subs.shift, onSubOffsetReset: subs.reset, onSubSize: (n) => onSettings({ subtitles: { size: n } }),
         }}
