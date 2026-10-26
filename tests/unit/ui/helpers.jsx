@@ -65,6 +65,10 @@ export function makeFakeApi(overrides = {}) {
     sequels: { list: vi.fn(async () => []), hide: vi.fn(async () => ({ ok: true })), unhide: vi.fn(async () => ({ ok: true })), onChanged: vi.fn(() => () => {}) },
     recommendations: { list: vi.fn(async () => ({ mode: 'trending', hint: false, items: [] })), hide: vi.fn(async () => ({ ok: true })), unhide: vi.fn(async () => ({ ok: true })), forSeries: vi.fn(async () => ({ items: [] })), onChanged: vi.fn(() => () => {}) },
     schedule: { list: vi.fn(async () => ({ state: 'ok', refreshing: false, fetchedAt: null, from: 0, days: [], items: [] })), posters: vi.fn(async () => ({})), onChanged: vi.fn(() => () => {}) },
+    discover: {
+      list: vi.fn(async () => ({ state: 'ok', refreshing: false, fetchedAt: 0, retryAt: null, season: { season: 'FALL', year: 2026 }, next: { season: 'WINTER', year: 2027 }, rails: { season: [], upcoming: [], movies: [], trending: [] }, hiddenIds: [] })),
+      posters: vi.fn(async () => ({})), onChanged: vi.fn(() => () => {}),
+    },
     externalPlayer: { state: vi.fn(async () => null), stop: vi.fn(async () => {}), onChange: sub() },
     onNotificationsChanged: sub(),
     onOpenAnime: sub(),
