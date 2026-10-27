@@ -393,7 +393,7 @@ describe('AnimeDetail', () => {
   })
   it('shows progress, edits episode notes and toggles watched', async () => {
     const { api } = renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />)
-    expect(screen.getByText('Napredak: 2 / 4')).toBeInTheDocument()
+    expect(screen.getByText('2 / 4 odgledano')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '2' }))
     expect(screen.getByLabelText('Beleška za epizodu 2')).toHaveValue('lepo')
     fireEvent.change(screen.getByLabelText('Beleška za epizodu 2'), { target: { value: 'najbolja' } })

@@ -21,6 +21,21 @@ describe('EpisodePicker', () => {
     renderUi(<EpisodePicker {...base({ prefs: {}, onPrefs: vi.fn() })} />)
     expect(screen.getByLabelText('Kvalitet').closest('.episode-bar')).not.toBeNull()
   })
+  it('puts quality and sub/dub into the toolbar row instead of the sticky bar when a toolbar is given', () => {
+    const { container } = renderUi(<EpisodePicker {...base({ prefs: {}, onPrefs: vi.fn() })} toolbar={<span>X</span>} />)
+    const bar = container.querySelector('.ep-toolbar')
+    expect(bar).not.toBeNull()
+    expect(bar).toContainElement(screen.getByLabelText('Kvalitet'))
+    expect(bar).toContainElement(screen.getByLabelText('Režim'))
+    expect(bar).toHaveTextContent('X')
+    expect(container.querySelector('.episode-bar')).toBeNull()
+  })
+  it('keeps quality and sub/dub in the sticky bar and renders no toolbar without the toolbar prop', () => {
+    const { container } = renderUi(<EpisodePicker {...base({ prefs: {}, onPrefs: vi.fn() })} />)
+    expect(container.querySelector('.ep-toolbar')).toBeNull()
+    expect(screen.getByLabelText('Kvalitet').closest('.episode-bar')).not.toBeNull()
+    expect(screen.getByLabelText('Režim').closest('.episode-bar')).not.toBeNull()
+  })
   it('shows all episodes without groups or go-to for short series', () => {
     renderUi(<EpisodePicker {...base({ watched: [1], selected: ['3'] })}><button type="button">Akcija</button></EpisodePicker>)
     expect(screen.getAllByRole('button', { name: /^\d+$/ })).toHaveLength(12)

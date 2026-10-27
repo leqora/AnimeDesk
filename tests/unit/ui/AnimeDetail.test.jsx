@@ -301,3 +301,73 @@ describe('AnimeDetail fuzzy AniList match', () => {
     await waitFor(() => expect(api.library.update).toHaveBeenCalledWith('a1', { totalEpisodes: 12 }))
   })
 })
+
+describe('AnimeDetail episode toolbar', () => {
+  const prefsApi = (over = {}, set) => makeFakeApi({
+    seriesPrefs: {
+      get: vi.fn(async () => ({ quality: '720', mode: 'dub', subOffset: { sub: 0, dub: 0 }, autoDownload: false, hideFiller: false, ...over })),
+      ...(set ? { set } : {}),
+    },
+  })
+  it('quality and sub/dub per series in the detail', async () => {
+    const api = prefsApi()
+    mount(api)
+    await waitFor(() => expect(screen.getByLabelText('Kvalitet')).toHaveValue('720'))
+    expect(screen.getByLabelText('Režim')).toHaveValue('dub')
+    expect(screen.getByLabelText('Kvalitet').closest('.ep-toolbar')).not.toBeNull()
+    fireEvent.change(screen.getByLabelText('Kvalitet'), { target: { value: '1080' } })
+    expect(screen.getByLabelText('Kvalitet')).toHaveValue('1080')
+    await waitFor(() => expect(api.seriesPrefs.set).toHaveBeenCalledWith('Show', { quality: '1080' }))
+  })
+  it('rolls quality back when saving is rejected', async () => {
+    const api = prefsApi({}, vi.fn(async () => { throw new Error('boom') }))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    mount(api)
+    await waitFor(() => expect(screen.getByLabelText('Kvalitet')).toHaveValue('720'))
+    fireEvent.change(screen.getByLabelText('Kvalitet'), { target: { value: '1080' } })
+    await waitFor(() => expect(screen.getByLabelText('Kvalitet')).toHaveValue('720'))
+  })
+  it('rolls sub/dub back when saving is rejected', async () => {
+    const api = prefsApi({}, vi.fn(async () => { throw new Error('boom') }))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    mount(api)
+    await waitFor(() => expect(screen.getByLabelText('Režim')).toHaveValue('dub'))
+    fireEvent.change(screen.getByLabelText('Režim'), { target: { value: 'sub' } })
+    await waitFor(() => expect(screen.getByLabelText('Režim')).toHaveValue('dub'))
+  })
+  it('has no quality or sub/dub selects without aniCliTitle', async () => {
+    mount(prefsApi(), {}, entry({ aniCliTitle: null }))
+    await screen.findByRole('tab', { name: 'Epizode' })
+    expect(screen.queryByLabelText('Kvalitet')).toBeNull()
+    expect(screen.queryByLabelText('Režim')).toBeNull()
+  })
+  it('toolbar shows watched count', async () => {
+    mount(makeFakeApi(), {}, entry({ totalEpisodes: 28, watchedEpisodes: [1, 2, 3] }))
+    const txt = await screen.findByText('3 / 28 odgledano')
+    expect(txt.closest('.ep-toolbar')).not.toBeNull()
+  })
+  const noMeta = { source: 'ani-cli', meta: 'none', marks: 'none', markCounts: { filler: 0, recap: 0 }, episodes: ['1', '2', '3', '4', '5', '6'].map((n) => ({ number: n, runtime: null, visibility: 'hidden' })) }
+  it('numbers view: pick then play', async () => {
+    const onContinue = vi.fn()
+    const api = makeFakeApi({ episodes: { forSeries: vi.fn(async () => noMeta) } })
+    mount(api, { onContinue }, entry({ totalEpisodes: 6 }))
+    fireEvent.click(await screen.findByRole('button', { name: '5' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Gledaj EP 5' }))
+    expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '5' })
+    expect(screen.getByRole('button', { name: 'Označi kao odgledano' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Beleška za epizodu 5')).toBeInTheDocument()
+  })
+  it('disables watching the picked episode when not ready', async () => {
+    const api = makeFakeApi({ episodes: { forSeries: vi.fn(async () => noMeta) } })
+    mount(api, { ready: false }, entry({ totalEpisodes: 6 }))
+    fireEvent.click(await screen.findByRole('button', { name: '5' }))
+    expect(screen.getByRole('button', { name: 'Gledaj EP 5' })).toBeDisabled()
+  })
+  it('long series groups: chosen group survives tab switches', async () => {
+    mount(makeFakeApi(), {}, entry({ totalEpisodes: 250, watchedEpisodes: Array.from({ length: 130 }, (_, i) => i + 1) }))
+    expect(await screen.findByRole('button', { name: '101–200' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(tab('Beleške'))
+    fireEvent.click(tab('Epizode'))
+    expect(screen.getByRole('button', { name: '101–200' })).toHaveAttribute('aria-pressed', 'true')
+  })
+})

@@ -207,6 +207,16 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .tabs__tab[aria-selected="true"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
 .tabs__tab:focus-visible { outline: 2px solid var(--accent-2); outline-offset: -2px; box-shadow: var(--glow-cyan); }
 .tabs__panel[hidden] { display: none; }
+.ep-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 12px; }
+.ep-toolbar .ep-view { margin-bottom: 0; }
+.ep-toolbar__count { color: var(--text-muted); font-size: 14px; }
+.ep-toolbar__break { flex-basis: 100%; }
+.detail .ep-groups { gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--glass-border); margin-bottom: 12px; }
+.detail .ep-groups .ep-group { position: relative; background: transparent; border: 0; border-radius: 0; padding: 8px 14px; color: var(--text-muted); font-size: 14px; }
+.detail .ep-groups .ep-group:hover:not(:disabled) { background: transparent; color: var(--text); }
+.detail .ep-groups .ep-group[aria-pressed="true"] { background: transparent; color: var(--text); }
+.detail .ep-groups .ep-group[aria-pressed="true"]::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+.detail .ep-groups .ep-group:focus-visible { outline: 2px solid var(--accent-2); outline-offset: -2px; box-shadow: var(--glow-cyan); }
 
 /* continue watching: 16:9 cards (the image frame sizes itself: PosterFrame's poster is absolute) */
 .continue-card { position: relative; isolation: isolate; display: flex; flex-direction: column; transition: transform var(--dur) var(--ease); }

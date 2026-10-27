@@ -6,7 +6,7 @@ import { GROUP_SIZE, episodeGroups, findEpisodeIndex, firstUnwatchedIndex } from
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 
-export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, hideMarked = false, onHideMarked = null, children }) {
+export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, hideMarked = false, onHideMarked = null, toolbar = null, children }) {
   const t = useT()
   const groups = episodeGroups(episodes)
   const [group, setGroup] = useState(() => Math.floor(firstUnwatchedIndex(episodes, watched) / GROUP_SIZE))
@@ -46,6 +46,35 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
     setFocus((f) => ({ ep, n: (f?.n ?? 0) + 1 }))
   }
 
+  const viewSwitch = hasMeta && (
+    <div className="ep-view" role="group" aria-label={t('episodes.view')}>
+      <button type="button" aria-pressed={view === 'numbers'} onClick={() => setView('numbers')}>{t('episodes.viewNumbers')}</button>
+      <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>{t('episodes.viewList')}</button>
+    </div>
+  )
+  const hideButton = showLegend && onHideMarked && (
+    <button type="button" className="ep-legend__toggle" aria-pressed={hideMarked} onClick={() => onHideMarked(!hideMarked)}>{t('episodes.hideMarked')}</button>
+  )
+  const prefsSelects = prefs && onPrefs && (
+      <>
+        <label className="field field--inline">
+          <span>{t('episodes.quality')}</span>
+          <select aria-label={t('episodes.quality')} value={prefs.quality ?? ''} onChange={(e) => onPrefs({ quality: e.target.value || null })}>
+            <option value="">{t('episodes.default')}</option>
+            {QUALITIES.map((q) => <option key={q} value={q}>{q}</option>)}
+          </select>
+        </label>
+        <label className="field field--inline">
+          <span>{t('episodes.mode')}</span>
+          <select aria-label={t('episodes.mode')} value={prefs.mode ?? ''} onChange={(e) => onPrefs({ mode: e.target.value || null })}>
+            <option value="">{t('episodes.default')}</option>
+            <option value="sub">{t('settings.mode.sub')}</option>
+            <option value="dub">{t('settings.mode.dub')}</option>
+          </select>
+        </label>
+      </>
+  )
+
   return (
     <div className="episode-picker">
       {groups.length > 1 && (
@@ -61,19 +90,22 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
           </form>
         </>
       )}
-      {hasMeta && (
-        <div className="ep-view" role="group" aria-label={t('episodes.view')}>
-          <button type="button" aria-pressed={view === 'numbers'} onClick={() => setView('numbers')}>{t('episodes.viewNumbers')}</button>
-          <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>{t('episodes.viewList')}</button>
+      {toolbar != null && (
+        <div className="ep-toolbar">
+          {viewSwitch}
+          {hideButton}
+          {toolbar}
+          {prefsSelects}
         </div>
       )}
+      {toolbar == null && viewSwitch}
       {showLegend && (
         <div className="ep-legend">
           <span>{t('episodes.marksLegend')}</span>
           {counts.filler > 0 && <span>{t('episodes.fillerCount', { n: counts.filler })}</span>}
           {counts.recap > 0 && <span>{t('episodes.recapCount', { n: counts.recap })}</span>}
           <span className="muted">{t('episodes.marksSource')}</span>
-          {onHideMarked && <button type="button" className="ep-legend__toggle" aria-pressed={hideMarked} onClick={() => onHideMarked(!hideMarked)}>{t('episodes.hideMarked')}</button>}
+          {toolbar == null && hideButton}
           {hiding && hiddenCount > 0 && <span className="muted">{t('episodes.hiddenCount', { n: hiddenCount })}</span>}
         </div>
       )}
@@ -114,26 +146,8 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
         </div>
       )}
       {/* An empty sticky bar would still cover the last row of episode buttons. */}
-      {((prefs && onPrefs) || Children.toArray(children).length > 0) && <div className="episode-bar">
-        {prefs && onPrefs && (
-          <>
-            <label className="field field--inline">
-              <span>{t('episodes.quality')}</span>
-              <select aria-label={t('episodes.quality')} value={prefs.quality ?? ''} onChange={(e) => onPrefs({ quality: e.target.value || null })}>
-                <option value="">{t('episodes.default')}</option>
-                {QUALITIES.map((q) => <option key={q} value={q}>{q}</option>)}
-              </select>
-            </label>
-            <label className="field field--inline">
-              <span>{t('episodes.mode')}</span>
-              <select aria-label={t('episodes.mode')} value={prefs.mode ?? ''} onChange={(e) => onPrefs({ mode: e.target.value || null })}>
-                <option value="">{t('episodes.default')}</option>
-                <option value="sub">{t('settings.mode.sub')}</option>
-                <option value="dub">{t('settings.mode.dub')}</option>
-              </select>
-            </label>
-          </>
-        )}
+      {(toolbar == null && (prefs && onPrefs) || Children.toArray(children).length > 0) && <div className="episode-bar">
+        {toolbar == null && prefsSelects}
         {children}
       </div>}
     </div>

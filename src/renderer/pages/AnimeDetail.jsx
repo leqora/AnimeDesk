@@ -45,11 +45,12 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const canAuto = Boolean(entry.aniCliTitle && entry.aniListId != null)
   const [auto, setAuto] = useState(false)
   const [hideFiller, setHideFiller] = useState(false)
+  const [prefs, setPrefs] = useState({ quality: null, mode: null })
   const [downloadDir, setDownloadDir] = useState(undefined)
   useEffect(() => {
     if (!entry.aniCliTitle) return undefined
     let live = true
-    api.seriesPrefs.get(entry.aniCliTitle).then((p) => { if (live) { setAuto(Boolean(p?.autoDownload)); setHideFiller(Boolean(p?.hideFiller)) } }).catch((err) => console.error(err))
+    api.seriesPrefs.get(entry.aniCliTitle).then((p) => { if (live) { setAuto(Boolean(p?.autoDownload)); setHideFiller(Boolean(p?.hideFiller)); setPrefs({ quality: p?.quality ?? null, mode: p?.mode ?? null }) } }).catch((err) => console.error(err))
     return () => { live = false }
   }, [api, entry.aniCliTitle])
   useEffect(() => {
@@ -73,6 +74,20 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
       const next = await api.seriesPrefs.set(entry.aniCliTitle, { hideFiller: hide })
       if (mounted.current) setHideFiller(Boolean(next?.hideFiller))
     } catch (err) { console.error(err); if (mounted.current) setHideFiller(!hide) }
+  } : null
+
+  // Quality / sub-dub for this series: optimistic, rolled back for the changed keys when saving fails.
+  const changePrefs = entry.aniCliTitle ? async (patch) => {
+    const keys = Object.keys(patch)
+    const previous = prefs
+    setPrefs((cur) => ({ ...cur, ...patch }))
+    try {
+      const next = await api.seriesPrefs.set(entry.aniCliTitle, patch)
+      if (mounted.current) setPrefs((cur) => ({ ...cur, ...Object.fromEntries(keys.map((k) => [k, next?.[k] ?? null])) }))
+    } catch (err) {
+      console.error(err)
+      if (mounted.current) setPrefs((cur) => ({ ...cur, ...Object.fromEntries(keys.map((k) => [k, previous[k]])) }))
+    }
   } : null
 
   // Patch aniListId/totalEpisodes into the library once per entry id, when its info first arrives.
@@ -191,23 +206,34 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
     const root = matchRef.current
     ;(root?.querySelector('button') ?? root?.querySelector('.anilist-match') ?? root)?.focus()
   }, [pickReq, shownTab])
+  const episodeToolbar = (
+    <>
+      <span className="ep-toolbar__count">{t('detail.watchedCount', { watched: watched.length, total: entry.totalEpisodes ?? '?' })}</span>
+      {canAuto && (
+        <div className="check-group">
+          <label className="check">
+            <input
+              type="checkbox" checked={auto} disabled={downloadDir == null && !auto}
+              aria-describedby="auto-download-hint" onChange={(e) => toggleAuto(e.target.checked)}
+            />
+            {t('detail.autoDownload')}
+          </label>
+          <p id="auto-download-hint" className="check-hint muted">
+            {downloadDir === null ? t('detail.autoDownloadNoDir') : auto && `${t('detail.autoDownloadOn')}${entry.status === 'watching' ? '' : ` ${t('detail.autoDownloadNotWatching')}`}`}
+          </p>
+        </div>
+      )}
+      {series && (series.meta === 'unreliable' || series.meta === 'ok') && (
+      <div className="row spoiler-row ep-toolbar__break">
+        {series.meta === 'unreliable' && <span className="muted">{t('episodes.unreliable')}</span>}
+        {series.meta === 'ok' && <button type="button" onClick={() => update({ all: true })}>{t('episodes.revealAll')}</button>}
+        {series.meta === 'ok' && <button type="button" onClick={() => update({ reset: true })}>{t('episodes.hideAgain')}</button>}
+      </div>
+    )}
+    </>
+  )
   const episodesPanel = (
     <div className="page">
-          <p>{t('detail.progress', { watched: watched.length, total: entry.totalEpisodes ?? '?' })}</p>
-          {canAuto && (
-            <div className="check-group">
-              <label className="check">
-                <input
-                  type="checkbox" checked={auto} disabled={downloadDir == null && !auto}
-                  aria-describedby="auto-download-hint" onChange={(e) => toggleAuto(e.target.checked)}
-                />
-                {t('detail.autoDownload')}
-              </label>
-              <p id="auto-download-hint" className="check-hint muted">
-                {downloadDir === null ? t('detail.autoDownloadNoDir') : auto && `${t('detail.autoDownloadOn')}${entry.status === 'watching' ? '' : ` ${t('detail.autoDownloadNotWatching')}`}`}
-              </p>
-            </div>
-          )}
           <h3>{t('detail.episodes')}</h3>
           <EpisodePicker
             key={episodes.length}
@@ -223,14 +249,10 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
             loadThumb={thumb}
             hideMarked={hideFiller}
             onHideMarked={changeHideFiller}
+            prefs={changePrefs ? prefs : null}
+            onPrefs={changePrefs}
+            toolbar={episodeToolbar}
           />
-          {series && (series.meta === 'unreliable' || series.meta === 'ok') && (
-            <div className="row spoiler-row">
-              {series.meta === 'unreliable' && <span className="muted">{t('episodes.unreliable')}</span>}
-              {series.meta === 'ok' && <button type="button" onClick={() => update({ all: true })}>{t('episodes.revealAll')}</button>}
-              {series.meta === 'ok' && <button type="button" onClick={() => update({ reset: true })}>{t('episodes.hideAgain')}</button>}
-            </div>
-          )}
           {noteEp != null && (
             <div className="page">
               <label className="field">
@@ -238,7 +260,10 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
                 <textarea aria-label={t('detail.note', { episode: noteEp })} value={noteText} onChange={(e) => setNoteText(e.target.value)} />
               </label>
               <div className="row">
-                <button type="button" className="primary" onClick={saveNote}>{t('detail.save')}</button>
+                <button type="button" className="primary" disabled={!ready} onClick={() => onContinue({ query: animeKey, anime: animeKey, episode: String(noteEp) })}>
+                  <span aria-hidden="true">▶ </span>{t('detail.playEp', { episode: noteEp })}
+                </button>
+                <button type="button" onClick={saveNote}>{t('detail.save')}</button>
                 <button type="button" onClick={() => toggleWatched(noteEp)}>
                   {watched.includes(noteEp) ? t('detail.unmarkWatched') : t('detail.markWatched')}
                 </button>

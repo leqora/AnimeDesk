@@ -104,6 +104,8 @@
   "detail.metaOff": "Isključi metapodatke za ovu seriju",
   "detail.metaOn": "Uključi metapodatke za ovu seriju",
   "detail.pickAniList": "AniList: izaberi seriju",
+  "detail.watchedCount": "{watched} / {total} odgledano",
+  "detail.playEp": "Gledaj EP {episode}",
   "ask.markWatched": "Označi epizodu {episode} ({title}) kao odgledanu?",
   "ask.yes": "Da",
   "ask.no": "Ne",
