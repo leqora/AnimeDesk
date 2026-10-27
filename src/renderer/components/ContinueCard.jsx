@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { useToast } from '../toast/ToastProvider.jsx'
@@ -33,6 +33,7 @@ export function ContinueCard({ entry, ready, onContinue, onOpen }) {
   const api = useApi()
   const t = useT()
   const toast = useToast()
+  const lineId = useId()
   const key = entry.aniCliTitle ?? entry.title
   const next = nextEpisode(entry)
   const info = usePosterInfo(entry.title, entry.aniListId)
@@ -57,7 +58,7 @@ export function ContinueCard({ entry, ready, onContinue, onOpen }) {
 
   return (
     <div className="continue-card">
-      <button type="button" className="continue-card__open" disabled={!ready} aria-label={`${t('home.continueEp', { episode: next })}: ${entry.title}`} onClick={() => onContinue({ query: key, anime: key, episode: String(next) })}>
+      <button type="button" className="continue-card__open" disabled={!ready} aria-describedby={lineId} aria-label={`${t('home.continueEp', { episode: next })}: ${entry.title}`} onClick={() => onContinue({ query: key, anime: key, episode: String(next) })}>
         <span className="continue-card__frame" style={tint ? { '--poster-tint': tint } : undefined}>
           {image ? <img className="continue-card__img" src={image} alt="" onError={() => markBad(image)} />
             : thumb === undefined || banner === undefined ? <span className="poster poster--skeleton" aria-hidden="true" />
@@ -73,7 +74,7 @@ export function ContinueCard({ entry, ready, onContinue, onOpen }) {
           {saved && <span className="continue-card__bar" aria-hidden="true" style={{ '--ratio': saved.ratio }} />}
         </span>
         <span className="card__title">{entry.title}</span>
-        <span className="card__meta">{line}</span>
+        <span className="card__meta" id={lineId}>{line}</span>
       </button>
       <div className="continue-card__actions">
         <button type="button" aria-label={`${t('home.details')}: ${entry.title}`} onClick={() => onOpen(entry.id)}><Icon name="info" /></button>

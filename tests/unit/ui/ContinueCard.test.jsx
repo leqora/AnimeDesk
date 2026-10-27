@@ -41,6 +41,13 @@ describe('ContinueCard', () => {
     await waitFor(() => expect(container.querySelector('.continue-card__poster')).not.toBeNull())
     expect(container.querySelector('.continue-card__img')).toBeNull()
   })
+  it('the button is described by the visible episode line', async () => {
+    renderUi(<ContinueCard entry={entry()} {...cb} />, { api: apiWith() })
+    const open = screen.getByRole('button', { name: /Nastavi EP 5: Show/ })
+    const line = await screen.findByText('Epizoda 5')
+    expect(open).toHaveAttribute('aria-describedby', line.id)
+    expect(open).toHaveAccessibleDescription('Epizoda 5')
+  })
   it('text: with the saved position and without, never an episode title', async () => {
     const saved = apiWith({ positions: { forSeries: vi.fn(async () => ({ 5: { position: 720, duration: 1440 } })) } })
     const a = renderUi(<ContinueCard entry={entry()} {...cb} />, { api: saved })
