@@ -73,12 +73,13 @@ describe('AnimeDetail "Slično"', () => {
     expect(screen.queryByRole('button', { name: /Ne preporučuj/ })).toBeNull()
   })
 
-  it('sits before the remove button', async () => {
+  it('removal lives in the more menu, not at the bottom of the page', async () => {
     const api = makeFakeApi({ recommendations: { forSeries: forSeries() } })
     mount(api, entry({ aniListId: 42 }))
-    const sec = await screen.findByRole('region', { name: 'Slično' })
-    const remove = screen.getByRole('button', { name: 'Ukloni iz watchlist-e' })
-    expect(sec.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await screen.findByRole('region', { name: 'Slično' })
+    expect(screen.queryByRole('button', { name: 'Ukloni iz Watchlist-e' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Još' }))
+    expect(screen.getByRole('menuitem', { name: 'Ukloni iz Watchlist-e' })).toBeInTheDocument()
   })
 
   it('click calls onSearch with romaji, else the title', async () => {

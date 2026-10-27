@@ -88,4 +88,10 @@ ${sel} {`)
     expect(body('.schedule-row--aired .schedule-row__poster')).toContain('opacity')
     expect(body('.schedule-row--aired .schedule-row__time')).toContain('color: var(--text-muted)')
   })
+  it('the see-through top bar rule follows .page-banner, not just the home hero', () => {
+    const rule = css.split('\n').find((l) => l.includes('[data-at-top="true"]') && l.includes('.topbar {')) ?? ''
+    expect(rule).toContain('.page-banner')
+    expect(rule).not.toContain('.home-hero')
+    expect(css).toMatch(/\.app-shell:has\(\.content__notices > \*\) \.page-banner \{ margin-top: 0; \}/)
+  })
 })

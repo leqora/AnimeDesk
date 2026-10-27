@@ -32,7 +32,10 @@ const toDetail = async (title = 'Alpha') => {
   fireEvent.click(await screen.findByRole('button', { name: new RegExp(`^${title} —`) }))
   await screen.findByRole('button', { name: 'Nazad' })
 }
-const remove = () => fireEvent.click(screen.getByRole('button', { name: 'Ukloni iz watchlist-e' }))
+const remove = () => {
+  fireEvent.click(screen.getByRole('button', { name: 'Još' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Ukloni iz Watchlist-e' }))
+}
 const ctrlZ = (target = window) => fireEvent.keyDown(target, { key: 'z', code: 'KeyZ', ctrlKey: true })
 
 describe('undo flow in the app', () => {

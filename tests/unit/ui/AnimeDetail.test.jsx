@@ -11,12 +11,17 @@ const entry = (over = {}) => ({
 const mount = (api, props = {}, e = entry()) =>
   renderUi(<AnimeDetail entry={e} ready onBack={() => {}} onRemoved={() => {}} onChanged={() => {}} onContinue={() => {}} {...props} />, { api })
 
+const removeViaMenu = () => {
+  fireEvent.click(screen.getByRole('button', { name: 'Još' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Ukloni iz Watchlist-e' }))
+}
+
 describe('AnimeDetail undo', () => {
   it('removing a series goes back and offers undo', async () => {
     const api = makeFakeApi()
     const onRemoved = vi.fn()
     mount(api, { onRemoved })
-    fireEvent.click(screen.getByRole('button', { name: 'Ukloni iz watchlist-e' }))
+    removeViaMenu()
     await waitFor(() => expect(onRemoved).toHaveBeenCalled())
     expect(api.library.remove).toHaveBeenCalledWith('a1')
     expect(await screen.findByText('Uklonjeno iz watchlist-e: Show')).toBeInTheDocument()
@@ -26,7 +31,7 @@ describe('AnimeDetail undo', () => {
     const api = makeFakeApi()
     const onChanged = vi.fn()
     mount(api, { onChanged })
-    fireEvent.click(screen.getByRole('button', { name: 'Ukloni iz watchlist-e' }))
+    removeViaMenu()
     await screen.findByRole('button', { name: 'Poništi' })
     onChanged.mockClear()
     fireEvent.click(screen.getByRole('button', { name: 'Poništi' }))
@@ -37,7 +42,7 @@ describe('AnimeDetail undo', () => {
   it('failed undo shows an error toast', async () => {
     const api = makeFakeApi({ library: { restore: vi.fn(async () => ({ ok: false, error: 'expired' })) } })
     mount(api)
-    fireEvent.click(screen.getByRole('button', { name: 'Ukloni iz watchlist-e' }))
+    removeViaMenu()
     fireEvent.click(await screen.findByRole('button', { name: 'Poništi' }))
     expect(await screen.findByText('Seriju nije moguće vratiti.')).toBeInTheDocument()
   })
@@ -73,7 +78,7 @@ describe('AnimeDetail undo', () => {
     const api = makeFakeApi({ library: { restore: vi.fn(async () => { throw new Error('ipc') }) } })
     vi.spyOn(console, 'error').mockImplementation(() => {})
     mount(api)
-    fireEvent.click(screen.getByRole('button', { name: 'Ukloni iz watchlist-e' }))
+    removeViaMenu()
     fireEvent.click(await screen.findByRole('button', { name: 'Poništi' }))
     expect(await screen.findByText('Seriju nije moguće vratiti.')).toBeInTheDocument()
   })
@@ -82,7 +87,7 @@ describe('AnimeDetail undo', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const onRemoved = vi.fn()
     mount(api, { onRemoved })
-    fireEvent.click(screen.getByRole('button', { name: 'Ukloni iz watchlist-e' }))
+    removeViaMenu()
     await waitFor(() => expect(api.library.remove).toHaveBeenCalled())
     await new Promise((r) => setTimeout(r, 20))
     expect(onRemoved).not.toHaveBeenCalled()
@@ -173,20 +178,32 @@ describe('AnimeDetail undo', () => {
   })
 })
 
+describe('AnimeDetail more menu', () => {
+  it('AniList: choose series puts focus on the AniList card', async () => {
+    mount(makeFakeApi())
+    const choose = await screen.findByRole('button', { name: 'Izaberi' })
+    fireEvent.click(screen.getByRole('button', { name: 'Još' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'AniList: izaberi seriju' }))
+    expect(document.activeElement).toBe(choose)
+  })
+})
+
 describe('AnimeDetail marks', () => {
   const marked = (meta, marks) => ({ source: 'ani-cli', meta, marks, markCounts: { filler: 1, recap: 0 }, episodes: ['1', '2', '3', '4'].map((n) => ({ number: n, runtime: null, visibility: 'hidden', ...(n === '2' ? { kind: 'filler' } : {}) })) })
   const OFF = 'Isključi metapodatke za ovu seriju'
   it('shows the metadata switch row when marks are available even without metadata', async () => {
     const s = marked('none', 'ok')
     mount(makeFakeApi({ episodes: { forSeries: vi.fn(async () => s) } }))
-    expect(await screen.findByLabelText(OFF)).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button', { name: 'Još' }))
+    expect(await screen.findByRole('menuitem', { name: OFF })).toBeInTheDocument()
   })
   it.each([['none', 'none'], ['none', 'off']])('hides the row when meta is %s and marks is %s', async (meta, marks) => {
     const api = makeFakeApi({ episodes: { forSeries: vi.fn(async () => marked(meta, marks)) } })
     mount(api)
     await waitFor(() => expect(api.episodes.forSeries).toHaveBeenCalled())
     await new Promise((r) => setTimeout(r, 20))
-    expect(screen.queryByLabelText(OFF)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Još' }))
+    expect(screen.queryByRole('menuitem', { name: OFF })).not.toBeInTheDocument()
   })
   it('toggling hide saves hideFiller for the series and hides marked episodes', async () => {
     const api = makeFakeApi({ episodes: { forSeries: vi.fn(async () => marked('none', 'ok')) } })

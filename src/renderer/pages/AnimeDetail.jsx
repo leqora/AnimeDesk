@@ -3,29 +3,24 @@ import { useApi } from '../api.js'
 import { useAniListInfo } from '../anilist/useAniListInfo.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { useToast } from '../toast/ToastProvider.jsx'
-import { Poster } from '../components/Poster.jsx'
+import { DetailHero } from '../detail/DetailHero.jsx'
 import { EpisodePicker } from '../components/EpisodePicker.jsx'
-import { Icon } from '../components/Icon.jsx'
 import { AniListMatch } from '../components/AniListMatch.jsx'
 import { RecommendationCard } from '../components/RecommendationCard.jsx'
 import { useSeriesEpisodes } from '../episodes/useSeriesEpisodes.js'
 import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
-import { usePosterTint } from '../theme/usePosterTint.js'
-import { STATUSES, nextEpisode } from '../../shared/domain.js'
+import { nextEpisode } from '../../shared/domain.js'
 import { useNow } from '../useNow.js'
 import { isSeriesComplete } from '../components/MediaCard.jsx'
-import { AiringLine, NewBadge } from '../components/AiringLine.jsx'
-import { newEpisodeCount, upcoming, ANILIST_STATUSES } from '../../shared/airing.js'
-import { formatTime } from '../../shared/player.js'
+import { newEpisodeCount } from '../../shared/airing.js'
 
-export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onContinue, onSearch = () => {} }) {
+export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onContinue, onSearch = () => {}, playerOpen = false }) {
   const api = useApi()
   const t = useT()
   const rawInfo = useAniListInfo(entry.title, entry.aniListId, { live: true }) // undefined = loading, null = not found
   const info = rawInfo ?? null
   // A fuzzy (close) title match is shown as poster/title/year/genres only; nothing else is taken from it.
   const closeMatch = info?.match === 'close'
-  const tint = usePosterTint(info?.poster ?? null)
   // "Similar": the linked id, else an exact title match; a close match never counts.
   const similarId = entry.aniListId ?? (info?.match === 'exact' ? info.id : null)
   const [similar, setSimilar] = useState([])
@@ -39,7 +34,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
       .catch(() => {})
     return () => { alive = false }
   }, [api, similarId])
-  const [showDesc, setShowDesc] = useState(false)
+  const matchRef = useRef(null)
   const [comment, setComment] = useState(entry.comment)
   const [noteEp, setNoteEp] = useState(null)
   const [noteText, setNoteText] = useState('')
@@ -104,15 +99,12 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const now = useNow()
   const fresh = newEpisodeCount(entry, info, now)
   const saved = progress[String(nextEp)]
-  const totalEps = entry.totalEpisodes ?? (closeMatch ? null : info?.episodes) ?? null
-  const meta = info
-    ? [
-        info.year,
-        totalEps && t('detail.episodesCount', { n: totalEps }),
-        !closeMatch && info.duration && t('detail.duration', { min: info.duration }),
-        !closeMatch && ANILIST_STATUSES.includes(info.status) && t(`airing.status.${info.status}`),
-      ].filter(Boolean)
-    : []
+  // The episode-info switch lives in the "more" menu; it needs something to switch (same condition as the old row).
+  const metaToggle = series && (series.meta !== 'none' || series.marks === 'ok')
+    ? { off: series.meta === 'off', onChange: (off) => update({ metaOff: off }) }
+    : null
+  // Until the AniList card moves to the notes tab, "choose series" just puts focus on the card's first button.
+  const pickAniList = () => { matchRef.current?.querySelector('button')?.focus() }
 
   const openNote = (ep) => { setNoteEp(ep); setNoteText(entry.episodeNotes[String(ep)] ?? '') }
   const saveNote = async () => { await api.library.setEpisodeNote(entry.id, noteEp, noteText); onChanged() }
@@ -188,46 +180,20 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
 
   return (
     <section className="page">
-      <div className="row">
-        <button type="button" onClick={onBack}>{t('detail.back')}</button>
-      </div>
-      <div className="banner" style={tint ? { '--poster-tint': tint } : undefined}>
-        {info?.poster && <div className="hero__bg" style={{ backgroundImage: `url(${info.poster})` }} />}
-        <div className="banner__body">
-          <Poster title={entry.title} aniListId={entry.aniListId} />
-          <div className="banner__text">
-            <h2>{entry.title}</h2>
-            {meta.length > 0 && <p className="banner__meta hud">{meta.join(' · ')}</p>}
-            {(upcoming(info, now) || fresh > 0) && (
-              <div className="banner__airing">
-                <AiringLine info={info} now={now} />
-                <NewBadge count={fresh} inline />
-              </div>
-            )}
-            {info?.genres?.length > 0 && (
-              <ul className="chips" aria-label={t('detail.genres')}>
-                {info.genres.map((g) => <li key={g} className="chip">{g}</li>)}
-              </ul>
-            )}
-            <div className="row banner__actions">
-              <button type="button" className="primary" disabled={!ready} onClick={() => onContinue({ query: animeKey, anime: animeKey, episode: String(nextEp) })}>
-                <Icon name="play" /> {finished ? t('detail.rewatch') : saved ? t('home.continueEpFrom', { episode: nextEp, time: formatTime(saved.position) }) : t('home.continueEp', { episode: nextEp })}
-              </button>
-              <button type="button" aria-pressed={Boolean(entry.pinnedAt)} onClick={togglePin}><Icon name="star" /> {entry.pinnedAt ? t('pin.remove') : t('pin.add')}</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <DetailHero
+        entry={entry} info={info} ready={ready} nextEp={nextEp} saved={saved} finished={finished} fresh={fresh} now={now}
+        metaToggle={metaToggle} playerOpen={playerOpen}
+        onBack={onBack}
+        onContinue={() => onContinue({ query: animeKey, anime: animeKey, episode: String(nextEp) })}
+        onTogglePin={togglePin}
+        onStatus={(status) => save({ status })}
+        onRemove={remove}
+        onPickAniList={pickAniList}
+      />
       <div className="detail">
         <div className="page">
           <p>{t('detail.progress', { watched: watched.length, total: entry.totalEpisodes ?? '?' })}</p>
           <div className="row">
-            <label className="field">
-              <span>{t('detail.status')}</span>
-              <select aria-label={t('detail.status')} value={entry.status} onChange={(e) => save({ status: e.target.value })}>
-                {STATUSES.map((s) => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
-              </select>
-            </label>
             <label className="field">
               <span>{t('detail.rating')}</span>
               <select aria-label={t('detail.rating')} value={entry.rating ?? ''} onChange={(e) => save({ rating: e.target.value ? Number(e.target.value) : null })}>
@@ -250,17 +216,11 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
               </p>
             </div>
           )}
-          <AniListMatch entry={entry} info={rawInfo}onChanged={onChanged} />
+          <div ref={matchRef} data-anilist-match><AniListMatch entry={entry} info={rawInfo} onChanged={onChanged} /></div>
           <label className="field">
             <span>{t('detail.comment')}</span>
             <textarea aria-label={t('detail.comment')} value={comment} onChange={(e) => setComment(e.target.value)} onBlur={() => { if (comment !== entry.comment) save({ comment }) }} />
           </label>
-          {!closeMatch && info?.description && (
-            <div>
-              <button type="button" onClick={() => setShowDesc((v) => !v)}>{showDesc ? t('detail.hideDescription') : t('detail.showDescription')}</button>
-              {showDesc && <p className="description">{info.description}</p>}
-            </div>
-          )}
           <h3>{t('detail.episodes')}</h3>
           <EpisodePicker
             key={episodes.length}
@@ -277,15 +237,11 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
             hideMarked={hideFiller}
             onHideMarked={changeHideFiller}
           />
-          {series && (series.meta !== 'none' || series.marks === 'ok') && (
+          {series && (series.meta === 'unreliable' || series.meta === 'ok') && (
             <div className="row spoiler-row">
               {series.meta === 'unreliable' && <span className="muted">{t('episodes.unreliable')}</span>}
               {series.meta === 'ok' && <button type="button" onClick={() => update({ all: true })}>{t('episodes.revealAll')}</button>}
               {series.meta === 'ok' && <button type="button" onClick={() => update({ reset: true })}>{t('episodes.hideAgain')}</button>}
-              <label className="check">
-                <input type="checkbox" checked={series.meta === 'off'} onChange={(e) => update({ metaOff: e.target.checked })} />
-                {t('episodes.metaOff')}
-              </label>
             </div>
           )}
           {noteEp != null && (
@@ -310,9 +266,6 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
               </div>
             </section>
           )}
-          <div className="row">
-            <button type="button" onClick={remove}>{t('detail.delete')}</button>
-          </div>
         </div>
       </div>
     </section>

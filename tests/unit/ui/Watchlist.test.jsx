@@ -308,7 +308,7 @@ describe('AnimeDetail', () => {
     const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => airing) } })
     const onContinue = vi.fn()
     const { container } = renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={onContinue} />, { api })
-    const banner = container.querySelector('.banner')
+    const banner = container.querySelector('.detail-hero')
     await waitFor(() => expect(within(banner).getByText('2023 · 4 EP · 24 min · Emituje se')).toBeInTheDocument())
     expect(within(banner).getByText(/^EP 4 izlazi za 2 d 4 h · /)).toBeInTheDocument()
     expect(within(banner).getByText('1 nova')).toBeInTheDocument() // aired 3, watched up to 2
@@ -323,7 +323,7 @@ describe('AnimeDetail', () => {
     const onContinue = vi.fn()
     const done = entry({ status: 'completed', totalEpisodes: 4, watchedEpisodes: [1, 2, 3, 4] })
     const { container } = renderUi(<AnimeDetail entry={done} ready onBack={() => {}} onChanged={() => {}} onContinue={onContinue} />)
-    const banner = container.querySelector('.banner')
+    const banner = container.querySelector('.detail-hero')
     fireEvent.click(within(banner).getByRole('button', { name: /Gledaj ponovo/ }))
     expect(onContinue).toHaveBeenCalledWith({ query: 'Frieren', anime: 'Frieren', episode: '1' })
     expect(screen.queryByRole('button', { name: /Nastavi EP/ })).not.toBeInTheDocument()
@@ -331,14 +331,14 @@ describe('AnimeDetail', () => {
   it('continues from the saved position in the banner', async () => {
     const api = makeFakeApi({ positions: { forSeries: vi.fn(async () => ({ 3: { position: 495, duration: 1440 } })) } })
     const { container } = renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />, { api })
-    expect(await within(container.querySelector('.banner')).findByRole('button', { name: /Nastavi EP 3 od 8:15/ })).toBeInTheDocument()
+    expect(await within(container.querySelector('.detail-hero')).findByRole('button', { name: /Nastavi EP 3 od 8:15/ })).toBeInTheDocument()
   })
   it('keeps the banner usable without AniList info', () => {
     const { container } = renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />)
-    const banner = container.querySelector('.banner')
+    const banner = container.querySelector('.detail-hero')
     expect(within(banner).getByRole('heading', { name: 'Frieren' })).toBeInTheDocument()
     expect(within(banner).getByRole('button', { name: /Nastavi EP 3/ })).toBeInTheDocument()
-    expect(banner.querySelector('.banner__meta')).toBeNull()
+    expect(banner.querySelector('.detail-hero__meta')).toBeNull()
     expect(banner.querySelector('.chips')).toBeNull()
   })
 
@@ -352,7 +352,8 @@ describe('AnimeDetail', () => {
     expect(api.episodes.spoilers).toHaveBeenLastCalledWith(expect.objectContaining({ list: null }), { all: true })
     fireEvent.click(screen.getByRole('button', { name: 'Ponovo sakrij otkrivene' }))
     expect(api.episodes.spoilers).toHaveBeenLastCalledWith(expect.anything(), { reset: true })
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Isključi metapodatke za ovu seriju' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Još' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Isključi metapodatke za ovu seriju' }))
     expect(api.episodes.spoilers).toHaveBeenLastCalledWith(expect.anything(), { metaOff: true })
   })
   it('explains unreliable metadata and keeps the synthetic list without main', async () => {
@@ -407,7 +408,7 @@ describe('AnimeDetail', () => {
     const { api } = renderUi(<AnimeDetail entry={entry()} ready onBack={onBack} onChanged={() => {}} onContinue={onContinue} />)
     fireEvent.click(screen.getByRole('button', { name: /Nastavi EP 3/ }))
     expect(onContinue).toHaveBeenCalledWith({ query: 'Frieren', anime: 'Frieren', episode: '3' })
-    fireEvent.click(screen.getByRole('button', { name: 'Ukloni iz watchlist-e' }))
+    { fireEvent.click(screen.getByRole('button', { name: 'Još' })); fireEvent.click(screen.getByRole('menuitem', { name: 'Ukloni iz Watchlist-e' })) }
     await waitFor(() => expect(api.library.remove).toHaveBeenCalledWith('a1'))
     expect(onBack).toHaveBeenCalled()
   })
@@ -418,9 +419,9 @@ describe('AnimeDetail', () => {
   it('shows a banner with the blurred poster', async () => {
     const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => ({ ...info, poster: 'data:image/png;base64,AA' })) } })
     const { container } = renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />, { api })
-    await waitFor(() => expect(container.querySelector('.banner .hero__bg')).not.toBeNull())
-    expect(container.querySelector('.banner .hero__bg').style.backgroundImage).toContain('data:image/png;base64,AA')
-    expect(within(container.querySelector('.banner')).getByRole('heading', { name: 'Frieren' })).toBeInTheDocument()
+    await waitFor(() => expect(container.querySelector('.detail-hero .hero__bg')).not.toBeNull())
+    expect(container.querySelector('.detail-hero .hero__bg').style.backgroundImage).toContain('data:image/png;base64,AA')
+    expect(within(container.querySelector('.detail-hero')).getByRole('heading', { name: 'Frieren' })).toBeInTheDocument()
   })
   it('reopens the episode group once the total episode count arrives', () => {
     const watched = Array.from({ length: 100 }, (_, i) => i + 1)
@@ -458,12 +459,12 @@ describe('WatchlistPage info cache', () => {
     const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => info) } })
     const props = { ready: true, onBack: () => {}, onChanged: () => {}, onContinue: () => {} }
     const { container, rerender } = renderUi(<AnimeDetail entry={entry({ id: 's', title: 'Solo' })} {...props} />, { api })
-    await waitFor(() => expect(container.querySelector('.banner .hero__bg')).not.toBeNull())
+    await waitFor(() => expect(container.querySelector('.detail-hero .hero__bg')).not.toBeNull())
     await waitFor(() => expect(api.library.update).toHaveBeenCalledTimes(1))
     expect(api.library.update).toHaveBeenCalledWith('s', { aniListId: 99 })
     // the library now carries the linked id
     rerender(<AnimeDetail entry={entry({ id: 's', title: 'Solo', aniListId: 99 })} {...props} />)
-    expect(container.querySelector('.banner .hero__bg')).not.toBeNull()
+    expect(container.querySelector('.detail-hero .hero__bg')).not.toBeNull()
     expect(api.anilist.forTitle).toHaveBeenCalledTimes(1)
     expect(api.library.update).toHaveBeenCalledTimes(1)
   })
