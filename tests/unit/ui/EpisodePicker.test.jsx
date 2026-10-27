@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { screen, fireEvent, waitFor } from '@testing-library/react'
+import { useMemo, useState } from 'react'
+import { screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { RouteStateContext } from '../../../src/renderer/nav/useNavigation.js'
 import { renderUi, makeFakeApi } from './helpers.jsx'
 import { EpisodePicker } from '../../../src/renderer/components/EpisodePicker.jsx'
 
@@ -311,5 +313,74 @@ describe('EpisodePicker cards', () => {
     const b = renderUi(<EpisodePicker {...base({ episodes: ['1', '2', '3'] })} series={SERIES} />, { api: listApi() })
     await waitFor(() => expect(b.container.querySelector('.ep-list')).not.toBeNull())
     expect(b.container.querySelector('.ep-cards')).toBeNull()
+  })
+})
+
+describe('EpisodePicker group memory and jumping (v0.19.1)', () => {
+  function Keeper({ keyName, children }) {
+    const [state, setState] = useState({})
+    const value = useMemo(() => ({ state, set: (k, v) => setState((s) => ({ ...s, [k]: v })) }), [state])
+    return <RouteStateContext.Provider value={value}>{children(keyName)}</RouteStateContext.Provider>
+  }
+  it('remembers the chosen group per series in route state', () => {
+    const eps = range(1, 220)
+    const p = base({ episodes: eps })
+    const { rerender } = renderUi(<Keeper keyName="a">{(k) => <EpisodePicker key={k} {...p} groupKey={k} />}</Keeper>)
+    fireEvent.click(screen.getByRole('button', { name: '201–220' }))
+    expect(screen.getByRole('button', { name: '201–220' })).toHaveAttribute('aria-pressed', 'true')
+    // the picker remounts (key change) while the route state survives
+    rerender(<Keeper keyName="a">{(k) => <EpisodePicker key="again" {...p} groupKey={k} />}</Keeper>)
+    expect(screen.getByRole('button', { name: '201–220' })).toHaveAttribute('aria-pressed', 'true')
+  })
+  it('keeps groups of different series apart', () => {
+    const eps = range(1, 220)
+    const p = base({ episodes: eps })
+    let setKey
+    function Host() {
+      const [state, setState] = useState({})
+      const [k, setK] = useState('a')
+      setKey = setK
+      const value = useMemo(() => ({ state, set: (key, v) => setState((s) => ({ ...s, [key]: v })) }), [state])
+      return <RouteStateContext.Provider value={value}><EpisodePicker {...p} groupKey={k} /></RouteStateContext.Provider>
+    }
+    renderUi(<Host />)
+    fireEvent.click(screen.getByRole('button', { name: '201–220' }))
+    act(() => setKey('b'))
+    expect(screen.getByRole('button', { name: '1–100' })).toHaveAttribute('aria-pressed', 'true')
+    act(() => setKey('a'))
+    expect(screen.getByRole('button', { name: '201–220' })).toHaveAttribute('aria-pressed', 'true')
+  })
+  it('go to episode in card view scrolls to and focuses the card', async () => {
+    const eps = range(1, 220)
+    const series = { source: 'menu', meta: 'ok', episodes: eps.map((n) => ({ number: n, runtime: 24, visibility: n === '150' ? 'full' : 'preview', title: `N${n}` })) }
+    const onToggle = vi.fn()
+    renderUi(<EpisodePicker {...base({ episodes: eps, onToggle })} series={series} onPlay={vi.fn()} />, { api: listApi() })
+    await screen.findAllByRole('button', { name: /Pusti: / })
+    fireEvent.change(screen.getByLabelText('Idi na epizodu'), { target: { value: '150' } })
+    fireEvent.submit(screen.getByLabelText('Idi na epizodu'))
+    expect(screen.getByRole('button', { name: '101–200' })).toHaveAttribute('aria-pressed', 'true')
+    await waitFor(() => expect(document.activeElement).toHaveAttribute('aria-label', expect.stringMatching(/^Pusti: .*150/)))
+    expect(onToggle).not.toHaveBeenCalled()
+  })
+  it('go to episode on a locked card focuses its reveal button', async () => {
+    const eps = range(1, 150)
+    const series = { source: 'menu', meta: 'ok', episodes: eps.map((n) => ({ number: n, runtime: 24, visibility: 'hidden' })) }
+    renderUi(<EpisodePicker {...base({ episodes: eps })} series={series} onPlay={vi.fn()} onReveal={vi.fn()} />, { api: listApi() })
+    await waitFor(() => expect(document.querySelector('.ep-cards')).not.toBeNull())
+    fireEvent.change(screen.getByLabelText('Idi na epizodu'), { target: { value: '120' } })
+    fireEvent.submit(screen.getByLabelText('Idi na epizodu'))
+    await waitFor(() => expect(document.activeElement).toHaveAttribute('aria-label', expect.stringMatching(/^Prikaži: .*120/)))
+  })
+  it('go to episode in numbers view still selects the number', () => {
+    const p = base({ episodes: range(1, 150) })
+    renderUi(<EpisodePicker {...p} series={SERIES} onPlay={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('Idi na epizodu'), { target: { value: '150' } })
+    fireEvent.submit(screen.getByLabelText('Idi na epizodu'))
+    expect(p.onToggle).toHaveBeenCalledWith('150')
+  })
+  it('disables quality and mode (no Default shown as chosen) while prefs load', () => {
+    renderUi(<EpisodePicker {...base()} prefs={{}} prefsLoading onPrefs={vi.fn()} toolbar={<span>X</span>} />)
+    expect(screen.getByLabelText('Kvalitet')).toBeDisabled()
+    expect(screen.getByLabelText('Režim')).toBeDisabled()
   })
 })

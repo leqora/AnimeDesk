@@ -11,7 +11,7 @@ import { AniListMatch } from '../components/AniListMatch.jsx'
 import { RecommendationCard } from '../components/RecommendationCard.jsx'
 import { useSeriesEpisodes } from '../episodes/useSeriesEpisodes.js'
 import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
-import { nextEpisode } from '../../shared/domain.js'
+import { nextEpisode, normalizeTitle } from '../../shared/domain.js'
 import { useNow } from '../useNow.js'
 import { isSeriesComplete } from '../components/MediaCard.jsx'
 import { newEpisodeCount } from '../../shared/airing.js'
@@ -45,11 +45,14 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const [auto, setAuto] = useState(false)
   const [hideFiller, setHideFiller] = useState(false)
   const [prefs, setPrefs] = useState({ quality: null, mode: null })
+  // Until the saved quality / sub-dub are read the selects are locked, so "Default" is never shown as if it were the saved choice.
+  const [prefsLoaded, setPrefsLoaded] = useState(false)
   const [downloadDir, setDownloadDir] = useState(undefined)
   useEffect(() => {
     if (!entry.aniCliTitle) return undefined
     let live = true
-    api.seriesPrefs.get(entry.aniCliTitle).then((p) => { if (live) { setAuto(Boolean(p?.autoDownload)); setHideFiller(Boolean(p?.hideFiller)); setPrefs({ quality: p?.quality ?? null, mode: p?.mode ?? null }) } }).catch((err) => console.error(err))
+    setPrefsLoaded(false)
+    api.seriesPrefs.get(entry.aniCliTitle).then((p) => { if (live) { setAuto(Boolean(p?.autoDownload)); setHideFiller(Boolean(p?.hideFiller)); setPrefs({ quality: p?.quality ?? null, mode: p?.mode ?? null }); setPrefsLoaded(true) } }).catch((err) => { console.error(err); if (live) setPrefsLoaded(true) })
     return () => { live = false }
   }, [api, entry.aniCliTitle])
   useEffect(() => {
@@ -258,6 +261,8 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
             hideMarked={hideFiller}
             onHideMarked={changeHideFiller}
             prefs={changePrefs ? prefs : null}
+            prefsLoading={!prefsLoaded}
+            groupKey={animeKey ? normalizeTitle(animeKey).toLowerCase() : null}
             onPrefs={changePrefs}
             onPlay={(ep) => onContinue({ query: animeKey, anime: animeKey, episode: String(ep) })}
             nextEp={finished ? null : String(nextEp)}
