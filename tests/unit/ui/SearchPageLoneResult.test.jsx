@@ -19,6 +19,25 @@ function lone() {
 }
 
 describe('SearchPage: lone search result', () => {
+  it('focus moves to the picker heading, not body', () => {
+    lone()
+    expect(document.activeElement).toBe(screen.getByRole('heading'))
+  })
+  it('does not steal focus from an element that still exists', () => {
+    const handlers = {}
+    const capture = (name) => vi.fn((cb) => { handlers[name] = cb; return () => {} })
+    const api = makeFakeApi({ watch: { onMenu: capture('menu'), onPlaying: capture('playing'), onSessionEnd: capture('end'), onTitle: capture('title') } })
+    renderUi(<SearchPage ready settings={{ ...DEFAULT_SETTINGS, downloadDir: 'D:\Anime' }} onSettings={vi.fn()} onOpenWizard={vi.fn()} pendingWatch={null} onPendingHandled={vi.fn()} />, { api })
+    const input = screen.getByLabelText('Naziv animea…')
+    fireEvent.change(input, { target: { value: 'x' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+    // the search bar is hidden once the episode menu shows, so focus an element that survives: the back button appears with the menu
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines: ['1'] }))
+    const back = screen.getByRole('button', { name: /Nazad/ })
+    back.focus()
+    act(() => handlers.menu({ requestId: 'r2', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2'] }))
+    expect(document.activeElement).toBe(back)
+  })
   it('waits for the title: no empty heading, add and download disabled, watching still works', async () => {
     const { api } = lone()
     expect(screen.getByRole('heading')).toHaveTextContent('Tražim naslov… — Izaberi epizodu')

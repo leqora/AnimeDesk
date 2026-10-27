@@ -6,6 +6,7 @@ import { Semaphore } from '../../../src/renderer/components/Semaphore.jsx'
 import { ReadyNotice } from '../../../src/renderer/components/ReadyNotice.jsx'
 import { ConfirmButton } from '../../../src/renderer/components/ConfirmButton.jsx'
 import { AskDialog } from '../../../src/renderer/components/AskDialog.jsx'
+import { Rail } from '../../../src/renderer/components/Rail.jsx'
 import { Poster } from '../../../src/renderer/components/Poster.jsx'
 
 describe('Semaphore', () => {
@@ -101,5 +102,20 @@ describe('Poster', () => {
     await waitFor(() => expect(api.anilist.forTitle).toHaveBeenCalled())
     expect(container.querySelector('.poster-frame')).toBeNull()
     expect(container.firstChild).toHaveClass('poster', 'poster--empty')
+  })
+})
+
+describe('Rail', () => {
+  it('keeps a focused card fully in view', () => {
+    const { container } = renderUi(<Rail title="R" count={1}><button type="button">card</button></Rail>, { api: makeFakeApi() })
+    const btn = screen.getByRole('button', { name: 'card' })
+    btn.scrollIntoView = vi.fn()
+    fireEvent.focus(btn)
+    expect(btn.scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' })
+    expect(container.querySelector('.rail')).not.toHaveClass('rail--wide')
+  })
+  it('variant wide adds the rail--wide class', () => {
+    const { container } = renderUi(<Rail title="R" count={0} variant="wide" />, { api: makeFakeApi() })
+    expect(container.querySelector('.rail')).toHaveClass('rail--wide')
   })
 })

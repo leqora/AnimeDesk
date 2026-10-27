@@ -544,6 +544,7 @@
   "discover.retry": "Pokušaj ponovo",
   "discover.retryIn": "Pokušaj ponovo za {n} s",
   "discover.refreshing": "Osvežava se…",
+  "discover.openLabel": "Otvori {title}",
   "discover.inWatchlist": "U Watchlist-i",
   "discover.starts": "Počinje: {date}",
   "discover.startsLabel": "{title}, počinje {date}",

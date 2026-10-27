@@ -11,6 +11,15 @@ const card = (props = {}) => renderUi(<RecommendationCard ready onSearch={vi.fn(
 const monthYear = (year, month) => new Intl.DateTimeFormat('sr-Latn', { month: 'short', year: 'numeric' }).format(new Date(year, month - 1, 1))
 
 describe('RecommendationCard (Discover additions)', () => {
+  it('a library card says Open, not Search', () => {
+    const { unmount } = card({ inWatchlist: true, onOpen: vi.fn() })
+    expect(screen.getByRole('button', { name: 'Otvori Alpha, U Watchlist-i' })).toBeInTheDocument()
+    unmount()
+    card({ inWatchlist: true })
+    expect(screen.getByRole('button', { name: 'Potraži Alpha, U Watchlist-i' })).toBeInTheDocument()
+  })
+
+
   it('keeps the recommendation rendering for a releasing item with onHide', () => {
     const onSearch = vi.fn()
     const { container } = card({ item: item({ fromTitle: 'Beta' }), onSearch, onHide: vi.fn() })

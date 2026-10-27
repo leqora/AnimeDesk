@@ -544,6 +544,7 @@
   "discover.retry": "Try again",
   "discover.retryIn": "Try again in {n} s",
   "discover.refreshing": "Refreshing…",
+  "discover.openLabel": "Open {title}",
   "discover.inWatchlist": "In Watchlist",
   "discover.starts": "Starts: {date}",
   "discover.startsLabel": "{title}, starts {date}",
