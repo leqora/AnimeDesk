@@ -100,7 +100,8 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .topbar__link { position: relative; display: flex; align-items: center; height: 100%; padding: 0 12px; background: transparent; border: 0; border-radius: 0; color: var(--text-muted); font-size: 14px; }
 .topbar__link:hover:not(:disabled) { background: transparent; color: var(--text); }
 .topbar__link--active { color: var(--text); }
-.topbar__link--active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: var(--glow); }
+.topbar__link--active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); } /* no glow: .topbar__nav clips overflow */
+.topbar__link:focus-visible { outline-offset: -2px; } /* inside the box, so .topbar__nav overflow does not cut the ring */
 .topbar__right { margin-left: auto; display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; flex: none; }
 .topbar__palette { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; color: var(--text-muted); font-size: 13px; }
 .topbar__palette kbd { font: inherit; font-size: 11px; color: var(--text-muted); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 0 5px; }
