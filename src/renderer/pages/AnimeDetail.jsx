@@ -104,7 +104,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
     ? { off: series.meta === 'off', onChange: (off) => update({ metaOff: off }) }
     : null
   // Until the AniList card moves to the notes tab, "choose series" just puts focus on the card's first button.
-  const pickAniList = () => { matchRef.current?.querySelector('button')?.focus() }
+  const pickAniList = () => { const root = matchRef.current; (root?.querySelector('button') ?? root?.querySelector('.anilist-match') ?? root)?.focus() }
 
   const openNote = (ep) => { setNoteEp(ep); setNoteText(entry.episodeNotes[String(ep)] ?? '') }
   const saveNote = async () => { await api.library.setEpisodeNote(entry.id, noteEp, noteText); onChanged() }
@@ -155,7 +155,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const remove = async () => {
     // Capture id/title: the detail unmounts after removal, the toast outlives it.
     const { id, title } = entry
-    try { await api.library.remove(id) } catch (err) { console.error(err); return }
+    try { await api.library.remove(id) } catch (err) { console.error(err); return false }
     ;(onRemoved ?? onBack)()
     onChanged()
     toast.show({
@@ -216,7 +216,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
               </p>
             </div>
           )}
-          <div ref={matchRef} data-anilist-match><AniListMatch entry={entry} info={rawInfo} onChanged={onChanged} /></div>
+          <div ref={matchRef} data-anilist-match tabIndex={-1}><AniListMatch entry={entry} info={rawInfo} onChanged={onChanged} /></div>
           <label className="field">
             <span>{t('detail.comment')}</span>
             <textarea aria-label={t('detail.comment')} value={comment} onChange={(e) => setComment(e.target.value)} onBlur={() => { if (comment !== entry.comment) save({ comment }) }} />

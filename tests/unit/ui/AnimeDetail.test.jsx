@@ -92,6 +92,7 @@ describe('AnimeDetail undo', () => {
     await new Promise((r) => setTimeout(r, 20))
     expect(onRemoved).not.toHaveBeenCalled()
     expect(screen.queryByText(/Uklonjeno iz watchlist-e/)).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Još' }))
   })
   it('rapid marks accumulate and each undo touches only its episode', async () => {
     const api = makeFakeApi()
@@ -185,6 +186,17 @@ describe('AnimeDetail more menu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Još' }))
     fireEvent.click(screen.getByRole('menuitem', { name: 'AniList: izaberi seriju' }))
     expect(document.activeElement).toBe(choose)
+  })
+})
+
+describe('AnimeDetail more menu while AniList info is pending', () => {
+  it('choosing the AniList item keeps focus inside the match card, not on body', async () => {
+    const api = makeFakeApi({ anilist: { forTitle: vi.fn(() => new Promise(() => {})) } })
+    mount(api)
+    fireEvent.click(screen.getByRole('button', { name: 'Još' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'AniList: izaberi seriju' }))
+    expect(document.activeElement).not.toBe(document.body)
+    expect(document.activeElement.closest('[data-anilist-match]')).not.toBeNull()
   })
 })
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
 import { useBanner } from '../anilist/useBanner.js'
 import { usePosterTint } from '../theme/usePosterTint.js'
@@ -21,6 +21,12 @@ export function DetailHero({
 }) {
   const t = useT()
   const [showDesc, setShowDesc] = useState(false)
+  const actionsRef = useRef(null)
+  // A failed removal keeps the page: the menu item is gone, so focus goes back to the "more" button.
+  const removeClicked = async () => {
+    const ok = await onRemove()
+    if (ok === false) actionsRef.current?.querySelector('.detail-hero__more .menu-button__trigger')?.focus()
+  }
   const banner = useBanner({ kind: 'series', entryId: entry.id, info: info?.id ?? null })
   const tint = usePosterTint(info?.poster ?? null)
   const close = info?.match === 'close'
@@ -63,7 +69,7 @@ export function DetailHero({
                 {info.genres.map((g) => <li key={g} className="chip">{g}</li>)}
               </ul>
             )}
-            <div className="detail-hero__actions">
+            <div className="detail-hero__actions" ref={actionsRef}>
               <button type="button" className="primary home-hero__cta" disabled={!ready} onClick={onContinue}>
                 <Icon name="play" /> {finished ? t('detail.rewatch') : saved ? t('home.continueEpFrom', { episode: nextEp, time: formatTime(saved.position) }) : t('home.continueEp', { episode: nextEp })}
               </button>
@@ -82,7 +88,7 @@ export function DetailHero({
                     {t(metaToggle.off ? 'detail.metaOn' : 'detail.metaOff')}
                   </button>
                 )}
-                <button type="button" role="menuitem" tabIndex={-1} data-navigates className="menu-button__item" onClick={onRemove}>{t('detail.delete')}</button>
+                <button type="button" role="menuitem" tabIndex={-1} data-navigates className="menu-button__item" onClick={removeClicked}>{t('detail.delete')}</button>
               </MenuButton>
             </div>
           </div>
