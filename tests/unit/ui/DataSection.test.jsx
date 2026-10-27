@@ -45,6 +45,12 @@ describe('DataSection', () => {
     fireEvent.click(btn)
     expect(await screen.findByText('Izvoz nije uspeo')).toBeInTheDocument()
   })
+  it('import title is an h4 under the section h3', async () => {
+    setup({ importPick: vi.fn(async () => preview()) })
+    expect(screen.getByRole('heading', { level: 3 })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Uvezi' }))
+    expect(await screen.findByRole('heading', { level: 4, name: 'Uvoz rezervne kopije' })).toBeInTheDocument()
+  })
   it('import pick opens a modal with date, counts and current counts', async () => {
     setup({ importPick: vi.fn(async () => preview()) })
     fireEvent.click(screen.getByRole('button', { name: 'Uvezi' }))
