@@ -35,6 +35,7 @@
   --card-ratio: 2 / 3;
   --card-min: 160px;
   --rail-card-w: 160px;
+  --rail-wide-w: 288px;
   --card-radius: 12px;
   --dur-fast: 150ms;
   --dur: 220ms;
@@ -61,7 +62,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; letter-spacing:
 h2 { font-size: 22px; }
 h3 { font-size: 17px; }
 button, input, select, textarea { font: inherit; color: inherit; }
-button { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 7px 14px; cursor: pointer; backdrop-filter: blur(var(--blur)); transition: transform 150ms var(--ease), opacity 150ms var(--ease); }
+button { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 7px 14px; cursor: pointer; transition: transform 150ms var(--ease), opacity 150ms var(--ease); }
 button:hover:not(:disabled) { background: var(--glass-strong); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
 .schedule-state button[aria-disabled="true"] { cursor: not-allowed; }
 .schedule-state button[aria-disabled="true"]:hover, .external-bar button[aria-disabled="true"]:hover { background: var(--glass); border-color: var(--glass-border); }
@@ -169,7 +170,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 /* padding keeps the 2 px ring + 2 px offset and the card lift (--card-lift) inside the scroll box; negative margin keeps the cards aligned with the page */
 .rail__track { display: grid; grid-auto-flow: column; grid-auto-columns: var(--rail-card-w); gap: 14px; overflow-x: auto; padding: 10px 8px 16px; margin-inline: -8px; scroll-padding-inline: 8px; scroll-behavior: smooth; scrollbar-width: none; }
 .rail__track::-webkit-scrollbar { display: none; }
-.rail--wide .rail__track { grid-auto-columns: var(--rail-wide-w, 288px); }
+.rail--wide .rail__track { grid-auto-columns: var(--rail-wide-w); }
 .rail--wide .poster { aspect-ratio: 16 / 9; }
 .rail__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .search-bar { display: flex; gap: 8px; }
@@ -533,13 +534,14 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 .palette__help { font-size: 12px; color: var(--text-muted); text-align: center; }
 
 /* Discover (v0.17.0; header v0.18.0) */
-.discover-page { padding-inline: 24px; }
 .discover-page .page__head { display: flex; flex-direction: column; gap: 4px; }
-.discover-page .page__head h2 { font-family: var(--font-display); font-size: 28px; line-height: 1.15; letter-spacing: .02em; }
+.discover-page .page__head h2 { font-family: var(--font-display); font-weight: 400; font-size: 28px; line-height: 1.15; letter-spacing: .02em; }
 .discover-page .page__head p { margin: 0; }
 .discover-page h2:focus { outline: none; } /* programmatic focus target only */
 .discover-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .discover-genre { width: 180px; max-width: 100%; text-overflow: ellipsis; }
+.rail__head button, .discover-controls button { backdrop-filter: blur(var(--blur)); } /* glass opt-in; never on the player, .ep-grid or .media-card__open */
+.page > h2[tabindex="-1"]:focus { outline: none; } /* programmatic focus target only */
 .discover-controls button[aria-disabled="true"] { cursor: not-allowed; opacity: .6; }
 .discover-controls button[aria-disabled="true"]:hover { background: var(--glass); border-color: var(--glass-border); }
 .discover-skeleton { display: flex; flex-direction: column; gap: 10px; }
