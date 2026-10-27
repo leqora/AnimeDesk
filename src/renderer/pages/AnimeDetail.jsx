@@ -3,6 +3,8 @@ import { useApi } from '../api.js'
 import { useAniListInfo } from '../anilist/useAniListInfo.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { useToast } from '../toast/ToastProvider.jsx'
+import { Tabs } from '../components/Tabs.jsx'
+import { useRouteState } from '../nav/useNavigation.js'
 import { DetailHero } from '../detail/DetailHero.jsx'
 import { EpisodePicker } from '../components/EpisodePicker.jsx'
 import { AniListMatch } from '../components/AniListMatch.jsx'
@@ -103,8 +105,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const metaToggle = series && (series.meta !== 'none' || series.marks === 'ok')
     ? { off: series.meta === 'off', onChange: (off) => update({ metaOff: off }) }
     : null
-  // Until the AniList card moves to the notes tab, "choose series" just puts focus on the card's first button.
-  const pickAniList = () => { const root = matchRef.current; (root?.querySelector('button') ?? root?.querySelector('.anilist-match') ?? root)?.focus() }
+  const pickAniList = () => { pickPending.current = true; setTab('notes'); setPickReq((n) => n + 1) }
 
   const openNote = (ep) => { setNoteEp(ep); setNoteText(entry.episodeNotes[String(ep)] ?? '') }
   const saveNote = async () => { await api.library.setEpisodeNote(entry.id, noteEp, noteText); onChanged() }
@@ -178,30 +179,21 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
     onChanged()
   }
 
-  return (
-    <section className="page">
-      <DetailHero
-        entry={entry} info={info} ready={ready} nextEp={nextEp} saved={saved} finished={finished} fresh={fresh} now={now}
-        metaToggle={metaToggle} playerOpen={playerOpen}
-        onBack={onBack}
-        onContinue={() => onContinue({ query: animeKey, anime: animeKey, episode: String(nextEp) })}
-        onTogglePin={togglePin}
-        onStatus={(status) => save({ status })}
-        onRemove={remove}
-        onPickAniList={pickAniList}
-      />
-      <div className="detail">
-        <div className="page">
+  // Detail tabs: the remembered one (per history entry) wins only while it exists; "similar" needs items.
+  const [tabChoice, setTab] = useRouteState('tab', 'episodes')
+  const shownTab = tabChoice === 'notes' || (tabChoice === 'similar' && similar.length > 0) ? tabChoice : 'episodes'
+  // "Choose series" (hero menu): open the notes tab, then focus the AniList card once it is shown.
+  const [pickReq, setPickReq] = useState(0)
+  const pickPending = useRef(false)
+  useEffect(() => {
+    if (!pickPending.current || shownTab !== 'notes') return
+    pickPending.current = false
+    const root = matchRef.current
+    ;(root?.querySelector('button') ?? root?.querySelector('.anilist-match') ?? root)?.focus()
+  }, [pickReq, shownTab])
+  const episodesPanel = (
+    <div className="page">
           <p>{t('detail.progress', { watched: watched.length, total: entry.totalEpisodes ?? '?' })}</p>
-          <div className="row">
-            <label className="field">
-              <span>{t('detail.rating')}</span>
-              <select aria-label={t('detail.rating')} value={entry.rating ?? ''} onChange={(e) => save({ rating: e.target.value ? Number(e.target.value) : null })}>
-                <option value="">{t('detail.noRating')}</option>
-                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </label>
-          </div>
           {canAuto && (
             <div className="check-group">
               <label className="check">
@@ -216,11 +208,6 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
               </p>
             </div>
           )}
-          <div ref={matchRef} data-anilist-match tabIndex={-1}><AniListMatch entry={entry} info={rawInfo} onChanged={onChanged} /></div>
-          <label className="field">
-            <span>{t('detail.comment')}</span>
-            <textarea aria-label={t('detail.comment')} value={comment} onChange={(e) => setComment(e.target.value)} onBlur={() => { if (comment !== entry.comment) save({ comment }) }} />
-          </label>
           <h3>{t('detail.episodes')}</h3>
           <EpisodePicker
             key={episodes.length}
@@ -258,15 +245,53 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
               </div>
             </div>
           )}
-          {similar.length > 0 && (
-            <section className="similar" aria-labelledby={similarHeadId}>
-              <h3 id={similarHeadId}>{t('recommendations.similar')}</h3>
-              <div className="similar__grid">
-                {similar.map((s) => <RecommendationCard key={s.id} item={s} ready={ready} onSearch={onSearch} />)}
-              </div>
-            </section>
-          )}
-        </div>
+    </div>
+  )
+  const notesPanel = (
+    <div className="page">
+          <div className="row">
+            <label className="field">
+              <span>{t('detail.rating')}</span>
+              <select aria-label={t('detail.rating')} value={entry.rating ?? ''} onChange={(e) => save({ rating: e.target.value ? Number(e.target.value) : null })}>
+                <option value="">{t('detail.noRating')}</option>
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </label>
+          </div>
+          <div ref={matchRef} data-anilist-match tabIndex={-1}><AniListMatch entry={entry} info={rawInfo} onChanged={onChanged} /></div>
+          <label className="field">
+            <span>{t('detail.comment')}</span>
+            <textarea aria-label={t('detail.comment')} value={comment} onChange={(e) => setComment(e.target.value)} onBlur={() => { if (comment !== entry.comment) save({ comment }) }} />
+          </label>
+    </div>
+  )
+  const similarPanel = (
+<section className="similar" aria-labelledby={similarHeadId}>
+  <h3 id={similarHeadId}>{t('recommendations.similar')}</h3>
+  <div className="similar__grid">
+    {similar.map((s) => <RecommendationCard key={s.id} item={s} ready={ready} onSearch={onSearch} />)}
+  </div>
+</section>
+  )
+
+  return (
+    <section className="page">
+      <DetailHero
+        entry={entry} info={info} ready={ready} nextEp={nextEp} saved={saved} finished={finished} fresh={fresh} now={now}
+        metaToggle={metaToggle} playerOpen={playerOpen}
+        onBack={onBack}
+        onContinue={() => onContinue({ query: animeKey, anime: animeKey, episode: String(nextEp) })}
+        onTogglePin={togglePin}
+        onStatus={(status) => save({ status })}
+        onRemove={remove}
+        onPickAniList={pickAniList}
+      />
+      <div className="detail">
+        <Tabs label={t('detail.tabs')} value={shownTab} onChange={setTab} tabs={[
+          { id: 'episodes', label: t('detail.tabEpisodes'), content: episodesPanel },
+          ...(similar.length > 0 ? [{ id: 'similar', label: t('detail.tabSimilar'), content: similarPanel }] : []),
+          { id: 'notes', label: t('detail.tabNotes'), content: notesPanel },
+        ]} />
       </div>
     </section>
   )

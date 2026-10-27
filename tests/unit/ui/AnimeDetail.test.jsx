@@ -179,13 +179,48 @@ describe('AnimeDetail undo', () => {
   })
 })
 
+const tab = (name) => screen.getByRole('tab', { name })
+
+describe('AnimeDetail tabs', () => {
+  it('notes tab holds rating, comment and AniList match', async () => {
+    const { container } = mount(makeFakeApi())
+    await screen.findByRole('tab', { name: 'Beleške' })
+    expect(screen.queryByRole('combobox', { name: 'Ocena' })).toBeNull()
+    expect(screen.queryByRole('textbox', { name: 'Komentar' })).toBeNull()
+    expect(container.querySelector('[data-anilist-match]')).not.toBeVisible()
+    fireEvent.click(tab('Beleške'))
+    expect(screen.getByRole('combobox', { name: 'Ocena' })).toBeVisible()
+    expect(screen.getByRole('textbox', { name: 'Komentar' })).toBeVisible()
+    expect(container.querySelector('[data-anilist-match]')).toBeVisible()
+    fireEvent.click(tab('Epizode'))
+    expect(screen.queryByRole('textbox', { name: 'Komentar' })).toBeNull()
+  })
+  it('a comment draft survives switching tabs', async () => {
+    mount(makeFakeApi())
+    fireEvent.click(await screen.findByRole('tab', { name: 'Beleške' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Komentar' }), { target: { value: 'nedovršeno' } })
+    fireEvent.click(tab('Epizode'))
+    fireEvent.click(tab('Beleške'))
+    expect(screen.getByRole('textbox', { name: 'Komentar' })).toHaveValue('nedovršeno')
+  })
+  it('more menu AniList item opens notes and focuses the match', async () => {
+    mount(makeFakeApi())
+    await screen.findByRole('tab', { name: 'Beleške' })
+    fireEvent.click(screen.getByRole('button', { name: 'Još' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'AniList: izaberi seriju' }))
+    expect(tab('Beleške')).toHaveAttribute('aria-selected', 'true')
+    await waitFor(() => expect(document.activeElement.closest('[data-anilist-match]')).not.toBeNull())
+  })
+})
+
 describe('AnimeDetail more menu', () => {
   it('AniList: choose series puts focus on the AniList card', async () => {
     mount(makeFakeApi())
-    const choose = await screen.findByRole('button', { name: 'Izaberi' })
+    await screen.findByRole('tab', { name: 'Beleške' })
     fireEvent.click(screen.getByRole('button', { name: 'Još' }))
     fireEvent.click(screen.getByRole('menuitem', { name: 'AniList: izaberi seriju' }))
-    expect(document.activeElement).toBe(choose)
+    const choose = await screen.findByRole('button', { name: 'Izaberi' })
+    await waitFor(() => expect(document.activeElement).toBe(choose))
   })
 })
 
@@ -195,8 +230,8 @@ describe('AnimeDetail more menu while AniList info is pending', () => {
     mount(api)
     fireEvent.click(screen.getByRole('button', { name: 'Još' }))
     fireEvent.click(screen.getByRole('menuitem', { name: 'AniList: izaberi seriju' }))
+    await waitFor(() => expect(document.activeElement.closest('[data-anilist-match]')).not.toBeNull())
     expect(document.activeElement).not.toBe(document.body)
-    expect(document.activeElement.closest('[data-anilist-match]')).not.toBeNull()
   })
 })
 

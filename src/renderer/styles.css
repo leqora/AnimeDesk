@@ -200,6 +200,13 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .detail-hero__more .menu-button__trigger { padding: 9px 14px; background: var(--glass); backdrop-filter: blur(var(--blur)); }
 .detail-hero__more .menu-button__popup { left: 0; }
 .detail-hero__description { max-width: 72ch; margin: 16px 0 0; }
+.tabs__list { display: flex; gap: 4px; margin: 20px 0 16px; border-bottom: 1px solid var(--glass-border); overflow-x: auto; }
+.tabs__tab { position: relative; flex: none; padding: 10px 16px; background: transparent; border: 0; border-radius: 0; color: var(--text-muted); font-size: 15px; }
+.tabs__tab:hover:not(:disabled) { background: transparent; color: var(--text); }
+.tabs__tab[aria-selected="true"] { color: var(--text); }
+.tabs__tab[aria-selected="true"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+.tabs__tab:focus-visible { outline: 2px solid var(--accent-2); outline-offset: -2px; box-shadow: var(--glow-cyan); }
+.tabs__panel[hidden] { display: none; }
 
 /* continue watching: 16:9 cards (the image frame sizes itself: PosterFrame's poster is absolute) */
 .continue-card { position: relative; isolation: isolate; display: flex; flex-direction: column; transition: transform var(--dur) var(--ease); }
