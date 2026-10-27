@@ -16,6 +16,7 @@ export function createPaths(baseDir) {
     positions: path.join(baseDir, 'positions.json'),
     anizipCache: path.join(baseDir, 'cache', 'anizip'),
     jikanCache: path.join(baseDir, 'cache', 'jikan'),
+    banners: path.join(baseDir, 'cache', 'banners'),
     episodeLists: path.join(baseDir, 'episode-lists.json'),
     notifications: path.join(baseDir, 'notifications.json'),
     airingNotified: path.join(baseDir, 'airing-notified.json'),
