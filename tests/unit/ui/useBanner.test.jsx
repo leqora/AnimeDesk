@@ -2,7 +2,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { waitFor } from '@testing-library/react'
 import { renderHookUi, makeFakeApi } from './helpers.jsx'
-import { useBanner } from '../../../src/renderer/anilist/useBanner.js'
+import { useBanner, resetBanners } from '../../../src/renderer/anilist/useBanner.js'
 
 describe('useBanner', () => {
   it('is undefined while waiting, then the url; a null request is null', async () => {
@@ -38,6 +38,16 @@ describe('useBanner', () => {
     await waitFor(() => expect(a.result.current).toBeNull())
     const b = renderHookUi(() => useBanner({ kind: 'rec', id: 3 }), { api })
     await waitFor(() => expect(b.result.current).toBe('animedesk-img://banner/aa11'))
+  })
+  it('resetBanners forgets remembered urls so the next mount asks again', async () => {
+    const api = makeFakeApi({ anilist: { banner: vi.fn(async () => 'animedesk-img://banner/zz99') } })
+    const a = renderHookUi(() => useBanner({ kind: 'discover', id: 9 }), { api })
+    await waitFor(() => expect(a.result.current).toBe('animedesk-img://banner/zz99'))
+    resetBanners(api)
+    const b = renderHookUi(() => useBanner({ kind: 'discover', id: 9 }), { api })
+    expect(b.result.current).toBeUndefined()
+    await waitFor(() => expect(b.result.current).toBe('animedesk-img://banner/zz99'))
+    expect(api.anilist.banner).toHaveBeenCalledTimes(2)
   })
   it('treats a failed call as no banner', async () => {
     const api = makeFakeApi({ anilist: { banner: vi.fn(async () => { throw new Error('x') }) } })

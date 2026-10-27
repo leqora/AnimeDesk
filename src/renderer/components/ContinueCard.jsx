@@ -42,7 +42,7 @@ export function ContinueCard({ entry, ready, onContinue, onOpen }) {
   const [bad, setBad] = useState([])
   const markBad = (src) => setBad((prev) => (prev.includes(src) ? prev : [...prev, src]))
   const thumb = typeof rawThumb === 'string' && bad.includes(rawThumb) ? null : rawThumb
-  const rawBanner = useBanner(thumb === null ? { kind: 'series', entryId: entry.id } : null)
+  const rawBanner = useBanner(thumb === null ? { kind: 'series', entryId: entry.id, info: info?.id ?? null } : null)
   const banner = typeof rawBanner === 'string' && bad.includes(rawBanner) ? null : rawBanner
   const tint = usePosterTint(thumb === null && !banner ? (info?.poster ?? null) : null)
   const saved = progress[String(next)]

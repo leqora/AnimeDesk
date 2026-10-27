@@ -11,6 +11,12 @@ const storeOf = (api) => {
   return s
 }
 
+// "Obriši keš" removes the banner files in main, so the urls remembered here would point at nothing: forget them all.
+// Mounted users keep what they show and ask again on their next mount.
+export function resetBanners(api) {
+  stores.delete(api)
+}
+
 function load(api, key, req) {
   const store = storeOf(api)
   let slot = store.get(key)

@@ -23,7 +23,7 @@ describe('ContinueCard', () => {
     const withBanner = apiWith({ episodes: { thumb: vi.fn(async () => null) }, anilist: { banner: vi.fn(async () => 'animedesk-img://banner/ab12') } })
     const b = renderUi(<ContinueCard entry={entry({ id: 'b' })} {...cb} />, { api: withBanner })
     await waitFor(() => expect(b.container.querySelector('.continue-card__img')).toHaveAttribute('src', 'animedesk-img://banner/ab12'))
-    expect(withBanner.anilist.banner).toHaveBeenCalledWith({ kind: 'series', entryId: 'b' })
+    expect(withBanner.anilist.banner).toHaveBeenLastCalledWith({ kind: 'series', entryId: 'b', info: 7 })
     b.unmount()
 
     const poster = apiWith({ episodes: { thumb: vi.fn(async () => null) } })

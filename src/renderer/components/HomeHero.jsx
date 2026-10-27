@@ -27,7 +27,7 @@ export function heroMeta(info, t) {
 function Slide({ entry, ready, now, onContinue, onDetails }) {
   const t = useT()
   const info = useAniListInfo(entry.title, entry.aniListId ?? null, { live: true })
-  const banner = useBanner({ kind: 'series', entryId: entry.id })
+  const banner = useBanner({ kind: 'series', entryId: entry.id, info: info?.id ?? null })
   const tint = usePosterTint(info?.poster ?? null)
   const key = entry.aniCliTitle ?? entry.title
   const progress = useEpisodeProgress(key)

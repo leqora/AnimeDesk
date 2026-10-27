@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { useToast } from '../toast/ToastProvider.jsx'
+import { resetBanners } from '../anilist/useBanner.js'
 import { Modal } from './Modal.jsx'
 import { ConfirmButton } from './ConfirmButton.jsx'
 
@@ -84,6 +85,7 @@ export function DataSection({ onImported, focusImport = false }) {
   const doClear = () => run(async () => {
     try {
       const res = await api.data.clearCache()
+      resetBanners(api)
       if (alive.current && res) setInfo((i) => ({ ...i, cacheBytes: res.cacheBytes }))
     } catch {
       show({ message: t('data.clearCacheFailed'), icon: 'alert' })
