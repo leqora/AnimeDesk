@@ -94,6 +94,8 @@ describe('DataSection', () => {
     fireEvent.click(within(dlg).getByRole('button', { name: 'Otkaži' }))
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Uvezi' })))
     dlg = await open()
+    // Esc is handled by a listener the modal adds after it renders; wait for its initial focus first.
+    await waitFor(() => expect(document.activeElement).toBe(within(dlg).getByRole('button', { name: 'Otkaži' })))
     fireEvent.keyDown(window, { key: 'Escape' })
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Uvezi' }))
