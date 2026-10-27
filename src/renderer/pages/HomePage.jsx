@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
-import { Hero } from '../components/Hero.jsx'
+import { HomeHero } from '../components/HomeHero.jsx'
+import { PopularHero } from '../components/PopularHero.jsx'
+import { ContinueCard } from '../components/ContinueCard.jsx'
+import { popularSlides } from '../home/popularSlides.js'
 import { MediaCard } from '../components/MediaCard.jsx'
 import { SequelCard } from '../components/SequelCard.jsx'
 import { RecommendationCard } from '../components/RecommendationCard.jsx'
@@ -11,7 +14,7 @@ import { SearchPage } from './SearchPage.jsx'
 
 const byRecent = (a, b) => String(b.lastWatchedAt ?? '').localeCompare(String(a.lastWatchedAt ?? ''))
 
-export const pickHeroEntry = (entries) => entries.filter((e) => e.status === 'watching' && e.lastWatchedAt).sort(byRecent)[0] ?? null
+export const pickHeroEntries = (entries, max = 5) => entries.filter((e) => e.status === 'watching' && e.lastWatchedAt).sort(byRecent).slice(0, max)
 export const watchingNow = (entries) => entries.filter((e) => e.status === 'watching').sort(byRecent).slice(0, 10)
 export const pinnedEntries = (entries) => entries.filter((e) => e.pinnedAt).sort((a, b) => String(a.pinnedAt).localeCompare(String(b.pinnedAt)))
 
@@ -22,12 +25,22 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
   const [entries, setEntries] = useState([])
   const [sequels, setSequels] = useState([])
   const [recs, setRecs] = useState({ mode: 'trending', hint: false, items: [] })
+  const [peek, setPeek] = useState(null)
   const [focused, setFocused] = useState(false)
+  // The popular list is frozen at the first non-empty result while Home is mounted: adding a series must not remove the slide under the focus.
+  const frozen = useRef(null)
 
   useEffect(() => {
     const load = () => api.library.list().then(setEntries)
     load()
     return api.onLibraryChanged(load)
+  }, [api])
+
+  // Cached Discover season rail: no network (peek never asks AniList).
+  useEffect(() => {
+    let alive = true
+    Promise.resolve().then(() => api.discover.peek()).then((data) => { if (alive && data && Array.isArray(data.items)) setPeek(data) }).catch(() => {})
+    return () => { alive = false }
   }, [api])
 
   // The list is computed in main (cache + hidden); the change event has no payload, so every call re-fetches.
@@ -81,16 +94,30 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
   const sequelIds = new Set(sequels.map((s) => s.id))
   const recItems = recs.items.filter((r) => !sequelIds.has(r.id))
 
-  const pinned = pinnedEntries(entries)
   const rail = watchingNow(entries)
+  const heroEntries = pickHeroEntries(entries)
+  // The same series is not shown twice in two neighbouring rails: the big continue cards win over Favorites.
+  const railIds = new Set(rail.map((e) => e.id))
+  const pinned = pinnedEntries(entries).filter((e) => !railIds.has(e.id))
   const card = (e) => <MediaCard key={e.id} entry={e} ready={ready} onOpen={onOpenAnime} onContinue={onContinue} />
+  if (heroEntries.length === 0 && !frozen.current) {
+    const slides = popularSlides({ peek, recs })
+    if (slides.length > 0) frozen.current = slides
+  }
+  const focusSearch = () => document.getElementById('search-input')?.focus()
   return (
     <div className="page">
       {!focused && (
         <>
-          <Hero entry={pickHeroEntry(entries)} ready={ready} onContinue={onContinue} onDetails={onOpenAnime} onSearch={() => document.getElementById('search-input')?.focus()} />
+          {heroEntries.length > 0
+            ? <HomeHero entries={heroEntries} ready={ready} onContinue={onContinue} onDetails={onOpenAnime} />
+            : <PopularHero slides={frozen.current ?? []} onSearch={(query) => (query ? onSearch(query) : focusSearch())} />}
           {pinned.length > 0 && <Rail title={t('home.favorites')} count={pinned.length}>{pinned.map(card)}</Rail>}
-          {rail.length > 0 && <Rail title={t('home.continueWatching')} count={rail.length}>{rail.map(card)}</Rail>}
+          {rail.length > 0 && (
+            <Rail title={t('home.continueWatching')} count={rail.length} variant="wide">
+              {rail.map((e) => <ContinueCard key={e.id} entry={e} ready={ready} onContinue={onContinue} onOpen={onOpenAnime} />)}
+            </Rail>
+          )}
           {sequels.length > 0 && (
             <Rail title={t('sequels.title')} count={sequels.length}>
               {sequels.map((s) => <SequelCard key={s.id} item={s} ready={ready} onSearch={onSearch} onHide={hideSequel} />)}

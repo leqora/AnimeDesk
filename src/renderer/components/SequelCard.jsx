@@ -3,7 +3,7 @@ import { useT } from '../i18n/I18nContext.jsx'
 import { PosterFrame } from './Poster.jsx'
 
 const KNOWN_FORMATS = new Set(['TV', 'TV_SHORT', 'MOVIE', 'SPECIAL', 'OVA', 'ONA'])
-const formatLabel = (format, t) => (KNOWN_FORMATS.has(format) ? t(`sequels.format.${format}`) : String(format).replace(/_/g, ' '))
+export const formatLabel = (format, t) => (KNOWN_FORMATS.has(format) ? t(`sequels.format.${format}`) : String(format).replace(/_/g, ' '))
 
 // Only facts from the list item are shown: format, year, episode count. Never a description, tags or scores (spoilers).
 export function sequelMeta(item, t) {

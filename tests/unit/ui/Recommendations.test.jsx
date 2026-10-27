@@ -104,7 +104,7 @@ describe('recommendations rail', () => {
   it('falls back to the title and fills the search input', async () => {
     const api = apiWith(payload([rec({ romaji: null })]))
     home(api)
-    fireEvent.click(await screen.findByRole('button', { name: /Potraži/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Potraži (?!i gledaj)/ }))
     await waitFor(() => expect(api.watch.start).toHaveBeenCalledWith({ query: 'Steins;Gate' }))
     expect(document.getElementById('search-input').value).toBe('Steins;Gate')
   })
@@ -112,7 +112,7 @@ describe('recommendations rail', () => {
   it('Enter on the focused card starts the search', async () => {
     const api = apiWith(payload([rec()]))
     home(api)
-    const open = await screen.findByRole('button', { name: /Potraži/ })
+    const open = await screen.findByRole('button', { name: /^Potraži (?!i gledaj)/ })
     open.focus()
     await userEvent.keyboard('{Enter}')
     await waitFor(() => expect(api.watch.start).toHaveBeenCalledWith({ query: 'Steins;Gate (romaji)' }))
@@ -128,7 +128,7 @@ describe('recommendations rail', () => {
   it('disables the search when not ready but keeps the hide button', async () => {
     const api = apiWith(payload([rec()]))
     home(api, false)
-    expect(await screen.findByRole('button', { name: /Potraži/ })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: /^Potraži (?!i gledaj)/ })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Ne preporučuj Steins;Gate' })).not.toBeDisabled()
   })
 
@@ -152,7 +152,7 @@ describe('recommendations rail', () => {
   it('keyboard hide moves focus to the undo action', async () => {
     const api = apiWith(payload([rec()]))
     home(api)
-    const open = await screen.findByRole('button', { name: /Potraži/ })
+    const open = await screen.findByRole('button', { name: /^Potraži (?!i gledaj)/ })
     open.focus()
     await userEvent.tab()
     expect(screen.getByRole('button', { name: 'Ne preporučuj Steins;Gate' })).toHaveFocus()

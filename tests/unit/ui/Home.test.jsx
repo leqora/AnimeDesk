@@ -1,71 +1,23 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { screen, fireEvent, waitFor, act, within } from '@testing-library/react'
 import { renderUi, makeFakeApi } from './helpers.jsx'
-import { Hero } from '../../../src/renderer/components/Hero.jsx'
-import { HomePage, pickHeroEntry, watchingNow, pinnedEntries } from '../../../src/renderer/pages/HomePage.jsx'
+import { HomePage, pickHeroEntries, watchingNow, pinnedEntries } from '../../../src/renderer/pages/HomePage.jsx'
 import { WatchlistPage } from '../../../src/renderer/pages/WatchlistPage.jsx'
 import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
+import { seasonOf } from '../../../src/shared/discover.js'
 
 const entry = (over = {}) => ({ id: 'a', title: 'Show', aniCliTitle: 'Show', aniListId: null, status: 'watching', rating: null, comment: '', totalEpisodes: 12, watchedEpisodes: [1, 2], episodeNotes: {}, lastWatchedAt: '2026-10-01T10:00:00Z', ...over })
 
 describe('home helpers', () => {
   it('picks the most recently watched series', () => {
     const list = [entry({ id: 'a', lastWatchedAt: '2026-09-01T00:00:00Z' }), entry({ id: 'b' }), entry({ id: 'c', status: 'completed', lastWatchedAt: '2026-10-05T00:00:00Z' }), entry({ id: 'd', lastWatchedAt: null })]
-    expect(pickHeroEntry(list).id).toBe('b')
-    expect(pickHeroEntry([entry({ status: 'planned' })])).toBeNull()
+    expect(pickHeroEntries(list).map((e) => e.id)).toEqual(['b', 'a'])
+    expect(pickHeroEntries([entry({ status: 'planned' })])).toEqual([])
+    expect(pickHeroEntries(Array.from({ length: 8 }, (_, i) => entry({ id: `x${i}` })))).toHaveLength(5)
+    expect(pickHeroEntries(Array.from({ length: 8 }, (_, i) => entry({ id: `x${i}` })), 2)).toHaveLength(2)
     expect(watchingNow(list).map((e) => e.id)).toEqual(['b', 'a', 'd'])
     expect(watchingNow(Array.from({ length: 14 }, (_, i) => entry({ id: `x${i}` })))).toHaveLength(10)
-  })
-})
-
-describe('Hero', () => {
-  it('continues with the next episode when ready', () => {
-    const onContinue = vi.fn()
-    const onDetails = vi.fn()
-    const { rerender } = renderUi(<Hero entry={entry()} ready={false} onContinue={onContinue} onDetails={onDetails} onSearch={() => {}} />)
-    expect(screen.getByRole('heading', { name: 'Show' })).toBeInTheDocument()
-    expect(screen.getByText('EP 2 / 12')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Nastavi EP 3/ })).toBeDisabled()
-    rerender(<Hero entry={entry()} ready onContinue={onContinue} onDetails={onDetails} onSearch={() => {}} />)
-    fireEvent.click(screen.getByRole('button', { name: /Nastavi EP 3/ }))
-    expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '3' })
-    fireEvent.click(screen.getByRole('button', { name: /Detalji/ }))
-    expect(onDetails).toHaveBeenCalledWith('a')
-  })
-  it('offers to continue from the saved position', async () => {
-    const onContinue = vi.fn()
-    const api = makeFakeApi({ positions: { forSeries: vi.fn(async () => ({ 3: { position: 495, duration: 1440 } })) } })
-    const { container } = renderUi(<Hero entry={entry()} ready onContinue={onContinue} onDetails={() => {}} onSearch={() => {}} />, { api })
-    fireEvent.click(await screen.findByRole('button', { name: /Nastavi EP 3 od 8:15/ }))
-    expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '3' })
-    expect(container.querySelector('.hero__ep-progress > span').style.getPropertyValue('--ratio')).toBe(String(495 / 1440))
-    expect(api.positions.forSeries).toHaveBeenCalledWith('Show')
-  })
-  it('shows new episodes and when the next one airs, and updates when it airs', async () => {
-    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] })
-    const AT = new Date(2026, 9, 16, 17, 30).getTime()
-    vi.setSystemTime(AT - (2 * 24 + 4) * 3600 * 1000)
-    try {
-      const info = { id: 1, status: 'RELEASING', nextAiring: { episode: 6, airingAt: AT }, poster: null }
-      const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => info) } })
-      renderUi(<Hero entry={entry()} ready onContinue={() => {}} onDetails={() => {}} onSearch={() => {}} />, { api })
-      expect(await screen.findByText('EP 6 izlazi za 2 d 4 h · pet 17:30')).toBeInTheDocument()
-      expect(screen.getByText('3 nove')).toHaveClass('badge--inline') // aired 5, watched up to 2
-      act(() => { vi.advanceTimersByTime((2 * 24 + 4) * 3600 * 1000 + 60_000) })
-      expect(screen.queryByText(/izlazi/)).not.toBeInTheDocument()
-      expect(screen.getByText('4 nove')).toBeInTheDocument()
-      expect(api.episodes.forSeries).not.toHaveBeenCalled()
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-  it('welcomes a new user and focuses search', () => {
-    const onSearch = vi.fn()
-    renderUi(<Hero entry={null} ready onContinue={() => {}} onDetails={() => {}} onSearch={onSearch} />)
-    expect(screen.getByRole('heading', { name: 'Šta gledamo danas?' })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /Pretraži/ }))
-    expect(onSearch).toHaveBeenCalled()
   })
 })
 
@@ -76,7 +28,10 @@ describe('HomePage', () => {
     renderUi(<HomePage ready settings={{ ...DEFAULT_SETTINGS }} onSettings={() => {}} onOpenWizard={() => {}} pendingWatch={null} onPendingHandled={() => {}} onContinue={() => {}} onOpenAnime={onOpenAnime} />, { api })
     expect(await screen.findByRole('heading', { name: 'Show' })).toBeInTheDocument()
     const rail = screen.getByRole('region', { name: 'Nastavi gledanje' })
-    fireEvent.click(rail.querySelectorAll('button.media-card__open')[1])
+    expect(rail).toHaveClass('rail--wide')
+    expect(rail.querySelectorAll('.continue-card')).toHaveLength(2)
+    expect(rail.querySelector('.media-card')).toBeNull() // no poster rail with the same title any more
+    fireEvent.click(within(rail).getByRole('button', { name: 'Detalji: Other' }))
     expect(onOpenAnime).toHaveBeenCalledWith('b')
     expect(screen.getByRole('button', { name: 'Traži' })).toBeInTheDocument()
   })
@@ -95,14 +50,13 @@ describe('pinned + cards', () => {
     const list = [entry({ id: 'a', pinnedAt: '2026-10-03T02:00:00Z' }), entry({ id: 'b', pinnedAt: null }), entry({ id: 'c', pinnedAt: '2026-10-03T01:00:00Z' }), entry({ id: 'd' })]
     expect(pinnedEntries(list).map((e) => e.id)).toEqual(['c', 'a'])
   })
-  it('uses media cards in the rails with play but no pin', async () => {
+  it('plays from a continue card', async () => {
     const onContinue = vi.fn()
     const api = makeFakeApi({ library: { list: vi.fn(async () => [entry()]) } })
     renderUi(<HomePage ready settings={{ ...DEFAULT_SETTINGS }} onSettings={() => {}} onOpenWizard={() => {}} pendingWatch={null} onPendingHandled={() => {}} onContinue={onContinue} onOpenAnime={() => {}} />, { api })
     const rail = await screen.findByRole('region', { name: 'Nastavi gledanje' })
-    expect(rail.querySelector('.media-card')).not.toBeNull()
-    expect(rail.querySelector('.media-card__pin')).toBeNull()
-    fireEvent.click(rail.querySelector('.media-card__play'))
+    expect(rail.querySelector('.continue-card')).not.toBeNull()
+    fireEvent.click(rail.querySelector('.continue-card__open'))
     expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '3' })
   })
 })
@@ -110,7 +64,7 @@ describe('pinned + cards', () => {
 describe('HomePage sections', () => {
   const home = (api) => renderUi(<HomePage ready settings={{ ...DEFAULT_SETTINGS }} onSettings={() => {}} onOpenWizard={() => {}} pendingWatch={null} onPendingHandled={() => {}} onContinue={() => {}} onOpenAnime={() => {}} />, { api })
   it('shows Favorites above Continue watching only when something is pinned', async () => {
-    const api = makeFakeApi({ library: { list: vi.fn(async () => [entry({ id: 'p', title: 'Pinned', aniCliTitle: 'Pinned', pinnedAt: '2026-10-03T00:00:00Z' }), entry()]) } })
+    const api = makeFakeApi({ library: { list: vi.fn(async () => [entry({ id: 'p', title: 'Pinned', aniCliTitle: 'Pinned', status: 'planned', pinnedAt: '2026-10-03T00:00:00Z' }), entry()]) } })
     home(api)
     const fav = await screen.findByRole('region', { name: 'Omiljeni' })
     const cont = screen.getByRole('region', { name: 'Nastavi gledanje' })
@@ -141,5 +95,46 @@ describe('HomePage sections', () => {
     expect(screen.queryByRole('heading', { name: 'Show', level: 1 })).not.toBeInTheDocument()
     act(() => handlers.end({ sessionId: 's1', result: { ok: false, error: 'cancelled' } }))
     expect(await screen.findByRole('region', { name: 'Nastavi gledanje' })).toBeInTheDocument()
+  })
+  it('keeps a pinned series in only one of the neighbouring rails (the continue card wins)', async () => {
+    home(makeFakeApi({ library: { list: vi.fn(async () => [entry({ id: 'p', title: 'Pinned', aniCliTitle: 'Pinned', pinnedAt: '2026-10-03T00:00:00Z' })]) } }))
+    await screen.findByRole('region', { name: 'Nastavi gledanje' })
+    expect(screen.queryByRole('region', { name: 'Omiljeni' })).not.toBeInTheDocument()
+  })
+  it('shows the popular banner when nothing is being watched', async () => {
+    const items = [{ id: 11, title: 'Fresh One', romaji: 'Fresh Romaji', format: 'TV', status: 'RELEASING', year: 2026, episodes: 12, genres: ['Action'], poster: 'data:image/png;base64,AAAA', entryId: null }]
+    const peek = vi.fn(async () => ({ season: seasonOf(Date.now()), items }))
+    const api = makeFakeApi({ library: { list: vi.fn(async () => [entry({ status: 'planned' })]) }, discover: { peek } })
+    const { container } = home(api)
+    expect(await screen.findByRole('heading', { name: 'Fresh One' })).toBeInTheDocument()
+    expect(screen.getByText('Popularno ove sezone · #1')).toBeInTheDocument()
+    expect(container.querySelector('.home-hero')).not.toBeNull()
+    expect(screen.queryByRole('region', { name: 'Nastavi gledanje' })).not.toBeInTheDocument()
+    expect(document.getElementById('search-input')).not.toBeNull()
+  })
+  it('does not label a stale season rail as "this season"', async () => {
+    const stale = { season: { season: seasonOf(Date.now()).season, year: seasonOf(Date.now()).year - 1 }, items: [{ id: 12, title: 'Old Rail', format: 'TV', genres: [], poster: null, entryId: null }] }
+    const api = makeFakeApi({ discover: { peek: vi.fn(async () => stale) }, recommendations: { list: vi.fn(async () => ({ mode: 'trending', hint: false, items: [{ id: 13, title: 'Trending One', format: 'TV', genres: [], poster: null }] })) } })
+    home(api)
+    expect(await screen.findByText('Popularno sada · #1')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Trending One', level: 1 })).toBeInTheDocument()
+    expect(screen.queryByText(/Popularno ove sezone/)).not.toBeInTheDocument()
+  })
+  it('shows the welcome screen when there is nothing popular either', async () => {
+    home(makeFakeApi())
+    expect(await screen.findByRole('heading', { name: 'Šta gledamo danas?' })).toBeInTheDocument()
+  })
+  it('freezes the popular list while Home is mounted', async () => {
+    let libraryListener = () => {}
+    const items = [{ id: 11, title: 'Fresh One', format: 'TV', genres: [], poster: null, entryId: null }]
+    const peek = vi.fn(async () => ({ season: seasonOf(Date.now()), items }))
+    const api = makeFakeApi({ discover: { peek } })
+    api.onLibraryChanged = vi.fn((cb) => { libraryListener = cb; return () => {} })
+    home(api)
+    await screen.findByRole('heading', { name: 'Fresh One' })
+    items[0].entryId = 'now-in-library' // the library changed (e.g. + Watchlist); the slide must stay
+    api.library.list.mockResolvedValue([entry({ status: 'planned', title: 'Fresh One' })])
+    await act(async () => { libraryListener() })
+    expect(screen.getByRole('heading', { name: 'Fresh One' })).toBeInTheDocument()
   })
 })

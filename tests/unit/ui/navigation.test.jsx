@@ -34,7 +34,7 @@ describe('navigation', () => {
   it('detail opened from Home goes back to Home', async () => {
     setup()
     const rail = await screen.findByRole('region', { name: 'Nastavi gledanje' })
-    fireEvent.click(rail.querySelector('button.media-card__open'))
+    fireEvent.click(within(rail).getAllByRole('button', { name: /^Detalji/ })[0])
     fireEvent.click(await screen.findByRole('button', { name: 'Nazad' }))
     expect(await screen.findByRole('region', { name: 'Nastavi gledanje' })).toBeInTheDocument()
     expect(screen.queryByLabelText('Naziv animea')).not.toBeInTheDocument()
