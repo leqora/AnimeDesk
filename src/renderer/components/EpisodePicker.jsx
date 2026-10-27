@@ -1,12 +1,13 @@
 import { Children, useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
 import { EpisodeRow } from './EpisodeRow.jsx'
+import { EpisodeCard } from './EpisodeCard.jsx'
 import { useEpisodeView } from '../episodes/useEpisodeView.js'
 import { GROUP_SIZE, episodeGroups, findEpisodeIndex, firstUnwatchedIndex } from '../../shared/episodes.js'
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 
-export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, hideMarked = false, onHideMarked = null, toolbar = null, afterToolbar = null, children }) {
+export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, hideMarked = false, onHideMarked = null, toolbar = null, afterToolbar = null, onPlay = null, nextEp = null, onNote = null, onToggleWatched = null, children }) {
   const t = useT()
   const groups = episodeGroups(episodes)
   const [group, setGroup] = useState(() => Math.floor(firstUnwatchedIndex(episodes, watched) / GROUP_SIZE))
@@ -110,7 +111,28 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
           {hiding && hiddenCount > 0 && <span className="muted">{t('episodes.hiddenCount', { n: hiddenCount })}</span>}
         </div>
       )}
-      {asList ? (
+      {asList && onPlay ? (
+        <div className="ep-cards">
+          {visible.map((ep) => (
+            <EpisodeCard
+              key={ep}
+              row={rows.get(ep) ?? { number: ep, runtime: null, visibility: 'hidden' }}
+              poster={poster}
+              watched={watched.includes(Number(ep))}
+              next={nextEp != null && ep === nextEp}
+              noted={noted.includes(ep)}
+              kind={kindOf(ep)}
+              progress={progress[String(Number(ep))] ?? null}
+              loadThumb={loadThumb}
+              onPlay={onPlay}
+              onReveal={onReveal}
+              onNote={onNote ?? onToggle}
+              onToggleWatched={onToggleWatched ?? (() => {})}
+              cardRef={(el) => { buttons.current[ep] = el }}
+            />
+          ))}
+        </div>
+      ) : asList ? (
         <div className="ep-list">
           {visible.map((ep) => (
             <EpisodeRow

@@ -123,6 +123,16 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const pickAniList = () => { pickPending.current = true; setTab('notes'); setPickReq((n) => n + 1) }
 
   const openNote = (ep) => { setNoteEp(ep); setNoteText(entry.episodeNotes[String(ep)] ?? '') }
+  // "Note…" in a card menu: open the note and move focus into its textarea (the menu item does not return focus to its button).
+  const noteArea = useRef(null)
+  const [noteFocusReq, setNoteFocusReq] = useState(0)
+  const noteFocusPending = useRef(false)
+  const openNoteFocused = (ep) => { noteFocusPending.current = true; openNote(Number(ep)); setNoteFocusReq((n) => n + 1) }
+  useEffect(() => {
+    if (!noteFocusPending.current || noteEp == null) return
+    noteFocusPending.current = false
+    noteArea.current?.focus()
+  }, [noteFocusReq, noteEp])
   const saveNote = async () => { await api.library.setEpisodeNote(entry.id, noteEp, noteText); onChanged() }
   // Latest known watched list: follows the entry on refresh, and the last saved list in between (rapid marks accumulate).
   const latestWatched = useRef(watched)
@@ -251,6 +261,10 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
             onHideMarked={changeHideFiller}
             prefs={changePrefs ? prefs : null}
             onPrefs={changePrefs}
+            onPlay={(ep) => onContinue({ query: animeKey, anime: animeKey, episode: String(ep) })}
+            nextEp={finished ? null : String(nextEp)}
+            onNote={openNoteFocused}
+            onToggleWatched={(ep) => toggleWatched(Number(ep))}
             toolbar={episodeToolbar}
             afterToolbar={spoilerRow}
           />
@@ -258,7 +272,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
             <div className="page">
               <label className="field">
                 <span>{t('detail.note', { episode: noteEp })}</span>
-                <textarea aria-label={t('detail.note', { episode: noteEp })} value={noteText} onChange={(e) => setNoteText(e.target.value)} />
+                <textarea ref={noteArea} aria-label={t('detail.note', { episode: noteEp })} value={noteText} onChange={(e) => setNoteText(e.target.value)} />
               </label>
               <div className="row">
                 <button type="button" className="primary" disabled={!ready} onClick={() => onContinue({ query: animeKey, anime: animeKey, episode: String(noteEp) })}>

@@ -382,3 +382,40 @@ describe('AnimeDetail episode toolbar', () => {
     expect(bar.compareDocumentPosition(reveal) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })
+
+describe('AnimeDetail episode cards', () => {
+  const okSeries = { source: 'ani-cli', meta: 'ok', marks: 'none', markCounts: { filler: 0, recap: 0 }, episodes: ['1', '2', '3', '4'].map((n) => ({ number: n, runtime: 24, visibility: n === '4' ? 'hidden' : 'full', title: n === '4' ? undefined : `Naslov ${n}`, hasThumb: false })) }
+  const cardsApi = () => makeFakeApi({
+    settings: { get: vi.fn(async () => ({ episodeView: 'list' })), update: vi.fn(async (p) => p) },
+    episodes: { forSeries: vi.fn(async () => okSeries) },
+  })
+  it('episode card plays and its menu marks with undo', async () => {
+    const api = cardsApi()
+    const onContinue = vi.fn()
+    mount(api, { onContinue })
+    fireEvent.click(await screen.findByRole('button', { name: 'Pusti: Epizoda 2 · Naslov 2' }))
+    expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '2' })
+    fireEvent.click(screen.getByRole('button', { name: 'Još za epizodu 2' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Označi kao odgledano' }))
+    await waitFor(() => expect(api.library.update).toHaveBeenCalledWith('a1', { watchedEpisodes: [1, 2] }))
+    expect(await screen.findByText('EP 2 označena kao odgledana')).toBeInTheDocument()
+    expect(screen.queryByText(/Naslov 2 označena/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Poništi' }))
+    await waitFor(() => expect(api.library.update).toHaveBeenLastCalledWith('a1', { watchedEpisodes: [1] }))
+  })
+  it('the note item opens the note panel and focuses its textarea', async () => {
+    mount(cardsApi())
+    await screen.findByRole('button', { name: 'Pusti: Epizoda 2 · Naslov 2' })
+    fireEvent.click(screen.getByRole('button', { name: 'Još za epizodu 2' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Beleška…' }))
+    const area = screen.getByRole('textbox', { name: /Beleška.*2/ })
+    await waitFor(() => expect(document.activeElement).toBe(area))
+  })
+  it('the next episode is marked and the one after it is a locked tile', async () => {
+    const { container } = mount(cardsApi())
+    await screen.findByRole('button', { name: 'Pusti: Epizoda 2 · Naslov 2' })
+    expect(container.querySelector('.ep-card--next')).toHaveTextContent('EP 2')
+    expect(container.querySelector('.ep-card--hidden')).toHaveTextContent('EP 4')
+    expect(screen.queryByRole('button', { name: /Pusti: Epizoda 4/ })).toBeNull()
+  })
+})

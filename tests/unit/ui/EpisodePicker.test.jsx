@@ -299,3 +299,17 @@ describe('EpisodePicker marks', () => {
     expect(screen.getByText('Epizoda 5').closest('.ep-row')).not.toHaveTextContent(/Filler|Recap/)
   })
 })
+
+describe('EpisodePicker cards', () => {
+  it('shows 16:9 cards in the list view when onPlay is given, rows otherwise', async () => {
+    const a = renderUi(<EpisodePicker {...base({ episodes: ['1', '2', '3'] })} series={SERIES} onPlay={vi.fn()} nextEp="2" />, { api: listApi() })
+    await waitFor(() => expect(a.container.querySelector('.ep-cards')).not.toBeNull())
+    expect(a.container.querySelector('.ep-list')).toBeNull()
+    expect(a.container.querySelectorAll('.ep-card')).toHaveLength(3)
+    expect(a.container.querySelector('.ep-card--next')).toHaveTextContent('EP 2')
+    a.unmount()
+    const b = renderUi(<EpisodePicker {...base({ episodes: ['1', '2', '3'] })} series={SERIES} />, { api: listApi() })
+    await waitFor(() => expect(b.container.querySelector('.ep-list')).not.toBeNull())
+    expect(b.container.querySelector('.ep-cards')).toBeNull()
+  })
+})
