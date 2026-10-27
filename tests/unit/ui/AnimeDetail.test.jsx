@@ -418,4 +418,12 @@ describe('AnimeDetail episode cards', () => {
     expect(container.querySelector('.ep-card--hidden')).toHaveTextContent('EP 4')
     expect(screen.queryByRole('button', { name: /Pusti: Epizoda 4/ })).toBeNull()
   })
+  it('a card does not play while not ready', async () => {
+    const onContinue = vi.fn()
+    mount(cardsApi(), { onContinue, ready: false })
+    const play = await screen.findByRole('button', { name: 'Pusti: Epizoda 2 · Naslov 2' })
+    expect(play).toBeDisabled()
+    fireEvent.click(play)
+    expect(onContinue).not.toHaveBeenCalled()
+  })
 })

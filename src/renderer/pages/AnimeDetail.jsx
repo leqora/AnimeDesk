@@ -263,6 +263,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
             onPrefs={changePrefs}
             onPlay={(ep) => onContinue({ query: animeKey, anime: animeKey, episode: String(ep) })}
             nextEp={finished ? null : String(nextEp)}
+            ready={ready}
             onNote={openNoteFocused}
             onToggleWatched={(ep) => toggleWatched(Number(ep))}
             toolbar={episodeToolbar}

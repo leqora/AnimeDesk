@@ -220,7 +220,8 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .ep-card__open:focus-visible { outline: none; }
 .ep-card__frame { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; border-radius: var(--card-radius); border: 1px solid var(--glass-border); background: var(--bg-elev); }
 .ep-card:hover .ep-card__frame, .ep-card:focus-within .ep-card__frame, .ep-card--next .ep-card__frame { outline: 2px solid var(--accent-2); outline-offset: 2px; box-shadow: var(--glow-cyan); }
-.ep-card__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ep-card__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform var(--dur) var(--ease), opacity .2s var(--ease); }
+.ep-card:hover .ep-card__img, .ep-card:focus-within .ep-card__img { transform: scale(var(--card-zoom)); }
 .ep-card__img--empty { background: var(--glass); }
 .ep-card--watched .ep-card__img { opacity: .5; }
 .ep-card--watched:hover .ep-card__img, .ep-card--watched:focus-within .ep-card__img { opacity: 1; }
@@ -245,9 +246,9 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .ep-card__actions .menu-button__popup { left: auto; right: 0; }
 .ep-card:has(.menu-button__popup) { z-index: 5; }
 .ep-card__overview { margin: 0 0 14px; white-space: pre-wrap; max-width: 60ch; }
-.reduce-motion .ep-card:hover, .reduce-motion .ep-card:focus-within { transform: none; }
+.reduce-motion .ep-card:hover, .reduce-motion .ep-card:focus-within, .reduce-motion .ep-card:hover .ep-card__img, .reduce-motion .ep-card:focus-within .ep-card__img { transform: none; }
 @media (prefers-reduced-motion: reduce) {
-  .ep-card:hover, .ep-card:focus-within { transform: none; }
+  .ep-card:hover, .ep-card:focus-within, .ep-card:hover .ep-card__img, .ep-card:focus-within .ep-card__img { transform: none; }
 }
 .detail .ep-groups { gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--glass-border); margin-bottom: 12px; }
 .detail .ep-groups .ep-group { position: relative; background: transparent; border: 0; border-radius: 0; padding: 8px 14px; color: var(--text-muted); font-size: 14px; }

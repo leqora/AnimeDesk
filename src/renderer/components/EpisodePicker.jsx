@@ -7,7 +7,7 @@ import { GROUP_SIZE, episodeGroups, findEpisodeIndex, firstUnwatchedIndex } from
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 
-export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, hideMarked = false, onHideMarked = null, toolbar = null, afterToolbar = null, onPlay = null, nextEp = null, onNote = null, onToggleWatched = null, children }) {
+export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, hideMarked = false, onHideMarked = null, toolbar = null, afterToolbar = null, onPlay = null, nextEp = null, ready = true, onNote = null, onToggleWatched = null, children }) {
   const t = useT()
   const groups = episodeGroups(episodes)
   const [group, setGroup] = useState(() => Math.floor(firstUnwatchedIndex(episodes, watched) / GROUP_SIZE))
@@ -126,8 +126,9 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
               loadThumb={loadThumb}
               onPlay={onPlay}
               onReveal={onReveal}
-              onNote={onNote ?? onToggle}
-              onToggleWatched={onToggleWatched ?? (() => {})}
+              ready={ready}
+              onNote={onNote}
+              onToggleWatched={onToggleWatched}
               cardRef={(el) => { buttons.current[ep] = el }}
             />
           ))}

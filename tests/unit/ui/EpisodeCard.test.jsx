@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest'
+import { useState } from 'react'
 import { screen, fireEvent, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderUi } from './helpers.jsx'
@@ -89,5 +90,37 @@ describe('EpisodeCard', () => {
     await act(async () => { cb([{ isIntersecting: true }]) })
     expect(loadThumb).toHaveBeenCalledWith('4')
     await waitFor(() => expect(container.querySelector('img')).toHaveAttribute('src', 'data:image/png;base64,T'))
+  })
+  it('is not playable while the player is not ready', () => {
+    const h = handlers()
+    renderUi(<EpisodeCard row={full()} ready={false} {...h} />)
+    const play = screen.getByRole('button', { name: /^Pusti/ })
+    expect(play).toBeDisabled()
+    fireEvent.click(play)
+    expect(h.onPlay).not.toHaveBeenCalled()
+  })
+  it('hides menu items whose handler is missing', () => {
+    renderUi(<EpisodeCard row={full()} onPlay={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Još za epizodu 4' }))
+    expect(screen.queryByRole('menuitem', { name: 'Označi kao odgledano' })).toBeNull()
+    expect(screen.queryByRole('menuitem', { name: 'Beleška…' })).toBeNull()
+    expect(screen.getByRole('menuitem', { name: 'Opis' })).toBeInTheDocument()
+  })
+  it('focus moves to the play button after a reveal, and is not lost when it stays hidden', () => {
+    const Wrap = ({ reveals }) => {
+      const [row, setRow] = useState(hidden())
+      return <EpisodeCard row={row} onPlay={vi.fn()} onReveal={() => { if (reveals) setRow(full({ number: '6' })) }} />
+    }
+    const a = renderUi(<Wrap reveals />)
+    const reveal = screen.getByRole('button', { name: /Prikaži/ })
+    reveal.focus()
+    fireEvent.click(reveal)
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /^Pusti/ }))
+    a.unmount()
+    renderUi(<Wrap />)
+    const again = screen.getByRole('button', { name: /Prikaži/ })
+    again.focus()
+    fireEvent.click(again)
+    expect(document.activeElement).toBe(again)
   })
 })
