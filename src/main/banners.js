@@ -40,8 +40,9 @@ export function createBanners({ dir, fetchImpl = fetch, timeoutMs = 10_000, maxB
       timer = setTimeout(() => { controller.abort(); reject(new Error('timeout')) }, timeoutMs)
     })
     const work = (async () => {
-      const res = await fetchImpl(url, { signal: controller.signal })
+      const res = await fetchImpl(url, { signal: controller.signal, redirect: 'error' })
       if (!res.ok) throw new Error(`status ${res.status}`)
+      if (res.url && !allowed(res.url)) throw new Error('redirected')
       const type = String(res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
       const ext = TYPES[type]
       if (!ext) throw new Error('bad type')
@@ -55,7 +56,7 @@ export function createBanners({ dir, fetchImpl = fetch, timeoutMs = 10_000, maxB
     try {
       const { buf, ext } = await Promise.race([work, timeout])
       await fs.promises.mkdir(dir, { recursive: true })
-      const tmp = path.join(dir, `${hash}.${process.pid}.${Date.now()}.tmp`)
+      const tmp = path.join(dir, `${hash}.${crypto.randomUUID()}.tmp`)
       try {
         await fs.promises.writeFile(tmp, buf, { flag: 'wx' })
         await fs.promises.rename(tmp, path.join(dir, `${hash}.${ext}`))

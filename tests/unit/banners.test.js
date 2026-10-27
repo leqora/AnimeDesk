@@ -105,6 +105,20 @@ describe('banners', () => {
     expect(await b2.ensure(URL1)).toBeNull()
   })
 
+  it('fetches with redirect: error', async () => {
+    const fetchImpl = vi.fn(async () => reply())
+    await createBanners({ dir, fetchImpl }).ensure(URL1)
+    expect(fetchImpl.mock.calls[0][1]).toMatchObject({ redirect: 'error' })
+  })
+
+  it('rejects a response whose final url is another host', async () => {
+    const res = reply()
+    Object.defineProperty(res, 'url', { value: 'https://evil.example/x.jpg' })
+    const b = createBanners({ dir, fetchImpl: async () => res })
+    expect(await b.ensure(URL1)).toBeNull()
+    expect(fs.readdirSync(dir)).toHaveLength(0)
+  })
+
   it('maps png and webp to their extensions', async () => {
     const b = createBanners({ dir, fetchImpl: async () => reply('x', 'image/webp') })
     await b.ensure(URL1)
