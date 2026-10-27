@@ -109,7 +109,8 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
     const slides = popularSlides({ peek, recs })
     if (slides.length > 0) frozen.current = slides
   }
-  const reduced = settings?.animations === false
+  // Same predicate as App's motionOff: settings not loaded yet is not "off"; a missing animations value is.
+  const reduced = settings != null && !settings.animations
   const focusSearch = () => document.getElementById('search-input')?.focus()
   return (
     <div className="page">

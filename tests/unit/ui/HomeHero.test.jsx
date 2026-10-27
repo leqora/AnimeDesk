@@ -65,15 +65,19 @@ describe('HomeHero', () => {
     expect(screen.getByRole('heading', { name: 'Second' })).toBeInTheDocument()
   })
   describe('rotation', () => {
-    beforeEach(() => { vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] }) })
+    // All timers are faked, and every test lets the pending AniList/position promises settle before it advances time.
+    beforeEach(() => { vi.useFakeTimers() })
     afterEach(() => { vi.useRealTimers() })
+    const settle = () => act(async () => { await vi.advanceTimersByTimeAsync(0) })
     it('rotates after 8 s', async () => {
       renderUi(<HomeHero entries={[entry(), entry({ id: 'b', title: 'Second' })]} {...props} />, { api: apiWith() })
+      await settle()
       await act(async () => { await vi.advanceTimersByTimeAsync(8000) })
       expect(screen.getByRole('heading', { name: 'Second' })).toBeInTheDocument()
     })
     it('focus inside pauses rotation and focus stays', async () => {
       renderUi(<HomeHero entries={[entry(), entry({ id: 'b', title: 'Second' })]} {...props} />, { api: apiWith() })
+      await settle()
       const details = screen.getByRole('button', { name: /Detalji/ })
       act(() => details.focus())
       expect(document.activeElement).toBe(details)
@@ -83,6 +87,7 @@ describe('HomeHero', () => {
     })
     it('does not rotate when animations are off from the first render', async () => {
       renderUi(<HomeHero entries={[entry(), entry({ id: 'b', title: 'Second' })]} {...props} reduced />, { api: apiWith() })
+      await settle()
       await act(async () => { await vi.advanceTimersByTimeAsync(8000 * 3) })
       expect(screen.getByRole('heading', { name: 'Show' })).toBeInTheDocument()
     })
@@ -90,6 +95,7 @@ describe('HomeHero', () => {
       const a = entry()
       const b = entry({ id: 'b', title: 'Second' })
       const { rerender } = renderUi(<HomeHero entries={[a, b]} {...props} />, { api: apiWith() })
+      await settle()
       const details = screen.getByRole('button', { name: /Detalji/ })
       act(() => details.focus())
       rerender(<HomeHero entries={[b, a]} {...props} />)
@@ -103,6 +109,7 @@ describe('HomeHero', () => {
     })
     it('hover pauses too', async () => {
       const { container } = renderUi(<HomeHero entries={[entry(), entry({ id: 'b', title: 'Second' })]} {...props} />, { api: apiWith() })
+      await settle()
       fireEvent.mouseEnter(container.querySelector('.home-hero'))
       await act(async () => { await vi.advanceTimersByTimeAsync(8000 * 2) })
       expect(screen.getByRole('heading', { name: 'Show' })).toBeInTheDocument()

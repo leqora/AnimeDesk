@@ -153,11 +153,11 @@ describe('HomePage sections', () => {
     home(api)
     expect(await screen.findByText('Popularno sada · #1')).toBeInTheDocument()
   })
-  it('does not rotate the banner when animations are off in the settings', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  it.each([['false', { animations: false }], ['missing', { animations: undefined }]])('does not rotate the banner when animations are off in the settings (%s)', async (_name, over) => {
+    vi.useFakeTimers()
     try {
       const api = makeFakeApi({ library: { list: vi.fn(async () => [entry(), entry({ id: 'b', title: 'Second', aniCliTitle: 'Second', lastWatchedAt: '2026-09-01T00:00:00Z' })]) } })
-      renderUi(<HomePage ready settings={{ ...DEFAULT_SETTINGS, animations: false }} onSettings={() => {}} onOpenWizard={() => {}} pendingWatch={null} onPendingHandled={() => {}} onContinue={() => {}} onOpenAnime={() => {}} />, { api })
+      renderUi(<HomePage ready settings={{ ...DEFAULT_SETTINGS, ...over }} onSettings={() => {}} onOpenWizard={() => {}} pendingWatch={null} onPendingHandled={() => {}} onContinue={() => {}} onOpenAnime={() => {}} />, { api })
       await act(async () => { await vi.advanceTimersByTimeAsync(100) })
       expect(screen.getByRole('heading', { name: 'Show', level: 1 })).toBeInTheDocument()
       await act(async () => { await vi.advanceTimersByTimeAsync(8000 * 3) })

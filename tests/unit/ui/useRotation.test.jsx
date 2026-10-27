@@ -13,7 +13,7 @@ const mockReduced = (matches) => {
 
 describe('useRotation', () => {
   beforeEach(() => { vi.useFakeTimers(); mockReduced(false); setHidden(false) })
-  afterEach(() => { vi.useRealTimers(); delete window.matchMedia })
+  afterEach(() => { vi.useRealTimers(); delete window.matchMedia; delete document.hidden }) // drops the own-property override, the jsdom getter is back
 
   it('advances every 8000 ms and wraps around', () => {
     const { result } = renderHook(() => useRotation({ count: 3 }))
