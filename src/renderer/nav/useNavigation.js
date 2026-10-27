@@ -52,5 +52,6 @@ export function useNavigation({ getScroll, onArrive }) {
 
   const h = ref.current
   const entry = current(h)
-  return { route: entry.route, entry, navigate, replace: replaceRoute, back: goBack, forward: goForward, canBack: canBack(h), setRouteState }
+  const behind = h.index > 0 ? h.entries[h.index - 1].route : null
+  return { route: entry.route, behind, entry, navigate, replace: replaceRoute, back: goBack, forward: goForward, canBack: canBack(h), setRouteState }
 }

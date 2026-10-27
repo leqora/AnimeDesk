@@ -21,6 +21,8 @@ import { loadPlayer } from './player/loadPlayer.js'
 import { PlayerReconnecting } from './components/PlayerReconnecting.jsx'
 import { ErrorBoundary } from './components/ErrorBoundary.jsx'
 import { nextEpisodeNumber } from '../shared/player.js'
+import { normalizeTitle } from '../shared/domain.js'
+import { returnTarget } from './nav/returnTarget.js'
 import { createSound } from './sound.js'
 import { useNavigation, RouteStateContext } from './nav/useNavigation.js'
 import { CommandPalette } from './components/CommandPalette.jsx'
@@ -216,6 +218,10 @@ export default function App({ api, sound: injectedSound }) {
   // top bar actions during playback: the episode is closed first ('nav'), then the remembered action runs
   const [closeRequest, setCloseRequest] = useState(null)
   const afterPlayerClose = useRef(null)
+  // Where the current episode was started from (a route), so "Back" from the player returns there; null = nowhere to return.
+  const originRef = useRef(null)
+  const playerOpenedRef = useRef(false) // a player opened since the last fresh start
+  const playedSessions = useRef(new Set()) // sessions that reached playback (their late end is not a failed start)
   const [bootFailed, setBootFailed] = useState(false)
 
   // Alt+Left/Right and the mouse back/forward buttons walk the history; not while the player or a modal is up.
@@ -334,6 +340,7 @@ export default function App({ api, sound: injectedSound }) {
       setPlayerIdle(false)
       setPlayerOpening(true)
       afterPlayerClose.current = null
+      playerOpenedRef.current = true
       setCloseRequest(null)
       setPlayer(p)
     }
@@ -343,6 +350,22 @@ export default function App({ api, sound: injectedSound }) {
       api.player.onRetry(setReconnecting),
     ]
     return () => offs.forEach((off) => off())
+  }, [api])
+
+  // A start that ends without ever playing (error, cancelled menu) leaves the user on Home: forget where it came from.
+  // Mpv playback has no in-app player to come back from, so it forgets the origin too.
+  useEffect(() => {
+    const offs = [
+      api.watch.onPlaying((p) => {
+        if (p?.sessionId) playedSessions.current.add(p.sessionId)
+        if (settingsRef.current?.playerMode === 'external') originRef.current = null
+      }),
+      api.watch.onSessionEnd(({ sessionId, retry }) => {
+        if (retry || playedSessions.current.delete(sessionId) || playerOpenedRef.current) return
+        originRef.current = null
+      }),
+    ]
+    return () => offs.forEach((off) => off?.())
   }, [api])
 
   // ids of library series, so the notification panel can disable entries whose series was removed
@@ -397,7 +420,31 @@ export default function App({ api, sound: injectedSound }) {
   const closeDetail = () => (nav.canBack ? nav.back() : nav.navigate({ page: 'watchlist', animeId: null }))
   // a removed series has no detail to come back to: step back, or swap the entry in place when there is no history
   const onRemoved = () => { if (nav.canBack) nav.back(); else nav.replace({ page: 'watchlist', animeId: null }); setFocusMain(true) }
-  const continueWatching = (params) => { setPendingWatch(params); nav.navigate({ page: 'home', animeId: null }) }
+  // chain = the next/previous episode of a playback that is already going: it keeps the origin of the first start
+  const continueWatching = (params, { chain = false } = {}) => {
+    if (!chain) originRef.current = nav.route
+    playerOpenedRef.current = false
+    setPendingWatch(params)
+    nav.navigate({ page: 'home', animeId: null })
+  }
+  // "Back" from the player: to where the episode was started (or, by setting, to the series' episode list)
+  const returnFromPlayer = async (title) => {
+    const origin = originRef.current
+    originRef.current = null
+    const mode = settingsRef.current?.returnAfterEpisode ?? 'origin'
+    let libraryEntryId = null
+    if (mode === 'episodes') {
+      const key = normalizeTitle(String(title ?? '')).toLowerCase()
+      try { libraryEntryId = ((await api.library.list()) ?? []).find((e) => normalizeTitle(e.aniCliTitle ?? e.title).toLowerCase() === key)?.id ?? null } catch (err) { console.warn('return to episodes: library read failed', err?.message) }
+    }
+    const target = returnTarget({ origin, behind: nav.behind, mode, libraryEntryId })
+    if (target.kind === 'back') nav.back()
+    else if (target.kind === 'navigate') {
+      nav.navigate(target.route)
+      if (mode === 'episodes' && libraryEntryId) nav.setRouteState('tab', 'episodes')
+    }
+    setFocusMain(true)
+  }
   // Search from anywhere (sequel/recommendation cards, the detail's "Similar"): fills Home's search box and runs it.
   const searchAnime = (query) => { setPendingSearch({ query }); nav.navigate({ page: 'home', animeId: null }) }
   const openWhatsNew = () => setWhatsNew({ mode: 'before', version: updateState.version, notes: updateState.notes })
@@ -484,10 +531,11 @@ export default function App({ api, sound: injectedSound }) {
                 setCloseRequest(null)
                 const afterClose = afterPlayerClose.current
                 afterPlayerClose.current = null
-                if (reason === 'nav') afterClose?.() // top bar action; it goes to the chosen page, never back to an origin
-                if ((reason === 'next' || reason === 'prev') && player.episode != null) {
-                  continueWatching({ query: player.title, anime: player.title, episode: String(nextEpisodeNumber(player.episode, reason === 'next' ? 1 : -1)) })
-                }
+                if (reason === 'nav') { originRef.current = null; afterClose?.() } // top bar action; it goes to the chosen page, never back to an origin
+                else if (reason === 'next' || reason === 'prev') {
+                  if (player.episode != null) continueWatching({ query: player.title, anime: player.title, episode: String(nextEpisodeNumber(player.episode, reason === 'next' ? 1 : -1)) }, { chain: true })
+                } else if (reason === 'external') originRef.current = null // playback continues in mpv; nothing to come back from
+                else returnFromPlayer(player.title)
               }}
             />
             </Suspense>

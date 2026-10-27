@@ -17,8 +17,12 @@ describe('settings', () => {
       playerMode: 'internal', autoSkip: false, autoNext: true, subtitles: { enabled: { sub: true, dub: false }, size: 25, lineSpacing: 0, font: 'default', color: 'white', box: true, boxOpacity: 60 }, mpvModernUi: true,
       playerVolume: 1, playerMuted: false, hideSpoilers: true, episodeMarks: true, episodeView: 'numbers',
       closeToTray: true, launchAtLogin: false, notifyNewEpisodes: true, notifyDownloads: true, trayHintShown: false,
-      hiddenSequels: [], hiddenRecommendations: [], volumeBoost: 1,
+      hiddenSequels: [], hiddenRecommendations: [], volumeBoost: 1, returnAfterEpisode: 'origin',
     })
+  })
+  it('validates returnAfterEpisode', () => {
+    expect(sanitizeSettings({ returnAfterEpisode: 'episodes' }).returnAfterEpisode).toBe('episodes')
+    expect(sanitizeSettings({ returnAfterEpisode: 'x' }).returnAfterEpisode).toBe('origin')
   })
   it('clamps the threshold and ignores invalid values', () => {
     const s = sanitizeSettings({ watchedThreshold: 120, language: 'de', mode: 'raw', quality: '4k', autoTrack: 'yes' })

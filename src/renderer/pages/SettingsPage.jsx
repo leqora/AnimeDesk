@@ -167,6 +167,13 @@ export function SettingsPage({ settings, onSettings, onImported = () => {}, focu
           </select>
         </label>
         <label className="field">
+          <span>{t('settings.returnAfterEpisode')}</span>
+          <select aria-label={t('settings.returnAfterEpisode')} value={settings.returnAfterEpisode ?? 'origin'} onChange={(e) => onSettings({ returnAfterEpisode: e.target.value })}>
+            <option value="origin">{t('settings.returnAfterEpisode.origin')}</option>
+            <option value="episodes">{t('settings.returnAfterEpisode.episodes')}</option>
+          </select>
+        </label>
+        <label className="field">
           <span>{t('settings.volumeBoost')}</span>
           <select aria-label={t('settings.volumeBoost')} value={settings.volumeBoost ?? 1} onChange={(e) => onSettings({ volumeBoost: Number(e.target.value) })}>
             {BOOST_LEVELS.map((v) => <option key={v} value={v}>{v === 1 ? t('boost.off') : formatBoost(v, settings.language)}</option>)}

@@ -21,6 +21,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   lastSeenVersion: null,
   fullscreen: false,
   playerMode: 'internal',
+  returnAfterEpisode: 'origin',
   autoSkip: false,
   autoNext: true,
   subtitles: DEFAULT_SUBTITLES,
@@ -43,6 +44,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
 export const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 export const MODES = ['sub', 'dub']
 export const PLAYER_MODES = ['internal', 'external']
+export const RETURN_MODES = ['origin', 'episodes']
 export const EPISODE_VIEWS = ['numbers', 'list']
 const LEGACY_SUBTITLE_SIZE = { S: 20, M: DEFAULT_SUBTITLES.size, L: 65 }
 const pct = (v, fallback) => (Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : fallback)
@@ -94,6 +96,7 @@ export function sanitizeSettings(input = {}) {
   if (typeof input.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(input.lastSeenVersion)) s.lastSeenVersion = input.lastSeenVersion
   if (typeof input.fullscreen === 'boolean') s.fullscreen = input.fullscreen
   if (PLAYER_MODES.includes(input.playerMode)) s.playerMode = input.playerMode
+  if (RETURN_MODES.includes(input.returnAfterEpisode)) s.returnAfterEpisode = input.returnAfterEpisode
   if (typeof input.autoSkip === 'boolean') s.autoSkip = input.autoSkip
   if (typeof input.autoNext === 'boolean') s.autoNext = input.autoNext
   s.subtitles = sanitizeSubtitles(input.subtitles, input.subtitleSize)

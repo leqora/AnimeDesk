@@ -168,7 +168,7 @@ describe('watchService prefetch — quiet and parked', () => {
     expect(returned).toBe(false) // still parked
     expect(t.internalPlayer.play).toHaveBeenCalledTimes(1)
     expect(t.celebrations.hold).toHaveBeenCalledTimes(1)
-    expect(t.events.filter((e) => e[0] === EVENTS.playing)).toEqual([[EVENTS.playing, { title: 'Show', episode: '3' }]])
+    expect(t.events.filter((e) => e[0] === EVENTS.playing)).toEqual([[EVENTS.playing, { title: 'Show', episode: '3', sessionId: expect.any(String) }]])
     expect(t.positions.save.mock.calls.every(([, ep]) => ep === '3')).toBe(true)
   })
   it('kills an unused prefetch after the TTL, counted from the end of the triggering episode', async () => {
@@ -259,7 +259,7 @@ describe('watchService prefetch — adoption', () => {
     await flush()
     expect(t.internalPlayer.play).toHaveBeenCalledTimes(2)
     expect(t.internalPlayer.play.mock.calls[1][0]).toMatchObject({ title: 'Show', episode: '4', url: 'https://v/4', resume: null, mode: 'sub' })
-    expect(t.events).toContainEqual([EVENTS.playing, { title: 'Show', episode: '4' }])
+    expect(t.events).toContainEqual([EVENTS.playing, { title: 'Show', episode: '4', sessionId: expect.any(String) }])
     expect(t.sessions[1].kill).not.toHaveBeenCalled()
     t.close(30, 'back')
     await flush()
