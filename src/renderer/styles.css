@@ -35,7 +35,7 @@
   --card-ratio: 2 / 3;
   --card-min: 160px;
   --rail-card-w: 160px;
-  --rail-wide-w: 288px;
+  --rail-wide-w: 320px;
   --card-radius: 12px;
   --dur-fast: 150ms;
   --dur: 220ms;
@@ -95,7 +95,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 /* top bar */
 .topbar { position: absolute; top: 0; left: 0; right: var(--scrollbar-w, 0px); height: var(--topbar-h); z-index: 20; display: flex; flex-wrap: nowrap; align-items: center; gap: 24px; padding: 0 var(--content-pad-x); white-space: nowrap; background: var(--panel-opaque); border-bottom: 1px solid var(--glass-border); }
 /* see-through only over a page that has a banner (Home) while scrolled to the top and with no notice above it */
-.app-shell[data-at-top="true"]:has(.home-hero):not(:has(.content__notices > *)) .topbar { background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 78%, transparent), transparent); border-bottom-color: transparent; }
+.app-shell[data-at-top="true"]:has(.home-hero):not(:has(.content__notices > *)) .topbar { background: linear-gradient(var(--panel-solid), transparent); border-bottom-color: transparent; }
 .topbar__logo { flex: none; font-family: var(--font-display); font-size: 20px; letter-spacing: .06em; background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .topbar__nav { overflow: hidden; display: flex; flex-wrap: nowrap; align-self: stretch; gap: 4px; min-width: 0; }
 .topbar__link { position: relative; display: flex; align-items: center; height: 100%; padding: 0 12px; background: transparent; border: 0; border-radius: 0; color: var(--text-muted); font-size: 14px; }
@@ -180,8 +180,8 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .home-hero__left { display: flex; align-items: center; gap: 10px; font-size: 12px; }
 .home-hero__progress { width: 140px; height: 4px; border-radius: 2px; overflow: hidden; background: var(--glass-strong); }
 .home-hero__progress > span { display: block; height: 100%; transform: scaleX(var(--ratio, 0)); transform-origin: left; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
-.home-hero__dots { position: absolute; z-index: 2; left: var(--content-pad-x); bottom: 14px; display: flex; gap: 4px; }
-.home-hero__dot { position: relative; width: 28px; height: 18px; padding: 0; border: 0; background: none; }
+.home-hero__dots { position: absolute; z-index: 2; left: var(--content-pad-x); bottom: 10px; display: flex; gap: 4px; }
+.home-hero__dot { position: relative; width: 28px; height: 24px; padding: 0; border: 0; background: none; }
 .home-hero__dot:hover:not(:disabled) { background: none; border-color: transparent; }
 .home-hero__dot::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 3px; margin-top: -1px; border-radius: 3px; background: var(--glass-strong); }
 .home-hero__dot[aria-current="true"]::before { background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
@@ -216,7 +216,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 /* padding keeps the 2 px ring + 2 px offset and the card lift (--card-lift) inside the scroll box; negative margin keeps the cards aligned with the page */
 .rail__track { display: grid; grid-auto-flow: column; grid-auto-columns: var(--rail-card-w); gap: 14px; overflow-x: auto; padding: 10px 8px 16px; margin-inline: -8px; scroll-padding-inline: 8px; scroll-behavior: smooth; scrollbar-width: none; }
 .rail__track::-webkit-scrollbar { display: none; }
-.rail--wide .rail__track { grid-auto-columns: var(--rail-wide-w); }
+.rail--wide .rail__track { grid-auto-columns: max(var(--rail-wide-w), calc((100% - 2 * 14px) / 3)); } /* 3 cards fill the track; --rail-wide-w is the minimum, so narrow windows show about 2 */
 .rail--wide .poster { aspect-ratio: 16 / 9; }
 .rail__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .search-bar { display: flex; gap: 8px; }

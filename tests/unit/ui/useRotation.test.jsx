@@ -13,7 +13,7 @@ const mockReduced = (matches) => {
 
 describe('useRotation', () => {
   beforeEach(() => { vi.useFakeTimers(); mockReduced(false); setHidden(false) })
-  afterEach(() => { vi.useRealTimers(); delete window.matchMedia; document.documentElement.classList.remove('reduce-motion') })
+  afterEach(() => { vi.useRealTimers(); delete window.matchMedia })
 
   it('advances every 8000 ms and wraps around', () => {
     const { result } = renderHook(() => useRotation({ count: 3 }))
@@ -39,17 +39,25 @@ describe('useRotation', () => {
     act(() => { vi.advanceTimersByTime(40000) })
     expect(result.current[0]).toBe(0)
   })
-  it('never changes with reduced motion (OS or in-app)', () => {
+  it('never changes with reduced motion (OS, or the in-app setting from the very first render)', () => {
     mockReduced(true)
     const a = renderHook(() => useRotation({ count: 3 }))
     act(() => { vi.advanceTimersByTime(40000) })
     expect(a.result.current[0]).toBe(0)
     a.unmount()
     mockReduced(false)
-    document.documentElement.classList.add('reduce-motion')
-    const b = renderHook(() => useRotation({ count: 3 }))
+    const b = renderHook(() => useRotation({ count: 3, reduced: true }))
     act(() => { vi.advanceTimersByTime(40000) })
     expect(b.result.current[0]).toBe(0)
+  })
+  it('stops and starts when the in-app setting flips after mount', () => {
+    const { result, rerender } = renderHook((p) => useRotation(p), { initialProps: { count: 3, reduced: false } })
+    rerender({ count: 3, reduced: true })
+    act(() => { vi.advanceTimersByTime(40000) })
+    expect(result.current[0]).toBe(0)
+    rerender({ count: 3, reduced: false })
+    act(() => { vi.advanceTimersByTime(8000) })
+    expect(result.current[0]).toBe(1)
   })
   it('stops while the document is hidden', () => {
     const { result } = renderHook(() => useRotation({ count: 3 }))

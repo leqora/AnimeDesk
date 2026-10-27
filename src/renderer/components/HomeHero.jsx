@@ -60,12 +60,12 @@ function Slide({ entry, ready, now, onContinue, onDetails }) {
   )
 }
 
-export function HomeHero({ entries, ready, onContinue, onDetails }) {
+export function HomeHero({ entries, ready, reduced = false, onContinue, onDetails }) {
   const t = useT()
   const now = useNow()
   return (
     <HeroStage
-      count={entries.length} label={t('hero.label')}
+      keys={entries.map((e) => String(e.id))} reduced={reduced} label={t('hero.label')}
       renderSlide={(i) => <Slide key={entries[i].id} entry={entries[i]} ready={ready} now={now} onContinue={onContinue} onDetails={onDetails} />}
     />
   )

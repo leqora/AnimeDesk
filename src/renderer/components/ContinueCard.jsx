@@ -37,8 +37,13 @@ export function ContinueCard({ entry, ready, onContinue, onOpen }) {
   const next = nextEpisode(entry)
   const info = usePosterInfo(entry.title, entry.aniListId)
   const progress = useEpisodeProgress(key)
-  const thumb = useNextThumb(entry, next)
-  const banner = useBanner(thumb === null ? { kind: 'series', entryId: entry.id } : null)
+  const rawThumb = useNextThumb(entry, next)
+  // An image that fails to load (a removed cache file, a broken thumb) falls through to the next source.
+  const [bad, setBad] = useState([])
+  const markBad = (src) => setBad((prev) => (prev.includes(src) ? prev : [...prev, src]))
+  const thumb = typeof rawThumb === 'string' && bad.includes(rawThumb) ? null : rawThumb
+  const rawBanner = useBanner(thumb === null ? { kind: 'series', entryId: entry.id } : null)
+  const banner = typeof rawBanner === 'string' && bad.includes(rawBanner) ? null : rawBanner
   const tint = usePosterTint(thumb === null && !banner ? (info?.poster ?? null) : null)
   const saved = progress[String(next)]
   const line = saved ? t('continue.episodeLeft', { n: next, m: saved.remaining }) : t('continue.episode', { n: next })
@@ -54,7 +59,7 @@ export function ContinueCard({ entry, ready, onContinue, onOpen }) {
     <div className="continue-card">
       <button type="button" className="continue-card__open" disabled={!ready} aria-label={`${t('home.continueEp', { episode: next })}: ${entry.title}`} onClick={() => onContinue({ query: key, anime: key, episode: String(next) })}>
         <span className="continue-card__frame" style={tint ? { '--poster-tint': tint } : undefined}>
-          {image ? <img className="continue-card__img" src={image} alt="" />
+          {image ? <img className="continue-card__img" src={image} alt="" onError={() => markBad(image)} />
             : thumb === undefined || banner === undefined ? <span className="poster poster--skeleton" aria-hidden="true" />
               : info?.poster ? (
                 <span className="continue-card__poster" aria-hidden="true">

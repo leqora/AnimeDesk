@@ -31,6 +31,16 @@ describe('ContinueCard', () => {
     await waitFor(() => expect(c.container.querySelector('.continue-card__poster')).not.toBeNull())
     expect(c.container.querySelector('.continue-card__img')).toBeNull()
   })
+  it('a broken image falls through to the next source', async () => {
+    const api = apiWith({ episodes: { thumb: vi.fn(async () => THUMB) }, anilist: { banner: vi.fn(async () => 'animedesk-img://banner/ab12') } })
+    const { container } = renderUi(<ContinueCard entry={entry()} {...cb} />, { api })
+    await waitFor(() => expect(container.querySelector('.continue-card__img')).toHaveAttribute('src', THUMB))
+    fireEvent.error(container.querySelector('.continue-card__img'))
+    await waitFor(() => expect(container.querySelector('.continue-card__img')).toHaveAttribute('src', 'animedesk-img://banner/ab12'))
+    fireEvent.error(container.querySelector('.continue-card__img'))
+    await waitFor(() => expect(container.querySelector('.continue-card__poster')).not.toBeNull())
+    expect(container.querySelector('.continue-card__img')).toBeNull()
+  })
   it('text: with the saved position and without, never an episode title', async () => {
     const saved = apiWith({ positions: { forSeries: vi.fn(async () => ({ 5: { position: 720, duration: 1440 } })) } })
     const a = renderUi(<ContinueCard entry={entry()} {...cb} />, { api: saved })

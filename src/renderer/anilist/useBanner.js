@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useApi } from '../api.js'
 
-// One memory cache per api object for the whole renderer life: key -> { promise, done, value }.
-// The same key asked at the same time shares one IPC call; the banner url is a local file url (animedesk-img://) or null.
+// Per api object: key -> { promise, value }. Only a banner url (string) is remembered for the renderer life; an
+// in-flight call is shared by everyone asking for the same key. null ("no banner yet": main answers null at once while
+// the AniList record is not cached) and errors are NOT remembered, so a later view asks again.
 const stores = new WeakMap()
 const storeOf = (api) => {
   let s = stores.get(api)
@@ -14,11 +15,15 @@ function load(api, key, req) {
   const store = storeOf(api)
   let slot = store.get(key)
   if (!slot) {
-    slot = { done: false, value: null, promise: null }
+    slot = { value: undefined, promise: null }
     slot.promise = Promise.resolve()
       .then(() => api.anilist.banner(req))
       .then((v) => (typeof v === 'string' ? v : null), () => null)
-      .then((v) => { slot.done = true; slot.value = v; return v })
+      .then((v) => {
+        if (v) slot.value = v
+        else if (store.get(key) === slot) store.delete(key)
+        return v
+      })
     store.set(key, slot)
   }
   return slot
@@ -32,13 +37,13 @@ export function useBanner(req) {
   useEffect(() => {
     if (!key) return undefined
     const slot = load(api, key, req)
-    if (slot.done) return undefined
+    if (slot.value) return undefined
     let active = true
     slot.promise.then((value) => { if (active) setState({ key, value }) })
     return () => { active = false }
   }, [api, key])
   if (!key) return null
-  const slot = storeOf(api).get(key)
-  if (slot?.done) return slot.value
+  const cached = storeOf(api).get(key)?.value
+  if (cached) return cached
   return state?.key === key ? state.value : undefined
 }

@@ -137,4 +137,33 @@ describe('HomePage sections', () => {
     await act(async () => { libraryListener() })
     expect(screen.getByRole('heading', { name: 'Fresh One' })).toBeInTheDocument()
   })
+  it('waits for the Discover peek before freezing, so a fast recommendations answer cannot win', async () => {
+    let resolvePeek
+    const peek = vi.fn(() => new Promise((r) => { resolvePeek = r }))
+    const api = makeFakeApi({ discover: { peek }, recommendations: { list: vi.fn(async () => ({ mode: 'trending', hint: false, items: [{ id: 13, title: 'Trending One', format: 'TV', genres: [], poster: null }] })) } })
+    home(api)
+    await waitFor(() => expect(api.recommendations.list).toHaveBeenCalled())
+    await act(async () => {})
+    expect(screen.queryByText('Popularno sada · #1')).not.toBeInTheDocument()
+    await act(async () => { resolvePeek({ season: seasonOf(Date.now()), items: [{ id: 11, title: 'Season One', format: 'TV', genres: [], poster: null, entryId: null }] }) })
+    expect(await screen.findByText('Popularno ove sezone · #1')).toBeInTheDocument()
+  })
+  it('falls back to recommendations when the peek fails', async () => {
+    const api = makeFakeApi({ discover: { peek: vi.fn(async () => { throw new Error('x') }) }, recommendations: { list: vi.fn(async () => ({ mode: 'trending', hint: false, items: [{ id: 13, title: 'Trending One', format: 'TV', genres: [], poster: null }] })) } })
+    home(api)
+    expect(await screen.findByText('Popularno sada · #1')).toBeInTheDocument()
+  })
+  it('does not rotate the banner when animations are off in the settings', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const api = makeFakeApi({ library: { list: vi.fn(async () => [entry(), entry({ id: 'b', title: 'Second', aniCliTitle: 'Second', lastWatchedAt: '2026-09-01T00:00:00Z' })]) } })
+      renderUi(<HomePage ready settings={{ ...DEFAULT_SETTINGS, animations: false }} onSettings={() => {}} onOpenWizard={() => {}} pendingWatch={null} onPendingHandled={() => {}} onContinue={() => {}} onOpenAnime={() => {}} />, { api })
+      await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+      expect(screen.getByRole('heading', { name: 'Show', level: 1 })).toBeInTheDocument()
+      await act(async () => { await vi.advanceTimersByTimeAsync(8000 * 3) })
+      expect(screen.getByRole('heading', { name: 'Show', level: 1 })).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

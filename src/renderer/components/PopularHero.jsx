@@ -32,7 +32,7 @@ function Slide({ slide, added, onAdd, onSearch }) {
   )
 }
 
-export function PopularHero({ slides, onSearch }) {
+export function PopularHero({ slides, reduced = false, onSearch }) {
   const api = useApi()
   const t = useT()
   const [added, setAdded] = useState(() => new Set())
@@ -66,7 +66,7 @@ export function PopularHero({ slides, onSearch }) {
   }
   return (
     <HeroStage
-      count={slides.length} label={t('hero.label')}
+      keys={slides.map((x) => String(x.id))} reduced={reduced} label={t('hero.label')}
       renderSlide={(i) => <Slide key={slides[i].id} slide={slides[i]} added={added.has(slides[i].id)} onAdd={add} onSearch={onSearch} />}
     />
   )

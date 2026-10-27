@@ -26,6 +26,7 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
   const [sequels, setSequels] = useState([])
   const [recs, setRecs] = useState({ mode: 'trending', hint: false, items: [] })
   const [peek, setPeek] = useState(null)
+  const [peekSettled, setPeekSettled] = useState(false)
   const [focused, setFocused] = useState(false)
   // The popular list is frozen at the first non-empty result while Home is mounted: adding a series must not remove the slide under the focus.
   const frozen = useRef(null)
@@ -39,7 +40,10 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
   // Cached Discover season rail: no network (peek never asks AniList).
   useEffect(() => {
     let alive = true
-    Promise.resolve().then(() => api.discover.peek()).then((data) => { if (alive && data && Array.isArray(data.items)) setPeek(data) }).catch(() => {})
+    Promise.resolve().then(() => api.discover.peek())
+      .then((data) => { if (alive && data && Array.isArray(data.items)) setPeek(data) })
+      .catch(() => {})
+      .then(() => { if (alive) setPeekSettled(true) })
     return () => { alive = false }
   }, [api])
 
@@ -100,18 +104,20 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
   const railIds = new Set(rail.map((e) => e.id))
   const pinned = pinnedEntries(entries).filter((e) => !railIds.has(e.id))
   const card = (e) => <MediaCard key={e.id} entry={e} ready={ready} onOpen={onOpenAnime} onContinue={onContinue} />
-  if (heroEntries.length === 0 && !frozen.current) {
+  // Frozen only after peek (the highest-priority source) has settled, so a fast recommendations answer cannot lock in a lower one.
+  if (heroEntries.length === 0 && !frozen.current && peekSettled) {
     const slides = popularSlides({ peek, recs })
     if (slides.length > 0) frozen.current = slides
   }
+  const reduced = settings?.animations === false
   const focusSearch = () => document.getElementById('search-input')?.focus()
   return (
     <div className="page">
       {!focused && (
         <>
           {heroEntries.length > 0
-            ? <HomeHero entries={heroEntries} ready={ready} onContinue={onContinue} onDetails={onOpenAnime} />
-            : <PopularHero slides={frozen.current ?? []} onSearch={(query) => (query ? onSearch(query) : focusSearch())} />}
+            ? <HomeHero entries={heroEntries} ready={ready} reduced={reduced} onContinue={onContinue} onDetails={onOpenAnime} />
+            : (peekSettled || frozen.current) && <PopularHero slides={frozen.current ?? []} reduced={reduced} onSearch={(query) => (query ? onSearch(query) : focusSearch())} />}
           {pinned.length > 0 && <Rail title={t('home.favorites')} count={pinned.length}>{pinned.map(card)}</Rail>}
           {rail.length > 0 && (
             <Rail title={t('home.continueWatching')} count={rail.length} variant="wide">
