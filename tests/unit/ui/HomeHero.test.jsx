@@ -91,6 +91,8 @@ describe('HomeHero', () => {
       expect(document.activeElement).toBe(details)
       await act(async () => { await vi.advanceTimersByTimeAsync(8000 * 2) })
       expect(document.activeElement).toBe(details)
+      act(() => details.blur())
+      expect(screen.getByRole('heading', { name: 'Show' })).toBeInTheDocument() // the held series stays shown after the hold ends
     })
     it('hover pauses too', async () => {
       const { container } = renderUi(<HomeHero entries={[entry(), entry({ id: 'b', title: 'Second' })]} {...props} />, { api: apiWith() })

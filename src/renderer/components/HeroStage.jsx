@@ -32,7 +32,7 @@ export function HeroStage({ keys, label, reduced = false, renderSlide }) {
       className="home-hero" aria-label={label} aria-roledescription="carousel"
       onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       onFocus={(e) => { focusKey.current = e.target.closest?.('[data-slide-key]')?.dataset.slideKey ?? null; setFocusIn(true) }}
-      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) { focusKey.current = null; setFocusIn(false) } }}
+      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) { const at = focusKey.current == null ? -1 : keys.indexOf(focusKey.current); if (at >= 0) setIndex(at); focusKey.current = null; setFocusIn(false) } }}
     >
       {order.current.map((k) => {
         const i = keys.indexOf(k)
