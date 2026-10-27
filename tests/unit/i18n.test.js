@@ -28,7 +28,7 @@ describe('i18n', () => {
   })
   it('interpolates variables and falls back to the key', () => {
     const t = createT('en')
-    expect(t('detail.progress', { watched: 3, total: 12 })).toBe('Progress: 3 / 12')
+    expect(t('detail.episodesCount', { n: 12 })).toBe('12 EP')
     expect(t('does.not.exist')).toBe('does.not.exist')
     expect(createT('xx')('nav.search')).toBe('Pretraga')
   })

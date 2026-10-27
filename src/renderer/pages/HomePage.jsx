@@ -137,7 +137,7 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
           )}
         </>
       )}
-      <SearchPage ready={ready} settings={settings} onSettings={onSettings} onOpenWizard={onOpenWizard} pendingWatch={pendingWatch} onPendingHandled={onPendingHandled} pendingSearch={pendingSearch} onPendingSearchHandled={onPendingSearchHandled} onFocusChange={setFocused} />
+      <SearchPage embedded ready={ready} settings={settings} onSettings={onSettings} onOpenWizard={onOpenWizard} pendingWatch={pendingWatch} onPendingHandled={onPendingHandled} pendingSearch={pendingSearch} onPendingSearchHandled={onPendingSearchHandled} onFocusChange={setFocused} />
     </div>
   )
 }

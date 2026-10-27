@@ -176,7 +176,8 @@ export default function App({ api, sound: injectedSound }) {
   const [focusMain, setFocusMain] = useState(false)
   useEffect(() => {
     if (!focusMain || paletteOpen) return
-    mainRef.current?.focus()
+    // a toast that took focus on purpose (the "Poništi" button after a removal) keeps it
+    if (!document.activeElement?.closest?.('.toast-stack')) mainRef.current?.focus()
     setFocusMain(false)
   }, [focusMain, paletteOpen])
   // FIFO: an ask for episode N must survive the ask for N+1 (askOnClose + autoNext)
@@ -381,7 +382,7 @@ export default function App({ api, sound: injectedSound }) {
   openRef.current = { anime: openAnime, page: navigate }
   const closeDetail = () => (nav.canBack ? nav.back() : nav.navigate({ page: 'watchlist', animeId: null }))
   // a removed series has no detail to come back to: step back, or swap the entry in place when there is no history
-  const onRemoved = () => (nav.canBack ? nav.back() : nav.replace({ page: 'watchlist', animeId: null }))
+  const onRemoved = () => { if (nav.canBack) nav.back(); else nav.replace({ page: 'watchlist', animeId: null }); setFocusMain(true) }
   const continueWatching = (params) => { setPendingWatch(params); nav.navigate({ page: 'home', animeId: null }) }
   // Search from anywhere (sequel/recommendation cards, the detail's "Similar"): fills Home's search box and runs it.
   const searchAnime = (query) => { setPendingSearch({ query }); nav.navigate({ page: 'home', animeId: null }) }
@@ -433,7 +434,7 @@ export default function App({ api, sound: injectedSound }) {
                 {page === 'home' && (
                   <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onSearch={searchAnime} />
                 )}
-                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} onSearch={searchAnime} />}
+                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} onSearch={searchAnime} playerOpen={Boolean(player)} />}
                 {page === 'discover' && <DiscoverPage ready={ready} onOpenAnime={openAnime} onSearch={searchAnime} />}
                 {page === 'schedule' && <SchedulePage ready={ready} onOpenAnime={openAnime} onSearch={searchAnime} />}
                 {page === 'downloads' && <DownloadsPage />}

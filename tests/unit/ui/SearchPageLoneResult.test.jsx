@@ -21,7 +21,7 @@ function lone() {
 describe('SearchPage: lone search result', () => {
   it('focus moves to the picker heading, not body', () => {
     lone()
-    expect(document.activeElement).toBe(screen.getByRole('heading'))
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 3 }))
   })
   it('does not steal focus from an element that still exists', () => {
     const handlers = {}
@@ -40,7 +40,7 @@ describe('SearchPage: lone search result', () => {
   })
   it('waits for the title: no empty heading, add and download disabled, watching still works', async () => {
     const { api } = lone()
-    expect(screen.getByRole('heading')).toHaveTextContent('Tražim naslov… — Izaberi epizodu')
+    expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('Tražim naslov… — Izaberi epizodu')
     fireEvent.click(screen.getByRole('button', { name: '2' }))
     expect(screen.getByRole('button', { name: 'Dodaj u watchlist' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Preuzmi izabrane' })).toBeDisabled()
@@ -51,7 +51,7 @@ describe('SearchPage: lone search result', () => {
   it('uses the title main found for the heading, the watchlist and downloads', async () => {
     const { api, handlers } = lone()
     await act(async () => { await handlers.title({ sessionId: 's1', title: 'Lone Show' }) })
-    expect(screen.getByRole('heading')).toHaveTextContent('Lone Show — Izaberi epizodu')
+    expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('Lone Show — Izaberi epizodu')
     fireEvent.click(screen.getByRole('button', { name: 'Dodaj u watchlist' }))
     await waitFor(() => expect(api.library.add).toHaveBeenCalledWith({ title: 'Lone Show', aniCliTitle: 'Lone Show' }))
     fireEvent.click(screen.getByRole('button', { name: '3' }))
@@ -61,12 +61,12 @@ describe('SearchPage: lone search result', () => {
   it('ignores a title for another session', async () => {
     const { handlers } = lone()
     await act(async () => { await handlers.title({ sessionId: 'old', title: 'Other' }) })
-    expect(screen.getByRole('heading')).toHaveTextContent('Tražim naslov…')
+    expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('Tražim naslov…')
   })
   it('shows the search text when the title cannot be found, and keeps add/download off', async () => {
     const { handlers } = lone()
     await act(async () => { await handlers.title({ sessionId: 's1', title: null }) })
-    expect(screen.getByRole('heading')).toHaveTextContent('„lone show” — Izaberi epizodu')
+    expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('„lone show” — Izaberi epizodu')
     expect(screen.getByRole('button', { name: 'Dodaj u watchlist' })).toBeDisabled()
   })
   it('restarts for the found series when it has saved quality or audio, like picking it in the menu', async () => {
@@ -95,6 +95,6 @@ describe('SearchPage: lone search result', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
     await act(async () => { await handlers.title({ sessionId: 's1', title: 'Old Show' }) })
     act(() => handlers.menu({ requestId: 'r2', sessionId: 's2', kind: 'episode', prompt: 'Select episode: ', lines: ['1'] }))
-    expect(screen.getByRole('heading')).toHaveTextContent('Tražim naslov…')
+    expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('Tražim naslov…')
   })
 })

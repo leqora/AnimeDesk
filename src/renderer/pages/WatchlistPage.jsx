@@ -10,7 +10,7 @@ import { useRouteState } from '../nav/useNavigation.js'
 
 export { sortItems }
 
-export function WatchlistPage({ ready, onContinue, animeId = null, onOpen, onBack, onRemoved, onSearch }) {
+export function WatchlistPage({ ready, onContinue, animeId = null, onOpen, onBack, onRemoved, onSearch, playerOpen = false }) {
   const api = useApi()
   const t = useT()
   const [items, setItems] = useState(null)
@@ -63,7 +63,7 @@ export function WatchlistPage({ ready, onContinue, animeId = null, onOpen, onBac
 
   // an id that is no longer in the library (removed elsewhere) simply falls through to the grid
   const open = animeId != null ? items?.find((i) => i.id === animeId) : null
-  if (open) return <AnimeDetail key={open.id} entry={open} ready={ready} onBack={onBack} onRemoved={onRemoved} onChanged={load} onContinue={onContinue} onSearch={onSearch} />
+  if (open) return <AnimeDetail key={open.id} entry={open} ready={ready} onBack={onBack} onRemoved={onRemoved} onChanged={load} onContinue={onContinue} onSearch={onSearch} playerOpen={playerOpen} />
   // the library is still loading for a detail route: paint nothing rather than flash the grid
   if (animeId != null && items == null) return null
 
@@ -102,6 +102,10 @@ export function WatchlistPage({ ready, onContinue, animeId = null, onOpen, onBac
 
   return (
     <section className="page">
+      <header className="page__head">
+        <h2 className="hud">{t('nav.watchlist')}</h2>
+        <p className="page__sub muted">{t('watchlist.subtitle')}</p>
+      </header>
       <div className="watchlist-toolbar">
         <input
           ref={searchRef}

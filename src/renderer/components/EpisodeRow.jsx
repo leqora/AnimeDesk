@@ -1,33 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
+import { useEpisodeThumb } from '../episodes/useEpisodeThumb.js'
 
 // One episode in the list view. What it may show was decided in main: a hidden row only ever has number + runtime.
 export function EpisodeRow({ row, poster = null, watched = false, selected = false, noted = false, onToggle, onReveal = null, loadThumb = null, rowRef = null, progress = null, kind = null }) {
   const t = useT()
   const ref = useRef(null)
-  const [src, setSrc] = useState(null)
   const [open, setOpen] = useState(false)
   const hidden = row.visibility === 'hidden'
   const full = row.visibility === 'full'
   const overview = full ? row.overview : null
   const title = hidden ? null : row.title
 
-  useEffect(() => {
-    setSrc(null)
-    if (hidden || !row.hasThumb || !loadThumb) return undefined
-    let live = true
-    const fetchThumb = () => loadThumb(row.number).then((u) => { if (live && u) setSrc(u) }).catch(() => {})
-    // A group holds up to 100 rows: only ask for the pictures that scroll into view.
-    if (typeof IntersectionObserver === 'undefined') {
-      fetchThumb()
-      return () => { live = false }
-    }
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) { io.disconnect(); fetchThumb() }
-    })
-    io.observe(ref.current)
-    return () => { live = false; io.disconnect() }
-  }, [row.number, hidden, row.hasThumb, loadThumb])
+  const src = useEpisodeThumb({ row, loadThumb, ref })
 
   const img = src ?? poster
   const label = title ? t('episodes.titled', { n: row.number, title }) : t('episodes.number', { n: row.number })

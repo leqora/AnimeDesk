@@ -1,35 +1,31 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApi } from '../api.js'
 import { useAniListInfo } from '../anilist/useAniListInfo.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { useToast } from '../toast/ToastProvider.jsx'
-import { Poster } from '../components/Poster.jsx'
+import { Tabs } from '../components/Tabs.jsx'
+import { useRouteState } from '../nav/useNavigation.js'
+import { DetailHero } from '../detail/DetailHero.jsx'
 import { EpisodePicker } from '../components/EpisodePicker.jsx'
-import { Icon } from '../components/Icon.jsx'
 import { AniListMatch } from '../components/AniListMatch.jsx'
 import { RecommendationCard } from '../components/RecommendationCard.jsx'
 import { useSeriesEpisodes } from '../episodes/useSeriesEpisodes.js'
 import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
-import { usePosterTint } from '../theme/usePosterTint.js'
-import { STATUSES, nextEpisode } from '../../shared/domain.js'
+import { nextEpisode } from '../../shared/domain.js'
 import { useNow } from '../useNow.js'
 import { isSeriesComplete } from '../components/MediaCard.jsx'
-import { AiringLine, NewBadge } from '../components/AiringLine.jsx'
-import { newEpisodeCount, upcoming, ANILIST_STATUSES } from '../../shared/airing.js'
-import { formatTime } from '../../shared/player.js'
+import { newEpisodeCount } from '../../shared/airing.js'
 
-export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onContinue, onSearch = () => {} }) {
+export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onContinue, onSearch = () => {}, playerOpen = false }) {
   const api = useApi()
   const t = useT()
   const rawInfo = useAniListInfo(entry.title, entry.aniListId, { live: true }) // undefined = loading, null = not found
   const info = rawInfo ?? null
   // A fuzzy (close) title match is shown as poster/title/year/genres only; nothing else is taken from it.
   const closeMatch = info?.match === 'close'
-  const tint = usePosterTint(info?.poster ?? null)
   // "Similar": the linked id, else an exact title match; a close match never counts.
   const similarId = entry.aniListId ?? (info?.match === 'exact' ? info.id : null)
   const [similar, setSimilar] = useState([])
-  const similarHeadId = useId()
   useEffect(() => {
     setSimilar([])
     if (similarId == null) return undefined
@@ -39,7 +35,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
       .catch(() => {})
     return () => { alive = false }
   }, [api, similarId])
-  const [showDesc, setShowDesc] = useState(false)
+  const matchRef = useRef(null)
   const [comment, setComment] = useState(entry.comment)
   const [noteEp, setNoteEp] = useState(null)
   const [noteText, setNoteText] = useState('')
@@ -48,11 +44,12 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const canAuto = Boolean(entry.aniCliTitle && entry.aniListId != null)
   const [auto, setAuto] = useState(false)
   const [hideFiller, setHideFiller] = useState(false)
+  const [prefs, setPrefs] = useState({ quality: null, mode: null })
   const [downloadDir, setDownloadDir] = useState(undefined)
   useEffect(() => {
     if (!entry.aniCliTitle) return undefined
     let live = true
-    api.seriesPrefs.get(entry.aniCliTitle).then((p) => { if (live) { setAuto(Boolean(p?.autoDownload)); setHideFiller(Boolean(p?.hideFiller)) } }).catch((err) => console.error(err))
+    api.seriesPrefs.get(entry.aniCliTitle).then((p) => { if (live) { setAuto(Boolean(p?.autoDownload)); setHideFiller(Boolean(p?.hideFiller)); setPrefs({ quality: p?.quality ?? null, mode: p?.mode ?? null }) } }).catch((err) => console.error(err))
     return () => { live = false }
   }, [api, entry.aniCliTitle])
   useEffect(() => {
@@ -76,6 +73,20 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
       const next = await api.seriesPrefs.set(entry.aniCliTitle, { hideFiller: hide })
       if (mounted.current) setHideFiller(Boolean(next?.hideFiller))
     } catch (err) { console.error(err); if (mounted.current) setHideFiller(!hide) }
+  } : null
+
+  // Quality / sub-dub for this series: optimistic, rolled back for the changed keys when saving fails.
+  const changePrefs = entry.aniCliTitle ? async (patch) => {
+    const keys = Object.keys(patch)
+    const previous = prefs
+    setPrefs((cur) => ({ ...cur, ...patch }))
+    try {
+      const next = await api.seriesPrefs.set(entry.aniCliTitle, patch)
+      if (mounted.current) setPrefs((cur) => ({ ...cur, ...Object.fromEntries(keys.map((k) => [k, next?.[k] ?? null])) }))
+    } catch (err) {
+      console.error(err)
+      if (mounted.current) setPrefs((cur) => ({ ...cur, ...Object.fromEntries(keys.map((k) => [k, previous[k]])) }))
+    }
   } : null
 
   // Patch aniListId/totalEpisodes into the library once per entry id, when its info first arrives.
@@ -104,17 +115,23 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const now = useNow()
   const fresh = newEpisodeCount(entry, info, now)
   const saved = progress[String(nextEp)]
-  const totalEps = entry.totalEpisodes ?? (closeMatch ? null : info?.episodes) ?? null
-  const meta = info
-    ? [
-        info.year,
-        totalEps && t('detail.episodesCount', { n: totalEps }),
-        !closeMatch && info.duration && t('detail.duration', { min: info.duration }),
-        !closeMatch && ANILIST_STATUSES.includes(info.status) && t(`airing.status.${info.status}`),
-      ].filter(Boolean)
-    : []
+  // The episode-info switch lives in the "more" menu; it needs something to switch (same condition as the old row).
+  const metaToggle = series && (series.meta !== 'none' || series.marks === 'ok')
+    ? { off: series.meta === 'off', onChange: (off) => update({ metaOff: off }) }
+    : null
+  const pickAniList = () => { pickPending.current = true; setTab('notes'); setPickReq((n) => n + 1) }
 
   const openNote = (ep) => { setNoteEp(ep); setNoteText(entry.episodeNotes[String(ep)] ?? '') }
+  // "Note…" in a card menu: open the note and move focus into its textarea (the menu item does not return focus to its button).
+  const noteArea = useRef(null)
+  const [noteFocusReq, setNoteFocusReq] = useState(0)
+  const noteFocusPending = useRef(false)
+  const openNoteFocused = (ep) => { noteFocusPending.current = true; openNote(Number(ep)); setNoteFocusReq((n) => n + 1) }
+  useEffect(() => {
+    if (!noteFocusPending.current || noteEp == null) return
+    noteFocusPending.current = false
+    noteArea.current?.focus()
+  }, [noteFocusReq, noteEp])
   const saveNote = async () => { await api.library.setEpisodeNote(entry.id, noteEp, noteText); onChanged() }
   // Latest known watched list: follows the entry on refresh, and the last saved list in between (rapid marks accumulate).
   const latestWatched = useRef(watched)
@@ -163,7 +180,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const remove = async () => {
     // Capture id/title: the detail unmounts after removal, the toast outlives it.
     const { id, title } = entry
-    try { await api.library.remove(id) } catch (err) { console.error(err); return }
+    try { await api.library.remove(id) } catch (err) { console.error(err); return false }
     ;(onRemoved ?? onBack)()
     onChanged()
     toast.show({
@@ -186,82 +203,46 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
     onChanged()
   }
 
-  return (
-    <section className="page">
-      <div className="row">
-        <button type="button" onClick={onBack}>{t('detail.back')}</button>
-      </div>
-      <div className="banner" style={tint ? { '--poster-tint': tint } : undefined}>
-        {info?.poster && <div className="hero__bg" style={{ backgroundImage: `url(${info.poster})` }} />}
-        <div className="banner__body">
-          <Poster title={entry.title} aniListId={entry.aniListId} />
-          <div className="banner__text">
-            <h2>{entry.title}</h2>
-            {meta.length > 0 && <p className="banner__meta hud">{meta.join(' · ')}</p>}
-            {(upcoming(info, now) || fresh > 0) && (
-              <div className="banner__airing">
-                <AiringLine info={info} now={now} />
-                <NewBadge count={fresh} inline />
-              </div>
-            )}
-            {info?.genres?.length > 0 && (
-              <ul className="chips" aria-label={t('detail.genres')}>
-                {info.genres.map((g) => <li key={g} className="chip">{g}</li>)}
-              </ul>
-            )}
-            <div className="row banner__actions">
-              <button type="button" className="primary" disabled={!ready} onClick={() => onContinue({ query: animeKey, anime: animeKey, episode: String(nextEp) })}>
-                <Icon name="play" /> {finished ? t('detail.rewatch') : saved ? t('home.continueEpFrom', { episode: nextEp, time: formatTime(saved.position) }) : t('home.continueEp', { episode: nextEp })}
-              </button>
-              <button type="button" aria-pressed={Boolean(entry.pinnedAt)} onClick={togglePin}><Icon name="star" /> {entry.pinnedAt ? t('pin.remove') : t('pin.add')}</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="detail">
-        <div className="page">
-          <p>{t('detail.progress', { watched: watched.length, total: entry.totalEpisodes ?? '?' })}</p>
-          <div className="row">
-            <label className="field">
-              <span>{t('detail.status')}</span>
-              <select aria-label={t('detail.status')} value={entry.status} onChange={(e) => save({ status: e.target.value })}>
-                {STATUSES.map((s) => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
-              </select>
-            </label>
-            <label className="field">
-              <span>{t('detail.rating')}</span>
-              <select aria-label={t('detail.rating')} value={entry.rating ?? ''} onChange={(e) => save({ rating: e.target.value ? Number(e.target.value) : null })}>
-                <option value="">{t('detail.noRating')}</option>
-                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </label>
-          </div>
-          {canAuto && (
-            <div className="check-group">
-              <label className="check">
-                <input
-                  type="checkbox" checked={auto} disabled={downloadDir == null && !auto}
-                  aria-describedby="auto-download-hint" onChange={(e) => toggleAuto(e.target.checked)}
-                />
-                {t('detail.autoDownload')}
-              </label>
-              <p id="auto-download-hint" className="check-hint muted">
-                {downloadDir === null ? t('detail.autoDownloadNoDir') : auto && `${t('detail.autoDownloadOn')}${entry.status === 'watching' ? '' : ` ${t('detail.autoDownloadNotWatching')}`}`}
-              </p>
-            </div>
-          )}
-          <AniListMatch entry={entry} info={rawInfo}onChanged={onChanged} />
-          <label className="field">
-            <span>{t('detail.comment')}</span>
-            <textarea aria-label={t('detail.comment')} value={comment} onChange={(e) => setComment(e.target.value)} onBlur={() => { if (comment !== entry.comment) save({ comment }) }} />
+  // Detail tabs: the remembered one (per history entry) wins only while it exists; "similar" needs items.
+  const [tabChoice, setTab] = useRouteState('tab', 'episodes')
+  const shownTab = tabChoice === 'notes' || (tabChoice === 'similar' && similar.length > 0) ? tabChoice : 'episodes'
+  // "Choose series" (hero menu): open the notes tab, then focus the AniList card once it is shown.
+  const [pickReq, setPickReq] = useState(0)
+  const pickPending = useRef(false)
+  useEffect(() => {
+    if (!pickPending.current || shownTab !== 'notes') return
+    pickPending.current = false
+    const root = matchRef.current
+    ;(root?.querySelector('button') ?? root?.querySelector('.anilist-match') ?? root)?.focus()
+  }, [pickReq, shownTab])
+  const episodeToolbar = (
+    <>
+      <span className="ep-toolbar__count">{t('detail.watchedCount', { watched: watched.length, total: entry.totalEpisodes ?? '?' })}</span>
+      {canAuto && (
+        <div className="check-group">
+          <label className="check">
+            <input
+              type="checkbox" checked={auto} disabled={downloadDir == null && !auto}
+              aria-describedby="auto-download-hint" onChange={(e) => toggleAuto(e.target.checked)}
+            />
+            {t('detail.autoDownload')}
           </label>
-          {!closeMatch && info?.description && (
-            <div>
-              <button type="button" onClick={() => setShowDesc((v) => !v)}>{showDesc ? t('detail.hideDescription') : t('detail.showDescription')}</button>
-              {showDesc && <p className="description">{info.description}</p>}
-            </div>
-          )}
-          <h3>{t('detail.episodes')}</h3>
+          <p id="auto-download-hint" className="check-hint muted">
+            {downloadDir === null ? t('detail.autoDownloadNoDir') : auto && `${t('detail.autoDownloadOn')}${entry.status === 'watching' ? '' : ` ${t('detail.autoDownloadNotWatching')}`}`}
+          </p>
+        </div>
+      )}
+    </>
+  )
+  const spoilerRow = series && (series.meta === 'unreliable' || series.meta === 'ok') && (
+    <div className="row spoiler-row">
+      {series.meta === 'unreliable' && <span className="muted">{t('episodes.unreliable')}</span>}
+      {series.meta === 'ok' && <button type="button" onClick={() => update({ all: true })}>{t('episodes.revealAll')}</button>}
+      {series.meta === 'ok' && <button type="button" onClick={() => update({ reset: true })}>{t('episodes.hideAgain')}</button>}
+    </div>
+  )
+  const episodesPanel = (
+    <div className="page">
           <EpisodePicker
             key={episodes.length}
             episodes={episodes}
@@ -276,44 +257,79 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
             loadThumb={thumb}
             hideMarked={hideFiller}
             onHideMarked={changeHideFiller}
+            prefs={changePrefs ? prefs : null}
+            onPrefs={changePrefs}
+            onPlay={(ep) => onContinue({ query: animeKey, anime: animeKey, episode: String(ep) })}
+            nextEp={finished ? null : String(nextEp)}
+            ready={ready}
+            onNote={openNoteFocused}
+            onToggleWatched={(ep) => toggleWatched(Number(ep))}
+            toolbar={episodeToolbar}
+            afterToolbar={spoilerRow}
           />
-          {series && (series.meta !== 'none' || series.marks === 'ok') && (
-            <div className="row spoiler-row">
-              {series.meta === 'unreliable' && <span className="muted">{t('episodes.unreliable')}</span>}
-              {series.meta === 'ok' && <button type="button" onClick={() => update({ all: true })}>{t('episodes.revealAll')}</button>}
-              {series.meta === 'ok' && <button type="button" onClick={() => update({ reset: true })}>{t('episodes.hideAgain')}</button>}
-              <label className="check">
-                <input type="checkbox" checked={series.meta === 'off'} onChange={(e) => update({ metaOff: e.target.checked })} />
-                {t('episodes.metaOff')}
-              </label>
-            </div>
-          )}
           {noteEp != null && (
             <div className="page">
               <label className="field">
                 <span>{t('detail.note', { episode: noteEp })}</span>
-                <textarea aria-label={t('detail.note', { episode: noteEp })} value={noteText} onChange={(e) => setNoteText(e.target.value)} />
+                <textarea ref={noteArea} aria-label={t('detail.note', { episode: noteEp })} value={noteText} onChange={(e) => setNoteText(e.target.value)} />
               </label>
               <div className="row">
-                <button type="button" className="primary" onClick={saveNote}>{t('detail.save')}</button>
+                <button type="button" className="primary" disabled={!ready} onClick={() => onContinue({ query: animeKey, anime: animeKey, episode: String(noteEp) })}>
+                  <span aria-hidden="true">▶ </span>{t('detail.playEp', { episode: noteEp })}
+                </button>
+                <button type="button" onClick={saveNote}>{t('detail.save')}</button>
                 <button type="button" onClick={() => toggleWatched(noteEp)}>
                   {watched.includes(noteEp) ? t('detail.unmarkWatched') : t('detail.markWatched')}
                 </button>
               </div>
             </div>
           )}
-          {similar.length > 0 && (
-            <section className="similar" aria-labelledby={similarHeadId}>
-              <h3 id={similarHeadId}>{t('recommendations.similar')}</h3>
-              <div className="similar__grid">
-                {similar.map((s) => <RecommendationCard key={s.id} item={s} ready={ready} onSearch={onSearch} />)}
-              </div>
-            </section>
-          )}
+    </div>
+  )
+  const notesPanel = (
+    <div className="page">
           <div className="row">
-            <button type="button" onClick={remove}>{t('detail.delete')}</button>
+            <label className="field">
+              <span>{t('detail.rating')}</span>
+              <select aria-label={t('detail.rating')} value={entry.rating ?? ''} onChange={(e) => save({ rating: e.target.value ? Number(e.target.value) : null })}>
+                <option value="">{t('detail.noRating')}</option>
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </label>
           </div>
-        </div>
+          <div ref={matchRef} data-anilist-match tabIndex={-1}><AniListMatch entry={entry} info={rawInfo} onChanged={onChanged} /></div>
+          <label className="field">
+            <span>{t('detail.comment')}</span>
+            <textarea aria-label={t('detail.comment')} value={comment} onChange={(e) => setComment(e.target.value)} onBlur={() => { if (comment !== entry.comment) save({ comment }) }} />
+          </label>
+    </div>
+  )
+  const similarPanel = (
+<section className="similar" aria-label={t('recommendations.similar')}>
+  <div className="similar__grid">
+    {similar.map((s) => <RecommendationCard key={s.id} item={s} ready={ready} onSearch={onSearch} />)}
+  </div>
+</section>
+  )
+
+  return (
+    <section className="page">
+      <DetailHero
+        entry={entry} info={info} ready={ready} nextEp={nextEp} saved={saved} finished={finished} fresh={fresh} now={now}
+        metaToggle={metaToggle} playerOpen={playerOpen}
+        onBack={onBack}
+        onContinue={() => onContinue({ query: animeKey, anime: animeKey, episode: String(nextEp) })}
+        onTogglePin={togglePin}
+        onStatus={(status) => save({ status })}
+        onRemove={remove}
+        onPickAniList={pickAniList}
+      />
+      <div className="detail">
+        <Tabs label={t('detail.tabs')} value={shownTab} onChange={setTab} tabs={[
+          { id: 'episodes', label: t('detail.tabEpisodes'), content: episodesPanel },
+          ...(similar.length > 0 ? [{ id: 'similar', label: t('detail.tabSimilar'), content: similarPanel }] : []),
+          { id: 'notes', label: t('detail.tabNotes'), content: notesPanel },
+        ]} />
       </div>
     </section>
   )

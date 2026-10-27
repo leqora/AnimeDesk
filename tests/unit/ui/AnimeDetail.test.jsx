@@ -11,12 +11,17 @@ const entry = (over = {}) => ({
 const mount = (api, props = {}, e = entry()) =>
   renderUi(<AnimeDetail entry={e} ready onBack={() => {}} onRemoved={() => {}} onChanged={() => {}} onContinue={() => {}} {...props} />, { api })
 
+const removeViaMenu = () => {
+  fireEvent.click(screen.getByRole('button', { name: 'Još' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Ukloni iz Watchlist-e' }))
+}
+
 describe('AnimeDetail undo', () => {
   it('removing a series goes back and offers undo', async () => {
     const api = makeFakeApi()
     const onRemoved = vi.fn()
     mount(api, { onRemoved })
-    fireEvent.click(screen.getByRole('button', { name: 'Ukloni iz watchlist-e' }))
+    removeViaMenu()
     await waitFor(() => expect(onRemoved).toHaveBeenCalled())
     expect(api.library.remove).toHaveBeenCalledWith('a1')
     expect(await screen.findByText('Uklonjeno iz watchlist-e: Show')).toBeInTheDocument()
@@ -26,7 +31,7 @@ describe('AnimeDetail undo', () => {
     const api = makeFakeApi()
     const onChanged = vi.fn()
     mount(api, { onChanged })
-    fireEvent.click(screen.getByRole('button', { name: 'Ukloni iz watchlist-e' }))
+    removeViaMenu()
     await screen.findByRole('button', { name: 'Poništi' })
     onChanged.mockClear()
     fireEvent.click(screen.getByRole('button', { name: 'Poništi' }))
@@ -37,7 +42,7 @@ describe('AnimeDetail undo', () => {
   it('failed undo shows an error toast', async () => {
     const api = makeFakeApi({ library: { restore: vi.fn(async () => ({ ok: false, error: 'expired' })) } })
     mount(api)
-    fireEvent.click(screen.getByRole('button', { name: 'Ukloni iz watchlist-e' }))
+    removeViaMenu()
     fireEvent.click(await screen.findByRole('button', { name: 'Poništi' }))
     expect(await screen.findByText('Seriju nije moguće vratiti.')).toBeInTheDocument()
   })
@@ -73,7 +78,7 @@ describe('AnimeDetail undo', () => {
     const api = makeFakeApi({ library: { restore: vi.fn(async () => { throw new Error('ipc') }) } })
     vi.spyOn(console, 'error').mockImplementation(() => {})
     mount(api)
-    fireEvent.click(screen.getByRole('button', { name: 'Ukloni iz watchlist-e' }))
+    removeViaMenu()
     fireEvent.click(await screen.findByRole('button', { name: 'Poništi' }))
     expect(await screen.findByText('Seriju nije moguće vratiti.')).toBeInTheDocument()
   })
@@ -82,11 +87,12 @@ describe('AnimeDetail undo', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const onRemoved = vi.fn()
     mount(api, { onRemoved })
-    fireEvent.click(screen.getByRole('button', { name: 'Ukloni iz watchlist-e' }))
+    removeViaMenu()
     await waitFor(() => expect(api.library.remove).toHaveBeenCalled())
     await new Promise((r) => setTimeout(r, 20))
     expect(onRemoved).not.toHaveBeenCalled()
     expect(screen.queryByText(/Uklonjeno iz watchlist-e/)).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Još' }))
   })
   it('rapid marks accumulate and each undo touches only its episode', async () => {
     const api = makeFakeApi()
@@ -173,20 +179,78 @@ describe('AnimeDetail undo', () => {
   })
 })
 
+const tab = (name) => screen.getByRole('tab', { name })
+
+describe('AnimeDetail tabs', () => {
+  it('notes tab holds rating, comment and AniList match', async () => {
+    const { container } = mount(makeFakeApi())
+    await screen.findByRole('tab', { name: 'Beleške' })
+    expect(screen.queryByRole('combobox', { name: 'Ocena' })).toBeNull()
+    expect(screen.queryByRole('textbox', { name: 'Komentar' })).toBeNull()
+    expect(container.querySelector('[data-anilist-match]')).not.toBeVisible()
+    fireEvent.click(tab('Beleške'))
+    expect(screen.getByRole('combobox', { name: 'Ocena' })).toBeVisible()
+    expect(screen.getByRole('textbox', { name: 'Komentar' })).toBeVisible()
+    expect(container.querySelector('[data-anilist-match]')).toBeVisible()
+    fireEvent.click(tab('Epizode'))
+    expect(screen.queryByRole('textbox', { name: 'Komentar' })).toBeNull()
+  })
+  it('a comment draft survives switching tabs', async () => {
+    mount(makeFakeApi())
+    fireEvent.click(await screen.findByRole('tab', { name: 'Beleške' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Komentar' }), { target: { value: 'nedovršeno' } })
+    fireEvent.click(tab('Epizode'))
+    fireEvent.click(tab('Beleške'))
+    expect(screen.getByRole('textbox', { name: 'Komentar' })).toHaveValue('nedovršeno')
+  })
+  it('more menu AniList item opens notes and focuses the match', async () => {
+    mount(makeFakeApi())
+    await screen.findByRole('tab', { name: 'Beleške' })
+    fireEvent.click(screen.getByRole('button', { name: 'Još' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'AniList: izaberi seriju' }))
+    expect(tab('Beleške')).toHaveAttribute('aria-selected', 'true')
+    await waitFor(() => expect(document.activeElement.closest('[data-anilist-match]')).not.toBeNull())
+  })
+})
+
+describe('AnimeDetail more menu', () => {
+  it('AniList: choose series puts focus on the AniList card', async () => {
+    mount(makeFakeApi())
+    await screen.findByRole('tab', { name: 'Beleške' })
+    fireEvent.click(screen.getByRole('button', { name: 'Još' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'AniList: izaberi seriju' }))
+    const choose = await screen.findByRole('button', { name: 'Izaberi' })
+    await waitFor(() => expect(document.activeElement).toBe(choose))
+  })
+})
+
+describe('AnimeDetail more menu while AniList info is pending', () => {
+  it('choosing the AniList item keeps focus inside the match card, not on body', async () => {
+    const api = makeFakeApi({ anilist: { forTitle: vi.fn(() => new Promise(() => {})) } })
+    mount(api)
+    fireEvent.click(screen.getByRole('button', { name: 'Još' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'AniList: izaberi seriju' }))
+    await waitFor(() => expect(document.activeElement.closest('[data-anilist-match]')).not.toBeNull())
+    expect(document.activeElement).not.toBe(document.body)
+  })
+})
+
 describe('AnimeDetail marks', () => {
   const marked = (meta, marks) => ({ source: 'ani-cli', meta, marks, markCounts: { filler: 1, recap: 0 }, episodes: ['1', '2', '3', '4'].map((n) => ({ number: n, runtime: null, visibility: 'hidden', ...(n === '2' ? { kind: 'filler' } : {}) })) })
   const OFF = 'Isključi metapodatke za ovu seriju'
   it('shows the metadata switch row when marks are available even without metadata', async () => {
     const s = marked('none', 'ok')
     mount(makeFakeApi({ episodes: { forSeries: vi.fn(async () => s) } }))
-    expect(await screen.findByLabelText(OFF)).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button', { name: 'Još' }))
+    expect(await screen.findByRole('menuitem', { name: OFF })).toBeInTheDocument()
   })
   it.each([['none', 'none'], ['none', 'off']])('hides the row when meta is %s and marks is %s', async (meta, marks) => {
     const api = makeFakeApi({ episodes: { forSeries: vi.fn(async () => marked(meta, marks)) } })
     mount(api)
     await waitFor(() => expect(api.episodes.forSeries).toHaveBeenCalled())
     await new Promise((r) => setTimeout(r, 20))
-    expect(screen.queryByLabelText(OFF)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Još' }))
+    expect(screen.queryByRole('menuitem', { name: OFF })).not.toBeInTheDocument()
   })
   it('toggling hide saves hideFiller for the series and hides marked episodes', async () => {
     const api = makeFakeApi({ episodes: { forSeries: vi.fn(async () => marked('none', 'ok')) } })
@@ -235,5 +299,131 @@ describe('AnimeDetail fuzzy AniList match', () => {
     const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => ({ id: 5, match: 'id', episodes: 12, genres: [], poster: null })) } })
     mount(api, {}, entry({ aniListId: 5, totalEpisodes: null }))
     await waitFor(() => expect(api.library.update).toHaveBeenCalledWith('a1', { totalEpisodes: 12 }))
+  })
+})
+
+describe('AnimeDetail episode toolbar', () => {
+  const prefsApi = (over = {}, set) => makeFakeApi({
+    seriesPrefs: {
+      get: vi.fn(async () => ({ quality: '720', mode: 'dub', subOffset: { sub: 0, dub: 0 }, autoDownload: false, hideFiller: false, ...over })),
+      ...(set ? { set } : {}),
+    },
+  })
+  it('quality and sub/dub per series in the detail', async () => {
+    const api = prefsApi()
+    mount(api)
+    await waitFor(() => expect(screen.getByLabelText('Kvalitet')).toHaveValue('720'))
+    expect(screen.getByLabelText('Režim')).toHaveValue('dub')
+    expect(screen.getByLabelText('Kvalitet').closest('.ep-toolbar')).not.toBeNull()
+    fireEvent.change(screen.getByLabelText('Kvalitet'), { target: { value: '1080' } })
+    expect(screen.getByLabelText('Kvalitet')).toHaveValue('1080')
+    await waitFor(() => expect(api.seriesPrefs.set).toHaveBeenCalledWith('Show', { quality: '1080' }))
+  })
+  it('rolls quality back when saving is rejected', async () => {
+    const api = prefsApi({}, vi.fn(async () => { throw new Error('boom') }))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    mount(api)
+    await waitFor(() => expect(screen.getByLabelText('Kvalitet')).toHaveValue('720'))
+    fireEvent.change(screen.getByLabelText('Kvalitet'), { target: { value: '1080' } })
+    await waitFor(() => expect(screen.getByLabelText('Kvalitet')).toHaveValue('720'))
+  })
+  it('rolls sub/dub back when saving is rejected', async () => {
+    const api = prefsApi({}, vi.fn(async () => { throw new Error('boom') }))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    mount(api)
+    await waitFor(() => expect(screen.getByLabelText('Režim')).toHaveValue('dub'))
+    fireEvent.change(screen.getByLabelText('Režim'), { target: { value: 'sub' } })
+    await waitFor(() => expect(screen.getByLabelText('Režim')).toHaveValue('dub'))
+  })
+  it('has no quality or sub/dub selects without aniCliTitle', async () => {
+    mount(prefsApi(), {}, entry({ aniCliTitle: null }))
+    await screen.findByRole('tab', { name: 'Epizode' })
+    expect(screen.queryByLabelText('Kvalitet')).toBeNull()
+    expect(screen.queryByLabelText('Režim')).toBeNull()
+  })
+  it('toolbar shows watched count', async () => {
+    mount(makeFakeApi(), {}, entry({ totalEpisodes: 28, watchedEpisodes: [1, 2, 3] }))
+    const txt = await screen.findByText('3 / 28 odgledano')
+    expect(txt.closest('.ep-toolbar')).not.toBeNull()
+  })
+  const noMeta = { source: 'ani-cli', meta: 'none', marks: 'none', markCounts: { filler: 0, recap: 0 }, episodes: ['1', '2', '3', '4', '5', '6'].map((n) => ({ number: n, runtime: null, visibility: 'hidden' })) }
+  it('numbers view: pick then play', async () => {
+    const onContinue = vi.fn()
+    const api = makeFakeApi({ episodes: { forSeries: vi.fn(async () => noMeta) } })
+    mount(api, { onContinue }, entry({ totalEpisodes: 6 }))
+    fireEvent.click(await screen.findByRole('button', { name: '5' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Gledaj EP 5' }))
+    expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '5' })
+    expect(screen.getByRole('button', { name: 'Označi kao odgledano' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Beleška za epizodu 5')).toBeInTheDocument()
+  })
+  it('disables watching the picked episode when not ready', async () => {
+    const api = makeFakeApi({ episodes: { forSeries: vi.fn(async () => noMeta) } })
+    mount(api, { ready: false }, entry({ totalEpisodes: 6 }))
+    fireEvent.click(await screen.findByRole('button', { name: '5' }))
+    expect(screen.getByRole('button', { name: 'Gledaj EP 5' })).toBeDisabled()
+  })
+  it('long series groups: chosen group survives tab switches', async () => {
+    mount(makeFakeApi(), {}, entry({ totalEpisodes: 250, watchedEpisodes: Array.from({ length: 130 }, (_, i) => i + 1) }))
+    expect(await screen.findByRole('button', { name: '101–200' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(tab('Beleške'))
+    fireEvent.click(tab('Epizode'))
+    expect(screen.getByRole('button', { name: '101–200' })).toHaveAttribute('aria-pressed', 'true')
+  })
+  it('keeps selects and count in the toolbar row and the spoiler row after it', async () => {
+    const ok = { ...noMeta, meta: 'ok' }
+    mount(makeFakeApi({ episodes: { forSeries: vi.fn(async () => ok) } }), {}, entry({ totalEpisodes: 6 }))
+    const reveal = await screen.findByRole('button', { name: 'Prikaži sve epizode ove serije' })
+    const bar = document.querySelector('.ep-toolbar')
+    expect(bar).toContainElement(screen.getByLabelText('Kvalitet'))
+    expect(bar).toContainElement(screen.getByLabelText('Režim'))
+    expect(bar).toContainElement(screen.getByText('1 / 6 odgledano'))
+    expect(bar).not.toContainElement(reveal)
+    expect(bar.compareDocumentPosition(reveal) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+})
+
+describe('AnimeDetail episode cards', () => {
+  const okSeries = { source: 'ani-cli', meta: 'ok', marks: 'none', markCounts: { filler: 0, recap: 0 }, episodes: ['1', '2', '3', '4'].map((n) => ({ number: n, runtime: 24, visibility: n === '4' ? 'hidden' : 'full', title: n === '4' ? undefined : `Naslov ${n}`, hasThumb: false })) }
+  const cardsApi = () => makeFakeApi({
+    settings: { get: vi.fn(async () => ({ episodeView: 'list' })), update: vi.fn(async (p) => p) },
+    episodes: { forSeries: vi.fn(async () => okSeries) },
+  })
+  it('episode card plays and its menu marks with undo', async () => {
+    const api = cardsApi()
+    const onContinue = vi.fn()
+    mount(api, { onContinue })
+    fireEvent.click(await screen.findByRole('button', { name: 'Pusti: Epizoda 2 · Naslov 2' }))
+    expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '2' })
+    fireEvent.click(screen.getByRole('button', { name: 'Još za epizodu 2' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Označi kao odgledano' }))
+    await waitFor(() => expect(api.library.update).toHaveBeenCalledWith('a1', { watchedEpisodes: [1, 2] }))
+    expect(await screen.findByText('EP 2 označena kao odgledana')).toBeInTheDocument()
+    expect(screen.queryByText(/Naslov 2 označena/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Poništi' }))
+    await waitFor(() => expect(api.library.update).toHaveBeenLastCalledWith('a1', { watchedEpisodes: [1] }))
+  })
+  it('the note item opens the note panel and focuses its textarea', async () => {
+    mount(cardsApi())
+    await screen.findByRole('button', { name: 'Pusti: Epizoda 2 · Naslov 2' })
+    fireEvent.click(screen.getByRole('button', { name: 'Još za epizodu 2' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Beleška…' }))
+    const area = screen.getByRole('textbox', { name: /Beleška.*2/ })
+    await waitFor(() => expect(document.activeElement).toBe(area))
+  })
+  it('the next episode is marked and the one after it is a locked tile', async () => {
+    const { container } = mount(cardsApi())
+    await screen.findByRole('button', { name: 'Pusti: Epizoda 2 · Naslov 2' })
+    expect(container.querySelector('.ep-card--next')).toHaveTextContent('EP 2')
+    expect(container.querySelector('.ep-card--hidden')).toHaveTextContent('EP 4')
+    expect(screen.queryByRole('button', { name: /Pusti: Epizoda 4/ })).toBeNull()
+  })
+  it('a card does not play while not ready', async () => {
+    const onContinue = vi.fn()
+    mount(cardsApi(), { onContinue, ready: false })
+    const play = await screen.findByRole('button', { name: 'Pusti: Epizoda 2 · Naslov 2' })
+    expect(play).toBeDisabled()
+    fireEvent.click(play)
+    expect(onContinue).not.toHaveBeenCalled()
   })
 })

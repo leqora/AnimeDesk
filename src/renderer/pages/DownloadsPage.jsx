@@ -38,9 +38,13 @@ export function DownloadsPage() {
 
   return (
     <section className="page">
+      <header className="page__head">
+        <h2 className="hud">{t('nav.downloads')}</h2>
+        <p className="page__sub muted">{t('downloads.subtitle')}</p>
+      </header>
       {queue.length > 0 && (
         <div className="page">
-          <h2>{t('downloads.queue')}</h2>
+          <h3>{t('downloads.queue')}</h3>
           {failed > 1 && <button type="button" onClick={() => api.downloads.retryFailed()}>{t('downloads.retryFailed', { count: failed })}</button>}
           {queue.map((q) => (
             <div key={q.id} className="queue-item">
@@ -57,7 +61,7 @@ export function DownloadsPage() {
         </div>
       )}
 
-      <h2>{t('downloads.done')}</h2>
+      <h3>{t('downloads.done')}</h3>
       {items && items.length === 0 && <p className="muted">{t('downloads.empty')}</p>}
       {items && groupByTitle(items).map(([title, list]) => (
         <div key={title} className="group">

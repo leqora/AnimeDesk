@@ -120,6 +120,12 @@ describe('HomePage sections', () => {
     expect(screen.getByRole('heading', { name: 'Trending One', level: 1 })).toBeInTheDocument()
     expect(screen.queryByText(/Popularno ove sezone/)).not.toBeInTheDocument()
   })
+  it('embeds the search under a rail-style heading, with no page header', async () => {
+    const { container } = home(makeFakeApi())
+    await screen.findByRole('heading', { name: 'Šta gledamo danas?' })
+    expect(container.querySelector('header.page__head')).toBeNull()
+    expect(container.querySelector('.rail__head h3')).toHaveTextContent('Pretraga')
+  })
   it('shows the welcome screen when there is nothing popular either', async () => {
     home(makeFakeApi())
     expect(await screen.findByRole('heading', { name: 'Šta gledamo danas?' })).toBeInTheDocument()

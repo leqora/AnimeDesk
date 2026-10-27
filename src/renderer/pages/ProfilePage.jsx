@@ -18,10 +18,14 @@ export function ProfilePage({ stats, name, lang }) {
   ]
   return (
     <section className="page">
+      <header className="page__head">
+        <h2 className="hud">{t('nav.profile')}</h2>
+        <p className="page__sub muted">{t('profile.subtitle')}</p>
+      </header>
       <div className="profile-head">
         <span className="avatar--lg">{initials(name)}</span>
         <div className="profile-head__meta">
-          <h2>{name}</h2>
+          <h3>{name}</h3>
           <span className="hud">{t('profile.level', { level: stats.level })} · {t(`title.${stats.title}`)}</span>
           <XpBar into={stats.xpIntoLevel} total={stats.xpForNext} />
           <span className="muted hud">{t('profile.xp', { into: fmt(stats.xpIntoLevel), total: fmt(stats.xpForNext) })}</span>
@@ -37,6 +41,7 @@ export function ProfilePage({ stats, name, lang }) {
           </div>
         ))}
       </div>
+      <div className="profile-section">
       <h3>{t('profile.genres')}</h3>
       {stats.topGenres.length === 0 ? <p className="muted">{t('profile.noGenres')}</p> : (
         <div className="genre-bars">
@@ -49,12 +54,15 @@ export function ProfilePage({ stats, name, lang }) {
           ))}
         </div>
       )}
+      </div>
+      <div className="profile-section">
       <div className="streak"><Icon name="flame" size={20} /><span className="hud">{t('profile.streak', { days: stats.streakDays })}</span></div>
       <h3>{t('profile.activity')}</h3>
       <div className="activity-grid">
         {stats.activity.map((d) => (
           <span key={d.date} data-testid="activity-cell" className={`activity-cell activity-cell--l${activityLevel(d.count)}`} title={t('profile.activityCell', { date: d.date, count: d.count })} />
         ))}
+      </div>
       </div>
     </section>
   )

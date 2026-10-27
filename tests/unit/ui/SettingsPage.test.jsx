@@ -204,3 +204,13 @@ describe('SettingsPage episode marks', () => {
     expect(screen.getByText(/Za tihe epizode/)).toBeInTheDocument()
   })
 })
+
+describe('Settings page header (v0.19.0)', () => {
+  it('has the header with a subtitle and glass sections', () => {
+    const { container } = renderUi(<SettingsPage settings={{ ...DEFAULT_SETTINGS }} onSettings={vi.fn()} />)
+    const head = container.querySelector('header.page__head')
+    expect(head.querySelector('h2').textContent).toBe('Podešavanja')
+    expect(head).toHaveTextContent('Plejer, preuzimanja, nalog i alati')
+    expect(container.querySelectorAll('.settings-section').length).toBeGreaterThan(3)
+  })
+})
