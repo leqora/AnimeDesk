@@ -393,3 +393,19 @@ describe('SearchPage', () => {
     })
   })
 })
+
+describe('Search page header (v0.19.0)', () => {
+  it('has the header with a subtitle', () => {
+    const { container } = renderUi(<SearchPage {...props()} />)
+    const head = container.querySelector('header.page__head')
+    expect(head.querySelector('h2').textContent).toBe('Pretraga')
+    expect(head).toHaveTextContent('Nađi seriju i izaberi epizode')
+  })
+  it('section headings of the menus are h3', async () => {
+    const { api, handlers } = withEvents()
+    renderUi(<SearchPage {...props()} />, { api })
+    await waitFor(() => expect(handlers.menu).toBeDefined())
+    act(() => handlers.menu({ requestId: 'r1', kind: 'anime', lines: ['1\tShow (12 episodes)'] }))
+    expect(await screen.findByRole('heading', { level: 3, name: 'Izaberi anime' })).toBeInTheDocument()
+  })
+})

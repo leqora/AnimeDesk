@@ -57,3 +57,13 @@ describe('ProfilePage', () => {
     expect(screen.getByText('—')).toBeInTheDocument()
   })
 })
+
+describe('Profile page header (v0.19.0)', () => {
+  it('has the header with a subtitle; the name is a lower heading', () => {
+    const { container } = renderUi(<ProfilePage stats={stats} name="Nikola" lang="sr" />)
+    const head = container.querySelector('header.page__head')
+    expect(head.querySelector('h2').textContent).toBe('Profil')
+    expect(head).toHaveTextContent('Nivo, XP i dostignuća')
+    expect(screen.getByRole('heading', { level: 3, name: 'Nikola' })).toBeInTheDocument()
+  })
+})

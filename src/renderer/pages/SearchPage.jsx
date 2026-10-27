@@ -211,6 +211,10 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
   return (
     <section className="page">
+      <header className="page__head">
+        <h2 className="hud">{t('nav.search')}</h2>
+        <p className="page__sub muted">{t('search.subtitle')}</p>
+      </header>
       <ReadyNotice ready={ready} onOpenWizard={onOpenWizard} />
       {(!focused || errorFocus) && (
         <form className="search-bar" onSubmit={submit}>
@@ -235,7 +239,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
       {phase === 'anime' && menu && (
         <div className="page">
           <div className="row"><button type="button" onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button></div>
-          <h2>{t('search.selectAnime')}</h2>
+          <h3>{t('search.selectAnime')}</h3>
           <div className="card-grid">
             {menu.lines.map((line) => {
               const title = animeLineTitle(line)
@@ -254,7 +258,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
       {phase === 'episode' && menu && (
         <div className="page">
           <div className="row"><button type="button" onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button></div>
-          <h2 ref={pickerHeading} tabIndex={-1}>{anime ?? (titleMissing ? t('search.titleUnknown', { query: live.current.lastParams?.query ?? '' }) : t('search.titlePending'))} — {t('search.selectEpisode')}</h2>
+          <h3 ref={pickerHeading} tabIndex={-1}>{anime ?? (titleMissing ? t('search.titleUnknown', { query: live.current.lastParams?.query ?? '' }) : t('search.titlePending'))} — {t('search.selectEpisode')}</h3>
           <EpisodePicker episodes={episodeMenu} selected={selected} watched={watched} onToggle={toggle} prefs={prefs} onPrefs={anime ? changePrefs : null}
             series={series} poster={posterInfo?.poster ?? null} onReveal={(ep) => updateSpoilers({ episode: ep })} loadThumb={thumb} progress={progress}
             hideMarked={Boolean(prefs.hideFiller)} onHideMarked={anime ? (v) => changePrefs({ hideFiller: v }) : null}>
