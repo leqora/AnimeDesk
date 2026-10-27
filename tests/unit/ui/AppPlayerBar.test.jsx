@@ -154,4 +154,56 @@ describe('App top bar over the player', () => {
     expect(document.querySelector('.app-shell')).not.toHaveClass('app-shell--playing')
     expect(topbar()).not.toHaveClass('topbar--hidden')
   })
+
+  describe('actions during playback', () => {
+    it('clicking a topbar page during playback closes the player and opens the page', async () => {
+      const { api, open } = await start()
+      await open()
+      fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
+      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+      expect(api.player.closed).toHaveBeenCalledTimes(1)
+      expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'nav', playbackId: 'p1' }))
+      expect(await screen.findByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
+      await waitFor(() => expect(document.activeElement).toBe(document.querySelector('main.content')))
+    })
+
+    it('avatar menu "Profil" during playback closes the player first', async () => {
+      const { api, open } = await start()
+      await open()
+      fireEvent.click(screen.getByRole('button', { name: 'Nalog' }))
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Profil' }))
+      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+      expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'nav' }))
+      expect(await screen.findByRole('heading', { name: 'Profil' })).toBeInTheDocument()
+    })
+
+    it('fullscreen toggle from the avatar menu keeps the player open', async () => {
+      const { api, open } = await start()
+      await open()
+      fireEvent.click(screen.getByRole('button', { name: 'Nalog' }))
+      const items = screen.getAllByRole('menuitem')
+      fireEvent.click(items[items.length - 1])
+      expect(api.window.setFullscreen).toHaveBeenCalledWith(true)
+      expect(api.player.closed).not.toHaveBeenCalled()
+      expect(document.querySelector('.player')).toBeInTheDocument()
+    })
+
+    it('palette pill during playback closes the player and opens the palette', async () => {
+      const { api, open } = await start()
+      await open()
+      fireEvent.click(screen.getByRole('button', { name: 'Brza pretraga' }))
+      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+      expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'nav' }))
+      expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    })
+
+    it('semaphore during playback closes the player and opens the wizard', async () => {
+      const { api, open } = await start()
+      await open()
+      fireEvent.click(document.querySelector('.topbar .semaphore, .topbar [class*="semaphore"]'))
+      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+      expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'nav' }))
+      expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    })
+  })
 })

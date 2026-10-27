@@ -213,6 +213,9 @@ export default function App({ api, sound: injectedSound }) {
   const [playerOpening, setPlayerOpening] = useState(false)
   useEffect(() => { if (playerOpening) setPlayerOpening(false) }, [playerOpening])
   useEffect(() => { if (!player) { setPlayerIdle(false); setBarActive(false) } }, [player])
+  // top bar actions during playback: the episode is closed first ('nav'), then the remembered action runs
+  const [closeRequest, setCloseRequest] = useState(null)
+  const afterPlayerClose = useRef(null)
   const [bootFailed, setBootFailed] = useState(false)
 
   // Alt+Left/Right and the mouse back/forward buttons walk the history; not while the player or a modal is up.
@@ -330,6 +333,7 @@ export default function App({ api, sound: injectedSound }) {
       setPaletteOpen(false) // unmount the palette Modal in the same commit, before the player takes focus
       setPlayerIdle(false)
       setPlayerOpening(true)
+      afterPlayerClose.current = null
       setPlayer(p)
     }
     const offs = [
@@ -399,6 +403,11 @@ export default function App({ api, sound: injectedSound }) {
   const closeWhatsNew = () => { if (whatsNew?.mode === 'after') api.whatsNew.seen(); setWhatsNew(null) }
 
   const overlay = player != null || reconnecting != null
+  const leavePlayerThen = (action) => {
+    if (player == null) { action(); return }
+    afterPlayerClose.current = action
+    setCloseRequest((r) => ({ seq: (r?.seq ?? 0) + 1 }))
+  }
   const barHidden = overlay && (reconnecting != null || fullscreen || (playerIdle && !barActive))
   const runPalette = (a) => {
     setPaletteOpen(false)
@@ -419,20 +428,20 @@ export default function App({ api, sound: injectedSound }) {
         <div className={player ? 'app-shell app-shell--playing' : 'app-shell'} ref={shellRef} data-at-top={atTop ? 'true' : 'false'}>
           <TopBar
             page={page}
-            onNavigate={(p, o) => { navigate(p); if (o?.focusMain) setFocusMain(true) }}
+            onNavigate={(p, o) => leavePlayerThen(() => { navigate(p); if (o?.focusMain || player != null) setFocusMain(true) })}
             health={health}
-            onSemaphoreClick={() => setWizardOpen(true)}
+            onSemaphoreClick={() => leavePlayerThen(() => setWizardOpen(true))}
             profileName={settings.profileName || settings.systemName}
             stats={stats}
             version={updateState.currentVersion}
-            onOpenAnime={openAnime}
+            onOpenAnime={(id) => leavePlayerThen(() => openAnime(id))}
             libraryIds={libraryIds}
             closeMenus={playerOpening || reconnecting != null || barHidden}
             hidden={barHidden}
             onActiveChange={setBarActive}
             fullscreen={fullscreen}
             onToggleFullscreen={() => api.window.setFullscreen(!fullscreen)}
-            onOpenPalette={() => { if (!overlay) setPaletteOpen(true) }}
+            onOpenPalette={() => leavePlayerThen(() => setPaletteOpen(true))}
           />
           <main className="content" ref={mainRef} tabIndex={-1} inert={overlay} aria-hidden={overlay ? 'true' : undefined} onScroll={(e) => setAtTop(e.currentTarget.scrollTop === 0)}>
             <div className="content__notices">
@@ -468,9 +477,12 @@ export default function App({ api, sound: injectedSound }) {
             <PlayerView
               key={player.playbackId} // PlayerView's per-playback refs/state rely on a remount per playback
               open={player} settings={settings} fullscreen={fullscreen} onSettings={updateSettings}
-              initialRate={playerRate} onIdleChange={setPlayerIdle} holdControls={barActive} onRate={(rate) => { if (lastRate.current) lastRate.current.rate = rate }}
+              initialRate={playerRate} onIdleChange={setPlayerIdle} holdControls={barActive} closeRequest={closeRequest} onRate={(rate) => { if (lastRate.current) lastRate.current.rate = rate }}
               onClose={(reason) => {
                 setPlayer(null)
+                const afterClose = afterPlayerClose.current
+                afterPlayerClose.current = null
+                if (reason === 'nav') afterClose?.() // top bar action; it goes to the chosen page, never back to an origin
                 if ((reason === 'next' || reason === 'prev') && player.episode != null) {
                   continueWatching({ query: player.title, anime: player.title, episode: String(nextEpisodeNumber(player.episode, reason === 'next' ? 1 : -1)) })
                 }
