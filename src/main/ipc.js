@@ -114,6 +114,9 @@ export function createHandlers(s) {
     [INVOKE.seriesPrefsGet]: (title) => s.seriesPrefs.get(title),
     [INVOKE.seriesPrefsSet]: (title, patch) => s.seriesPrefs.set(title, patch),
     [INVOKE.anilistForTitle]: async (title, aniListId = null) => withoutBanner(await s.anilist.getForTitle(title, { aniListId })),
+    [INVOKE.anilistBanner]: async (req) => {
+      try { return (await s.bannerLookup.banner(req)) ?? null } catch { return null }
+    },
     [INVOKE.anilistSearch]: async (query) => (await s.anilist.search(query)).map(withoutBanner),
     [INVOKE.episodesForSeries]: (args) => s.seriesEpisodes.forSeries(args),
     [INVOKE.episodesThumb]: (args) => s.seriesEpisodes.thumb(args),
@@ -225,6 +228,7 @@ export function createHandlers(s) {
     [INVOKE.recommendationsForSeries]: (id) => (Number.isInteger(id) && id > 0 ? s.recommendations.forSeries(id) : { items: [] }),
     [INVOKE.scheduleList]: (opts) => s.schedule.list({ force: Boolean(opts) && typeof opts === 'object' && opts.force === true }),
     [INVOKE.discoverList]: (opts) => s.discover.list({ force: Boolean(opts) && typeof opts === 'object' && opts.force === true }),
+    [INVOKE.discoverPeek]: () => s.discover.peek(),
     [INVOKE.discoverPosters]: (ids) => (Array.isArray(ids)
       ? s.discover.posters(ids.filter((id) => Number.isInteger(id) && id > 0).slice(0, 40))
       : {}),

@@ -18,7 +18,7 @@ export function makeFakeApi(overrides = {}) {
     },
     seriesPrefs: { get: vi.fn(async () => ({ quality: null, mode: null, subOffset: { sub: 0, dub: 0 }, autoDownload: false, hideFiller: false })), set: vi.fn(async (title, patch) => ({ quality: null, mode: null, subOffset: { sub: 0, dub: 0 }, ...patch })) },
     autoDownload: { set: vi.fn(async (animeId, enabled) => ({ ok: true, enabled })) },
-    anilist: { forTitle: vi.fn(async () => null), search: vi.fn(async () => []), onRateLimited: sub() },
+    anilist: { forTitle: vi.fn(async () => null), search: vi.fn(async () => []), banner: vi.fn(async () => null), onRateLimited: sub() },
     episodes: { forSeries: vi.fn(async () => null), thumb: vi.fn(async () => null), spoilers: vi.fn(async () => null), onChanged: vi.fn(() => () => {}) },
     positions: { forSeries: vi.fn(async () => ({})) },
     tools: { status: vi.fn(async () => ({})), installMissing: vi.fn(async () => ({})), checkUpdates: vi.fn(async () => []), onProgress: sub() },
@@ -67,7 +67,7 @@ export function makeFakeApi(overrides = {}) {
     schedule: { list: vi.fn(async () => ({ state: 'ok', refreshing: false, fetchedAt: null, from: 0, days: [], items: [] })), posters: vi.fn(async () => ({})), onChanged: vi.fn(() => () => {}) },
     discover: {
       list: vi.fn(async () => ({ state: 'ok', refreshing: false, fetchedAt: 0, retryAt: null, season: { season: 'FALL', year: 2026 }, next: { season: 'WINTER', year: 2027 }, rails: { season: [], upcoming: [], movies: [], trending: [] }, hiddenIds: [] })),
-      posters: vi.fn(async () => ({})), onChanged: vi.fn(() => () => {}),
+      posters: vi.fn(async () => ({})), peek: vi.fn(async () => ({ season: null, items: [] })), onChanged: vi.fn(() => () => {}),
     },
     externalPlayer: { state: vi.fn(async () => null), stop: vi.fn(async () => {}), onChange: sub() },
     onNotificationsChanged: sub(),

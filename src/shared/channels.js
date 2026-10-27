@@ -27,6 +27,7 @@ export const INVOKE = {
   seriesPrefsSet: 'series-prefs:set',
   anilistForTitle: 'anilist:for-title',
   anilistSearch: 'anilist:search',
+  anilistBanner: 'anilist:banner',
   episodesForSeries: 'episodes:for-series',
   episodesThumb: 'episodes:thumb',
   episodesSpoilers: 'episodes:spoilers',
@@ -83,6 +84,7 @@ export const INVOKE = {
   schedulePosters: 'schedule:posters',
   discoverList: 'discover:list',
   discoverPosters: 'discover:posters',
+  discoverPeek: 'discover:peek',
   externalPlayerState: 'external-player:state',
   externalPlayerStop: 'external-player:stop',
 }

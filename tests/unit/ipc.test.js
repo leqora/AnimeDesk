@@ -599,3 +599,25 @@ describe('discover handlers', () => {
     expect(s.discover.posters).toHaveBeenLastCalledWith(many.slice(0, 40))
   })
 })
+
+describe('banner and peek handlers', () => {
+  it('uses exact channel names', () => {
+    expect(INVOKE.anilistBanner).toBe('anilist:banner')
+    expect(INVOKE.discoverPeek).toBe('discover:peek')
+  })
+  it('anilist:banner forwards the request and never throws', async () => {
+    const s = services()
+    s.bannerLookup = { banner: vi.fn(async () => 'animedesk-img://banner/x') }
+    const h = createHandlers(s)
+    expect(await h[INVOKE.anilistBanner]({ kind: 'rec', id: 3 })).toBe('animedesk-img://banner/x')
+    expect(s.bannerLookup.banner).toHaveBeenCalledWith({ kind: 'rec', id: 3 })
+    s.bannerLookup.banner.mockRejectedValue(new Error('boom'))
+    expect(await h[INVOKE.anilistBanner]({ kind: 'rec', id: 3 })).toBeNull()
+  })
+  it('discover:peek forwards', async () => {
+    const s = services()
+    s.discover = { peek: vi.fn(() => ({ season: null, items: [] })) }
+    const h = createHandlers(s)
+    expect(await h[INVOKE.discoverPeek]()).toEqual({ season: null, items: [] })
+  })
+})
