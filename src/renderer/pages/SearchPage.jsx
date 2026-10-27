@@ -11,7 +11,7 @@ import { animeLineTitle, normalizeTitle } from '../../shared/domain.js'
 
 const byNumber = (a, b) => Number(a) - Number(b)
 
-export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, pendingSearch = null, onPendingSearchHandled = () => {}, onFocusChange = () => {} }) {
+export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, pendingSearch = null, onPendingSearchHandled = () => {}, onFocusChange = () => {}, embedded = false }) {
   const api = useApi()
   const t = useT()
   const [query, setQuery] = useState('')
@@ -211,10 +211,14 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
   return (
     <section className="page">
-      <header className="page__head">
-        <h2 className="hud">{t('nav.search')}</h2>
-        <p className="page__sub muted">{t('search.subtitle')}</p>
-      </header>
+      {embedded ? (
+        <div className="rail__head"><h3 className="hud">{t('nav.search')}</h3></div>
+      ) : (
+        <header className="page__head">
+          <h2 className="hud">{t('nav.search')}</h2>
+          <p className="page__sub muted">{t('search.subtitle')}</p>
+        </header>
+      )}
       <ReadyNotice ready={ready} onOpenWizard={onOpenWizard} />
       {(!focused || errorFocus) && (
         <form className="search-bar" onSubmit={submit}>

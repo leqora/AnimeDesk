@@ -409,3 +409,12 @@ describe('Search page header (v0.19.0)', () => {
     expect(await screen.findByRole('heading', { level: 3, name: 'Izaberi anime' })).toBeInTheDocument()
   })
 })
+
+describe('Search embedded in Home', () => {
+  it('has a section heading like the rails and no page header or subtitle', () => {
+    const { container } = renderUi(<SearchPage embedded {...props()} />)
+    expect(container.querySelector('header.page__head')).toBeNull()
+    expect(screen.queryByText('Nađi seriju i izaberi epizode')).toBeNull()
+    expect(container.querySelector('.rail__head h3.hud').textContent).toBe('Pretraga')
+  })
+})

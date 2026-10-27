@@ -63,13 +63,13 @@ describe('AnimeDetail "Slično"', () => {
     expect(screen.queryByRole('heading', { name: 'Slično' })).toBeNull()
   })
 
-  it('is a labelled section with an h3, cards without hide or because, and no description', async () => {
+  it('is a labelled section without a duplicate heading, cards without hide or because, and no description', async () => {
     const api = makeFakeApi({ recommendations: { forSeries: forSeries([sim()]) } })
     mount(api, entry({ aniListId: 42 }))
     await openSimilar()
     const sec = await screen.findByRole('region', { name: 'Slično' })
     expect(sec.tagName).toBe('SECTION')
-    expect(sec.querySelector('h3')).toHaveTextContent('Slično')
+    expect(sec.querySelector('h3')).toBeNull()
     expect(sec).toHaveTextContent('Similar One')
     expect(sec).toHaveTextContent('TV · 2015 · 13 ep.')
     expect(sec).toHaveTextContent('Action · Drama')

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApi } from '../api.js'
 import { useAniListInfo } from '../anilist/useAniListInfo.js'
 import { useT } from '../i18n/I18nContext.jsx'
@@ -26,7 +26,6 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   // "Similar": the linked id, else an exact title match; a close match never counts.
   const similarId = entry.aniListId ?? (info?.match === 'exact' ? info.id : null)
   const [similar, setSimilar] = useState([])
-  const similarHeadId = useId()
   useEffect(() => {
     setSimilar([])
     if (similarId == null) return undefined
@@ -244,7 +243,6 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   )
   const episodesPanel = (
     <div className="page">
-          <h3>{t('detail.episodes')}</h3>
           <EpisodePicker
             key={episodes.length}
             episodes={episodes}
@@ -307,8 +305,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
     </div>
   )
   const similarPanel = (
-<section className="similar" aria-labelledby={similarHeadId}>
-  <h3 id={similarHeadId}>{t('recommendations.similar')}</h3>
+<section className="similar" aria-label={t('recommendations.similar')}>
   <div className="similar__grid">
     {similar.map((s) => <RecommendationCard key={s.id} item={s} ready={ready} onSearch={onSearch} />)}
   </div>

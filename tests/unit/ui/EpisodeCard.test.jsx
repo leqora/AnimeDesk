@@ -123,4 +123,34 @@ describe('EpisodeCard', () => {
     fireEvent.click(again)
     expect(document.activeElement).toBe(again)
   })
+  it('focus goes to the "more" trigger when the revealed card cannot play yet (not ready)', () => {
+    const Wrap = () => {
+      const [row, setRow] = useState(hidden())
+      return <EpisodeCard row={row} ready={false} onPlay={vi.fn()} onReveal={() => setRow(full({ number: '6' }))} />
+    }
+    const { container } = renderUi(<Wrap />)
+    const reveal = screen.getByRole('button', { name: /Prikaži/ })
+    reveal.focus()
+    fireEvent.click(reveal)
+    expect(screen.getByRole('button', { name: /^Pusti/ })).toBeDisabled()
+    expect(document.activeElement).toBe(container.querySelector('.ep-card__actions button'))
+    expect(document.activeElement).not.toBe(document.body)
+  })
+  it('a reveal that left the row hidden does not steal focus when it unlocks later by another route', async () => {
+    let setRowOut
+    const Wrap = () => {
+      const [row, setRow] = useState(hidden())
+      setRowOut = setRow
+      return <EpisodeCard row={row} onPlay={vi.fn()} onReveal={() => Promise.resolve()} />
+    }
+    renderUi(<Wrap />)
+    fireEvent.click(screen.getByRole('button', { name: /Prikaži/ }))
+    await act(async () => { await new Promise((r) => setTimeout(r, 20)) })
+    const other = document.createElement('button')
+    document.body.appendChild(other)
+    other.focus()
+    act(() => setRowOut(full({ number: '6' })))
+    expect(document.activeElement).toBe(other)
+    other.remove()
+  })
 })

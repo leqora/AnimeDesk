@@ -15,11 +15,24 @@ export function EpisodeCard({ row, poster = null, watched = false, next = false,
   const [bad, setBad] = useState(null)
   const hidden = row.visibility === 'hidden'
   // After "Prikaži" the locked tile is replaced by the playable card: hand the focus over so it never falls to body.
+  // When the play button is disabled (not ready) the "more" trigger takes it; if the reveal did not unlock the row, forget it.
   const openRef = useRef(null)
+  const actionsRef = useRef(null)
   const revealed = useRef(false)
+  const hiddenNow = useRef(hidden)
+  hiddenNow.current = hidden
   useEffect(() => {
-    if (!hidden && revealed.current) { revealed.current = false; openRef.current?.focus() }
+    if (hidden || !revealed.current) return
+    revealed.current = false
+    const play = openRef.current
+    if (play && !play.disabled) play.focus()
+    else actionsRef.current?.querySelector('button')?.focus()
   }, [hidden])
+  const reveal = () => {
+    revealed.current = true
+    const settled = () => setTimeout(() => { if (hiddenNow.current) revealed.current = false }, 0)
+    Promise.resolve(onReveal(row.number)).then(settled, settled)
+  }
   const full = row.visibility === 'full'
   const overview = full ? row.overview : null
   const title = hidden ? null : row.title
@@ -29,7 +42,7 @@ export function EpisodeCard({ row, poster = null, watched = false, next = false,
   const runtime = row.runtime ? t('episodes.minutes', { n: row.runtime }) : null
 
   const menu = (
-    <div className="ep-card__actions">
+    <div className="ep-card__actions" ref={actionsRef}>
       <MenuButton label={t('episodes.more', { n: row.number })} icon={<span aria-hidden="true">⋯</span>}>
         {onNote && <button type="button" role="menuitem" tabIndex={-1} data-navigates className="menu-button__item" onClick={() => onNote(row.number)}>{t('episodes.noteItem')}</button>}
         {onToggleWatched && (
@@ -49,7 +62,7 @@ export function EpisodeCard({ row, poster = null, watched = false, next = false,
           <span className="ep-card__lock" aria-hidden="true">🔒</span>
           <span className="ep-card__badge hud">{t('episodes.badge', { n: row.number })}</span>
           {runtime && <span className="ep-card__len hud">{runtime}</span>}
-          {onReveal && <button type="button" className="ep-card__reveal" aria-label={`${t('episodes.reveal')}: ${t('episodes.number', { n: row.number })}`} onClick={() => { revealed.current = true; onReveal(row.number) }}>{t('episodes.reveal')}</button>}
+          {onReveal && <button type="button" className="ep-card__reveal" aria-label={`${t('episodes.reveal')}: ${t('episodes.number', { n: row.number })}`} onClick={reveal}>{t('episodes.reveal')}</button>}
         </div>
         {menu}
       </div>

@@ -94,4 +94,20 @@ ${sel} {`)
     expect(rule).not.toContain('.home-hero')
     expect(css).toMatch(/\.app-shell:has\(\.content__notices > \*\) \.page-banner \{ margin-top: 0; \}/)
   })
+  it('the series detail hero grows with its content instead of having a fixed height', () => {
+    const body = (sel) => { const at = css.indexOf(sel + ' {'); return at < 0 ? null : css.slice(at, css.indexOf('}', at)) }
+    const hero = body('.detail-hero')
+    expect(hero).toContain('min-height: clamp(')
+    expect(hero).not.toMatch(/(^|[\s;])height:/)
+    expect(hero).toContain('var(--topbar-h)')
+    expect(body('.detail-hero__in')).not.toContain('position: absolute')
+  })
+  it('the next episode marker differs from the focus ring, and the play button has its own focus ring', () => {
+    expect(css).not.toMatch(/\.ep-card--next \.ep-card__frame[^{]*\{[^}]*outline/)
+    expect(css).not.toMatch(/\.ep-card:focus-within \.ep-card__frame/)
+    expect(css).toMatch(/\.ep-card__open:focus-visible \.ep-card__frame[^{]*\{[^}]*outline: 2px solid var\(--accent-2\)/)
+  })
+  it('has no leftover rules of the old detail banner', () => {
+    expect(css).not.toMatch(/^\.banner[ _.{:]/m)
+  })
 })
