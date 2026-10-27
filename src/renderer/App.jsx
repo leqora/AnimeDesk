@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiContext } from './api.js'
 import { I18nProvider, useT } from './i18n/I18nContext.jsx'
-import { Sidebar } from './components/Sidebar.jsx'
+import { TopBar } from './components/TopBar.jsx'
 import { ProfilePage } from './pages/ProfilePage.jsx'
 import { EMPTY_STATS } from '../shared/stats.js'
 import { AskDialog } from './components/AskDialog.jsx'
@@ -146,6 +146,9 @@ export default function App({ api, sound: injectedSound }) {
   const [settings, setSettings] = useState(null)
   const [health, setHealth] = useState({ light: 'yellow', reason: 'checking' })
   const mainRef = useRef(null)
+  const shellRef = useRef(null)
+  // the top bar turns see-through only while the page is scrolled to its very top
+  const [atTop, setAtTop] = useState(true)
   const cancelScroll = useRef(() => {})
   // target of a restore still waiting for content; until it ends, scrollTop is not the real position
   const pendingY = useRef(null)
@@ -349,6 +352,19 @@ export default function App({ api, sound: injectedSound }) {
 
   useEffect(() => { if (health.reason === 'missing-tools') setWizardOpen(true) }, [health.reason])
 
+  // The top bar sits over the scrolling page, so it must stop short of the page's scrollbar.
+  const booted = settings != null
+  useEffect(() => {
+    if (!booted) return undefined
+    const measure = () => {
+      const main = mainRef.current
+      shellRef.current?.style.setProperty('--scrollbar-w', `${main ? Math.max(0, main.offsetWidth - main.clientWidth) : 0}px`)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [booted])
+
   if (!settings) return bootFailed ? <BootError onRetry={loadSettings} /> : null
   settingsRef.current = settings
   const ready = health.light === 'green'
@@ -389,8 +405,8 @@ export default function App({ api, sound: injectedSound }) {
         <ToastProvider hold={Boolean(levelUp) && !motionOff}>
         <UndoShortcut disabled={overlay} />
         <PaletteShortcut open={paletteOpen} disabled={overlay} onToggle={setPaletteOpen} />
-        <div className="app-shell" inert={overlay} aria-hidden={overlay ? 'true' : undefined}>
-          <Sidebar
+        <div className="app-shell" ref={shellRef} data-at-top={atTop ? 'true' : 'false'} inert={overlay} aria-hidden={overlay ? 'true' : undefined}>
+          <TopBar
             page={page}
             onNavigate={navigate}
             health={health}
@@ -405,13 +421,15 @@ export default function App({ api, sound: injectedSound }) {
             onToggleFullscreen={() => api.window.setFullscreen(!fullscreen)}
             onOpenPalette={() => { if (!overlay) setPaletteOpen(true) }}
           />
-          <main className="content" ref={mainRef} tabIndex={-1}>
-            <ExternalPlayerBar onGone={() => setFocusMain(true)} />
-            <UpdateBanner state={updateState} onWhatsNew={openWhatsNew} />
+          <main className="content" ref={mainRef} tabIndex={-1} onScroll={(e) => setAtTop(e.currentTarget.scrollTop === 0)}>
+            <div className="content__notices">
+              <ExternalPlayerBar onGone={() => setFocusMain(true)} />
+              <UpdateBanner state={updateState} onWhatsNew={openWhatsNew} />
+              {corrupt && <CorruptBanner />}
+            </div>
             <div key={`${page}:${animeId ?? ''}`} className="page-enter">
               <ErrorBoundary>
                 <RouteStateContext.Provider value={{ state: nav.entry.state, set: nav.setRouteState }}>
-                {corrupt && <CorruptBanner />}
                 {page === 'home' && (
                   <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onSearch={searchAnime} />
                 )}

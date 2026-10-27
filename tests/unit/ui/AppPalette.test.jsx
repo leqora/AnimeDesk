@@ -116,7 +116,7 @@ describe('App command palette', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Brza pretraga' })).not.toBeInTheDocument())
     expect(document.activeElement).toBe(btn)
   })
-  it('the sidebar button opens the palette', async () => {
+  it('the top bar button opens the palette', async () => {
     await boot()
     fireEvent.click(screen.getByRole('button', { name: 'Brza pretraga' }))
     expect(await screen.findByRole('dialog', { name: 'Brza pretraga' })).toBeInTheDocument()
