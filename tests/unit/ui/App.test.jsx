@@ -18,6 +18,26 @@ describe('App', () => {
     expect(main.firstElementChild).toContainElement(warn)
     expect(main.querySelector('.page-enter')).not.toContainElement(warn)
   })
+  it('moves focus to main after a page is chosen from the avatar menu, also for the current page', async () => {
+    render(<App api={makeFakeApi()} />)
+    const avatar = await screen.findByRole('button', { name: 'Nalog' })
+    avatar.focus()
+    fireEvent.keyDown(avatar, { key: 'ArrowDown' })
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Profil' }))
+    await waitFor(() => expect(document.activeElement).toBe(document.querySelector('main.content')))
+    fireEvent.click(screen.getByRole('button', { name: 'Nalog' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Profil' }))
+    await waitFor(() => expect(document.activeElement).toBe(document.querySelector('main.content')))
+  })
+  it('moves focus to main after a page is chosen from the narrow Menu', async () => {
+    window.matchMedia = vi.fn((query) => ({ matches: true, media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
+    try {
+      render(<App api={makeFakeApi()} />)
+      fireEvent.click(await screen.findByRole('button', { name: 'Meni' }))
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Watchlist' }))
+      await waitFor(() => expect(document.activeElement).toBe(document.querySelector('main.content')))
+    } finally { delete window.matchMedia }
+  })
   it('app-shell data-at-top follows scroll', async () => {
     render(<App api={makeFakeApi()} />)
     await screen.findByRole('button', { name: 'Nalog' })
@@ -241,7 +261,7 @@ describe('App', () => {
     const avatar = await screen.findByRole('button', { name: 'Nalog' })
     expect(avatar).toHaveTextContent('N')
     fireEvent.click(avatar)
-    expect(screen.getByRole('menu')).toHaveTextContent('LV 11')
+    expect(screen.getByText('LV 11')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('menuitem', { name: 'Profil' }))
     expect(await screen.findByRole('heading', { name: 'nikola' })).toBeInTheDocument()
     expect(api.stats.get.mock.calls.length).toBeGreaterThanOrEqual(2)

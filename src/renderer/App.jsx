@@ -408,7 +408,7 @@ export default function App({ api, sound: injectedSound }) {
         <div className="app-shell" ref={shellRef} data-at-top={atTop ? 'true' : 'false'} inert={overlay} aria-hidden={overlay ? 'true' : undefined}>
           <TopBar
             page={page}
-            onNavigate={navigate}
+            onNavigate={(p, o) => { navigate(p); if (o?.focusMain) setFocusMain(true) }}
             health={health}
             onSemaphoreClick={() => setWizardOpen(true)}
             profileName={settings.profileName || settings.systemName}

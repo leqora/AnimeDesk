@@ -7,6 +7,8 @@ import { NotificationBell } from './NotificationBell.jsx'
 import { MenuButton } from './MenuButton.jsx'
 import { useNarrow } from '../nav/useNarrow.js'
 
+// a page chosen from a menu: the menu item disappears, so App moves focus to the page
+const MENU_NAV = { focusMain: true }
 const PAGES = ['home', 'discover', 'watchlist', 'schedule', 'downloads']
 
 export function TopBar({ page, onNavigate, health, onSemaphoreClick, profileName, stats, version = '', onOpenAnime = () => {}, libraryIds = new Set(), fullscreen = false, onToggleFullscreen = () => {}, playerOpen = false, onOpenPalette = () => {} }) {
@@ -17,9 +19,9 @@ export function TopBar({ page, onNavigate, health, onSemaphoreClick, profileName
     <header className="topbar">
       <div className="topbar__logo">{t('app.name')}</div>
       {narrow ? (
-        <MenuButton label={t('topbar.menu')} className="topbar__menu">
+        <MenuButton label={t('topbar.menu')} className="topbar__menu" closeWhen={playerOpen}>
           {PAGES.map((p) => (
-            <button key={p} type="button" role="menuitem" tabIndex={-1} data-navigates className="menu-button__item" aria-current={p === page ? 'page' : undefined} onClick={() => onNavigate(p)}>
+            <button key={p} type="button" role="menuitem" tabIndex={-1} data-navigates className="menu-button__item" aria-current={p === page ? 'page' : undefined} onClick={() => onNavigate(p, MENU_NAV)}>
               {t(`nav.${p}`)}
             </button>
           ))}
@@ -44,19 +46,30 @@ export function TopBar({ page, onNavigate, health, onSemaphoreClick, profileName
         <button type="button" className="topbar__icon" aria-label={t('topbar.settings')} aria-current={page === 'settings' ? 'page' : undefined} onClick={() => onNavigate('settings')}>
           <Icon name="settings" size={20} />
         </button>
-        <MenuButton label={t('topbar.account')} className="topbar__account" icon={<span className="topbar__avatar" aria-hidden="true">{initials(profileName)}</span>}>
-          <div className="topbar__summary" role="none">
-            <span className="topbar__summary-level hud">{t('profile.level', { level: stats.level })}</span>
-            <span className="topbar__summary-title">{t(`title.${stats.title}`)}</span>
-            <XpBar into={stats.xpIntoLevel} total={stats.xpForNext} />
-          </div>
-          <button type="button" role="menuitem" tabIndex={-1} data-navigates className="menu-button__item" onClick={() => onNavigate('profile')}>
+        <MenuButton
+          label={t('topbar.account')}
+          className="topbar__account"
+          closeWhen={playerOpen}
+          icon={<span className="topbar__avatar" aria-hidden="true">{initials(profileName)}</span>}
+          header={(
+            <div className="topbar__summary">
+              <span className="topbar__avatar topbar__avatar--lg" aria-hidden="true">{initials(profileName)}</span>
+              <span className="topbar__summary-meta">
+                <span className="topbar__summary-name">{profileName}</span>
+                <span className="topbar__summary-level hud">{t('profile.level', { level: stats.level })}</span>
+                <span className="topbar__summary-title">{t(`title.${stats.title}`)}</span>
+                <XpBar into={stats.xpIntoLevel} total={stats.xpForNext} />
+              </span>
+            </div>
+          )}
+          footer={<div className="topbar__version muted">{version ? `v${version} · ` : ''}by Leqora</div>}
+        >
+          <button type="button" role="menuitem" tabIndex={-1} data-navigates className="menu-button__item" onClick={() => onNavigate('profile', MENU_NAV)}>
             <Icon name="profile" size={16} />{t('nav.profile')}
           </button>
           <button type="button" role="menuitem" tabIndex={-1} className="menu-button__item" onClick={onToggleFullscreen}>
             <Icon name={fullscreen ? 'minimize' : 'maximize'} size={16} />{fullscreenLabel}
           </button>
-          <div className="topbar__version muted" role="none">{version ? `v${version} · ` : ''}by Leqora</div>
         </MenuButton>
       </div>
     </header>

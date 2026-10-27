@@ -3,7 +3,9 @@ import { Icon } from './Icon.jsx'
 
 // Button that opens a menu (role="menu") of role="menuitem" children. Roving focus by code, so items are tabIndex -1.
 // An item that navigates carries data-navigates: focus then stays with the app's own page focus instead of returning here.
-export function MenuButton({ label, icon, children, className = '' }) {
+// header/footer are shown in the popup around the menu, outside role="menu" (only menuitems belong inside it).
+// closeWhen: the menu closes whenever it turns true (e.g. the player opens).
+export function MenuButton({ label, icon, children, header = null, footer = null, closeWhen = false, className = '' }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
   const buttonRef = useRef(null)
@@ -15,6 +17,8 @@ export function MenuButton({ label, icon, children, className = '' }) {
   const focusButton = () => buttonRef.current?.focus()
   const close = (refocus) => { setOpen(false); if (refocus) focusButton() }
   const openAt = (where) => { startAt.current = where; setOpen(true) }
+
+  useEffect(() => { if (closeWhen) setOpen(false) }, [closeWhen])
 
   useEffect(() => {
     if (!open) return
@@ -66,8 +70,12 @@ export function MenuButton({ label, icon, children, className = '' }) {
         {icon ?? <><span>{label}</span><Icon name="chevronDown" size={14} /></>}
       </button>
       {open && (
-        <div id={id} ref={listRef} className="menu-button__list" role="menu" aria-label={label} onKeyDown={onListKeyDown} onClick={onListClick}>
-          {children}
+        <div className="menu-button__popup">
+          {header}
+          <div id={id} ref={listRef} className="menu-button__list" role="menu" aria-label={label} onKeyDown={onListKeyDown} onClick={onListClick}>
+            {children}
+          </div>
+          {footer}
         </div>
       )}
     </div>
