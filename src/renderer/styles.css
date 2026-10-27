@@ -97,6 +97,8 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 /* see-through only over a page that has a banner (Home) while scrolled to the top and with no notice above it */
 .app-shell[data-at-top="true"]:has(.home-hero):not(:has(.content__notices > *)) .topbar { background: linear-gradient(var(--panel-solid), transparent) no-repeat; border-bottom-color: transparent; }
 .topbar__logo { flex: none; font-family: var(--font-display); font-size: 20px; letter-spacing: .06em; background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* wraps the nav / Menu pair so focus can be tracked across the breakpoint, without changing the layout */
+.topbar__navwrap { display: contents; }
 .topbar__nav { overflow: hidden; display: flex; flex-wrap: nowrap; align-self: stretch; gap: 4px; min-width: 0; }
 .topbar__link { position: relative; display: flex; align-items: center; height: 100%; padding: 0 12px; background: transparent; border: 0; border-radius: 0; color: var(--text-muted); font-size: 14px; }
 .topbar__link:hover:not(:disabled) { background: transparent; color: var(--text); }

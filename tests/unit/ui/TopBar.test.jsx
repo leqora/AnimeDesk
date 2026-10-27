@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen, fireEvent, within } from '@testing-library/react'
+import { screen, fireEvent, within, act } from '@testing-library/react'
 import { renderUi } from './helpers.jsx'
 import { TopBar } from '../../../src/renderer/components/TopBar.jsx'
 import { EMPTY_STATS } from '../../../src/shared/stats.js'
@@ -127,6 +127,34 @@ describe('TopBar', () => {
     expect(screen.getByRole('menu')).toBeInTheDocument()
     rerender(<TopBar {...props({ playerOpen: true })} />)
     expect(screen.queryByRole('menu')).toBeNull()
+  })
+  describe('crossing the 1000 px breakpoint', () => {
+    const mockMedia = (initial) => {
+      let listener = null
+      window.matchMedia = vi.fn((query) => ({ matches: initial, media: query, addEventListener: (_e, fn) => { listener = fn }, removeEventListener: () => { listener = null } }))
+      return (matches) => act(() => { listener?.({ matches }) })
+    }
+    it('moves focus from a nav link to the Menu trigger when the window gets narrow', () => {
+      const flip = mockMedia(false)
+      renderUi(<TopBar {...props({ page: 'discover' })} />)
+      act(() => screen.getByRole('button', { name: 'Watchlist' }).focus())
+      flip(true)
+      expect(screen.getByRole('button', { name: 'Meni' })).toHaveFocus()
+    })
+    it('moves focus from the Menu trigger to the active page link when the window gets wide', () => {
+      const flip = mockMedia(true)
+      renderUi(<TopBar {...props({ page: 'discover' })} />)
+      act(() => screen.getByRole('button', { name: 'Meni' }).focus())
+      flip(false)
+      expect(screen.getByRole('button', { name: 'Otkrij' })).toHaveFocus()
+    })
+    it('leaves focus alone when it was not inside the navigation', () => {
+      const flip = mockMedia(false)
+      renderUi(<TopBar {...props()} />)
+      act(() => screen.getByRole('button', { name: 'Nalog' }).focus())
+      flip(true)
+      expect(screen.getByRole('button', { name: 'Nalog' })).toHaveFocus()
+    })
   })
   describe('narrow window', () => {
     it('shows one Menu button with the five pages', () => {

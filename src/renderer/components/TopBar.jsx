@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Semaphore } from './Semaphore.jsx'
 import { initials } from '../initials.js'
@@ -14,10 +15,25 @@ const PAGES = ['home', 'discover', 'watchlist', 'schedule', 'downloads']
 export function TopBar({ page, onNavigate, health, onSemaphoreClick, profileName, stats, version = '', onOpenAnime = () => {}, libraryIds = new Set(), fullscreen = false, onToggleFullscreen = () => {}, playerOpen = false, onOpenPalette = () => {} }) {
   const t = useT()
   const narrow = useNarrow()
+  // The nav links and the Menu trigger replace each other at 1000 px; focus inside either must not fall to <body>.
+  const navRef = useRef(null)
+  const lastNarrow = useRef(narrow)
+  const focusWasInNav = useRef(false)
+  if (lastNarrow.current !== narrow) focusWasInNav.current = navRef.current?.contains(document.activeElement) === true // the old DOM is still there
+  useLayoutEffect(() => {
+    if (lastNarrow.current === narrow) return
+    lastNarrow.current = narrow
+    if (!focusWasInNav.current) return
+    focusWasInNav.current = false
+    const root = navRef.current
+    const target = narrow ? root?.querySelector('.menu-button__trigger') : (root?.querySelector('[aria-current="page"]') ?? root?.querySelector('.topbar__link'))
+    target?.focus()
+  }, [narrow])
   const fullscreenLabel = fullscreen ? t('window.exitFullscreen') : t('window.fullscreen')
   return (
     <header className="topbar">
       <div className="topbar__logo">{t('app.name')}</div>
+      <div className="topbar__navwrap" ref={navRef}>
       {narrow ? (
         <MenuButton label={t('topbar.menu')} className="topbar__menu" closeWhen={playerOpen}>
           {PAGES.map((p) => (
@@ -35,6 +51,7 @@ export function TopBar({ page, onNavigate, health, onSemaphoreClick, profileName
           ))}
         </nav>
       )}
+      </div>
       <div className="topbar__right">
         <button type="button" className="topbar__palette" aria-keyshortcuts="Control+K" aria-label={t('palette.open')} onClick={onOpenPalette}>
           <Icon name="search" size={16} />
