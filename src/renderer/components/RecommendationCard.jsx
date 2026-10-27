@@ -54,7 +54,7 @@ export function RecommendationCard({ item, ready, onSearch, onHide, inWatchlist 
       </div>
     )
   }
-  const label = t('recommendations.open', { title: item.title }) + (inWatchlist ? `, ${t('discover.inWatchlist')}` : '')
+  const label = (onOpen ? t('discover.openLabel', { title: item.title }) : t('recommendations.open', { title: item.title })) + (inWatchlist ? `, ${t('discover.inWatchlist')}` : '')
   return (
     <div className="card media-card rec-card">
       <button

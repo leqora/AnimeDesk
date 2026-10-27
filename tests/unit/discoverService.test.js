@@ -320,3 +320,35 @@ describe('createDiscover forget and stop', () => {
     expect(fs.existsSync(file)).toBe(false)
   })
 })
+
+describe('createDiscover peek and bannerUrlOf', () => {
+  it('peek never refreshes: empty without a record', () => {
+    expect(svc.peek().items).toEqual([])
+    expect(anilist.discover).not.toHaveBeenCalled()
+  })
+
+  it('peek serves the season rail from a stale record without a call, with posters and entryId', () => {
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    const old = T0 - TTL_MS - H
+    fs.writeFileSync(file, JSON.stringify({ version: 1, rules: RULES_VERSION, fetchedAt: old, season: seasonOf(T0), raw: raw(), posters: { 1: { coverUrl: 'http://img/1.jpg', dataUrl: 'data:x' } }, failedAt: null }))
+    entries = [{ id: 'e2', title: 'Whatever', aniListId: 2, status: 'watching' }]
+    const r = svc.peek()
+    expect(r.season).toEqual(seasonOf(T0))
+    expect(r.items).toEqual([
+      { id: 1, title: 'Show 1', romaji: 'Show 1', format: 'TV', status: 'RELEASING', year: 2026, episodes: 12, genres: ['Action'], poster: 'data:x', entryId: null },
+      { id: 2, title: 'Show 2', romaji: 'Show 2', format: 'TV', status: 'RELEASING', year: 2026, episodes: 12, genres: ['Action'], poster: null, entryId: 'e2' },
+    ])
+    expect(anilist.discover).not.toHaveBeenCalled()
+  })
+
+  it('bannerUrlOf only for rail items', async () => {
+    fetched = { ...raw(), trending: [it_(5, { bannerUrl: 'https://b/5.jpg' }), it_(6, { shown: false, bannerUrl: 'https://b/6.jpg' })] }
+    await refreshed()
+    expect(svc.bannerUrlOf(5)).toBe('https://b/5.jpg')
+    expect(svc.bannerUrlOf(1)).toBeNull() // shown but no banner
+    expect(svc.bannerUrlOf(6)).toBeNull() // hidden, not in library
+    expect(svc.bannerUrlOf(999)).toBeNull()
+    entries = [{ id: 'e6', title: 'W', aniListId: 6, status: 'watching' }]
+    expect(svc.bannerUrlOf(6)).toBe('https://b/6.jpg')
+  })
+})

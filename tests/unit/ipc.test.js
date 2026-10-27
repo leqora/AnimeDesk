@@ -139,6 +139,16 @@ describe('ipc', () => {
   it('has a handler for every INVOKE channel and nothing else', () => {
     expect(Object.keys(createHandlers(services())).sort()).toEqual(Object.values(INVOKE).sort())
   })
+  it('anilist:for-title and anilist:search never send bannerUrl', async () => {
+    const s = services()
+    s.anilist.getForTitle.mockResolvedValue({ id: 5, title: 'A', bannerUrl: 'https://b/5.jpg', format: 'TV' })
+    s.anilist.search.mockResolvedValue([{ id: 1, bannerUrl: 'https://b/1.jpg', format: 'TV' }, { id: 2, bannerUrl: null }])
+    const h = createHandlers(s)
+    expect(await h[INVOKE.anilistForTitle]('A', 5)).toEqual({ id: 5, title: 'A', format: 'TV' })
+    expect(await h[INVOKE.anilistSearch]('A')).toEqual([{ id: 1, format: 'TV' }, { id: 2 }])
+    s.anilist.getForTitle.mockResolvedValue(null)
+    expect(await h[INVOKE.anilistForTitle]('B')).toBeNull()
+  })
   it('forwards arguments', async () => {
     const s = services()
     const h = createHandlers(s)
@@ -587,5 +597,27 @@ describe('discover handlers', () => {
     const many = Array.from({ length: 60 }, (_, i) => i + 1)
     await h[INVOKE.discoverPosters](many)
     expect(s.discover.posters).toHaveBeenLastCalledWith(many.slice(0, 40))
+  })
+})
+
+describe('banner and peek handlers', () => {
+  it('uses exact channel names', () => {
+    expect(INVOKE.anilistBanner).toBe('anilist:banner')
+    expect(INVOKE.discoverPeek).toBe('discover:peek')
+  })
+  it('anilist:banner forwards the request and never throws', async () => {
+    const s = services()
+    s.bannerLookup = { banner: vi.fn(async () => 'animedesk-img://banner/x') }
+    const h = createHandlers(s)
+    expect(await h[INVOKE.anilistBanner]({ kind: 'rec', id: 3 })).toBe('animedesk-img://banner/x')
+    expect(s.bannerLookup.banner).toHaveBeenCalledWith({ kind: 'rec', id: 3 })
+    s.bannerLookup.banner.mockRejectedValue(new Error('boom'))
+    expect(await h[INVOKE.anilistBanner]({ kind: 'rec', id: 3 })).toBeNull()
+  })
+  it('discover:peek forwards', async () => {
+    const s = services()
+    s.discover = { peek: vi.fn(() => ({ season: null, items: [] })) }
+    const h = createHandlers(s)
+    expect(await h[INVOKE.discoverPeek]()).toEqual({ season: null, items: [] })
   })
 })

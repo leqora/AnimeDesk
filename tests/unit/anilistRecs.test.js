@@ -43,7 +43,7 @@ describe('anilist recommendations', () => {
   it('reduces items, keeps AniList rank across skipped nulls, computes eligible', async () => {
     const al = mk(async () => Response.json({ data: { Page: { media: [
       { id: 1, recommendations: { nodes: [
-        { rating: 90, mediaRecommendation: media(10) },
+        { rating: 90, mediaRecommendation: media(10, { bannerImage: 'https://s4.anilist.co/b/10.jpg' }) },
         { rating: 80, mediaRecommendation: null },
         { rating: 70, mediaRecommendation: media(12, {
           title: { romaji: 'Only Romaji', english: null }, seasonYear: null, episodes: null, coverImage: null, genres: null,
@@ -60,12 +60,12 @@ describe('anilist recommendations', () => {
     expect(map.get(3)).toEqual([])
     const [a, b] = map.get(1)
     expect(map.get(1)).toHaveLength(2)
-    expect(Object.keys(a).sort()).toEqual(['coverUrl', 'eligible', 'english', 'episodes', 'format', 'genres', 'id', 'rank', 'rating', 'romaji', 'status', 'title', 'year'])
+    expect(Object.keys(a).sort()).toEqual(['bannerUrl', 'coverUrl', 'eligible', 'english', 'episodes', 'format', 'genres', 'id', 'rank', 'rating', 'romaji', 'status', 'title', 'year'])
     expect(a).toEqual({
       id: 10, title: 'E10', romaji: 'R10', english: 'E10', format: 'TV', status: 'FINISHED', year: 2020, episodes: 12,
-      genres: ['A', 'B', 'C'], coverUrl: 'https://img/10.jpg', rank: 0, rating: 90, eligible: true,
+      genres: ['A', 'B', 'C'], coverUrl: 'https://img/10.jpg', bannerUrl: 'https://s4.anilist.co/b/10.jpg', rank: 0, rating: 90, eligible: true,
     })
-    expect(b).toMatchObject({ id: 12, title: 'Only Romaji', english: null, year: null, episodes: null, coverUrl: null, genres: [], rank: 2, rating: 70 })
+    expect(b).toMatchObject({ id: 12, title: 'Only Romaji', english: null, year: null, episodes: null, coverUrl: null, bannerUrl: null, genres: [], rank: 2, rating: 70 })
     expect(typeof b.eligible).toBe('boolean')
   })
 

@@ -46,6 +46,7 @@ function toRecItem(m, rank, rating) {
     episodes: m.episodes ?? null,
     genres: Array.isArray(m.genres) ? m.genres.slice(0, 3) : [],
     coverUrl: m.coverImage?.large ?? null,
+    bannerUrl: m.bannerImage ?? null,
     rank,
     rating,
     eligible: eligible(toCase(m)),
@@ -69,6 +70,7 @@ function toDiscoverItem(m) {
     genres: Array.isArray(m.genres) ? m.genres.filter((g) => typeof g === 'string') : [],
     start: Number.isInteger(sy) ? { year: sy, month: Number.isInteger(sm) ? sm : null } : null,
     coverUrl: m.coverImage?.large ?? null,
+    bannerUrl: m.bannerImage ?? null,
     shown: shownInDiscover(toCase(m)),
   }
 }
@@ -109,6 +111,8 @@ function toInfo(m) {
     duration: m.duration ?? null,
     description: cleanDescription(m.description),
     coverUrl: m.coverImage?.large ?? null,
+    bannerUrl: m.bannerImage ?? null,
+    format: m.format ?? null,
     status: m.status ?? null,
     nextAiring: toNextAiring(m.nextAiringEpisode),
     poster: null,
@@ -384,6 +388,37 @@ export function createAniList({
     return result
   }
 
+  // Banner for the Home page. A record that already has the key (even null) answers with no request. An exact/id record that
+  // lacks it (saved before v0.18.0) is filled once per run per file from one by-id lookup (a failure counts as the attempt):
+  // read -> merge -> write in one synchronous step, so nothing else in the record (poster, fetchedAt) is touched.
+  // A 'close' match is display-only and never gives an id, so it never gets a banner.
+  const bannerAttempts = new Map() // file -> Promise of the one attempt made in this run
+  async function bannerUrlFor(title, { aniListId = null } = {}) {
+    const file = cacheFile(cacheKey(title, aniListId))
+    const cached = readJson(file, null).data
+    if (!cached || cached.notFound) return null
+    let id = null
+    if (aniListId) id = aniListId
+    else if (cached.match === 'exact' || cached.match === 'id') id = cached.id
+    if (!Number.isInteger(id) || id < 1) return null
+    if ('bannerUrl' in cached) return { id, bannerUrl: cached.bannerUrl ?? null }
+    if (bannerAttempts.has(file)) return bannerAttempts.get(file)
+    const attempt = (async () => {
+      try {
+        const m = await batcher.byId(id)
+        if (!m) return { id, bannerUrl: null }
+        const bannerUrl = m.bannerImage ?? null
+        const cur = readJson(file, null).data
+        if (cur && !cur.notFound) writeJsonAtomic(file, { ...cur, bannerUrl, format: m.format ?? cur.format ?? null })
+        return { id, bannerUrl }
+      } catch {
+        return { id, bannerUrl: null }
+      }
+    })()
+    bannerAttempts.set(file, attempt)
+    return attempt
+  }
+
   async function viewer(token) {
     const v = (await gql(VIEWER, {}, { token })).Viewer
     return { id: v.id, name: v.name }
@@ -481,5 +516,5 @@ export function createAniList({
 
   const poster = (url, opts) => posterDataUrl(url, opts).catch(() => null)
 
-  return { search, getForTitle, getCached, refreshAiring, relations, recommendations, trending, schedule, discover, poster, viewer, listEntry, saveProgress, candidates }
+  return { search, getForTitle, getCached, refreshAiring, relations, recommendations, trending, schedule, discover, poster, bannerUrlFor, viewer, listEntry, saveProgress, candidates }
 }

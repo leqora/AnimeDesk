@@ -3,6 +3,13 @@ import { ANILIST_CLIENT_ID, APPS_URL, authorizeUrl } from '../shared/anilistAuth
 import { localDate } from '../shared/backupRules.js'
 import { createSettingsEffects } from './settingsEffects.js'
 
+// The banner URL stays in the main process (served as a file by the banner service), never in the IPC payload.
+const withoutBanner = (info) => {
+  if (!info || typeof info !== 'object') return info ?? null
+  const { bannerUrl: _banner, ...rest } = info
+  return rest
+}
+
 export function createHandlers(s) {
   const progress = (p) => s.send(EVENTS.toolProgress, p)
   const settingsEffects = createSettingsEffects({ updater: s.updater, toolManager: s.toolManager, send: s.send, onSettingsChanged: (patch) => s.onSettingsChanged?.(patch) })
@@ -106,8 +113,11 @@ export function createHandlers(s) {
     },
     [INVOKE.seriesPrefsGet]: (title) => s.seriesPrefs.get(title),
     [INVOKE.seriesPrefsSet]: (title, patch) => s.seriesPrefs.set(title, patch),
-    [INVOKE.anilistForTitle]: (title, aniListId = null) => s.anilist.getForTitle(title, { aniListId }),
-    [INVOKE.anilistSearch]: (query) => s.anilist.search(query),
+    [INVOKE.anilistForTitle]: async (title, aniListId = null) => withoutBanner(await s.anilist.getForTitle(title, { aniListId })),
+    [INVOKE.anilistBanner]: async (req) => {
+      try { return (await s.bannerLookup.banner(req)) ?? null } catch { return null }
+    },
+    [INVOKE.anilistSearch]: async (query) => (await s.anilist.search(query)).map(withoutBanner),
     [INVOKE.episodesForSeries]: (args) => s.seriesEpisodes.forSeries(args),
     [INVOKE.episodesThumb]: (args) => s.seriesEpisodes.thumb(args),
     [INVOKE.episodesSpoilers]: (args, action) => s.seriesEpisodes.spoilers(args, action),
@@ -218,6 +228,7 @@ export function createHandlers(s) {
     [INVOKE.recommendationsForSeries]: (id) => (Number.isInteger(id) && id > 0 ? s.recommendations.forSeries(id) : { items: [] }),
     [INVOKE.scheduleList]: (opts) => s.schedule.list({ force: Boolean(opts) && typeof opts === 'object' && opts.force === true }),
     [INVOKE.discoverList]: (opts) => s.discover.list({ force: Boolean(opts) && typeof opts === 'object' && opts.force === true }),
+    [INVOKE.discoverPeek]: () => s.discover.peek(),
     [INVOKE.discoverPosters]: (ids) => (Array.isArray(ids)
       ? s.discover.posters(ids.filter((id) => Number.isInteger(id) && id > 0).slice(0, 40))
       : {}),

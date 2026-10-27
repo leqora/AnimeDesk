@@ -32,6 +32,13 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const posterInfo = usePosterInfo(episodeMenu ? anime : null)
   const progress = useEpisodeProgress(episodeMenu ? anime : null)
 
+  // When the episode picker appears while focus is lost (the search button that held it is gone), land on its heading.
+  const pickerHeading = useRef(null)
+  const pickerKey = phase === 'episode' && menu ? menu.requestId : null
+  useEffect(() => {
+    if (pickerKey && (document.activeElement === document.body || !document.activeElement)) pickerHeading.current?.focus()
+  }, [pickerKey])
+
   // The session id and phase are mirrored in a ref so the unmount cleanup sees the latest values.
   const [prefs, setPrefs] = useState({ quality: null, mode: null, hideFiller: false })
   // ignore: sessions we cancelled on purpose (mode switch, series prefs) — their late events must not touch the new session
@@ -247,7 +254,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
       {phase === 'episode' && menu && (
         <div className="page">
           <div className="row"><button type="button" onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button></div>
-          <h2>{anime ?? (titleMissing ? t('search.titleUnknown', { query: live.current.lastParams?.query ?? '' }) : t('search.titlePending'))} — {t('search.selectEpisode')}</h2>
+          <h2 ref={pickerHeading} tabIndex={-1}>{anime ?? (titleMissing ? t('search.titleUnknown', { query: live.current.lastParams?.query ?? '' }) : t('search.titlePending'))} — {t('search.selectEpisode')}</h2>
           <EpisodePicker episodes={episodeMenu} selected={selected} watched={watched} onToggle={toggle} prefs={prefs} onPrefs={anime ? changePrefs : null}
             series={series} poster={posterInfo?.poster ?? null} onReveal={(ep) => updateSpoilers({ episode: ep })} loadThumb={thumb} progress={progress}
             hideMarked={Boolean(prefs.hideFiller)} onHideMarked={anime ? (v) => changePrefs({ hideFiller: v }) : null}>

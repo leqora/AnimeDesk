@@ -30,7 +30,7 @@ function cleanItem(i) {
     id: i.id, title: str(i.title), romaji: str(i.romaji), english: str(i.english), format: str(i.format), status: str(i.status),
     year: numOrNull(i.year), episodes: numOrNull(i.episodes),
     genres: Array.isArray(i.genres) ? i.genres.filter((g) => typeof g === 'string') : [],
-    start, coverUrl: i.coverUrl, shown: i.shown,
+    start, coverUrl: i.coverUrl, bannerUrl: str(i.bannerUrl), shown: i.shown,
   }
 }
 
@@ -176,6 +176,33 @@ export function createDiscover({
     return buildRails(raw, { isInLibrary: (i) => matchOf(i, entries, getCachedId) !== null })
   }
 
+  // Season rail as the record has it now: no network, no refresh, no timers (the Home page may ask while Discover was never opened).
+  // Items go through buildRails like list() does; posters only from the poster cache.
+  function peek() {
+    load()
+    const cur = seasonOf(now())
+    const entries = entriesNow()
+    const { getCachedId } = lookups()
+    const items = currentRails(entries, getCachedId).season.map((i) => ({
+      id: i.id, title: i.title, romaji: i.romaji, format: i.format, status: i.status, year: i.year, episodes: i.episodes,
+      genres: i.genres, poster: i.coverUrl && posters[i.id]?.coverUrl === i.coverUrl ? posters[i.id].dataUrl : null,
+      entryId: matchOf(i, entries, getCachedId)?.id ?? null,
+    }))
+    return { season: record?.season ?? cur, items }
+  }
+
+  // Banner of an item that is in a rail right now (shown, or in the library); anything else is null.
+  function bannerUrlOf(id) {
+    load()
+    const { getCachedId } = lookups()
+    const built = currentRails(entriesNow(), getCachedId)
+    for (const key of RAIL_KEYS) {
+      const hit = built[key].find((i) => i.id === id)
+      if (hit) return hit.bannerUrl ?? null
+    }
+    return null
+  }
+
   function list({ force = false } = {}) {
     load()
     const t = now()
@@ -264,5 +291,5 @@ export function createDiscover({
 
   function stop() { stopped = true }
 
-  return { list, posters: posterList, forget, onChange, stop }
+  return { list, peek, bannerUrlOf, posters: posterList, forget, onChange, stop }
 }

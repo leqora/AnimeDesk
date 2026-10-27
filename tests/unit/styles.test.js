@@ -50,6 +50,10 @@ ${sel} {`)
     expect(rule('.rec-card:has(.rec-card__static):hover::after')).toContain('opacity: 0')
     expect(rule('.rec-card:has(.rec-card__static):hover .poster--in')).toContain('transform: none')
   })
+  it('does not blur behind every button (player, episode grid, cards)', () => {
+    expect(/(^|\n)button \{[^}]*backdrop-filter/.test(css)).toBe(false)
+    expect(css).toContain('--rail-wide-w:')
+  })
   it('uses no raw hex colors outside :root', () => {
     expect(css.slice(rootEnd).match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull()
   })

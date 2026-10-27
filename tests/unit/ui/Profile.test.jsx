@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { screen, fireEvent } from '@testing-library/react'
 import { renderUi } from './helpers.jsx'
 import { XpBar } from '../../../src/renderer/components/XpBar.jsx'
-import { ProfileCard, initials } from '../../../src/renderer/components/ProfileCard.jsx'
+import { initials } from '../../../src/renderer/initials.js'
 import { ProfilePage } from '../../../src/renderer/pages/ProfilePage.jsx'
 import { EMPTY_STATS } from '../../../src/shared/stats.js'
 
@@ -26,21 +26,11 @@ describe('XpBar', () => {
   })
 })
 
-describe('ProfileCard', () => {
+describe('initials', () => {
   it('makes initials', () => {
     expect(initials('Nikola Lelekovic')).toBe('NL')
     expect(initials('nikola')).toBe('N')
     expect(initials('  ')).toBe('?')
-  })
-  it('shows level and title and opens the profile', () => {
-    const onClick = vi.fn()
-    renderUi(<ProfileCard name="Nikola Lelekovic" stats={stats} onClick={onClick} />)
-    const card = screen.getByRole('button')
-    expect(card).toHaveTextContent('NL')
-    expect(card).toHaveTextContent('LV 11')
-    expect(card).toHaveTextContent('Veteran')
-    fireEvent.click(card)
-    expect(onClick).toHaveBeenCalled()
   })
 })
 

@@ -61,7 +61,7 @@ describe('DiscoverPage', () => {
     const { onSearch, onOpenAnime } = page(apiWith(data()))
     fireEvent.click(await screen.findByRole('button', { name: 'Potraži Title 1' }))
     expect(onSearch).toHaveBeenCalledWith('Romaji 1')
-    const mine = screen.getByRole('button', { name: 'Potraži Title 4, U Watchlist-i' })
+    const mine = screen.getByRole('button', { name: 'Otvori Title 4, U Watchlist-i' })
     expect(within(mine).getByText('U Watchlist-i')).toBeInTheDocument()
     fireEvent.click(mine)
     expect(onOpenAnime).toHaveBeenCalledWith('e4')

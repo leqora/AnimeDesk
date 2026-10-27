@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
 import { screen, fireEvent, waitFor, within } from '@testing-library/react'
-import { renderUi, makeFakeApi } from './helpers.jsx'
+import { renderUi, renderHookUi, makeFakeApi } from './helpers.jsx'
+import { useBanner } from '../../../src/renderer/anilist/useBanner.js'
 import { DataSection } from '../../../src/renderer/components/DataSection.jsx'
 
 const preview = (over = {}) => ({
@@ -151,6 +152,16 @@ describe('DataSection', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Da' }))
     await waitFor(() => expect(api.data.clearCache).toHaveBeenCalledTimes(1))
     expect(await screen.findByText(/Keš: 0,0 KB/)).toBeInTheDocument()
+  })
+  it('clearing the cache also forgets the renderer banner urls', async () => {
+    const { api } = setup({ clearCache: vi.fn(async () => ({ cacheBytes: 0 })) })
+    api.anilist = { ...api.anilist, banner: vi.fn(async () => 'animedesk-img://banner/q1') }
+    const probe = renderHookUi(() => useBanner({ kind: 'discover', id: 3 }), { api })
+    await waitFor(() => expect(probe.result.current).toBe('animedesk-img://banner/q1'))
+    fireEvent.click(screen.getByRole('button', { name: 'Obriši keš slika i opisa' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Da' }))
+    expect(await screen.findByText(/Keš: 0,0 KB/)).toBeInTheDocument()
+    expect(renderHookUi(() => useBanner({ kind: 'discover', id: 3 }), { api }).result.current).toBeUndefined()
   })
   it('open folder calls data.openFolder', () => {
     const { api } = setup()

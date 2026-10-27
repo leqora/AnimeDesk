@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { renderUi, makeFakeApi } from './helpers.jsx'
 import { SchedulePage } from '../../../src/renderer/pages/SchedulePage.jsx'
-import { Sidebar } from '../../../src/renderer/components/Sidebar.jsx'
+import { TopBar } from '../../../src/renderer/components/TopBar.jsx'
 import { EMPTY_STATS } from '../../../src/shared/stats.js'
 
 // Wed 2026-10-21 10:00 local; "at(0, 20)" = today 20:00, "at(1, 9)" = tomorrow 09:00.
@@ -334,7 +334,7 @@ describe('SchedulePage', () => {
 describe('schedule menu and copy', () => {
   it('has Raspored between Watchlist and Preuzeto and navigates', () => {
     const onNavigate = vi.fn()
-    renderUi(<Sidebar page="home" onNavigate={onNavigate} health={{ light: 'green', reason: 'ok' }} onSemaphoreClick={vi.fn()} profileName="N" stats={EMPTY_STATS} />)
+    renderUi(<TopBar page="home" onNavigate={onNavigate} health={{ light: 'green', reason: 'ok' }} onSemaphoreClick={vi.fn()} profileName="N" stats={EMPTY_STATS} />)
     const names = screen.getAllByRole('button').map((b) => b.getAttribute('aria-label'))
     expect(names.indexOf('Raspored')).toBe(names.indexOf('Watchlist') + 1)
     expect(names.indexOf('Preuzeto')).toBe(names.indexOf('Raspored') + 1)

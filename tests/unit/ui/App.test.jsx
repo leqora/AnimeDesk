@@ -9,6 +9,48 @@ import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
 vi.mock('hls.js', async () => ({ default: (await import('./fakeHls.js')).FakeHls }))
 
 describe('App', () => {
+  it('notices sit in .content__notices, the first child of main', async () => {
+    const api = makeFakeApi({ library: { wasCorrupt: vi.fn(async () => true) } })
+    render(<App api={api} />)
+    const warn = await screen.findByText(/bio oštećen/)
+    const main = document.querySelector('main.content')
+    expect(main.firstElementChild).toHaveClass('content__notices')
+    expect(main.firstElementChild).toContainElement(warn)
+    expect(main.querySelector('.page-enter')).not.toContainElement(warn)
+  })
+  it('moves focus to main after a page is chosen from the avatar menu, also for the current page', async () => {
+    render(<App api={makeFakeApi()} />)
+    const avatar = await screen.findByRole('button', { name: 'Nalog' })
+    avatar.focus()
+    fireEvent.keyDown(avatar, { key: 'ArrowDown' })
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Profil' }))
+    await waitFor(() => expect(document.activeElement).toBe(document.querySelector('main.content')))
+    fireEvent.click(screen.getByRole('button', { name: 'Nalog' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Profil' }))
+    await waitFor(() => expect(document.activeElement).toBe(document.querySelector('main.content')))
+  })
+  it('moves focus to main after a page is chosen from the narrow Menu', async () => {
+    window.matchMedia = vi.fn((query) => ({ matches: true, media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
+    try {
+      render(<App api={makeFakeApi()} />)
+      fireEvent.click(await screen.findByRole('button', { name: 'Meni' }))
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Watchlist' }))
+      await waitFor(() => expect(document.activeElement).toBe(document.querySelector('main.content')))
+    } finally { delete window.matchMedia }
+  })
+  it('app-shell data-at-top follows scroll', async () => {
+    render(<App api={makeFakeApi()} />)
+    await screen.findByRole('button', { name: 'Nalog' })
+    const shell = document.querySelector('.app-shell')
+    const main = document.querySelector('main.content')
+    expect(shell).toHaveAttribute('data-at-top', 'true')
+    main.scrollTop = 120
+    fireEvent.scroll(main)
+    expect(shell).toHaveAttribute('data-at-top', 'false')
+    main.scrollTop = 0
+    fireEvent.scroll(main)
+    expect(shell).toHaveAttribute('data-at-top', 'true')
+  })
   it('opens the Discover page from the menu', async () => {
     const api = makeFakeApi()
     render(<App api={api} />)
@@ -216,9 +258,11 @@ describe('App', () => {
     const api = makeFakeApi({ stats: { get: vi.fn(async () => ({ ...EMPTY_STATS, level: 11, title: 'veteran', xp: 3000 })) } })
     api.settings.get.mockResolvedValue({ ...DEFAULT_SETTINGS, profileName: null, systemName: 'nikola' })
     render(<App api={api} />)
-    const card = await screen.findByRole('button', { name: /LV 11/ })
-    expect(card).toHaveTextContent('N')
-    fireEvent.click(card)
+    const avatar = await screen.findByRole('button', { name: 'Nalog' })
+    expect(avatar).toHaveTextContent('N')
+    fireEvent.click(avatar)
+    expect(screen.getByText('LV 11')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Profil' }))
     expect(await screen.findByRole('heading', { name: 'nikola' })).toBeInTheDocument()
     expect(api.stats.get.mock.calls.length).toBeGreaterThanOrEqual(2)
   })
@@ -233,14 +277,16 @@ describe('App', () => {
     }
     await act(async () => {})
     expect(api.stats.get).toHaveBeenCalledTimes(before)
-    fireEvent.click(screen.getByRole('button', { name: 'Profil' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Nalog' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Profil' }))
     await waitFor(() => expect(api.stats.get).toHaveBeenCalledTimes(before + 1))
   })
   it('Esc leaves fullscreen, but not while a dialog is open', async () => {
     const api = makeFakeApi()
     api.window.getFullscreen.mockResolvedValue(true)
     render(<App api={api} />)
-    await screen.findByRole('button', { name: 'Izađi iz celog ekrana (Esc)' })
+    fireEvent.click(await screen.findByRole('button', { name: 'Nalog' }))
+    await screen.findByRole('menuitem', { name: 'Izađi iz celog ekrana (Esc)' })
     const dialog = document.createElement('div')
     dialog.setAttribute('role', 'dialog')
     document.body.appendChild(dialog)
@@ -254,7 +300,8 @@ describe('App', () => {
     const api = makeFakeApi()
     api.window.getFullscreen.mockResolvedValue(true)
     render(<App api={api} />)
-    await screen.findByRole('button', { name: 'Izađi iz celog ekrana (Esc)' })
+    fireEvent.click(await screen.findByRole('button', { name: 'Nalog' }))
+    await screen.findByRole('menuitem', { name: 'Izađi iz celog ekrana (Esc)' })
     // A dialog's own Esc handler runs first, closes itself (removed from the DOM) and marks the event as handled.
     const handled = (e) => { if (e.key === 'Escape') e.preventDefault() }
     document.body.addEventListener('keydown', handled)
@@ -270,15 +317,16 @@ describe('App', () => {
     const keydown = (spy) => spy.mock.calls.filter(([type]) => type === 'keydown').map(([, fn]) => fn)
     try {
       render(<App api={api} />)
-      await screen.findByRole('button', { name: 'Ceo ekran (F11)' })
+      fireEvent.click(await screen.findByRole('button', { name: 'Nalog' }))
+      await screen.findByRole('menuitem', { name: 'Ceo ekran (F11)' })
       // Only the listeners that exist before the toggles matter; listeners other components add later (under load) must not fail this test.
       const registered = keydown(add)
       expect(registered.length).toBeGreaterThan(0)
       remove.mockClear()
       act(() => onFs(true))
-      await screen.findByRole('button', { name: 'Izađi iz celog ekrana (Esc)' })
+      await screen.findByRole('menuitem', { name: 'Izađi iz celog ekrana (Esc)' })
       act(() => onFs(false))
-      await screen.findByRole('button', { name: 'Ceo ekran (F11)' })
+      await screen.findByRole('menuitem', { name: 'Ceo ekran (F11)' })
       const removed = keydown(remove)
       expect(registered.filter((fn) => removed.includes(fn))).toEqual([])
       act(() => onFs(true))
@@ -330,7 +378,7 @@ describe('App', () => {
     await waitFor(() => expect(api.watch.start).toHaveBeenCalledWith({ query: 'Rec Romaji' }))
     expect(document.getElementById('search-input').value).toBe('Rec Romaji')
   })
-  it('shows the external mpv bar first in main.content and refocuses main when it disappears', async () => {
+  it('shows the external mpv bar first in .content__notices (first in main.content) and refocuses main when it disappears', async () => {
     let push
     const upd = { status: 'ready', currentVersion: '0.3.0', version: '0.3.1', percent: null, notes: null, lastCheckedAt: null, error: null }
     const api = makeFakeApi({
@@ -341,7 +389,8 @@ describe('App', () => {
     const region = await screen.findByRole('region', { name: 'Spoljni plejer' })
     await screen.findByText('Verzija 0.3.1 je spremna')
     const main = container.querySelector('main.content')
-    expect(main.firstElementChild).toBe(region)
+    expect(main.firstElementChild).toHaveClass('content__notices')
+    expect(main.firstElementChild.firstElementChild).toBe(region)
     expect(region.nextElementSibling).toHaveClass('update-banner')
     screen.getByRole('button', { name: 'Zaustavi' }).focus()
     await act(async () => {})

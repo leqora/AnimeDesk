@@ -6,6 +6,7 @@ import { Semaphore } from '../../../src/renderer/components/Semaphore.jsx'
 import { ReadyNotice } from '../../../src/renderer/components/ReadyNotice.jsx'
 import { ConfirmButton } from '../../../src/renderer/components/ConfirmButton.jsx'
 import { AskDialog } from '../../../src/renderer/components/AskDialog.jsx'
+import { Rail } from '../../../src/renderer/components/Rail.jsx'
 import { Poster } from '../../../src/renderer/components/Poster.jsx'
 
 describe('Semaphore', () => {
@@ -13,12 +14,12 @@ describe('Semaphore', () => {
     renderUi(<Semaphore health={{ light: 'red', reason: 'source-down' }} onClick={() => {}} />)
     const btn = screen.getByRole('button')
     expect(btn).toHaveAttribute('data-light', 'red')
-    expect(btn).toHaveTextContent('Izvor trenutno ne radi — čeka se popravka od ani-cli tima')
+    expect(btn).toHaveAttribute('aria-label', 'Izvor trenutno ne radi — čeka se popravka od ani-cli tima')
   })
   it('shows green in English', () => {
     renderUi(<Semaphore health={{ light: 'green', reason: 'ok' }} onClick={() => {}} />, { lang: 'en' })
     expect(screen.getByRole('button')).toHaveAttribute('data-light', 'green')
-    expect(screen.getByRole('button')).toHaveTextContent('All systems go')
+    expect(screen.getByRole('button', { name: 'All systems go' })).toBeInTheDocument()
   })
   it('is clickable', () => {
     const onClick = vi.fn()
@@ -101,5 +102,20 @@ describe('Poster', () => {
     await waitFor(() => expect(api.anilist.forTitle).toHaveBeenCalled())
     expect(container.querySelector('.poster-frame')).toBeNull()
     expect(container.firstChild).toHaveClass('poster', 'poster--empty')
+  })
+})
+
+describe('Rail', () => {
+  it('keeps a focused card fully in view', () => {
+    const { container } = renderUi(<Rail title="R" count={1}><button type="button">card</button></Rail>, { api: makeFakeApi() })
+    const btn = screen.getByRole('button', { name: 'card' })
+    btn.scrollIntoView = vi.fn()
+    fireEvent.focus(btn)
+    expect(btn.scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' })
+    expect(container.querySelector('.rail')).not.toHaveClass('rail--wide')
+  })
+  it('variant wide adds the rail--wide class', () => {
+    const { container } = renderUi(<Rail title="R" count={0} variant="wide" />, { api: makeFakeApi() })
+    expect(container.querySelector('.rail')).toHaveClass('rail--wide')
   })
 })

@@ -25,11 +25,10 @@ export function NotificationBell({ onOpenAnime, libraryIds, playerOpen = false }
   const sorted = [...items].sort((a, b) => new Date(b.at) - new Date(a.at))
   return (
     <>
-      <button type="button" className="nav-item bell" aria-label={label} onClick={() => setOpen(true)}>
+      <button type="button" className="topbar__icon bell" aria-label={label} onClick={() => setOpen(true)}>
         <span className="bell__icon"><Icon name="bell" size={20} />
           {unread > 0 && <span className="bell__badge hud" aria-hidden="true">{unread > 9 ? '9+' : unread}</span>}
         </span>
-        <span className="nav-item__label">{t('notifications.title')}</span>
       </button>
       {open && (
         <Modal label={t('notifications.title')} onClose={() => setOpen(false)}>

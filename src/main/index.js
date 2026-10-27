@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, Notification, powerMonitor, safeStorage } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, Notification, powerMonitor, safeStorage, protocol, net } from 'electron'
+import { pathToFileURL } from 'node:url'
 import path from 'node:path'
 import os from 'node:os'
 import { safeUnzip } from './safeUnzip.js'
@@ -25,6 +26,8 @@ import { createEpisodeMeta } from './episodeMeta.js'
 import { createEpisodeLists } from './episodeLists.js'
 import { createSeriesEpisodes } from './seriesEpisodes.js'
 import { createFillerInfo } from './fillerInfo.js'
+import { createBanners, BANNER_SCHEME } from './banners.js'
+import { createBannerLookup } from './bannerLookup.js'
 import { createAniSkip } from './aniskip.js'
 import { createSkipLookup, createTotalEpisodes } from './skipLookup.js'
 import { createWatchLog } from './watchLog.js'
@@ -55,6 +58,9 @@ import { createSchedule } from './schedule.js'
 import { createDiscover } from './discover.js'
 import { createTray } from './tray.js'
 import { shouldHideOnClose, startHidden, notificationText, shouldNotifyDownload, trayLabels } from './background.js'
+
+// Must run before app ready.
+protocol.registerSchemesAsPrivileged([{ scheme: BANNER_SCHEME, privileges: { standard: true, secure: true } }])
 
 const REPO_URL = 'https://github.com/leqora/AnimeDesk'
 const SIX_HOURS = 6 * 60 * 60 * 1000
@@ -135,6 +141,11 @@ async function main() {
   const episodeMeta = createEpisodeMeta({ cacheDir: paths.anizipCache })
   const episodeLists = createEpisodeLists(paths.episodeLists)
   const fillerInfo = createFillerInfo({ cacheDir: paths.jikanCache })
+  const banners = createBanners({ dir: paths.banners })
+  protocol.handle(BANNER_SCHEME, (req) => {
+    const f = banners.resolve(req.url)
+    return f ? net.fetch(pathToFileURL(f.path).toString()) : new Response(null, { status: 404 })
+  })
   const seriesEpisodes = createSeriesEpisodes({ library, seriesPrefs, settings, anilist, episodeMeta, episodeLists, fillerInfo, onMarksChanged: () => send(EVENTS.episodesChanged) })
   const aniskip = createAniSkip({ cacheDir: path.join(paths.base, 'cache', 'aniskip') })
   const skipLookup = createSkipLookup({ anilist, aniskip, findAniListId: (title) => library.findByAniCliTitle(title)?.aniListId })
@@ -270,7 +281,7 @@ async function main() {
   const settingsEffects = createSettingsEffects({ updater, toolManager, send, onSettingsChanged })
   const dataBackup = createDataBackup({
     paths, library, watchLog, seriesPrefs, positions, settings, tracker, progress, appVersion: app.getVersion(),
-    cacheDirs: [paths.cache, paths.anizipCache, path.join(paths.base, 'cache', 'aniskip'), paths.jikanCache],
+    cacheDirs: [paths.cache, paths.anizipCache, path.join(paths.base, 'cache', 'aniskip'), paths.jikanCache, paths.banners],
     isCorrupt: () => library.wasCorrupt || watchLog.wasCorrupt,
     onImported: (keys) => {
       const now = settings.get()
@@ -279,12 +290,13 @@ async function main() {
     },
   })
 
+  const bannerLookup = createBannerLookup({ library, anilist, discover, recommendations, banners })
   registerIpc(ipcMain, createHandlers({
-    paths, dataBackup, settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, autoDownloader, updater, whatsNew, notifications: notificationsStore, aniListAuth, aniListSync, sequels, recommendations, schedule, discover,
+    paths, dataBackup, settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, autoDownloader, updater, whatsNew, notifications: notificationsStore, aniListAuth, aniListSync, sequels, recommendations, schedule, discover, bannerLookup,
     send: sendAndWatch,
     onLibraryChanged: () => { airingWatcher.check(); autoDownloader.check(); aniListSync.check(); sequels.check(); recommendations.check() },
     onSettingsChanged,
-    onCacheCleared: () => { fillerInfo.forget(); schedule.forget(); discover.forget(); airingWatcher.refresh().catch(() => {}).finally(() => { autoDownloader.check(); sequels.check(); recommendations.check() }) },
+    onCacheCleared: () => { fillerInfo.forget(); banners.forget(); schedule.forget(); discover.forget(); airingWatcher.refresh().catch(() => {}).finally(() => { autoDownloader.check(); sequels.check(); recommendations.check() }) },
     window: { get: () => fullscreen?.get() ?? false, set: (v) => fullscreen?.set(v) },
     electron: {
       pickFolder: async () => {
