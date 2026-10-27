@@ -334,6 +334,7 @@ export default function App({ api, sound: injectedSound }) {
       setPlayerIdle(false)
       setPlayerOpening(true)
       afterPlayerClose.current = null
+      setCloseRequest(null)
       setPlayer(p)
     }
     const offs = [
@@ -480,6 +481,7 @@ export default function App({ api, sound: injectedSound }) {
               initialRate={playerRate} onIdleChange={setPlayerIdle} holdControls={barActive} closeRequest={closeRequest} onRate={(rate) => { if (lastRate.current) lastRate.current.rate = rate }}
               onClose={(reason) => {
                 setPlayer(null)
+                setCloseRequest(null)
                 const afterClose = afterPlayerClose.current
                 afterPlayerClose.current = null
                 if (reason === 'nav') afterClose?.() // top bar action; it goes to the chosen page, never back to an origin

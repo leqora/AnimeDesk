@@ -102,8 +102,10 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
     latest.current.onClose(reason)
   }
   // the app asks to leave (a top bar action during playback): same path as "Back", with its own reason
+  // only a request made after this playback mounted counts (the prop outlives remounts)
   const requestSeq = closeRequest?.seq
-  useEffect(() => { if (requestSeq != null) close('nav') }, [requestSeq])
+  const mountSeq = useRef(requestSeq)
+  useEffect(() => { if (requestSeq != null && requestSeq !== mountSeq.current) close('nav') }, [requestSeq])
   // Main owns the recovery budget: it either closes this player and reconnects, or says the automatic try is used up.
   const fail = async () => {
     if (failing.current || closed.current) return

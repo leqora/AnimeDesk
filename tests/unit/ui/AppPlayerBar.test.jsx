@@ -22,19 +22,20 @@ const makePlaying = (video) => {
   fireEvent(video, new Event('play'))
 }
 
-async function start({ fullscreen = false } = {}) {
+async function start({ fullscreen = false, apiOver = {} } = {}) {
   let openPlayer
   let retry
   let fs
   const api = makeFakeApi({
     player: { onOpen: vi.fn((cb) => { openPlayer = cb; return () => {} }), onRetry: vi.fn((cb) => { retry = cb; return () => {} }) },
     window: { getFullscreen: vi.fn(async () => fullscreen), onFullscreen: vi.fn((cb) => { fs = cb; return () => {} }) },
+    ...apiOver,
   })
   render(<App api={api} />)
   await screen.findByLabelText('Naziv animea…')
   return {
     api,
-    open: async () => { act(() => openPlayer(episode)); await waitFor(() => expect(document.querySelector('video')).not.toBeNull()); await flush(); makePlaying(document.querySelector('video')) },
+    open: async (ep = episode) => { act(() => openPlayer(ep)); await waitFor(() => expect(document.querySelector('video')).not.toBeNull()); await flush(); makePlaying(document.querySelector('video')) },
     retry: (s) => act(() => retry(s)),
     setFullscreen: (v) => act(() => fs(v)),
   }
@@ -181,8 +182,7 @@ describe('App top bar over the player', () => {
       const { api, open } = await start()
       await open()
       fireEvent.click(screen.getByRole('button', { name: 'Nalog' }))
-      const items = screen.getAllByRole('menuitem')
-      fireEvent.click(items[items.length - 1])
+      fireEvent.click(screen.getByRole('menuitem', { name: /ekran/i }))
       expect(api.window.setFullscreen).toHaveBeenCalledWith(true)
       expect(api.player.closed).not.toHaveBeenCalled()
       expect(document.querySelector('.player')).toBeInTheDocument()
@@ -197,10 +197,35 @@ describe('App top bar over the player', () => {
       expect(await screen.findByRole('dialog')).toBeInTheDocument()
     })
 
+    it('a later playback is not closed by an earlier top bar request', async () => {
+      const { api, open } = await start()
+      await open()
+      fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
+      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+      await open({ ...episode, playbackId: 'p2' })
+      await flush()
+      expect(document.querySelector('.player')).toBeInTheDocument()
+      expect(api.player.closed).toHaveBeenCalledTimes(1)
+    })
+
+    it('bell item opening a series during playback closes the player first', async () => {
+      const { api, open } = await start({ apiOver: {
+        library: { list: vi.fn(async () => [{ id: 'a1', title: 'Show' }]) },
+        notifications: { list: vi.fn(async () => ({ items: [{ id: 'n1', animeId: 'a1', title: 'Show', episode: '4', at: new Date().toISOString(), read: false }], unread: 1 })) },
+      } })
+      await open()
+      fireEvent.click(screen.getByRole('button', { name: /Obaveštenja/ }))
+      fireEvent.click(await screen.findByRole('button', { name: /Show — EP 4/ }))
+      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+      expect(api.player.closed).toHaveBeenCalledTimes(1)
+      expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'nav' }))
+      await waitFor(() => expect(document.querySelector('.topbar [aria-current="page"]')).toHaveAccessibleName('Watchlist'))
+    })
+
     it('semaphore during playback closes the player and opens the wizard', async () => {
       const { api, open } = await start()
       await open()
-      fireEvent.click(document.querySelector('.topbar .semaphore, .topbar [class*="semaphore"]'))
+      fireEvent.click(screen.getByRole('button', { name: /Sve radi|Provera|Potrebna instalacija|Izvor trenutno|Ažuriranje/ }))
       await waitFor(() => expect(document.querySelector('.player')).toBeNull())
       expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'nav' }))
       expect(await screen.findByRole('dialog')).toBeInTheDocument()
