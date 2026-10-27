@@ -210,7 +210,6 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .ep-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 12px; }
 .ep-toolbar .ep-view { margin-bottom: 0; }
 .ep-toolbar__count { color: var(--text-muted); font-size: 14px; }
-.ep-toolbar__break { flex-basis: 100%; }
 .detail .ep-groups { gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--glass-border); margin-bottom: 12px; }
 .detail .ep-groups .ep-group { position: relative; background: transparent; border: 0; border-radius: 0; padding: 8px 14px; color: var(--text-muted); font-size: 14px; }
 .detail .ep-groups .ep-group:hover:not(:disabled) { background: transparent; color: var(--text); }

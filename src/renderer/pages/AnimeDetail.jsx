@@ -223,14 +223,14 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
           </p>
         </div>
       )}
-      {series && (series.meta === 'unreliable' || series.meta === 'ok') && (
-      <div className="row spoiler-row ep-toolbar__break">
-        {series.meta === 'unreliable' && <span className="muted">{t('episodes.unreliable')}</span>}
-        {series.meta === 'ok' && <button type="button" onClick={() => update({ all: true })}>{t('episodes.revealAll')}</button>}
-        {series.meta === 'ok' && <button type="button" onClick={() => update({ reset: true })}>{t('episodes.hideAgain')}</button>}
-      </div>
-    )}
     </>
+  )
+  const spoilerRow = series && (series.meta === 'unreliable' || series.meta === 'ok') && (
+    <div className="row spoiler-row">
+      {series.meta === 'unreliable' && <span className="muted">{t('episodes.unreliable')}</span>}
+      {series.meta === 'ok' && <button type="button" onClick={() => update({ all: true })}>{t('episodes.revealAll')}</button>}
+      {series.meta === 'ok' && <button type="button" onClick={() => update({ reset: true })}>{t('episodes.hideAgain')}</button>}
+    </div>
   )
   const episodesPanel = (
     <div className="page">
@@ -252,6 +252,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
             prefs={changePrefs ? prefs : null}
             onPrefs={changePrefs}
             toolbar={episodeToolbar}
+            afterToolbar={spoilerRow}
           />
           {noteEp != null && (
             <div className="page">

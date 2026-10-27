@@ -6,7 +6,7 @@ import { GROUP_SIZE, episodeGroups, findEpisodeIndex, firstUnwatchedIndex } from
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 
-export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, hideMarked = false, onHideMarked = null, toolbar = null, children }) {
+export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, hideMarked = false, onHideMarked = null, toolbar = null, afterToolbar = null, children }) {
   const t = useT()
   const groups = episodeGroups(episodes)
   const [group, setGroup] = useState(() => Math.floor(firstUnwatchedIndex(episodes, watched) / GROUP_SIZE))
@@ -56,23 +56,23 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
     <button type="button" className="ep-legend__toggle" aria-pressed={hideMarked} onClick={() => onHideMarked(!hideMarked)}>{t('episodes.hideMarked')}</button>
   )
   const prefsSelects = prefs && onPrefs && (
-      <>
-        <label className="field field--inline">
-          <span>{t('episodes.quality')}</span>
-          <select aria-label={t('episodes.quality')} value={prefs.quality ?? ''} onChange={(e) => onPrefs({ quality: e.target.value || null })}>
-            <option value="">{t('episodes.default')}</option>
-            {QUALITIES.map((q) => <option key={q} value={q}>{q}</option>)}
-          </select>
-        </label>
-        <label className="field field--inline">
-          <span>{t('episodes.mode')}</span>
-          <select aria-label={t('episodes.mode')} value={prefs.mode ?? ''} onChange={(e) => onPrefs({ mode: e.target.value || null })}>
-            <option value="">{t('episodes.default')}</option>
-            <option value="sub">{t('settings.mode.sub')}</option>
-            <option value="dub">{t('settings.mode.dub')}</option>
-          </select>
-        </label>
-      </>
+    <>
+      <label className="field field--inline">
+        <span>{t('episodes.quality')}</span>
+        <select aria-label={t('episodes.quality')} value={prefs.quality ?? ''} onChange={(e) => onPrefs({ quality: e.target.value || null })}>
+          <option value="">{t('episodes.default')}</option>
+          {QUALITIES.map((q) => <option key={q} value={q}>{q}</option>)}
+        </select>
+      </label>
+      <label className="field field--inline">
+        <span>{t('episodes.mode')}</span>
+        <select aria-label={t('episodes.mode')} value={prefs.mode ?? ''} onChange={(e) => onPrefs({ mode: e.target.value || null })}>
+          <option value="">{t('episodes.default')}</option>
+          <option value="sub">{t('settings.mode.sub')}</option>
+          <option value="dub">{t('settings.mode.dub')}</option>
+        </select>
+      </label>
+    </>
   )
 
   return (
@@ -98,6 +98,7 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
           {prefsSelects}
         </div>
       )}
+      {toolbar != null && afterToolbar}
       {toolbar == null && viewSwitch}
       {showLegend && (
         <div className="ep-legend">

@@ -370,4 +370,15 @@ describe('AnimeDetail episode toolbar', () => {
     fireEvent.click(tab('Epizode'))
     expect(screen.getByRole('button', { name: '101–200' })).toHaveAttribute('aria-pressed', 'true')
   })
+  it('keeps selects and count in the toolbar row and the spoiler row after it', async () => {
+    const ok = { ...noMeta, meta: 'ok' }
+    mount(makeFakeApi({ episodes: { forSeries: vi.fn(async () => ok) } }), {}, entry({ totalEpisodes: 6 }))
+    const reveal = await screen.findByRole('button', { name: 'Prikaži sve epizode ove serije' })
+    const bar = document.querySelector('.ep-toolbar')
+    expect(bar).toContainElement(screen.getByLabelText('Kvalitet'))
+    expect(bar).toContainElement(screen.getByLabelText('Režim'))
+    expect(bar).toContainElement(screen.getByText('1 / 6 odgledano'))
+    expect(bar).not.toContainElement(reveal)
+    expect(bar.compareDocumentPosition(reveal) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
 })
