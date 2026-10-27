@@ -125,7 +125,7 @@ describe('TopBar', () => {
     const { rerender } = renderUi(<TopBar {...props()} />)
     fireEvent.click(screen.getByRole('button', { name: 'Nalog' }))
     expect(screen.getByRole('menu')).toBeInTheDocument()
-    rerender(<TopBar {...props({ playerOpen: true })} />)
+    rerender(<TopBar {...props({ closeMenus: true })} />)
     expect(screen.queryByRole('menu')).toBeNull()
   })
   describe('crossing the 1000 px breakpoint', () => {

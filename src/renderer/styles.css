@@ -18,6 +18,14 @@
   --on-accent: #FFFFFF;
   --scrim: rgba(5, 5, 12, 0.72);
   --topbar-h: 56px;
+  /* layers, bottom to top: bar over the page, player, bar over the player (only while visible), dialogs, toasts, level-up */
+  --z-topbar: 20;
+  --z-popup: 30;
+  --z-player: 40;
+  --z-topbar-player: 45;
+  --z-modal: 50;
+  --z-toast: 60;
+  --z-levelup: 70;
   --content-pad-x: 28px;
   --poster-tint: var(--accent);
   --radius: 14px;
@@ -94,9 +102,13 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 @keyframes page-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 /* top bar */
-.topbar { position: absolute; top: 0; left: 0; right: var(--scrollbar-w, 0px); height: var(--topbar-h); z-index: 20; display: flex; flex-wrap: nowrap; align-items: center; gap: 24px; padding: 0 var(--content-pad-x); white-space: nowrap; background: var(--panel-opaque); border-bottom: 1px solid var(--glass-border); }
+.topbar { position: absolute; top: 0; left: 0; right: var(--scrollbar-w, 0px); height: var(--topbar-h); z-index: var(--z-topbar); display: flex; flex-wrap: nowrap; align-items: center; gap: 24px; padding: 0 var(--content-pad-x); white-space: nowrap; background: var(--panel-opaque); border-bottom: 1px solid var(--glass-border); }
 /* see-through only over a page that has a banner (Home, series detail) while scrolled to the top and with no notice above it */
 .app-shell[data-at-top="true"]:has(.page-banner):not(:has(.content__notices > *)) .topbar { background: linear-gradient(var(--panel-solid), transparent) no-repeat; border-bottom-color: transparent; }
+/* while an episode plays the bar sits over the player, shown and hidden together with the player controls */
+.app-shell--playing .topbar { z-index: var(--z-topbar-player); background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 85%, transparent), transparent); border-bottom-color: transparent; transition: opacity 200ms var(--ease); }
+/* the bar is also `inert` (no Tab, no clicks, hidden from screen readers) while hidden */
+.topbar--hidden { opacity: 0; pointer-events: none; }
 .topbar__logo { flex: none; font-family: var(--font-display); font-size: 20px; letter-spacing: .06em; background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 /* wraps the nav / Menu pair so focus can be tracked across the breakpoint, without changing the layout */
 .topbar__navwrap { display: contents; }
@@ -124,7 +136,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .topbar__summary-title { font-size: 12px; color: var(--text-muted); }
 .topbar__version { font-size: 11px; letter-spacing: .04em; padding: 8px 10px 4px; border-top: 1px solid var(--glass-border); margin-top: 4px; }
 .menu-button { position: relative; display: flex; }
-.menu-button__popup { position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; min-width: 200px; padding: 6px; background: var(--panel-opaque); border: 1px solid var(--glass-border); border-radius: var(--radius); box-shadow: 0 12px 32px var(--scrim); }
+.menu-button__popup { position: absolute; top: calc(100% + 6px); left: 0; z-index: var(--z-popup); min-width: 200px; padding: 6px; background: var(--panel-opaque); border: 1px solid var(--glass-border); border-radius: var(--radius); box-shadow: 0 12px 32px var(--scrim); }
 .menu-button__list { display: flex; flex-direction: column; gap: 2px; }
 .topbar__account .menu-button__popup { left: auto; right: 0; }
 .menu-button__item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; text-align: left; background: transparent; border-color: transparent; border-radius: var(--radius-sm); }
@@ -453,7 +465,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .activity-cell--l3 { background: var(--accent); box-shadow: var(--glow); }
 
 /* modals, wizard, lists */
-.modal { position: fixed; inset: 0; background: var(--scrim); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 20; }
+.modal { position: fixed; inset: 0; background: var(--scrim); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: var(--z-modal); }
 .modal__box { background: color-mix(in srgb, var(--bg-elev) 92%, transparent); border: 1px solid var(--glass-border); padding: 22px; border-radius: var(--radius); min-width: 400px; max-width: 580px; display: flex; flex-direction: column; gap: 12px; }
 .data-import { display: flex; flex-direction: column; gap: 8px; }
 .data-import > h3, .data-import > p { margin: 0; }
@@ -467,17 +479,16 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .progress { width: 160px; height: 6px; background: var(--glass-strong); border-radius: 3px; overflow: hidden; }
 .progress > div { height: 100%; background: var(--accent-2); }
 .confirm { display: inline-flex; gap: 6px; align-items: center; }
-.group { display: flex; gap: 14px; }
+.group { display: flex; gap: 14px; padding: 14px 16px; background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--card-radius); }
 .group .poster { width: 84px; }
-.group__items { flex: 1; display: flex; flex-direction: column; gap: 6px; }
 
 /* level up + toast */
-.levelup { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: var(--scrim); cursor: pointer; animation: fade-in 200ms var(--ease); }
+.levelup { position: fixed; inset: 0; z-index: var(--z-levelup); display: grid; place-items: center; background: var(--scrim); cursor: pointer; animation: fade-in 200ms var(--ease); }
 .levelup__beam { position: absolute; left: 0; right: 0; top: 50%; height: 3px; background: linear-gradient(90deg, transparent, var(--accent-2), var(--accent), transparent); box-shadow: var(--glow-cyan); animation: beam 900ms var(--ease); }
 .levelup__text { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; animation: pop 400ms var(--ease); }
 .levelup__title { font-family: var(--font-display); font-size: 56px; letter-spacing: .08em; color: var(--accent-2); text-shadow: var(--glow-cyan); }
 .levelup .xp-bar { width: 320px; }
-.toast-stack { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 25; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+.toast-stack { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: var(--z-toast); display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
 .toast-stack > * { pointer-events: auto; }
 .toast__action { margin-left: 6px; padding: 4px 10px; border-radius: var(--radius-sm); background: transparent; border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); color: var(--accent-2); cursor: pointer; }
 .toast { display: flex; gap: 10px; align-items: center; padding: 12px 18px; border-radius: var(--radius); background: color-mix(in srgb, var(--bg-elev) 92%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); box-shadow: var(--glow); animation: fade-in 200ms var(--ease); }
@@ -548,7 +559,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 button[aria-pressed="true"] > svg { color: var(--accent-2); }
 
 /* player */
-.player { container-type: size; position: fixed; inset: 0; z-index: 15; background: var(--bg); display: flex; flex-direction: column; }
+.player { container-type: size; position: fixed; inset: 0; z-index: var(--z-player); background: var(--bg); display: flex; flex-direction: column; }
 .player:focus { outline: none; }
 .player__video { flex: 1; width: 100%; min-height: 0; background: var(--bg); }
 .player__top, .player__bar { position: absolute; left: 0; right: 0; padding: 14px 18px; display: flex; gap: 12px; align-items: center; background: linear-gradient(0deg, transparent, color-mix(in srgb, var(--bg) 85%, transparent)); transition: opacity 200ms var(--ease); }
@@ -556,6 +567,8 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 .player__bar { bottom: 0; flex-direction: column; align-items: stretch; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg) 90%, transparent)); }
 .player--idle .player__top, .player--idle .player__bar { opacity: 0; }
 .player--idle { cursor: none; }
+/* in a window the bar covers the top edge, so the title row starts below it */
+.player:not(.player--fullscreen) .player__top { top: var(--topbar-h); }
 .player__title { margin: 0; font-size: 18px; }
 /* Timeline layers, bottom to top: track, buffered, played, segments, then the slider (transparent track, thumb only). */
 .player__timeline { position: relative; height: 18px; }
@@ -592,7 +605,7 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 @keyframes spin { to { transform: rotate(360deg); } }
 .error-fallback { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; max-width: 560px; margin: 24px auto; padding: 24px; border-radius: var(--radius); }
 .error-fallback__detail { font-family: var(--font-hud); font-size: 12px; color: var(--text-muted); overflow-wrap: anywhere; }
-.error-fallback--overlay { position: fixed; inset: 0; z-index: 15; max-width: none; margin: 0; justify-content: center; align-items: center; text-align: center; background: var(--bg); }
+.error-fallback--overlay { position: fixed; inset: 0; z-index: var(--z-player); max-width: none; margin: 0; justify-content: center; align-items: center; text-align: center; background: var(--bg); }
 .boot-error { display: flex; flex-direction: column; gap: 14px; align-items: center; max-width: 520px; margin: 20vh auto 0; padding: 28px; border-radius: var(--radius); text-align: center; }
 .player__menu-anchor { position: relative; display: inline-flex; }
 .player__menu { position: absolute; right: 0; bottom: calc(100% + 10px); min-width: 260px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; border-radius: var(--radius); background: var(--panel-solid); border: 1px solid var(--glass-border); backdrop-filter: blur(var(--blur)); }
@@ -664,11 +677,10 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 .page__head { display: flex; flex-direction: column; gap: 4px; }
 .page__head h2 { font-family: var(--font-display); font-weight: 400; font-size: 28px; line-height: 1.15; letter-spacing: .02em; margin: 0; }
 .page__head .page__sub { margin: 0; color: var(--text-muted); }
-.settings-section, .profile-section, .profile-head, .group { padding: 16px var(--content-pad-x); background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--card-radius); }
+.settings-section, .profile-section, .profile-head { padding: 16px var(--content-pad-x); background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--card-radius); }
 .settings-section, .profile-section { display: flex; flex-direction: column; gap: 12px; }
 .settings-section > h3, .profile-section > h3 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 18px; letter-spacing: .02em; }
 .profile-head__meta h3 { margin: 0; font-size: 22px; }
-.group { padding: 14px 16px; }
 .group__items { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .page > h3 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 18px; letter-spacing: .02em; }
 .watchlist-toolbar { row-gap: 10px; }

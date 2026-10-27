@@ -16,6 +16,7 @@ export function usePlayerShortcuts(actions, { onHandled } = {}) {
       // Only text entry keeps its keys; a focused slider or select must not swallow the player shortcuts.
       if (e.ctrlKey || e.altKey || e.metaKey || e.target?.closest?.(TEXT_FIELD)) return
       if (e.target?.closest?.(MENU_SLIDER)) return
+      if (e.target?.closest?.('.topbar')) return // the top bar over the player: its buttons and menus keep their own keys
       if (document.querySelector('[aria-modal="true"]')) return // a dialog over the player (e.g. AskDialog) owns the keys
       const action = latest.current.actions[shortcutKey(e)]
       if (!action) return

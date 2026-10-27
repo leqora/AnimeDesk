@@ -206,6 +206,13 @@ export default function App({ api, sound: injectedSound }) {
     return () => clearTimeout(id)
   }, [])
   const [reconnecting, setReconnecting] = useState(null)
+  // the top bar shows over the player only together with the player controls (idle = controls hidden)
+  const [playerIdle, setPlayerIdle] = useState(false)
+  const [barActive, setBarActive] = useState(false)
+  // true for one commit when a player opens, so top bar menus that were open close
+  const [playerOpening, setPlayerOpening] = useState(false)
+  useEffect(() => { if (playerOpening) setPlayerOpening(false) }, [playerOpening])
+  useEffect(() => { if (!player) { setPlayerIdle(false); setBarActive(false) } }, [player])
   const [bootFailed, setBootFailed] = useState(false)
 
   // Alt+Left/Right and the mouse back/forward buttons walk the history; not while the player or a modal is up.
@@ -321,6 +328,8 @@ export default function App({ api, sound: injectedSound }) {
       setPlayerRate(rate)
       setReconnecting(null)
       setPaletteOpen(false) // unmount the palette Modal in the same commit, before the player takes focus
+      setPlayerIdle(false)
+      setPlayerOpening(true)
       setPlayer(p)
     }
     const offs = [
@@ -390,6 +399,7 @@ export default function App({ api, sound: injectedSound }) {
   const closeWhatsNew = () => { if (whatsNew?.mode === 'after') api.whatsNew.seen(); setWhatsNew(null) }
 
   const overlay = player != null || reconnecting != null
+  const barHidden = overlay && (reconnecting != null || fullscreen || (playerIdle && !barActive))
   const runPalette = (a) => {
     setPaletteOpen(false)
     if (a.type === 'anime') openAnime(a.id)
@@ -406,7 +416,7 @@ export default function App({ api, sound: injectedSound }) {
         <ToastProvider hold={Boolean(levelUp) && !motionOff}>
         <UndoShortcut disabled={overlay} />
         <PaletteShortcut open={paletteOpen} disabled={overlay} onToggle={setPaletteOpen} />
-        <div className="app-shell" ref={shellRef} data-at-top={atTop ? 'true' : 'false'} inert={overlay} aria-hidden={overlay ? 'true' : undefined}>
+        <div className={player ? 'app-shell app-shell--playing' : 'app-shell'} ref={shellRef} data-at-top={atTop ? 'true' : 'false'}>
           <TopBar
             page={page}
             onNavigate={(p, o) => { navigate(p); if (o?.focusMain) setFocusMain(true) }}
@@ -417,12 +427,14 @@ export default function App({ api, sound: injectedSound }) {
             version={updateState.currentVersion}
             onOpenAnime={openAnime}
             libraryIds={libraryIds}
-            playerOpen={Boolean(player)}
+            closeMenus={playerOpening || reconnecting != null || barHidden}
+            hidden={barHidden}
+            onActiveChange={setBarActive}
             fullscreen={fullscreen}
             onToggleFullscreen={() => api.window.setFullscreen(!fullscreen)}
             onOpenPalette={() => { if (!overlay) setPaletteOpen(true) }}
           />
-          <main className="content" ref={mainRef} tabIndex={-1} onScroll={(e) => setAtTop(e.currentTarget.scrollTop === 0)}>
+          <main className="content" ref={mainRef} tabIndex={-1} inert={overlay} aria-hidden={overlay ? 'true' : undefined} onScroll={(e) => setAtTop(e.currentTarget.scrollTop === 0)}>
             <div className="content__notices">
               <ExternalPlayerBar onGone={() => setFocusMain(true)} />
               <UpdateBanner state={updateState} onWhatsNew={openWhatsNew} />
@@ -434,7 +446,7 @@ export default function App({ api, sound: injectedSound }) {
                 {page === 'home' && (
                   <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onSearch={searchAnime} />
                 )}
-                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} onSearch={searchAnime} playerOpen={Boolean(player)} />}
+                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} onSearch={searchAnime} playerOpen={overlay} />}
                 {page === 'discover' && <DiscoverPage ready={ready} onOpenAnime={openAnime} onSearch={searchAnime} />}
                 {page === 'schedule' && <SchedulePage ready={ready} onOpenAnime={openAnime} onSearch={searchAnime} />}
                 {page === 'downloads' && <DownloadsPage />}
@@ -456,7 +468,7 @@ export default function App({ api, sound: injectedSound }) {
             <PlayerView
               key={player.playbackId} // PlayerView's per-playback refs/state rely on a remount per playback
               open={player} settings={settings} fullscreen={fullscreen} onSettings={updateSettings}
-              initialRate={playerRate} onRate={(rate) => { if (lastRate.current) lastRate.current.rate = rate }}
+              initialRate={playerRate} onIdleChange={setPlayerIdle} holdControls={barActive} onRate={(rate) => { if (lastRate.current) lastRate.current.rate = rate }}
               onClose={(reason) => {
                 setPlayer(null)
                 if ((reason === 'next' || reason === 'prev') && player.episode != null) {

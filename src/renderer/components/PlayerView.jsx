@@ -28,7 +28,7 @@ const CLICK_DELAY_MS = 220
 const ENDING_FALLBACK_S = 30
 
 const headStatus = (url) => fetch(url, { method: 'HEAD' }).then((r) => r.status)
-export function PlayerView({ open, settings, fullscreen, onSettings, onClose, initialRate = 1, onRate, HlsImpl = Hls, probeSub = headStatus }) {
+export function PlayerView({ open, settings, fullscreen, onSettings, onClose, initialRate = 1, onRate, onIdleChange, holdControls = false, HlsImpl = Hls, probeSub = headStatus }) {
   const api = useApi()
   const t = useT()
   const root = useRef(null)
@@ -69,7 +69,10 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   }
   const subs = usePlayerSubtitles({ video, trackEl, open, mode, settings, onSettings, probeSub, flash: flash.show })
   const rate = usePlaybackRate({ video, flash: flash.show, language: settings.language, initial: initialRate, onChange: onRate })
-  const { idle, poke, show: showControls } = useIdle({ video, hold: menuOpen })
+  const { idle, poke, show: showControls } = useIdle({ video, hold: menuOpen || holdControls })
+  // the top bar follows the controls: App shows it only while they are visible
+  const idleChange = useLatest(onIdleChange)
+  useEffect(() => { idleChange.current?.(idle) }, [idle])
   const ending = useEpisodeEnd({ autoNext: settings.autoNext, lastEpisode, onNext: () => close('next') })
   const { end } = ending
   const health = usePlayerHealth({ video, active: resume == null && !end && !failed, onStall: () => fail() })
@@ -190,7 +193,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   const startAt = (sec) => { video.current.currentTime = sec; setResume(null); play() }
 
   return (
-    <div ref={root} tabIndex={-1} className={`player${idle ? ' player--idle' : ''}`} onMouseMove={poke} onFocus={poke}>
+    <div ref={root} tabIndex={-1} className={`player${idle ? ' player--idle' : ''}${fullscreen ? ' player--fullscreen' : ''}`} onMouseMove={poke} onFocus={poke}>
       <video
         ref={video} className="player__video" crossOrigin="anonymous"
         onLoadedMetadata={onLoadedMetadata} onTimeUpdate={onTimeUpdate} onProgress={readBuffered}
