@@ -592,3 +592,20 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 .card.rec-card:has(.rec-card__static):hover { transform: none; box-shadow: none; }
 .rec-card:has(.rec-card__static):hover::after { opacity: 0; }
 .rec-card:has(.rec-card__static):hover .poster--in { transform: none; }
+
+/* v0.19 pages */
+.page__head { display: flex; flex-direction: column; gap: 4px; }
+.page__head h2 { font-family: var(--font-display); font-weight: 400; font-size: 28px; line-height: 1.15; letter-spacing: .02em; margin: 0; }
+.page__head .page__sub { margin: 0; color: var(--text-muted); }
+.settings-section, .profile-section, .profile-head, .group { padding: 16px var(--content-pad-x); background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--card-radius); }
+.settings-section, .profile-section { display: flex; flex-direction: column; gap: 12px; }
+.settings-section > h3, .profile-section > h3 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 18px; letter-spacing: .02em; }
+.profile-head__meta h3 { margin: 0; font-size: 22px; }
+.group { padding: 14px 16px; }
+.group__items { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.page > h3 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 18px; letter-spacing: .02em; }
+.watchlist-toolbar { row-gap: 10px; }
+.watchlist-toolbar > * { min-width: 0; }
+.watchlist-add { flex-wrap: wrap; }
+.watchlist-add input { width: 150px; max-width: 100%; }
+.chip-btn { backdrop-filter: blur(var(--blur)); }

@@ -122,3 +122,18 @@ describe('DownloadsPage waiting items', () => {
     expect(screen.queryByText('Auto')).toBeNull()
   })
 })
+
+describe('Downloads page header (v0.19.0)', () => {
+  it('has the header, subtitle and h3 section headings', async () => {
+    const api = makeFakeApi({
+      downloads: { queue: vi.fn(async () => [{ id: 'q1', title: 'Show', episode: '3', status: 'downloading', percent: 42 }]) },
+    })
+    const { container } = renderUi(<DownloadsPage />, { api })
+    await screen.findByText('Preuzima 42%')
+    const head = container.querySelector('header.page__head')
+    expect(head.querySelector('h2').textContent).toBe('Preuzeto')
+    expect(head).toHaveTextContent('Red preuzimanja i preuzete epizode')
+    expect(screen.getByRole('heading', { level: 3, name: 'Red preuzimanja' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: 'Preuzeto' })).toBeInTheDocument()
+  })
+})

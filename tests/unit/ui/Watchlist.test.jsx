@@ -468,3 +468,19 @@ describe('WatchlistPage info cache', () => {
     expect(api.library.update).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('Watchlist page header (v0.19.0)', () => {
+  it('has the page header with a subtitle on the list', async () => {
+    const { container } = renderUi(<WatchlistPage ready onContinue={() => {}} />)
+    await waitFor(() => screen.getByText('Watchlist je prazna.'))
+    const head = container.querySelector('header.page__head')
+    expect(within(head).getByRole('heading', { level: 2, name: 'Watchlist' })).toBeInTheDocument()
+    expect(within(head).getByText('Sve serije koje pratiš')).toBeInTheDocument()
+  })
+  it('has no page header while a series detail is open', async () => {
+    const api = makeFakeApi({ library: { list: vi.fn(async () => [entry({ id: 'a', title: 'Show' })]) } })
+    const { container } = renderUi(<WatchlistPage ready onContinue={() => {}} animeId="a" />, { api })
+    await screen.findByRole('heading', { name: 'Show' })
+    expect(container.querySelector('.page__head')).toBeNull()
+  })
+})

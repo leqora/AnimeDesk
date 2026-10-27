@@ -62,238 +62,263 @@ export function SettingsPage({ settings, onSettings, onImported = () => {}, focu
 
   return (
     <section className="page">
-      <h2>{t('settings.title')}</h2>
-      <label className="field">
-        <span>{t('settings.language')}</span>
-        <select aria-label={t('settings.language')} value={settings.language} onChange={(e) => onSettings({ language: e.target.value })}>
-          <option value="sr">{t('lang.sr')}</option>
-          <option value="en">{t('lang.en')}</option>
-        </select>
-      </label>
-      <label className="check">
-        <input type="checkbox" checked={settings.autoTrack} onChange={(e) => onSettings({ autoTrack: e.target.checked })} />
-        {t('settings.autoTrack')}
-      </label>
-      <label className="field">
-        <span>{t('settings.threshold')}</span>
-        <input
-          type="number" min="50" max="100" aria-label={t('settings.threshold')} value={threshold}
-          disabled={!settings.autoTrack || settings.askOnClose}
-          onChange={(e) => { setThreshold(e.target.value); const n = Number(e.target.value); if (n >= 50 && n <= 100) onSettings({ watchedThreshold: n }) }}
-        />
-      </label>
-      <label className="check">
-        <input type="checkbox" checked={settings.askOnClose} disabled={!settings.autoTrack} onChange={(e) => onSettings({ askOnClose: e.target.checked })} />
-        {t('settings.askOnClose')}
-      </label>
-      <div className="field">
-        <span>{t('settings.downloadDir')}</span>
-        <div className="row">
-          <span>{settings.downloadDir ?? t('settings.downloadDirNone')}</span>
-          <button type="button" onClick={pickDir}>{t('settings.change')}</button>
-          {settings.downloadDir && <button type="button" onClick={() => onSettings({ downloadDir: null })}>{t('settings.clear')}</button>}
-        </div>
-      </div>
-      <label className="field">
-        <span>{t('settings.quality')}</span>
-        <select aria-label={t('settings.quality')} value={settings.quality} onChange={(e) => onSettings({ quality: e.target.value })}>
-          {QUALITIES.map((q) => <option key={q} value={q}>{q}</option>)}
-        </select>
-      </label>
-      <label className="field">
-        <span>{t('settings.mode')}</span>
-        <select aria-label={t('settings.mode')} value={settings.mode} onChange={(e) => onSettings({ mode: e.target.value })}>
-          <option value="sub">{t('settings.mode.sub')}</option>
-          <option value="dub">{t('settings.mode.dub')}</option>
-        </select>
-      </label>
-      <h3>{t('anilist.section')}</h3>
-      <AniListAccount onPick={setPicking} refreshKey={pickedCount} />
-      <AniListPicker
-        open={picking != null} initialQuery={picking?.title ?? ''} entryId={picking?.id}
-        onClose={() => setPicking(null)} onPicked={() => { setPicking(null); setPickedCount((n) => n + 1) }}
-      />
-      <h3>{t('settings.background.section')}</h3>
-      <label className="check">
-        <input type="checkbox" checked={settings.closeToTray} onChange={(e) => onSettings({ closeToTray: e.target.checked })} />
-        {t('settings.background.closeToTray')}
-      </label>
-      <div className="check-group">
-      <label className="check">
-        <input
-          type="checkbox" checked={settings.launchAtLogin} disabled={!settings.isPackaged}
-          aria-describedby={settings.isPackaged ? undefined : 'launch-at-login-hint'}
-          onChange={(e) => onSettings({ launchAtLogin: e.target.checked })}
-        />
-        {t('settings.background.launchAtLogin')}
-      </label>
-      {!settings.isPackaged && <p id="launch-at-login-hint" className="check-hint muted">{t('settings.background.launchAtLoginHint')}</p>}
-      </div>
-      <label className="check">
-        <input type="checkbox" checked={settings.notifyNewEpisodes} onChange={(e) => onSettings({ notifyNewEpisodes: e.target.checked })} />
-        {t('settings.background.notifyNewEpisodes')}
-      </label>
-      <label className="check">
-        <input type="checkbox" checked={settings.notifyDownloads} onChange={(e) => onSettings({ notifyDownloads: e.target.checked })} />
-        {t('settings.background.notifyDownloads')}
-      </label>
-      <h3>{t('settings.spoilersSection')}</h3>
-      <label className="check">
-        <input type="checkbox" checked={settings.hideSpoilers} onChange={(e) => onSettings({ hideSpoilers: e.target.checked })} />
-        {t('settings.hideSpoilers')}
-      </label>
-      <label className="check">
-        <input type="checkbox" checked={settings.episodeMarks} onChange={(e) => onSettings({ episodeMarks: e.target.checked })} />
-        {t('settings.episodeMarks')}
-      </label>
-      <h3>{t('settings.playerSection')}</h3>
-      <label className="field">
-        <span>{t('settings.playerMode')}</span>
-        <select aria-label={t('settings.playerMode')} value={settings.playerMode} onChange={(e) => onSettings({ playerMode: e.target.value })}>
-          <option value="internal">{t('settings.playerMode.internal')}</option>
-          <option value="external">{t('settings.playerMode.external')}</option>
-        </select>
-      </label>
-      <label className="field">
-        <span>{t('settings.volumeBoost')}</span>
-        <select aria-label={t('settings.volumeBoost')} value={settings.volumeBoost ?? 1} onChange={(e) => onSettings({ volumeBoost: Number(e.target.value) })}>
-          {BOOST_LEVELS.map((v) => <option key={v} value={v}>{v === 1 ? t('boost.off') : formatBoost(v, settings.language)}</option>)}
-        </select>
-      </label>
-      <p className="check-hint muted">{t('settings.volumeBoostHint')}</p>
-      <label className="check">
-        <input type="checkbox" checked={settings.autoSkip} onChange={(e) => onSettings({ autoSkip: e.target.checked })} />
-        {t('settings.autoSkip')}
-      </label>
-      <label className="check">
-        <input type="checkbox" checked={settings.autoNext} onChange={(e) => onSettings({ autoNext: e.target.checked })} />
-        {t('settings.autoNext')}
-      </label>
-      <label className="check">
-        <input type="checkbox" checked={settings.mpvModernUi} onChange={(e) => onSettings({ mpvModernUi: e.target.checked })} />
-        {t('settings.mpvModernUi')}
-      </label>
-      <label className="check">
-        <input type="checkbox" checked={settings.autoUpdateTools} onChange={(e) => onSettings({ autoUpdateTools: e.target.checked })} />
-        {t('settings.autoUpdate')}
-      </label>
-      <h3>{t('settings.subsSection')}</h3>
-      <div className="subs-preview" aria-hidden="true">
-        <SubtitleOverlay subtitles={subs} cues={[{ id: 'preview', text: t('settings.subs.preview'), top: false }]} />
-      </div>
-      <label className="check">
-        <input type="checkbox" checked={subs.enabled.sub} onChange={(e) => setSub({ enabled: { sub: e.target.checked } })} />
-        {t('settings.subs.enabledSub')}
-      </label>
-      <label className="check">
-        <input type="checkbox" checked={subs.enabled.dub} onChange={(e) => setSub({ enabled: { dub: e.target.checked } })} />
-        {t('settings.subs.enabledDub')}
-      </label>
-      {[['size', 'settings.subs.size'], ['lineSpacing', 'settings.subs.lineSpacing']].map(([field, key]) => (
-        <label key={field} className="field">
-          <span>{t(key)}</span>
+      <header className="page__head">
+        <h2 className="hud">{t('settings.title')}</h2>
+        <p className="page__sub muted">{t('settings.subtitle')}</p>
+      </header>
+      <div className="settings-section">
+        <label className="field">
+          <span>{t('settings.language')}</span>
+          <select aria-label={t('settings.language')} value={settings.language} onChange={(e) => onSettings({ language: e.target.value })}>
+            <option value="sr">{t('lang.sr')}</option>
+            <option value="en">{t('lang.en')}</option>
+          </select>
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={settings.autoTrack} onChange={(e) => onSettings({ autoTrack: e.target.checked })} />
+          {t('settings.autoTrack')}
+        </label>
+        <label className="field">
+          <span>{t('settings.threshold')}</span>
+          <input
+            type="number" min="50" max="100" aria-label={t('settings.threshold')} value={threshold}
+            disabled={!settings.autoTrack || settings.askOnClose}
+            onChange={(e) => { setThreshold(e.target.value); const n = Number(e.target.value); if (n >= 50 && n <= 100) onSettings({ watchedThreshold: n }) }}
+          />
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={settings.askOnClose} disabled={!settings.autoTrack} onChange={(e) => onSettings({ askOnClose: e.target.checked })} />
+          {t('settings.askOnClose')}
+        </label>
+        <div className="field">
+          <span>{t('settings.downloadDir')}</span>
           <div className="row">
-            <input type="range" min="0" max="100" step="1" aria-label={t(key)} value={subs[field]} onChange={slide(field)} />
-            <span className="hud">{subs[field]} %</span>
+            <span>{settings.downloadDir ?? t('settings.downloadDirNone')}</span>
+            <button type="button" onClick={pickDir}>{t('settings.change')}</button>
+            {settings.downloadDir && <button type="button" onClick={() => onSettings({ downloadDir: null })}>{t('settings.clear')}</button>}
+          </div>
+        </div>
+        <label className="field">
+          <span>{t('settings.quality')}</span>
+          <select aria-label={t('settings.quality')} value={settings.quality} onChange={(e) => onSettings({ quality: e.target.value })}>
+            {QUALITIES.map((q) => <option key={q} value={q}>{q}</option>)}
+          </select>
+        </label>
+        <label className="field">
+          <span>{t('settings.mode')}</span>
+          <select aria-label={t('settings.mode')} value={settings.mode} onChange={(e) => onSettings({ mode: e.target.value })}>
+            <option value="sub">{t('settings.mode.sub')}</option>
+            <option value="dub">{t('settings.mode.dub')}</option>
+          </select>
+        </label>
+      </div>
+      <div className="settings-section">
+        <h3>{t('anilist.section')}</h3>
+        <AniListAccount onPick={setPicking} refreshKey={pickedCount} />
+        <AniListPicker
+          open={picking != null} initialQuery={picking?.title ?? ''} entryId={picking?.id}
+          onClose={() => setPicking(null)} onPicked={() => { setPicking(null); setPickedCount((n) => n + 1) }}
+        />
+      </div>
+      <div className="settings-section">
+        <h3>{t('settings.background.section')}</h3>
+        <label className="check">
+          <input type="checkbox" checked={settings.closeToTray} onChange={(e) => onSettings({ closeToTray: e.target.checked })} />
+          {t('settings.background.closeToTray')}
+        </label>
+        <div className="check-group">
+        <label className="check">
+          <input
+            type="checkbox" checked={settings.launchAtLogin} disabled={!settings.isPackaged}
+            aria-describedby={settings.isPackaged ? undefined : 'launch-at-login-hint'}
+            onChange={(e) => onSettings({ launchAtLogin: e.target.checked })}
+          />
+          {t('settings.background.launchAtLogin')}
+        </label>
+        {!settings.isPackaged && <p id="launch-at-login-hint" className="check-hint muted">{t('settings.background.launchAtLoginHint')}</p>}
+        </div>
+        <label className="check">
+          <input type="checkbox" checked={settings.notifyNewEpisodes} onChange={(e) => onSettings({ notifyNewEpisodes: e.target.checked })} />
+          {t('settings.background.notifyNewEpisodes')}
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={settings.notifyDownloads} onChange={(e) => onSettings({ notifyDownloads: e.target.checked })} />
+          {t('settings.background.notifyDownloads')}
+        </label>
+      </div>
+      <div className="settings-section">
+        <h3>{t('settings.spoilersSection')}</h3>
+        <label className="check">
+          <input type="checkbox" checked={settings.hideSpoilers} onChange={(e) => onSettings({ hideSpoilers: e.target.checked })} />
+          {t('settings.hideSpoilers')}
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={settings.episodeMarks} onChange={(e) => onSettings({ episodeMarks: e.target.checked })} />
+          {t('settings.episodeMarks')}
+        </label>
+      </div>
+      <div className="settings-section">
+        <h3>{t('settings.playerSection')}</h3>
+        <label className="field">
+          <span>{t('settings.playerMode')}</span>
+          <select aria-label={t('settings.playerMode')} value={settings.playerMode} onChange={(e) => onSettings({ playerMode: e.target.value })}>
+            <option value="internal">{t('settings.playerMode.internal')}</option>
+            <option value="external">{t('settings.playerMode.external')}</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>{t('settings.volumeBoost')}</span>
+          <select aria-label={t('settings.volumeBoost')} value={settings.volumeBoost ?? 1} onChange={(e) => onSettings({ volumeBoost: Number(e.target.value) })}>
+            {BOOST_LEVELS.map((v) => <option key={v} value={v}>{v === 1 ? t('boost.off') : formatBoost(v, settings.language)}</option>)}
+          </select>
+        </label>
+        <p className="check-hint muted">{t('settings.volumeBoostHint')}</p>
+        <label className="check">
+          <input type="checkbox" checked={settings.autoSkip} onChange={(e) => onSettings({ autoSkip: e.target.checked })} />
+          {t('settings.autoSkip')}
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={settings.autoNext} onChange={(e) => onSettings({ autoNext: e.target.checked })} />
+          {t('settings.autoNext')}
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={settings.mpvModernUi} onChange={(e) => onSettings({ mpvModernUi: e.target.checked })} />
+          {t('settings.mpvModernUi')}
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={settings.autoUpdateTools} onChange={(e) => onSettings({ autoUpdateTools: e.target.checked })} />
+          {t('settings.autoUpdate')}
+        </label>
+      </div>
+      <div className="settings-section">
+        <h3>{t('settings.subsSection')}</h3>
+        <div className="subs-preview" aria-hidden="true">
+          <SubtitleOverlay subtitles={subs} cues={[{ id: 'preview', text: t('settings.subs.preview'), top: false }]} />
+        </div>
+        <label className="check">
+          <input type="checkbox" checked={subs.enabled.sub} onChange={(e) => setSub({ enabled: { sub: e.target.checked } })} />
+          {t('settings.subs.enabledSub')}
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={subs.enabled.dub} onChange={(e) => setSub({ enabled: { dub: e.target.checked } })} />
+          {t('settings.subs.enabledDub')}
+        </label>
+        {[['size', 'settings.subs.size'], ['lineSpacing', 'settings.subs.lineSpacing']].map(([field, key]) => (
+          <label key={field} className="field">
+            <span>{t(key)}</span>
+            <div className="row">
+              <input type="range" min="0" max="100" step="1" aria-label={t(key)} value={subs[field]} onChange={slide(field)} />
+              <span className="hud">{subs[field]} %</span>
+            </div>
+          </label>
+        ))}
+        <label className="field">
+          <span>{t('settings.subs.font')}</span>
+          <select aria-label={t('settings.subs.font')} value={subs.font} onChange={(e) => setSub({ font: e.target.value })}>
+            {Object.keys(SUBTITLE_FONT_STACKS).map((f) => (
+              <option key={f} value={f} style={{ fontFamily: SUBTITLE_FONT_STACKS[f] }}>{f === 'default' ? t('settings.subs.font.default') : FONT_NAMES[f]}</option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>{t('settings.subs.color')}</span>
+          <select aria-label={t('settings.subs.color')} value={subs.color} onChange={(e) => setSub({ color: e.target.value })}>
+            {SUBTITLE_COLORS.map((c) => <option key={c} value={c}>{{ white: t('settings.subs.color.white'), yellow: t('settings.subs.color.yellow') }[c]}</option>)}
+          </select>
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={subs.box} onChange={(e) => setSub({ box: e.target.checked })} />
+          {t('settings.subs.box')}
+        </label>
+        <label className="field">
+          <span>{t('settings.subs.boxOpacity')}</span>
+          <div className="row">
+            <input type="range" min="0" max="100" step="1" aria-label={t('settings.subs.boxOpacity')} value={subs.boxOpacity} disabled={!subs.box} onChange={slide('boxOpacity')} />
+            <span className="hud">{subs.boxOpacity} %</span>
           </div>
         </label>
-      ))}
-      <label className="field">
-        <span>{t('settings.subs.font')}</span>
-        <select aria-label={t('settings.subs.font')} value={subs.font} onChange={(e) => setSub({ font: e.target.value })}>
-          {Object.keys(SUBTITLE_FONT_STACKS).map((f) => (
-            <option key={f} value={f} style={{ fontFamily: SUBTITLE_FONT_STACKS[f] }}>{f === 'default' ? t('settings.subs.font.default') : FONT_NAMES[f]}</option>
-          ))}
-        </select>
-      </label>
-      <label className="field">
-        <span>{t('settings.subs.color')}</span>
-        <select aria-label={t('settings.subs.color')} value={subs.color} onChange={(e) => setSub({ color: e.target.value })}>
-          {SUBTITLE_COLORS.map((c) => <option key={c} value={c}>{{ white: t('settings.subs.color.white'), yellow: t('settings.subs.color.yellow') }[c]}</option>)}
-        </select>
-      </label>
-      <label className="check">
-        <input type="checkbox" checked={subs.box} onChange={(e) => setSub({ box: e.target.checked })} />
-        {t('settings.subs.box')}
-      </label>
-      <label className="field">
-        <span>{t('settings.subs.boxOpacity')}</span>
-        <div className="row">
-          <input type="range" min="0" max="100" step="1" aria-label={t('settings.subs.boxOpacity')} value={subs.boxOpacity} disabled={!subs.box} onChange={slide('boxOpacity')} />
-          <span className="hud">{subs.boxOpacity} %</span>
-        </div>
-      </label>
-      <button type="button" onClick={() => { clearTimeout(slideTimer.current); pendingSlide.current = null; setSubs(DEFAULT_SUBTITLES); onSettings({ subtitles: DEFAULT_SUBTITLES }) }}>{t('settings.subs.reset')}</button>
-      <h3>{t('settings.profileSection')}</h3>
-      <label className="field">
-        <span>{t('settings.profileName')}</span>
-        <input
-          aria-label={t('settings.profileName')}
-          placeholder={settings.systemName ?? ''}
-          value={name}
-          maxLength={32}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={() => { const v = name.trim(); if (v !== (settings.profileName ?? '')) onSettings({ profileName: v || null }) }}
-        />
-      </label>
-      <label className="check">
-        <input type="checkbox" checked={settings.soundKey} onChange={(e) => onSettings({ soundKey: e.target.checked })} />
-        {t('settings.soundKey')}
-      </label>
-      <label className="check">
-        <input type="checkbox" checked={settings.soundUi} onChange={(e) => onSettings({ soundUi: e.target.checked })} />
-        {t('settings.soundUi')}
-      </label>
-      <div className="row">
+        <button type="button" onClick={() => { clearTimeout(slideTimer.current); pendingSlide.current = null; setSubs(DEFAULT_SUBTITLES); onSettings({ subtitles: DEFAULT_SUBTITLES }) }}>{t('settings.subs.reset')}</button>
+      </div>
+      <div className="settings-section">
+        <h3>{t('settings.profileSection')}</h3>
         <label className="field">
-          <span>{t('settings.soundVolume')}</span>
-          <input type="range" min="0" max="100" aria-label={t('settings.soundVolume')} value={settings.soundVolume} onChange={(e) => onSettings({ soundVolume: Number(e.target.value) })} />
+          <span>{t('settings.profileName')}</span>
+          <input
+            aria-label={t('settings.profileName')}
+            placeholder={settings.systemName ?? ''}
+            value={name}
+            maxLength={32}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => { const v = name.trim(); if (v !== (settings.profileName ?? '')) onSettings({ profileName: v || null }) }}
+          />
         </label>
-        <button type="button" onClick={onTestSound}><Icon name="volume" /> {t('settings.soundTest')}</button>
-      </div>
-      <label className="check">
-        <input type="checkbox" checked={settings.animations} onChange={(e) => onSettings({ animations: e.target.checked })} />
-        {t('settings.animations')}
-      </label>
-      <h3>{t('settings.updateSection')}</h3>
-      <label className="check">
-        <input type="checkbox" checked={settings.autoDownloadUpdates} onChange={(e) => onSettings({ autoDownloadUpdates: e.target.checked })} />
-        {t('settings.autoDownloadUpdates')}
-      </label>
-      {updateState.status === 'disabled' ? (
-        <p className="muted">{t('settings.updateDisabled')}</p>
-      ) : (
+        <label className="check">
+          <input type="checkbox" checked={settings.soundKey} onChange={(e) => onSettings({ soundKey: e.target.checked })} />
+          {t('settings.soundKey')}
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={settings.soundUi} onChange={(e) => onSettings({ soundUi: e.target.checked })} />
+          {t('settings.soundUi')}
+        </label>
         <div className="row">
-          <button type="button" disabled={['checking', 'downloading'].includes(updateState.status)} onClick={() => api.update.check()}>
-            {updateState.status === 'checking' ? t('settings.updateChecking') : t('settings.updateCheck')}
-          </button>
-          {updateState.status === 'none' && <span className="muted">{t('settings.updateNone')}</span>}
-          {['available', 'downloading', 'ready'].includes(updateState.status) && <span className="muted">{t('update.available', { version: updateState.version })}</span>}
-          {updateState.status === 'error' && <span className="muted">{t('settings.updateFailed')}</span>}
-          {updateState.lastCheckedAt && (
-            <span className="muted">{t('settings.updateLastChecked', { time: new Date(updateState.lastCheckedAt).toLocaleString(settings.language === 'en' ? 'en-US' : 'sr-RS') })}</span>
-          )}
+          <label className="field">
+            <span>{t('settings.soundVolume')}</span>
+            <input type="range" min="0" max="100" aria-label={t('settings.soundVolume')} value={settings.soundVolume} onChange={(e) => onSettings({ soundVolume: Number(e.target.value) })} />
+          </label>
+          <button type="button" onClick={onTestSound}><Icon name="volume" /> {t('settings.soundTest')}</button>
         </div>
-      )}
-      <DataSection onImported={onImported} focusImport={focusImport} />
-      <h3>{t('settings.tools')}</h3>
-      <ul className="tool-list">
-        {[...TOOL_IDS, ...OPTIONAL_TOOL_IDS].map((id) => (
-          <li key={id} className="tool-row">
-            <span className="tool-row__name">{t(`tool.${id}`)}</span>
-            <span className="tool-row__state">{tools[id]?.installed ? tools[id].version : t('tool.missing')}</span>
-          </li>
-        ))}
-      </ul>
-      <div className="row">
-        <button type="button" disabled={checking} onClick={checkUpdates}>{checking ? t('settings.checking') : t('settings.checkUpdates')}</button>
+        <label className="check">
+          <input type="checkbox" checked={settings.animations} onChange={(e) => onSettings({ animations: e.target.checked })} />
+          {t('settings.animations')}
+        </label>
       </div>
-      <h3>{t('settings.about')}</h3>
-      <p className="hud">AnimeDesk · <span>{t('settings.aboutVersion', { version: updateState.currentVersion })}</span></p>
-      <p>{t('settings.aboutAuthor')}</p>
-      <div className="row">
-        <button type="button" onClick={() => api.app.openRepo()}>{t('settings.aboutRepo')}</button>
-        <span className="muted">© 2026 Leqora</span>
+      <div className="settings-section">
+        <h3>{t('settings.updateSection')}</h3>
+        <label className="check">
+          <input type="checkbox" checked={settings.autoDownloadUpdates} onChange={(e) => onSettings({ autoDownloadUpdates: e.target.checked })} />
+          {t('settings.autoDownloadUpdates')}
+        </label>
+        {updateState.status === 'disabled' ? (
+          <p className="muted">{t('settings.updateDisabled')}</p>
+        ) : (
+          <div className="row">
+            <button type="button" disabled={['checking', 'downloading'].includes(updateState.status)} onClick={() => api.update.check()}>
+              {updateState.status === 'checking' ? t('settings.updateChecking') : t('settings.updateCheck')}
+            </button>
+            {updateState.status === 'none' && <span className="muted">{t('settings.updateNone')}</span>}
+            {['available', 'downloading', 'ready'].includes(updateState.status) && <span className="muted">{t('update.available', { version: updateState.version })}</span>}
+            {updateState.status === 'error' && <span className="muted">{t('settings.updateFailed')}</span>}
+            {updateState.lastCheckedAt && (
+              <span className="muted">{t('settings.updateLastChecked', { time: new Date(updateState.lastCheckedAt).toLocaleString(settings.language === 'en' ? 'en-US' : 'sr-RS') })}</span>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="settings-section">
+        <DataSection onImported={onImported} focusImport={focusImport} />
+      </div>
+      <div className="settings-section">
+        <h3>{t('settings.tools')}</h3>
+        <ul className="tool-list">
+          {[...TOOL_IDS, ...OPTIONAL_TOOL_IDS].map((id) => (
+            <li key={id} className="tool-row">
+              <span className="tool-row__name">{t(`tool.${id}`)}</span>
+              <span className="tool-row__state">{tools[id]?.installed ? tools[id].version : t('tool.missing')}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="row">
+          <button type="button" disabled={checking} onClick={checkUpdates}>{checking ? t('settings.checking') : t('settings.checkUpdates')}</button>
+        </div>
+      </div>
+      <div className="settings-section">
+        <h3>{t('settings.about')}</h3>
+        <p className="hud">AnimeDesk · <span>{t('settings.aboutVersion', { version: updateState.currentVersion })}</span></p>
+        <p>{t('settings.aboutAuthor')}</p>
+        <div className="row">
+          <button type="button" onClick={() => api.app.openRepo()}>{t('settings.aboutRepo')}</button>
+          <span className="muted">© 2026 Leqora</span>
+        </div>
       </div>
     </section>
   )

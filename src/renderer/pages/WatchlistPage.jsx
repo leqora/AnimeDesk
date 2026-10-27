@@ -102,6 +102,10 @@ export function WatchlistPage({ ready, onContinue, animeId = null, onOpen, onBac
 
   return (
     <section className="page">
+      <header className="page__head">
+        <h2 className="hud">{t('nav.watchlist')}</h2>
+        <p className="page__sub muted">{t('watchlist.subtitle')}</p>
+      </header>
       <div className="watchlist-toolbar">
         <input
           ref={searchRef}
