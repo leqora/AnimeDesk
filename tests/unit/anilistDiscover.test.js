@@ -34,7 +34,7 @@ describe('anilist.discover', () => {
   it('maps items', async () => {
     const { al } = mk(() => Response.json(data({
       upcoming: [
-        media(1, { genres: ['A', 'B', 'C', 'D', 'E'], startDate: { year: 2027, month: 1 } }),
+        media(1, { bannerImage: 'https://s4.anilist.co/b/1.jpg', genres: ['A', 'B', 'C', 'D', 'E'], startDate: { year: 2027, month: 1 } }),
         media(2, { startDate: { year: null, month: null }, title: { romaji: 'Only', english: null }, coverImage: null }),
         media(3, { title: { romaji: 'X Season 2', english: null }, relations: { edges: [{ relationType: 'PREQUEL', node: { id: 9, type: 'ANIME', format: 'TV', seasonYear: 2025 } }] } }),
       ],
@@ -43,9 +43,9 @@ describe('anilist.discover', () => {
     expect(r.season).toEqual([])
     expect(r.upcoming[0]).toEqual({
       id: 1, title: 'E1', romaji: 'R1', english: 'E1', format: 'TV', status: 'RELEASING', year: 2026, episodes: 12,
-      genres: ['A', 'B', 'C', 'D', 'E'], start: { year: 2027, month: 1 }, coverUrl: 'https://img/1.jpg', shown: true,
+      genres: ['A', 'B', 'C', 'D', 'E'], start: { year: 2027, month: 1 }, coverUrl: 'https://img/1.jpg', bannerUrl: 'https://s4.anilist.co/b/1.jpg', shown: true,
     })
-    expect(r.upcoming[1]).toMatchObject({ title: 'Only', english: null, start: null, coverUrl: null })
+    expect(r.upcoming[1]).toMatchObject({ title: 'Only', english: null, start: null, coverUrl: null, bannerUrl: null })
     expect(r.upcoming[2].shown).toBe(false)
   })
 

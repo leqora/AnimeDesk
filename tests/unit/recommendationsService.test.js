@@ -773,3 +773,19 @@ describe('createRecommendations', () => {
     expect(anilist.recommendations).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('recommendations bannerUrlOf', () => {
+  it('bannerUrlOf only for listed items', async () => {
+    setup()
+    entries = [entry('e1', 10)]
+    recs.set(10, [rec(100, 0, { bannerUrl: 'https://b/100.jpg' }), rec(101, 1, { bannerUrl: 5 }), rec(102, 2, { eligible: false, bannerUrl: 'https://b/102.jpg' })])
+    await svc.refresh()
+    const ids = svc.list().items.map((i) => i.id)
+    expect(ids).toContain(100)
+    expect(svc.bannerUrlOf(100)).toBe('https://b/100.jpg')
+    expect(svc.bannerUrlOf(101)).toBeNull() // non-string bannerUrl is cleaned to null
+    expect(svc.bannerUrlOf(102)).toBeNull() // cached but not in the list
+    expect(svc.bannerUrlOf(999)).toBeNull()
+    svc.stop()
+  })
+})

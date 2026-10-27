@@ -139,6 +139,16 @@ describe('ipc', () => {
   it('has a handler for every INVOKE channel and nothing else', () => {
     expect(Object.keys(createHandlers(services())).sort()).toEqual(Object.values(INVOKE).sort())
   })
+  it('anilist:for-title and anilist:search never send bannerUrl', async () => {
+    const s = services()
+    s.anilist.getForTitle.mockResolvedValue({ id: 5, title: 'A', bannerUrl: 'https://b/5.jpg', format: 'TV' })
+    s.anilist.search.mockResolvedValue([{ id: 1, bannerUrl: 'https://b/1.jpg', format: 'TV' }, { id: 2, bannerUrl: null }])
+    const h = createHandlers(s)
+    expect(await h[INVOKE.anilistForTitle]('A', 5)).toEqual({ id: 5, title: 'A', format: 'TV' })
+    expect(await h[INVOKE.anilistSearch]('A')).toEqual([{ id: 1, format: 'TV' }, { id: 2 }])
+    s.anilist.getForTitle.mockResolvedValue(null)
+    expect(await h[INVOKE.anilistForTitle]('B')).toBeNull()
+  })
   it('forwards arguments', async () => {
     const s = services()
     const h = createHandlers(s)

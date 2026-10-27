@@ -1216,3 +1216,74 @@ describe('poster timeout', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 })
+
+describe('banner url and format', () => {
+  const BANNER = 'https://s4.anilist.co/file/anilistcdn/media/anime/banner/1.jpg'
+  const fileOf = (id) => path.join(cacheDir, `${crypto.createHash('sha1').update(`id:${id}`).digest('hex')}.json`)
+  const readCache = (id) => JSON.parse(fs.readFileSync(fileOf(id), 'utf8'))
+  const apiCalls = (f) => f.mock.calls.filter(([url]) => !url.startsWith('https://img/'))
+  const seed = (id, over = {}, drop = []) => {
+    const rec = { id, malId: 900 + id, title: 'Attack on Titan', romaji: 'Shingeki no Kyojin', genres: ['Action'], year: 2020, episodes: 12, duration: null,
+      description: 'd', coverUrl: `https://img/${id}.jpg`, status: 'FINISHED', nextAiring: null, poster: 'data:keep', match: 'exact', matchVersion: SEARCH_VERSION, fetchedAt: 5, ...over }
+    for (const k of drop) delete rec[k]
+    fs.writeFileSync(fileOf(id), JSON.stringify(rec))
+  }
+  const titleKeyed = () => path.join(cacheDir, `${crypto.createHash('sha1').update('t:attackontitan').digest('hex')}.json`)
+
+  it('toInfo keeps format and bannerUrl', async () => {
+    fetchImpl = mkFetch([media(1, 'Shingeki no Kyojin', 'Attack on Titan', { format: 'TV', bannerImage: BANNER }), media(2, 'Frieren', 'Frieren')])
+    api = createAniList({ cacheDir, fetchImpl })
+    await api.getForTitle('x', { aniListId: 1 })
+    expect(readCache(1)).toMatchObject({ format: 'TV', bannerUrl: BANNER })
+    await api.getForTitle('x', { aniListId: 2 })
+    expect(readCache(2).bannerUrl).toBeNull()
+    expect(readCache(2).format).toBeNull()
+  })
+
+  it('bannerUrlFor returns a stored bannerUrl without a request', async () => {
+    seed(1, { bannerUrl: 'u' })
+    seed(2, { bannerUrl: null })
+    expect(await api.bannerUrlFor(null, { aniListId: 1 })).toEqual({ id: 1, bannerUrl: 'u' })
+    expect(await api.bannerUrlFor(null, { aniListId: 2 })).toEqual({ id: 2, bannerUrl: null })
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('bannerUrlFor fills an old entry once per run', async () => {
+    seed(1, {}, ['bannerUrl', 'format'])
+    fetchImpl = mkFetch([media(1, 'Shingeki no Kyojin', 'Attack on Titan', { format: 'MOVIE', bannerImage: BANNER })])
+    api = createAniList({ cacheDir, fetchImpl })
+    expect(await api.bannerUrlFor(null, { aniListId: 1 })).toEqual({ id: 1, bannerUrl: BANNER })
+    expect(apiCalls(fetchImpl)).toHaveLength(1)
+    expect(JSON.parse(apiCalls(fetchImpl)[0][1].body).variables).toMatchObject({ id: 1 })
+    expect(readCache(1)).toMatchObject({ bannerUrl: BANNER, format: 'MOVIE', poster: 'data:keep', fetchedAt: 5, genres: ['Action'], title: 'Attack on Titan' })
+    expect(await api.bannerUrlFor(null, { aniListId: 1 })).toEqual({ id: 1, bannerUrl: BANNER })
+    expect(apiCalls(fetchImpl)).toHaveLength(1)
+  })
+
+  it('bannerUrlFor finds the id through a title-keyed exact entry', async () => {
+    fs.writeFileSync(titleKeyed(), JSON.stringify({ id: 1, malId: 901, title: 'Attack on Titan', status: 'FINISHED', match: 'exact', matchVersion: SEARCH_VERSION, fetchedAt: 5, poster: null }))
+    fetchImpl = mkFetch([media(1, 'Shingeki no Kyojin', 'Attack on Titan', { format: 'TV', bannerImage: BANNER })])
+    api = createAniList({ cacheDir, fetchImpl })
+    expect(await api.bannerUrlFor('Attack on Titan', {})).toEqual({ id: 1, bannerUrl: BANNER })
+    expect(JSON.parse(fs.readFileSync(titleKeyed(), 'utf8'))).toMatchObject({ bannerUrl: BANNER, format: 'TV' })
+  })
+
+  it('a failed fill is not retried in the same run and leaves the file without the key', async () => {
+    seed(1, {}, ['bannerUrl'])
+    fetchImpl = vi.fn(async () => new Response('busy', { status: 500 }))
+    api = createAniList({ cacheDir, fetchImpl })
+    expect(await api.bannerUrlFor(null, { aniListId: 1 })).toEqual({ id: 1, bannerUrl: null })
+    expect(await api.bannerUrlFor(null, { aniListId: 1 })).toEqual({ id: 1, bannerUrl: null })
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+    expect('bannerUrl' in readCache(1)).toBe(false)
+  })
+
+  it('bannerUrlFor never uses a close match', async () => {
+    fs.writeFileSync(titleKeyed(), JSON.stringify({ id: 1, title: 'Attack on Titan', match: 'close', matchVersion: SEARCH_VERSION, fetchedAt: 5, bannerUrl: 'u' }))
+    expect(await api.bannerUrlFor('Attack on Titan', {})).toBeNull()
+    fs.writeFileSync(titleKeyed(), JSON.stringify({ notFound: true, at: Date.now(), searchVersion: SEARCH_VERSION }))
+    expect(await api.bannerUrlFor('Attack on Titan', {})).toBeNull()
+    expect(await api.bannerUrlFor('Nothing cached', {})).toBeNull()
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+})

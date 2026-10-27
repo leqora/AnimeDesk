@@ -1,4 +1,4 @@
-export const FIELDS = 'id idMal status title { romaji english native } synonyms coverImage { large } genres seasonYear episodes duration description(asHtml: false) nextAiringEpisode { episode airingAt }'
+export const FIELDS = 'id idMal status title { romaji english native } synonyms coverImage { large } genres seasonYear episodes duration format bannerImage description(asHtml: false) nextAiringEpisode { episode airingAt }'
 export const SEARCH = `query ($search: String) { Page(perPage: 10) { media(search: $search, type: ANIME) { ${FIELDS} } } }`
 export const AIRING_BATCH = 'query ($ids: [Int], $page: Int) { Page(page: $page, perPage: 50) { media(id_in: $ids, type: ANIME) { id status episodes nextAiringEpisode { episode airingAt } } } }'
 export const RELATIONS_BATCH = 'query ($ids: [Int], $page: Int) { Page(page: $page, perPage: 50) { media(id_in: $ids, type: ANIME) { id relations { edges { relationType node { id type format status seasonYear episodes title { romaji english } coverImage { large } } } } } } }'
@@ -18,7 +18,7 @@ export function searchBatchQuery(n) {
 }
 
 // Fields of a recommended series (spec point 7), shared by RECS_BATCH and TRENDING.
-export const REC_MEDIA_FIELDS = 'id isAdult format status seasonYear episodes genres title { romaji english } coverImage { large } relations { edges { relationType(version: 2) node { id type format seasonYear } } }'
+export const REC_MEDIA_FIELDS = 'id isAdult format status seasonYear episodes genres title { romaji english } coverImage { large } bannerImage relations { edges { relationType(version: 2) node { id type format seasonYear } } }'
 export const RECS_BATCH = `query ($ids: [Int]) { Page(perPage: 50) { media(id_in: $ids, type: ANIME) { id recommendations(perPage: 10, sort: RATING_DESC) { nodes { rating mediaRecommendation { ${REC_MEDIA_FIELDS} } } } } } }`
 export const TRENDING = `query { Page(perPage: 50) { media(type: ANIME, sort: TRENDING_DESC, isAdult: false) { ${REC_MEDIA_FIELDS} } } }`
 

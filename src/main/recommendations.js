@@ -23,7 +23,7 @@ function cleanItem(i) {
   return {
     id: i.id, title: str(i.title), romaji: str(i.romaji), english: str(i.english), format: str(i.format), status: str(i.status),
     year: num(i.year), episodes: num(i.episodes), genres: Array.isArray(i.genres) ? i.genres.filter((g) => typeof g === 'string').slice(0, 3) : [],
-    coverUrl: i.coverUrl, rank: i.rank, rating: num(i.rating), eligible: i.eligible,
+    coverUrl: i.coverUrl, bannerUrl: str(i.bannerUrl), rank: i.rank, rating: num(i.rating), eligible: i.eligible,
   }
 }
 const cleanItems = (arr) => (Array.isArray(arr) ? arr.map(cleanItem).filter(Boolean) : [])
@@ -134,6 +134,14 @@ export function createRecommendations({
       mode, hint,
       items: items.map((i) => card(i, posterOf(i), { fromTitle: i.fromTitle ?? null, fromId: i.fromId ?? null })),
     }
+  }
+
+  // Banner of an item that list() returns right now (personal or trending items); anything else is null.
+  function bannerUrlOf(id) {
+    load()
+    const entries = entriesNow()
+    if (entries === null) return null
+    return compute(entries).items.find((i) => i.id === id)?.bannerUrl ?? null
   }
 
   // What the rail renders, minus the data URLs (only whether a poster exists): any visible change must emit.
@@ -400,5 +408,5 @@ export function createRecommendations({
     return () => listeners.delete(cb)
   }
 
-  return { start, check, refresh, list, hide, unhide, forSeries, onChange, stop }
+  return { start, check, refresh, list, bannerUrlOf, hide, unhide, forSeries, onChange, stop }
 }
