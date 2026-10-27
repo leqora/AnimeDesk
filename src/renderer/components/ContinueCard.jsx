@@ -19,7 +19,7 @@ function useNextThumb(entry, episode) {
   useEffect(() => {
     let live = true
     Promise.resolve()
-      .then(() => api.episodes.thumb({ title, aniListId, episode }))
+      .then(() => api.episodes.thumb({ title, aniListId, episode, cachedOnly: true }))
       .then((value) => { if (live) setState({ key, value: typeof value === 'string' ? value : null }) })
       .catch(() => { if (live) setState({ key, value: null }) })
     return () => { live = false }

@@ -9,7 +9,7 @@ const NO_SPOILERS = { reveal: { all: false, episodes: [] }, metaOff: false }
 // The one place that decides what the renderer may know about a series' episodes: every episode goes through
 // redactEpisode here, so a hidden episode's title, picture or summary never leaves the main process.
 export function createSeriesEpisodes({ library, seriesPrefs, settings, anilist, episodeMeta, episodeLists, fillerInfo, onMarksChanged = () => {} }) {
-  async function resolve({ title = '', aniListId = null, mode = null, list = null } = {}) {
+  async function resolve({ title = '', aniListId = null, mode = null, list = null, cachedOnly = false } = {}) {
     const t = String(title ?? '').trim()
     const s = settings.get()
     const entry = t ? library.findByAniCliTitle(t) : null
@@ -41,13 +41,14 @@ export function createSeriesEpisodes({ library, seriesPrefs, settings, anilist, 
       const at = normalizeTitle(t)
       // With a known id only the cached AniList record is read (for the airing status): per-row thumbnail
       // requests must never queue network calls behind AniList's rate limit.
-      info = knownId
+      // cachedOnly (Home thumbnails): never a network lookup, not even a title search — only what is already cached.
+      info = knownId || cachedOnly
         ? (anilist.getCached(at, { aniListId: knownId }) ?? null)
         : await anilist.getForTitle(at, { aniListId: null }).catch(() => null)
       // A title-only lookup must be an exact match to drive episode data or filler marks; a fuzzy guess drives nothing.
       if (!knownId && info?.match !== 'exact') info = null
       id = knownId ?? info?.id ?? null
-      anizip = id ? await episodeMeta.get(id, { airing: AIRING.has(info?.status) }) : null
+      anizip = id ? await episodeMeta.get(id, { airing: AIRING.has(info?.status), ...(cachedOnly ? { cachedOnly } : {}) }) : null
       if (anizip && Object.keys(anizip.episodes ?? {}).length) meta = metaReliability(episodes, anizip)
     }
     return { episodes, source, meta, anizip, id, rule, info, metaOff: spoilers.metaOff }

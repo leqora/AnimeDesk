@@ -26,6 +26,19 @@ beforeEach(() => {
   meta = createEpisodeMeta({ cacheDir: dir, fetchImpl, now: () => clock })
 })
 
+describe('get cachedOnly', () => {
+  it('never requests ani.zip: returns the cache (even stale) or null', async () => {
+    expect(await meta.get(5, { cachedOnly: true })).toBeNull()
+    expect(fetchImpl).not.toHaveBeenCalled()
+    await meta.get(5)
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+    clock += TTL_MS + 1
+    const stale = await meta.get(5, { cachedOnly: true })
+    expect(Object.keys(stale.episodes)).toEqual(['1', '2'])
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('slimAniZip', () => {
   it('keeps only main episodes and the fields the app shows', () => {
     expect(slimAniZip(RAW)).toEqual({

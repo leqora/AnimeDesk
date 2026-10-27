@@ -111,8 +111,13 @@ export function createEpisodeMeta({ cacheDir, fetchImpl = fetch, now = Date.now 
     }
   }
 
-  function get(aniListId, { airing = false } = {}) {
+  // cachedOnly: never asks ani.zip, answers from the cache file (stale is fine) or null.
+  function get(aniListId, { airing = false, cachedOnly = false } = {}) {
     if (!validId(aniListId)) return Promise.resolve(null)
+    if (cachedOnly) {
+      const cached = readCache(aniListId)
+      return Promise.resolve(cached && !cached.missing ? cached : null)
+    }
     if (!inflight.has(aniListId)) {
       inflight.set(aniListId, load(aniListId, airing).finally(() => inflight.delete(aniListId)))
     }

@@ -123,6 +123,24 @@ describe('seriesEpisodes.forSeries', () => {
 })
 
 describe('seriesEpisodes.thumb', () => {
+  it('cachedOnly never asks AniList or ani.zip over the network', async () => {
+    const d = deps()
+    d.library.findByAniCliTitle = vi.fn(() => ({ id: 'a', title: 'Show', aniCliTitle: 'Show', aniListId: null, totalEpisodes: 6, watchedEpisodes: [1, 2, 3] }))
+    d.anilist.getCached.mockReturnValue({ id: 77, status: 'FINISHED', match: 'exact' })
+    const svc = createSeriesEpisodes(d)
+    expect(await svc.thumb({ title: 'Show', episode: '4', cachedOnly: true })).toBe('data:image/jpeg;base64,AAA')
+    expect(d.anilist.getForTitle).not.toHaveBeenCalled()
+    expect(d.episodeMeta.get).toHaveBeenCalledWith(77, expect.objectContaining({ cachedOnly: true }))
+    d.anilist.getCached.mockReturnValue(null)
+    d.episodeMeta.thumb.mockClear()
+    expect(await svc.thumb({ title: 'Show', episode: '4', cachedOnly: true })).toBeNull()
+    expect(d.anilist.getForTitle).not.toHaveBeenCalled()
+    expect(d.episodeMeta.thumb).not.toHaveBeenCalled()
+  })
+  it('cachedOnly keeps the spoiler rule', async () => {
+    const d = deps()
+    expect(await createSeriesEpisodes(d).thumb({ title: 'Show', episode: '5', cachedOnly: true })).toBeNull()
+  })
   it('loads thumbnails only for episodes that may be shown', async () => {
     const d = deps()
     const svc = createSeriesEpisodes(d)

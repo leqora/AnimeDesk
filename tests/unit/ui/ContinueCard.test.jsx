@@ -16,7 +16,7 @@ describe('ContinueCard', () => {
     const withThumb = apiWith({ episodes: { thumb: vi.fn(async () => THUMB) } })
     const a = renderUi(<ContinueCard entry={entry()} {...cb} />, { api: withThumb })
     await waitFor(() => expect(a.container.querySelector('.continue-card__img')).toHaveAttribute('src', THUMB))
-    expect(withThumb.episodes.thumb).toHaveBeenCalledWith({ title: 'Show CLI', aniListId: 7, episode: 5 })
+    expect(withThumb.episodes.thumb).toHaveBeenCalledWith({ title: 'Show CLI', aniListId: 7, episode: 5, cachedOnly: true })
     expect(withThumb.anilist.banner).not.toHaveBeenCalled()
     a.unmount()
 
