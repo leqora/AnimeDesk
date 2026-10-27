@@ -14,12 +14,12 @@ describe('Semaphore', () => {
     renderUi(<Semaphore health={{ light: 'red', reason: 'source-down' }} onClick={() => {}} />)
     const btn = screen.getByRole('button')
     expect(btn).toHaveAttribute('data-light', 'red')
-    expect(btn).toHaveTextContent('Izvor trenutno ne radi — čeka se popravka od ani-cli tima')
+    expect(btn).toHaveAttribute('aria-label', 'Izvor trenutno ne radi — čeka se popravka od ani-cli tima')
   })
   it('shows green in English', () => {
     renderUi(<Semaphore health={{ light: 'green', reason: 'ok' }} onClick={() => {}} />, { lang: 'en' })
     expect(screen.getByRole('button')).toHaveAttribute('data-light', 'green')
-    expect(screen.getByRole('button')).toHaveTextContent('All systems go')
+    expect(screen.getByRole('button', { name: 'All systems go' })).toBeInTheDocument()
   })
   it('is clickable', () => {
     const onClick = vi.fn()

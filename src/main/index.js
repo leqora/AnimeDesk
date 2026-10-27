@@ -292,7 +292,7 @@ async function main() {
 
   const bannerLookup = createBannerLookup({ library, anilist, discover, recommendations, banners })
   registerIpc(ipcMain, createHandlers({
-    paths, dataBackup, settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, autoDownloader, updater, whatsNew, notifications: notificationsStore, aniListAuth, aniListSync, sequels, recommendations, schedule, discover, banners, bannerLookup,
+    paths, dataBackup, settings, library, seriesPrefs, tracker, progress, anilist, seriesEpisodes, skipLookup, positions, toolManager, health, watch, internalPlayer, downloads, autoDownloader, updater, whatsNew, notifications: notificationsStore, aniListAuth, aniListSync, sequels, recommendations, schedule, discover, bannerLookup,
     send: sendAndWatch,
     onLibraryChanged: () => { airingWatcher.check(); autoDownloader.check(); aniListSync.check(); sequels.check(); recommendations.check() },
     onSettingsChanged,

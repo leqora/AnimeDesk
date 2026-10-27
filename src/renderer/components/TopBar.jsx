@@ -1,6 +1,6 @@
 import { useT } from '../i18n/I18nContext.jsx'
 import { Semaphore } from './Semaphore.jsx'
-import { initials } from './ProfileCard.jsx'
+import { initials } from '../initials.js'
 import { XpBar } from './XpBar.jsx'
 import { Icon } from './Icon.jsx'
 import { NotificationBell } from './NotificationBell.jsx'
@@ -41,9 +41,9 @@ export function TopBar({ page, onNavigate, health, onSemaphoreClick, profileName
           <span className="topbar__palette-label">{t('palette.open')}</span>
           <kbd aria-hidden="true">Ctrl K</kbd>
         </button>
-        <Semaphore health={health} onClick={onSemaphoreClick} variant="dot" />
+        <Semaphore health={health} onClick={onSemaphoreClick} />
         <NotificationBell onOpenAnime={onOpenAnime} libraryIds={libraryIds} playerOpen={playerOpen} />
-        <button type="button" className="topbar__icon" aria-label={t('topbar.settings')} aria-current={page === 'settings' ? 'page' : undefined} onClick={() => onNavigate('settings')}>
+        <button type="button" className="topbar__icon" aria-label={t('nav.settings')} aria-current={page === 'settings' ? 'page' : undefined} onClick={() => onNavigate('settings')}>
           <Icon name="settings" size={20} />
         </button>
         <MenuButton

@@ -1,7 +1,7 @@
 import { useT } from '../i18n/I18nContext.jsx'
 import { XpBar } from '../components/XpBar.jsx'
 import { Icon } from '../components/Icon.jsx'
-import { initials } from '../components/ProfileCard.jsx'
+import { initials } from '../initials.js'
 
 const activityLevel = (count) => (count === 0 ? 0 : count === 1 ? 1 : count <= 3 ? 2 : 3)
 
