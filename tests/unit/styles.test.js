@@ -62,11 +62,18 @@ ${sel} {`)
       for (const part of m[1].split(',')) expect(part.trim().split(/\s+/)[0], m[0]).toMatch(/^(transform|opacity|none)$/)
     }
   })
-  it('keeps the player below dialogs, the level-up overlay and toasts', () => {
-    const z = (sel) => Number(new RegExp(`(^|\\n)\\${sel} \\{[^}]*z-index: (\\d+)`).exec(css)?.[2])
-    const player = z('.player')
-    expect(Number.isFinite(player)).toBe(true)
-    for (const sel of ['.modal', '.levelup', '.toast-stack']) expect(player, sel).toBeLessThan(z(sel))
+  it('keeps the layers in order: page bar, player, bar over the player, dialogs, toasts, level-up', () => {
+    const token = (name) => Number(new RegExp(`--z-${name}: (\\d+);`).exec(css)?.[1])
+    const z = (sel) => {
+      const v = new RegExp(`(^|\\n)\\${sel} \\{[^}]*z-index: ([^;]+);`).exec(css)?.[2]
+      return v?.startsWith('var(--z-') ? token(v.slice(8, -1)) : Number(v)
+    }
+    const order = [z('.topbar'), z('.player'), token('topbar-player'), z('.modal'), z('.toast-stack'), z('.levelup')]
+    for (const n of order) expect(Number.isFinite(n)).toBe(true)
+    expect(order).toEqual([...order].sort((x, y) => x - y))
+    expect(new Set(order).size).toBe(order.length)
+    expect(z('.error-fallback--overlay')).toBe(z('.player'))
+    expect(css).toMatch(/\.app-shell--playing \.topbar \{[^}]*z-index: var\(--z-topbar-player\)/)
   })
   it('lets subtitles scale with the player', () => {
     expect(css).toMatch(/.player {[^}]*container-type: size/)

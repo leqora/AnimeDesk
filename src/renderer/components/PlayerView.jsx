@@ -28,7 +28,7 @@ const CLICK_DELAY_MS = 220
 const ENDING_FALLBACK_S = 30
 
 const headStatus = (url) => fetch(url, { method: 'HEAD' }).then((r) => r.status)
-export function PlayerView({ open, settings, fullscreen, onSettings, onClose, initialRate = 1, onRate, HlsImpl = Hls, probeSub = headStatus }) {
+export function PlayerView({ open, settings, fullscreen, onSettings, onClose, initialRate = 1, onRate, onIdleChange, holdControls = false, closeRequest = null, HlsImpl = Hls, probeSub = headStatus }) {
   const api = useApi()
   const t = useT()
   const root = useRef(null)
@@ -69,7 +69,10 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   }
   const subs = usePlayerSubtitles({ video, trackEl, open, mode, settings, onSettings, probeSub, flash: flash.show })
   const rate = usePlaybackRate({ video, flash: flash.show, language: settings.language, initial: initialRate, onChange: onRate })
-  const { idle, poke, show: showControls } = useIdle({ video, hold: menuOpen })
+  const { idle, poke, show: showControls } = useIdle({ video, hold: menuOpen || holdControls })
+  // the top bar follows the controls: App shows it only while they are visible
+  const idleChange = useLatest(onIdleChange)
+  useEffect(() => { idleChange.current?.(idle) }, [idle])
   const ending = useEpisodeEnd({ autoNext: settings.autoNext, lastEpisode, onNext: () => close('next') })
   const { end } = ending
   const health = usePlayerHealth({ video, active: resume == null && !end && !failed, onStall: () => fail() })
@@ -98,6 +101,11 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
     latest.current.api.player.closed({ ...snapshot(), reason })
     latest.current.onClose(reason)
   }
+  // the app asks to leave (a top bar action during playback): same path as "Back", with its own reason
+  // only a request made after this playback mounted counts (the prop outlives remounts)
+  const requestSeq = closeRequest?.seq
+  const mountSeq = useRef(requestSeq)
+  useEffect(() => { if (requestSeq != null && requestSeq !== mountSeq.current) close('nav') }, [requestSeq])
   // Main owns the recovery budget: it either closes this player and reconnects, or says the automatic try is used up.
   const fail = async () => {
     if (failing.current || closed.current) return
@@ -190,7 +198,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   const startAt = (sec) => { video.current.currentTime = sec; setResume(null); play() }
 
   return (
-    <div ref={root} tabIndex={-1} className={`player${idle ? ' player--idle' : ''}`} onMouseMove={poke} onFocus={poke}>
+    <div ref={root} tabIndex={-1} className={`player${idle ? ' player--idle' : ''}${fullscreen ? ' player--fullscreen' : ''}`} onMouseMove={poke} onFocus={poke}>
       <video
         ref={video} className="player__video" crossOrigin="anonymous"
         onLoadedMetadata={onLoadedMetadata} onTimeUpdate={onTimeUpdate} onProgress={readBuffered}

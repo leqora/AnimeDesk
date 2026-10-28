@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Semaphore } from './Semaphore.jsx'
 import { initials } from '../initials.js'
@@ -12,7 +12,7 @@ import { useNarrow } from '../nav/useNarrow.js'
 const MENU_NAV = { focusMain: true }
 const PAGES = ['home', 'discover', 'watchlist', 'schedule', 'downloads']
 
-export function TopBar({ page, onNavigate, health, onSemaphoreClick, profileName, stats, version = '', onOpenAnime = () => {}, libraryIds = new Set(), fullscreen = false, onToggleFullscreen = () => {}, playerOpen = false, onOpenPalette = () => {} }) {
+export function TopBar({ page, onNavigate, health, onSemaphoreClick, profileName, stats, version = '', onOpenAnime = () => {}, libraryIds = new Set(), fullscreen = false, onToggleFullscreen = () => {}, onOpenPalette = () => {}, hidden = false, closeMenus = false, onActiveChange }) {
   const t = useT()
   const narrow = useNarrow()
   // The nav links and the Menu trigger replace each other at 1000 px; focus inside either must not fall to <body>.
@@ -29,13 +29,40 @@ export function TopBar({ page, onNavigate, health, onSemaphoreClick, profileName
     const target = narrow ? root?.querySelector('.menu-button__trigger') : (root?.querySelector('[aria-current="page"]') ?? root?.querySelector('.topbar__link'))
     target?.focus()
   }, [narrow])
+  // "active" = pointer over the bar, focus inside it, or one of its menus open: the bar must not disappear then
+  const [hover, setHover] = useState(false)
+  const [focusIn, setFocusIn] = useState(false)
+  const [menus, setMenus] = useState(0)
+  const menuChange = (open) => setMenus((n) => Math.max(0, n + (open ? 1 : -1)))
+  const active = hover || focusIn || menus > 0
+  const activeChange = useRef(onActiveChange)
+  activeChange.current = onActiveChange
+  useEffect(() => { activeChange.current?.(active) }, [active])
+  // a hidden bar can neither be hovered nor hold focus, and the browser may not say so
+  const headerRef = useRef(null)
+  useLayoutEffect(() => {
+    if (!hidden) return
+    setHover(false)
+    setFocusIn(false)
+    // the bar turns inert: focus inside it would fall to <body>, so hand it to the player it sits over
+    if (headerRef.current?.contains(document.activeElement)) document.querySelector('.player')?.focus()
+  }, [hidden])
   const fullscreenLabel = fullscreen ? t('window.exitFullscreen') : t('window.fullscreen')
   return (
-    <header className="topbar">
+    <header
+      ref={headerRef}
+      className={hidden ? 'topbar topbar--hidden' : 'topbar'}
+      inert={hidden}
+      aria-hidden={hidden ? 'true' : undefined}
+      onPointerEnter={() => setHover(true)}
+      onPointerLeave={() => setHover(false)}
+      onFocus={() => setFocusIn(true)}
+      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setFocusIn(false) }}
+    >
       <div className="topbar__logo">{t('app.name')}</div>
       <div className="topbar__navwrap" ref={navRef}>
       {narrow ? (
-        <MenuButton label={t('topbar.menu')} className="topbar__menu" closeWhen={playerOpen}>
+        <MenuButton label={t('topbar.menu')} className="topbar__menu" closeWhen={closeMenus} onOpenChange={menuChange}>
           {PAGES.map((p) => (
             <button key={p} type="button" role="menuitem" tabIndex={-1} data-navigates className="menu-button__item" aria-current={p === page ? 'page' : undefined} onClick={() => onNavigate(p, MENU_NAV)}>
               {t(`nav.${p}`)}
@@ -59,14 +86,15 @@ export function TopBar({ page, onNavigate, health, onSemaphoreClick, profileName
           <kbd aria-hidden="true">Ctrl K</kbd>
         </button>
         <Semaphore health={health} onClick={onSemaphoreClick} />
-        <NotificationBell onOpenAnime={onOpenAnime} libraryIds={libraryIds} playerOpen={playerOpen} />
+        <NotificationBell onOpenAnime={onOpenAnime} libraryIds={libraryIds} closeMenus={closeMenus} onOpenChange={menuChange} />
         <button type="button" className="topbar__icon" aria-label={t('nav.settings')} aria-current={page === 'settings' ? 'page' : undefined} onClick={() => onNavigate('settings')}>
           <Icon name="settings" size={20} />
         </button>
         <MenuButton
           label={t('topbar.account')}
           className="topbar__account"
-          closeWhen={playerOpen}
+          closeWhen={closeMenus}
+          onOpenChange={menuChange}
           icon={<span className="topbar__avatar" aria-hidden="true">{initials(profileName)}</span>}
           header={(
             <div className="topbar__summary">

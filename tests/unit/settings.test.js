@@ -17,8 +17,12 @@ describe('settings', () => {
       playerMode: 'internal', autoSkip: false, autoNext: true, subtitles: { enabled: { sub: true, dub: false }, size: 25, lineSpacing: 0, font: 'default', color: 'white', box: true, boxOpacity: 60 }, mpvModernUi: true,
       playerVolume: 1, playerMuted: false, hideSpoilers: true, episodeMarks: true, episodeView: 'numbers',
       closeToTray: true, launchAtLogin: false, notifyNewEpisodes: true, notifyDownloads: true, trayHintShown: false,
-      hiddenSequels: [], hiddenRecommendations: [], volumeBoost: 1,
+      hiddenSequels: [], hiddenRecommendations: [], volumeBoost: 1, returnAfterEpisode: 'origin',
     })
+  })
+  it('validates returnAfterEpisode', () => {
+    expect(sanitizeSettings({ returnAfterEpisode: 'episodes' }).returnAfterEpisode).toBe('episodes')
+    expect(sanitizeSettings({ returnAfterEpisode: 'x' }).returnAfterEpisode).toBe('origin')
   })
   it('clamps the threshold and ignores invalid values', () => {
     const s = sanitizeSettings({ watchedThreshold: 120, language: 'de', mode: 'raw', quality: '4k', autoTrack: 'yes' })
@@ -36,6 +40,13 @@ describe('settings', () => {
     expect(createSettings(file).get()).toMatchObject({ language: 'en', downloadDir: 'D:\\Anime' })
     s.update({ downloadDir: null })
     expect(createSettings(file).get().downloadDir).toBeNull()
+  })
+  it('persists returnAfterEpisode through update() and rejects other values', () => {
+    const s = createSettings(file)
+    s.update({ returnAfterEpisode: 'episodes' })
+    expect(createSettings(file).get().returnAfterEpisode).toBe('episodes')
+    s.update({ returnAfterEpisode: 'x' })
+    expect(createSettings(file).get().returnAfterEpisode).toBe('origin')
   })
   it('get() returns a copy', () => {
     const s = createSettings(file)

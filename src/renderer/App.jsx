@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ApiContext } from './api.js'
 import { I18nProvider, useT } from './i18n/I18nContext.jsx'
 import { TopBar } from './components/TopBar.jsx'
@@ -21,6 +21,8 @@ import { loadPlayer } from './player/loadPlayer.js'
 import { PlayerReconnecting } from './components/PlayerReconnecting.jsx'
 import { ErrorBoundary } from './components/ErrorBoundary.jsx'
 import { nextEpisodeNumber } from '../shared/player.js'
+import { normalizeTitle } from '../shared/domain.js'
+import { returnTarget } from './nav/returnTarget.js'
 import { createSound } from './sound.js'
 import { useNavigation, RouteStateContext } from './nav/useNavigation.js'
 import { CommandPalette } from './components/CommandPalette.jsx'
@@ -42,6 +44,12 @@ function PlayerFallback() {
       </div>
     </div>
   )
+}
+
+// Rendered next to PlayerView inside Suspense: its effects only run once the player really mounted.
+function MountSignal({ mounted }) {
+  useLayoutEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [mounted])
+  return null
 }
 
 // Ctrl/Cmd+Z runs the newest "Undo" toast. Not while typing, over a dialog, or under the player.
@@ -206,6 +214,24 @@ export default function App({ api, sound: injectedSound }) {
     return () => clearTimeout(id)
   }, [])
   const [reconnecting, setReconnecting] = useState(null)
+  // the top bar shows over the player only together with the player controls (idle = controls hidden)
+  const [playerIdle, setPlayerIdle] = useState(false)
+  const [barActive, setBarActive] = useState(false)
+  // true for one commit when a player opens, so top bar menus that were open close
+  const [playerOpening, setPlayerOpening] = useState(false)
+  useEffect(() => { if (playerOpening) setPlayerOpening(false) }, [playerOpening])
+  // barActive is not reset here: TopBar owns hover/focus/menus and reports changes only, so a cursor resting on the bar
+  // must keep the bar visible when the next episode opens
+  useEffect(() => { if (!player) setPlayerIdle(false) }, [player])
+  // true while PlayerView itself is mounted (not its loading fallback, not the crash screen)
+  const playerMounted = useRef(false)
+  // top bar actions during playback: the episode is closed first ('nav'), then the remembered action runs
+  const [closeRequest, setCloseRequest] = useState(null)
+  const afterPlayerClose = useRef(null)
+  // Where the current episode was started from (a route), so "Back" from the player returns there; null = nowhere to return.
+  const originRef = useRef(null)
+  const playerOpenedRef = useRef(false) // a player opened since the last fresh start
+  const playedSessions = useRef(new Set()) // sessions that reached playback (their late end is not a failed start)
   const [bootFailed, setBootFailed] = useState(false)
 
   // Alt+Left/Right and the mouse back/forward buttons walk the history; not while the player or a modal is up.
@@ -321,6 +347,11 @@ export default function App({ api, sound: injectedSound }) {
       setPlayerRate(rate)
       setReconnecting(null)
       setPaletteOpen(false) // unmount the palette Modal in the same commit, before the player takes focus
+      setPlayerIdle(false)
+      setPlayerOpening(true)
+      afterPlayerClose.current = null
+      playerOpenedRef.current = true
+      setCloseRequest(null)
       setPlayer(p)
     }
     const offs = [
@@ -329,6 +360,22 @@ export default function App({ api, sound: injectedSound }) {
       api.player.onRetry(setReconnecting),
     ]
     return () => offs.forEach((off) => off())
+  }, [api])
+
+  // A start that ends without ever playing (error, cancelled menu) leaves the user on Home: forget where it came from.
+  // Mpv playback has no in-app player to come back from, so it forgets the origin too.
+  useEffect(() => {
+    const offs = [
+      api.watch.onPlaying((p) => {
+        if (p?.sessionId) playedSessions.current.add(p.sessionId)
+        if (settingsRef.current?.playerMode === 'external') originRef.current = null
+      }),
+      api.watch.onSessionEnd(({ sessionId, retry }) => {
+        if (retry || playedSessions.current.delete(sessionId) || playerOpenedRef.current) return
+        originRef.current = null
+      }),
+    ]
+    return () => offs.forEach((off) => off?.())
   }, [api])
 
   // ids of library series, so the notification panel can disable entries whose series was removed
@@ -383,13 +430,58 @@ export default function App({ api, sound: injectedSound }) {
   const closeDetail = () => (nav.canBack ? nav.back() : nav.navigate({ page: 'watchlist', animeId: null }))
   // a removed series has no detail to come back to: step back, or swap the entry in place when there is no history
   const onRemoved = () => { if (nav.canBack) nav.back(); else nav.replace({ page: 'watchlist', animeId: null }); setFocusMain(true) }
-  const continueWatching = (params) => { setPendingWatch(params); nav.navigate({ page: 'home', animeId: null }) }
+  // chain = the next/previous episode of a playback that is already going: it keeps the origin of the first start
+  const continueWatching = (params, { chain = false } = {}) => {
+    if (!chain) originRef.current = nav.route
+    playerOpenedRef.current = false
+    setPendingWatch(params)
+    nav.navigate({ page: 'home', animeId: null })
+  }
+  // "Back" from the player: to where the episode was started (or, by setting, to the series' episode list)
+  const returnFromPlayer = async (title) => {
+    const origin = originRef.current
+    originRef.current = null
+    const mode = settingsRef.current?.returnAfterEpisode ?? 'origin'
+    let libraryEntryId = null
+    if (mode === 'episodes') {
+      const key = normalizeTitle(String(title ?? '')).toLowerCase()
+      try { libraryEntryId = ((await api.library.list()) ?? []).find((e) => normalizeTitle(e.aniCliTitle ?? e.title).toLowerCase() === key)?.id ?? null } catch (err) { console.warn('return to episodes: library read failed', err?.message) }
+    }
+    const target = returnTarget({ origin, behind: nav.behind, mode, libraryEntryId })
+    if (target.kind === 'back') nav.back()
+    else if (target.kind === 'navigate') {
+      nav.navigate(target.route)
+      if (mode === 'episodes' && libraryEntryId) nav.setRouteState('tab', 'episodes')
+    }
+    setFocusMain(true)
+  }
   // Search from anywhere (sequel/recommendation cards, the detail's "Similar"): fills Home's search box and runs it.
   const searchAnime = (query) => { setPendingSearch({ query }); nav.navigate({ page: 'home', animeId: null }) }
   const openWhatsNew = () => setWhatsNew({ mode: 'before', version: updateState.version, notes: updateState.notes })
   const closeWhatsNew = () => { if (whatsNew?.mode === 'after') api.whatsNew.seen(); setWhatsNew(null) }
 
   const overlay = player != null || reconnecting != null
+  // The player never got going (still loading, or crashed): main still waits for this playback, so tell it and drop the player.
+  const dropPlayer = () => {
+    if (player == null) return
+    api.player.closed({ playbackId: player.playbackId, position: null, duration: null, maxPercent: 0, reason: 'back' })
+    setPlayer(null)
+    setCloseRequest(null)
+    setPlayerAttempt((n) => n + 1)
+  }
+  const leavePlayerThen = (action) => {
+    if (player == null) { action(); return }
+    if (!playerMounted.current) { // no PlayerView to answer a close request: run the action right away
+      afterPlayerClose.current = null
+      originRef.current = null
+      dropPlayer()
+      action()
+      return
+    }
+    afterPlayerClose.current = action
+    setCloseRequest((r) => ({ seq: (r?.seq ?? 0) + 1 }))
+  }
+  const barHidden = overlay && (reconnecting != null || fullscreen || (playerIdle && !barActive))
   const runPalette = (a) => {
     setPaletteOpen(false)
     if (a.type === 'anime') openAnime(a.id)
@@ -406,23 +498,25 @@ export default function App({ api, sound: injectedSound }) {
         <ToastProvider hold={Boolean(levelUp) && !motionOff}>
         <UndoShortcut disabled={overlay} />
         <PaletteShortcut open={paletteOpen} disabled={overlay} onToggle={setPaletteOpen} />
-        <div className="app-shell" ref={shellRef} data-at-top={atTop ? 'true' : 'false'} inert={overlay} aria-hidden={overlay ? 'true' : undefined}>
+        <div className={player ? 'app-shell app-shell--playing' : 'app-shell'} ref={shellRef} data-at-top={atTop ? 'true' : 'false'}>
           <TopBar
             page={page}
-            onNavigate={(p, o) => { navigate(p); if (o?.focusMain) setFocusMain(true) }}
+            onNavigate={(p, o) => leavePlayerThen(() => { navigate(p); if (o?.focusMain || player != null) setFocusMain(true) })}
             health={health}
-            onSemaphoreClick={() => setWizardOpen(true)}
+            onSemaphoreClick={() => leavePlayerThen(() => setWizardOpen(true))}
             profileName={settings.profileName || settings.systemName}
             stats={stats}
             version={updateState.currentVersion}
-            onOpenAnime={openAnime}
+            onOpenAnime={(id) => leavePlayerThen(() => openAnime(id))}
             libraryIds={libraryIds}
-            playerOpen={Boolean(player)}
+            closeMenus={playerOpening || reconnecting != null || barHidden}
+            hidden={barHidden}
+            onActiveChange={setBarActive}
             fullscreen={fullscreen}
             onToggleFullscreen={() => api.window.setFullscreen(!fullscreen)}
-            onOpenPalette={() => { if (!overlay) setPaletteOpen(true) }}
+            onOpenPalette={() => leavePlayerThen(() => setPaletteOpen(true))}
           />
-          <main className="content" ref={mainRef} tabIndex={-1} onScroll={(e) => setAtTop(e.currentTarget.scrollTop === 0)}>
+          <main className="content" ref={mainRef} tabIndex={-1} inert={overlay} aria-hidden={overlay ? 'true' : undefined} onScroll={(e) => setAtTop(e.currentTarget.scrollTop === 0)}>
             <div className="content__notices">
               <ExternalPlayerBar onGone={() => setFocusMain(true)} />
               <UpdateBanner state={updateState} onWhatsNew={openWhatsNew} />
@@ -434,7 +528,7 @@ export default function App({ api, sound: injectedSound }) {
                 {page === 'home' && (
                   <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onSearch={searchAnime} />
                 )}
-                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} onSearch={searchAnime} playerOpen={Boolean(player)} />}
+                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} onSearch={searchAnime} playerOpen={overlay} />}
                 {page === 'discover' && <DiscoverPage ready={ready} onOpenAnime={openAnime} onSearch={searchAnime} />}
                 {page === 'schedule' && <SchedulePage ready={ready} onOpenAnime={openAnime} onSearch={searchAnime} />}
                 {page === 'downloads' && <DownloadsPage />}
@@ -448,22 +542,29 @@ export default function App({ api, sound: injectedSound }) {
         {player && (
           <ErrorBoundary key={player.playbackId} className="error-fallback--overlay" actionLabelKey="error.close" onAction={() => {
             // main still waits for this playback to end (session, held celebrations); null keeps the last reported position
-            api.player.closed({ playbackId: player.playbackId, position: null, duration: null, maxPercent: 0, reason: 'back' })
-            setPlayer(null)
-            setPlayerAttempt((n) => n + 1)
+            const title = player.title
+            dropPlayer()
+            returnFromPlayer(title) // same as Back
           }}>
             <Suspense fallback={<PlayerFallback />}>
             <PlayerView
               key={player.playbackId} // PlayerView's per-playback refs/state rely on a remount per playback
               open={player} settings={settings} fullscreen={fullscreen} onSettings={updateSettings}
-              initialRate={playerRate} onRate={(rate) => { if (lastRate.current) lastRate.current.rate = rate }}
+              initialRate={playerRate} onIdleChange={setPlayerIdle} holdControls={barActive} closeRequest={closeRequest} onRate={(rate) => { if (lastRate.current) lastRate.current.rate = rate }}
               onClose={(reason) => {
                 setPlayer(null)
-                if ((reason === 'next' || reason === 'prev') && player.episode != null) {
-                  continueWatching({ query: player.title, anime: player.title, episode: String(nextEpisodeNumber(player.episode, reason === 'next' ? 1 : -1)) })
-                }
+                setCloseRequest(null)
+                const afterClose = afterPlayerClose.current
+                afterPlayerClose.current = null
+                if (reason === 'nav') { originRef.current = null; afterClose?.() } // top bar action; it goes to the chosen page, never back to an origin
+                else if (reason === 'next' || reason === 'prev') {
+                  if (player.episode != null) continueWatching({ query: player.title, anime: player.title, episode: String(nextEpisodeNumber(player.episode, reason === 'next' ? 1 : -1)) }, { chain: true })
+                  else originRef.current = null // nothing follows, so there is nothing to come back from either
+                } else if (reason === 'external') originRef.current = null // playback continues in mpv; nothing to come back from
+                else returnFromPlayer(player.title)
               }}
             />
+              <MountSignal mounted={playerMounted} />
             </Suspense>
           </ErrorBoundary>
         )}
@@ -471,7 +572,7 @@ export default function App({ api, sound: injectedSound }) {
           <PlayerReconnecting
             state={reconnecting.state} title={reconnecting.title} episode={reconnecting.episode} error={reconnecting.error}
             onRetry={() => api.player.retryAgain()}
-            onBack={() => { if (reconnecting.state === 'reconnecting' && reconnecting.sessionId) api.watch.cancel(reconnecting.sessionId); setReconnecting(null) }}
+            onBack={() => { if (reconnecting.state === 'reconnecting' && reconnecting.sessionId) api.watch.cancel(reconnecting.sessionId); originRef.current = null; setReconnecting(null) }}
           />
         )}
         {paletteOpen && <CommandPalette fullscreen={fullscreen} onRun={runPalette} onClose={() => setPaletteOpen(false)} />}

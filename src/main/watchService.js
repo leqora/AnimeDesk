@@ -181,7 +181,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
           if (!(await entry.gate.promise)) return 1
         }
         entry.opened = true
-        notify(EVENTS.playing, { title: info.title, episode: info.episode })
+        notify(EVENTS.playing, { title: info.title, episode: info.episode, sessionId })
         entry.playing = true
         current = { entry, info }
         celebrations.hold()

@@ -2,15 +2,22 @@ import { Children, useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
 import { EpisodeRow } from './EpisodeRow.jsx'
 import { EpisodeCard } from './EpisodeCard.jsx'
+import { useRouteState } from '../nav/useNavigation.js'
 import { useEpisodeView } from '../episodes/useEpisodeView.js'
 import { GROUP_SIZE, episodeGroups, findEpisodeIndex, firstUnwatchedIndex } from '../../shared/episodes.js'
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 
-export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, onPrefs = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, hideMarked = false, onHideMarked = null, toolbar = null, afterToolbar = null, onPlay = null, nextEp = null, ready = true, onNote = null, onToggleWatched = null, children }) {
+export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, prefsLoading = false, onPrefs = null, groupKey = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, hideMarked = false, onHideMarked = null, toolbar = null, afterToolbar = null, onPlay = null, nextEp = null, ready = true, onNote = null, onToggleWatched = null, children }) {
   const t = useT()
   const groups = episodeGroups(episodes)
-  const [group, setGroup] = useState(() => Math.floor(firstUnwatchedIndex(episodes, watched) / GROUP_SIZE))
+  // The chosen group is remembered per series in the history entry (survives leaving the page and coming back); without a key it is local.
+  const [initialGroup] = useState(() => Math.floor(firstUnwatchedIndex(episodes, watched) / GROUP_SIZE))
+  const [savedGroups, setSavedGroups] = useRouteState('episodeGroups', {})
+  const [localGroup, setLocalGroup] = useState(null)
+  const chosen = groupKey ? savedGroups?.[groupKey] : localGroup
+  const group = Math.min(Math.max(chosen ?? initialGroup, 0), Math.max(groups.length - 1, 0))
+  const setGroup = (i) => (groupKey ? setSavedGroups({ ...savedGroups, [groupKey]: i }) : setLocalGroup(i))
   const [goTo, setGoTo] = useState('')
   const [missing, setMissing] = useState(false)
   const [focus, setFocus] = useState(null)
@@ -27,7 +34,11 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
   const hiding = showLegend && hideMarked
 
   useEffect(() => {
-    if (focus) buttons.current[focus.ep]?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+    if (!focus) return
+    const el = buttons.current[focus.ep]
+    el?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+    // Card view has no selection: the jump lands on the card's own button (play, reveal, or the menu when playing is not ready yet).
+    if (el?.classList?.contains('ep-card')) el.querySelector('.ep-card__open:not(:disabled), .ep-card__reveal, .ep-card__actions button')?.focus()
   }, [focus])
 
   const current = groups[group] ?? groups[0]
@@ -43,7 +54,7 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
     const ep = episodes[i]
     setGroup(Math.floor(i / GROUP_SIZE))
     if (hiding && kindOf(ep)) onHideMarked?.(false)
-    if (!selected.includes(ep)) onToggle(ep)
+    if (!(asList && onPlay) && !selected.includes(ep)) onToggle(ep)
     setFocus((f) => ({ ep, n: (f?.n ?? 0) + 1 }))
   }
 
@@ -60,15 +71,15 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
     <>
       <label className="field field--inline">
         <span>{t('episodes.quality')}</span>
-        <select aria-label={t('episodes.quality')} value={prefs.quality ?? ''} onChange={(e) => onPrefs({ quality: e.target.value || null })}>
-          <option value="">{t('episodes.default')}</option>
+        <select aria-label={t('episodes.quality')} value={prefsLoading ? '' : prefs.quality ?? ''} disabled={prefsLoading} onChange={(e) => onPrefs({ quality: e.target.value || null })}>
+          {!prefsLoading && <option value="">{t('episodes.default')}</option>}
           {QUALITIES.map((q) => <option key={q} value={q}>{q}</option>)}
         </select>
       </label>
       <label className="field field--inline">
         <span>{t('episodes.mode')}</span>
-        <select aria-label={t('episodes.mode')} value={prefs.mode ?? ''} onChange={(e) => onPrefs({ mode: e.target.value || null })}>
-          <option value="">{t('episodes.default')}</option>
+        <select aria-label={t('episodes.mode')} value={prefsLoading ? '' : prefs.mode ?? ''} disabled={prefsLoading} onChange={(e) => onPrefs({ mode: e.target.value || null })}>
+          {!prefsLoading && <option value="">{t('episodes.default')}</option>}
           <option value="sub">{t('settings.mode.sub')}</option>
           <option value="dub">{t('settings.mode.dub')}</option>
         </select>

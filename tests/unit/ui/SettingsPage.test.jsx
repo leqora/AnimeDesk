@@ -113,6 +113,14 @@ describe('SettingsPage', () => {
     fireEvent.blur(name)
     expect(onSettings).toHaveBeenLastCalledWith({ profileName: null })
   })
+  it('saves where Back goes after an episode', () => {
+    const onSettings = vi.fn()
+    renderUi(<SettingsPage settings={{ ...DEFAULT_SETTINGS }} onSettings={onSettings} updateState={{ status: 'disabled', currentVersion: '0.5.0' }} />)
+    const select = screen.getByLabelText('Posle epizode, Nazad vodi na')
+    expect(select).toHaveValue('origin')
+    fireEvent.change(select, { target: { value: 'episodes' } })
+    expect(onSettings).toHaveBeenLastCalledWith({ returnAfterEpisode: 'episodes' })
+  })
   it('has a player section that saves each option', () => {
     const onSettings = vi.fn()
     renderUi(<SettingsPage settings={{ ...DEFAULT_SETTINGS }} onSettings={onSettings} updateState={{ status: 'disabled', currentVersion: '0.5.0' }} />)

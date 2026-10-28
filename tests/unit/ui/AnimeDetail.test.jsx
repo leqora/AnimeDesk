@@ -319,6 +319,18 @@ describe('AnimeDetail episode toolbar', () => {
     expect(screen.getByLabelText('Kvalitet')).toHaveValue('1080')
     await waitFor(() => expect(api.seriesPrefs.set).toHaveBeenCalledWith('Show', { quality: '1080' }))
   })
+  it('quality and mode wait for series prefs', async () => {
+    let resolve
+    const api = makeFakeApi({ seriesPrefs: { get: vi.fn(() => new Promise((r) => { resolve = r })) } })
+    mount(api)
+    await screen.findByRole('tab', { name: 'Epizode' })
+    expect(screen.getByLabelText('Kvalitet')).toBeDisabled()
+    expect(screen.getByLabelText('Režim')).toBeDisabled()
+    await act(async () => { resolve({ quality: '720', mode: null, subOffset: { sub: 0, dub: 0 }, autoDownload: false, hideFiller: false }) })
+    await waitFor(() => expect(screen.getByLabelText('Kvalitet')).toHaveValue('720'))
+    expect(screen.getByLabelText('Kvalitet')).not.toBeDisabled()
+    expect(screen.getByLabelText('Režim')).not.toBeDisabled()
+  })
   it('rolls quality back when saving is rejected', async () => {
     const api = prefsApi({}, vi.fn(async () => { throw new Error('boom') }))
     vi.spyOn(console, 'error').mockImplementation(() => {})

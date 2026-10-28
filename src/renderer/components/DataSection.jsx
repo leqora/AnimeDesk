@@ -118,7 +118,7 @@ export function DataSection({ onImported, focusImport = false }) {
       {preview && (
         <Modal label={t('data.importTitle')} initialFocus={cancelRef} onClose={busy ? undefined : () => setPreview(null)}>
           <div className="data-import">
-          <h3>{t('data.importTitle')}</h3>
+          <h4>{t('data.importTitle')}</h4>
           {createdAt && <p>{t('data.importFrom', { date: createdAt })}</p>}
           <p>{t('data.importCounts', counts(preview))}</p>
           {preview.skipped > 0 && <p className="muted">{t.n('data.skipped', preview.skipped)}</p>}

@@ -1,11 +1,13 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Icon } from './Icon.jsx'
+import { useReportOpen } from '../player/useReportOpen.js'
 
 // Button that opens a menu (role="menu") of role="menuitem" children. Roving focus by code, so items are tabIndex -1.
 // An item that navigates carries data-navigates: focus then stays with the app's own page focus instead of returning here.
 // header/footer are shown in the popup around the menu, outside role="menu" (only menuitems belong inside it).
 // closeWhen: the menu closes whenever it turns true (e.g. the player opens).
-export function MenuButton({ label, icon, children, header = null, footer = null, closeWhen = false, className = '' }) {
+// onOpenChange(open): told whenever the menu opens or closes (and when it goes away while open).
+export function MenuButton({ label, icon, children, header = null, footer = null, closeWhen = false, className = '', onOpenChange }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
   const buttonRef = useRef(null)
@@ -19,6 +21,7 @@ export function MenuButton({ label, icon, children, header = null, footer = null
   const openAt = (where) => { startAt.current = where; setOpen(true) }
 
   useEffect(() => { if (closeWhen) setOpen(false) }, [closeWhen])
+  useReportOpen(open, onOpenChange)
 
   useEffect(() => {
     if (!open) return

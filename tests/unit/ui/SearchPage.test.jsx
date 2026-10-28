@@ -262,6 +262,24 @@ describe('SearchPage', () => {
     expect(screen.getByRole('button', { name: '2' })).toBeInTheDocument()
   })
 
+  it('keeps the quality select locked (no "Podrazumevano") until the saved prefs arrive', async () => {
+    const { api, handlers } = withEvents()
+    let resolvePrefs
+    api.seriesPrefs.get.mockResolvedValueOnce({ quality: null, mode: null }) // read while answering the menu
+    api.seriesPrefs.get.mockReturnValue(new Promise((r) => { resolvePrefs = r })) // the picker's own read stays pending
+    api.watch.start.mockResolvedValueOnce({ sessionId: 's1' })
+    renderUi(<SearchPage {...props()} />, { api })
+    search()
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(1))
+    await toEpisodes(api, handlers)
+    await waitFor(() => expect(api.seriesPrefs.get).toHaveBeenCalledTimes(2))
+    expect(screen.getByLabelText('Kvalitet')).toBeDisabled()
+    expect(screen.queryByRole('option', { name: 'Podrazumevano' })).toBeNull()
+    await act(async () => { resolvePrefs({ quality: '720', mode: null }) })
+    expect(screen.getByLabelText('Kvalitet')).not.toBeDisabled()
+    expect(screen.getByLabelText('Kvalitet')).toHaveValue('720')
+  })
+
   it('a failing prefs save changes nothing and rejects nothing; a failing load is swallowed', async () => {
     const { api, handlers } = withEvents()
     const err = vi.spyOn(console, 'error').mockImplementation(() => {})
