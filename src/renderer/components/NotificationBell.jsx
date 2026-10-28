@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useApi } from '../api.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { useNotifications } from '../notifications/useNotifications.js'
 import { Icon } from './Icon.jsx'
 import { Modal } from './Modal.jsx'
+import { useReportOpen } from '../player/useReportOpen.js'
 
 const UNITS = [['day', 86400000], ['hour', 3600000], ['minute', 60000]]
 
@@ -14,22 +15,14 @@ function relativeTime(at, locale) {
   return rtf.format(0, 'second')
 }
 
-export function NotificationBell({ onOpenAnime, libraryIds, playerOpen = false, onOpenChange }) {
+export function NotificationBell({ onOpenAnime, libraryIds, closeMenus = false, onOpenChange }) {
   const api = useApi()
   const t = useT()
   const { items, unread, markRead } = useNotifications(api)
   const [open, setOpen] = useState(false)
-  // The panel is portalled outside the inert app shell, so close it when the player takes over.
-  useEffect(() => { if (playerOpen) setOpen(false) }, [playerOpen])
-  const reported = useRef(false)
-  const onChange = useRef(onOpenChange)
-  onChange.current = onOpenChange
-  useEffect(() => {
-    if (reported.current === open) return
-    reported.current = open
-    onChange.current?.(open)
-  }, [open])
-  useEffect(() => () => { if (reported.current) onChange.current?.(false) }, [])
+  // The panel is a Modal portalled to document.body, so it must be closed explicitly when the top bar closes its menus.
+  useEffect(() => { if (closeMenus) setOpen(false) }, [closeMenus])
+  useReportOpen(open, onOpenChange)
   const label = unread > 0 ? t('notifications.title') + ' (' + t.n('notifications.unread', unread) + ')' : t('notifications.title')
   const sorted = [...items].sort((a, b) => new Date(b.at) - new Date(a.at))
   return (

@@ -39,10 +39,18 @@ export function TopBar({ page, onNavigate, health, onSemaphoreClick, profileName
   activeChange.current = onActiveChange
   useEffect(() => { activeChange.current?.(active) }, [active])
   // a hidden bar can neither be hovered nor hold focus, and the browser may not say so
-  useEffect(() => { if (hidden) { setHover(false); setFocusIn(false) } }, [hidden])
+  const headerRef = useRef(null)
+  useLayoutEffect(() => {
+    if (!hidden) return
+    setHover(false)
+    setFocusIn(false)
+    // the bar turns inert: focus inside it would fall to <body>, so hand it to the player it sits over
+    if (headerRef.current?.contains(document.activeElement)) document.querySelector('.player')?.focus()
+  }, [hidden])
   const fullscreenLabel = fullscreen ? t('window.exitFullscreen') : t('window.fullscreen')
   return (
     <header
+      ref={headerRef}
       className={hidden ? 'topbar topbar--hidden' : 'topbar'}
       inert={hidden}
       aria-hidden={hidden ? 'true' : undefined}
@@ -78,7 +86,7 @@ export function TopBar({ page, onNavigate, health, onSemaphoreClick, profileName
           <kbd aria-hidden="true">Ctrl K</kbd>
         </button>
         <Semaphore health={health} onClick={onSemaphoreClick} />
-        <NotificationBell onOpenAnime={onOpenAnime} libraryIds={libraryIds} playerOpen={closeMenus} onOpenChange={menuChange} />
+        <NotificationBell onOpenAnime={onOpenAnime} libraryIds={libraryIds} closeMenus={closeMenus} onOpenChange={menuChange} />
         <button type="button" className="topbar__icon" aria-label={t('nav.settings')} aria-current={page === 'settings' ? 'page' : undefined} onClick={() => onNavigate('settings')}>
           <Icon name="settings" size={20} />
         </button>

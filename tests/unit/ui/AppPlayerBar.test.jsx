@@ -108,6 +108,29 @@ describe('App top bar over the player', () => {
     expect(topbar()).not.toHaveClass('topbar--hidden')
   })
 
+  it('the bar under the cursor stays visible on the next playback', async () => {
+    const { open } = await start()
+    await open()
+    fireEvent.pointerEnter(topbar())
+    fireEvent.click(screen.getByRole('button', { name: 'Sledeća epizoda' }))
+    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    await open({ ...episode, playbackId: 'p2', episode: '4' })
+    vi.useFakeTimers()
+    fireEvent.mouseMove(document.querySelector('.player'))
+    act(() => { vi.advanceTimersByTime(5000) })
+    expect(topbar()).not.toHaveClass('topbar--hidden')
+  })
+
+  it('focus moves to the player when the bar hides around it (fullscreen from the avatar menu)', async () => {
+    const { open, setFullscreen } = await start()
+    await open()
+    act(() => { screen.getByRole('button', { name: 'Podešavanja' }).focus() })
+    expect(topbar().contains(document.activeElement)).toBe(true)
+    setFullscreen(true)
+    expect(topbar()).toHaveClass('topbar--hidden')
+    expect(document.activeElement).toBe(document.querySelector('.player'))
+  })
+
   it('topbar is hidden in fullscreen during playback', async () => {
     const { open, setFullscreen } = await start({ fullscreen: true })
     await open()

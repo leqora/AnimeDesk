@@ -104,7 +104,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 /* top bar */
 .topbar { position: absolute; top: 0; left: 0; right: var(--scrollbar-w, 0px); height: var(--topbar-h); z-index: var(--z-topbar); display: flex; flex-wrap: nowrap; align-items: center; gap: 24px; padding: 0 var(--content-pad-x); white-space: nowrap; background: var(--panel-opaque); border-bottom: 1px solid var(--glass-border); }
 /* see-through only over a page that has a banner (Home, series detail) while scrolled to the top and with no notice above it */
-.app-shell[data-at-top="true"]:has(.page-banner):not(:has(.content__notices > *)) .topbar { background: linear-gradient(var(--panel-solid), transparent) no-repeat; border-bottom-color: transparent; }
+.app-shell[data-at-top="true"]:has(.page-banner):not(:has(.content__notices > *)):not(.app-shell--playing) .topbar { background: linear-gradient(var(--panel-solid), transparent) no-repeat; border-bottom-color: transparent; }
 /* while an episode plays the bar sits over the player, shown and hidden together with the player controls */
 .app-shell--playing .topbar { z-index: var(--z-topbar-player); background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 85%, transparent), transparent); border-bottom-color: transparent; transition: opacity 200ms var(--ease); }
 /* the bar is also `inert` (no Tab, no clicks, hidden from screen readers) while hidden */
@@ -113,7 +113,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 /* wraps the nav / Menu pair so focus can be tracked across the breakpoint, without changing the layout */
 .topbar__navwrap { display: contents; }
 .topbar__nav { overflow: hidden; display: flex; flex-wrap: nowrap; align-self: stretch; gap: 4px; min-width: 0; }
-.app-shell[data-at-top="true"]:has(.page-banner):not(:has(.content__notices > *)) .topbar__palette { background: var(--glass-strong); backdrop-filter: blur(var(--blur)); } /* readable over any banner */
+.app-shell[data-at-top="true"]:has(.page-banner):not(:has(.content__notices > *)):not(.app-shell--playing) .topbar__palette { background: var(--glass-strong); backdrop-filter: blur(var(--blur)); } /* readable over any banner */
 .topbar__link { position: relative; display: flex; align-items: center; height: 100%; padding: 0 12px; background: transparent; border: 0; border-radius: 0; color: var(--text-muted); font-size: 14px; }
 .topbar__link:hover:not(:disabled) { background: transparent; color: var(--text); }
 .topbar__link--active { color: var(--text); }
@@ -572,7 +572,7 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 .player--idle .player__top, .player--idle .player__bar { opacity: 0; }
 .player--idle { cursor: none; }
 /* in a window the bar covers the top edge, so the title row starts below it */
-.player:not(.player--fullscreen) .player__top { top: var(--topbar-h); }
+.player:not(.player--fullscreen):not(.player--reconnect) .player__top { top: var(--topbar-h); }
 .player__title { margin: 0; font-size: 18px; }
 /* Timeline layers, bottom to top: track, buffered, played, segments, then the slider (transparent track, thumb only). */
 .player__timeline { position: relative; height: 18px; }

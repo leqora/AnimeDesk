@@ -41,6 +41,8 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
   // The session id and phase are mirrored in a ref so the unmount cleanup sees the latest values.
   const [prefs, setPrefs] = useState({ quality: null, mode: null, hideFiller: false })
+  // Until the saved quality / sub-dub are read the selects stay locked, so "Default" is never shown as the saved choice.
+  const [prefsLoaded, setPrefsLoaded] = useState(false)
   // ignore: sessions we cancelled on purpose (mode switch, series prefs) — their late events must not touch the new session
   // startedMode: the sub/dub the running session was started with (ani-cli reads it only at start)
   const live = useRef({ sessionId: null, phase: 'idle', ignore: new Set(), lastEpisode: null, startedMode: null, startSeq: 0 })
@@ -89,7 +91,8 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   useEffect(() => {
     if (!anime) return
     let stale = false
-    api.seriesPrefs.get(anime).then((p) => { if (!stale) setPrefs(p) }).catch((e) => console.error('seriesPrefs.get failed', e))
+    setPrefsLoaded(false)
+    api.seriesPrefs.get(anime).then((p) => { if (!stale) { setPrefs(p); setPrefsLoaded(true) } }).catch((e) => { console.error('seriesPrefs.get failed', e); if (!stale) setPrefsLoaded(true) })
     api.library.list().then((list) => {
       const key = normalizeTitle(anime).toLowerCase()
       const e = list.find((x) => normalizeTitle(x.aniCliTitle ?? x.title).toLowerCase() === key)
@@ -263,7 +266,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
         <div className="page">
           <div className="row"><button type="button" onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button></div>
           <h3 ref={pickerHeading} tabIndex={-1}>{anime ?? (titleMissing ? t('search.titleUnknown', { query: live.current.lastParams?.query ?? '' }) : t('search.titlePending'))} — {t('search.selectEpisode')}</h3>
-          <EpisodePicker episodes={episodeMenu} selected={selected} watched={watched} onToggle={toggle} prefs={prefs} onPrefs={anime ? changePrefs : null} groupKey={anime ? normalizeTitle(anime).toLowerCase() : null}
+          <EpisodePicker episodes={episodeMenu} selected={selected} watched={watched} onToggle={toggle} prefs={prefs} prefsLoading={anime != null && !prefsLoaded} onPrefs={anime ? changePrefs : null} groupKey={anime ? normalizeTitle(anime).toLowerCase() : null}
             series={series} poster={posterInfo?.poster ?? null} onReveal={(ep) => updateSpoilers({ episode: ep })} loadThumb={thumb} progress={progress}
             hideMarked={Boolean(prefs.hideFiller)} onHideMarked={anime ? (v) => changePrefs({ hideFiller: v }) : null}>
             <button type="button" className="primary" disabled={!ready || selected.length === 0} onClick={watchSelected}>{t('search.watch')}</button>

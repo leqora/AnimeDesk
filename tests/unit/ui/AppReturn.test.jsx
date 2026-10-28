@@ -5,9 +5,13 @@ import App from '../../../src/renderer/App.jsx'
 import { makeFakeApi } from './helpers.jsx'
 import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
 
+// tests flip these: crash = PlayerView throws on render; hold = the player module is still loading (Suspense fallback)
+const gate = vi.hoisted(() => ({ crash: false, hold: null }))
 vi.mock('../../../src/renderer/player/loadPlayer.js', async () => {
   const { PlayerView } = await import('../../../src/renderer/components/PlayerView.jsx')
-  return { loadPlayer: async () => ({ PlayerView }) }
+  const { createElement } = await import('react')
+  const Guarded = (props) => { if (gate.crash) throw new Error('boom'); return createElement(PlayerView, props) }
+  return { loadPlayer: async () => { if (gate.hold) await gate.hold; return { PlayerView: Guarded } } }
 })
 
 const entry = { id: 'a1', title: 'Show', aniCliTitle: 'Show', aniListId: null, status: 'watching', rating: null, comment: '', totalEpisodes: 12, watchedEpisodes: [1], episodeNotes: {}, lastWatchedAt: null, pinnedAt: null }
@@ -48,7 +52,7 @@ beforeEach(() => {
   window.requestIdleCallback = vi.fn(() => 1)
   window.cancelIdleCallback = vi.fn()
 })
-afterEach(() => { delete window.requestIdleCallback; delete window.cancelIdleCallback })
+afterEach(() => { gate.crash = false; gate.hold = null; delete window.requestIdleCallback; delete window.cancelIdleCallback })
 
 describe('Back from the player', () => {
   it('back from a player started on the series detail returns to the detail with its tab', async () => {
@@ -139,5 +143,55 @@ describe('Back from the player', () => {
     clickBack()
     await waitFor(() => expect(document.querySelector('.player')).toBeNull())
     expect(s.onDetail()).toBe(false)
+  })})
+
+describe('Player that never gets going', () => {
+  it('closing a crashed player behaves like Back (returns to the origin)', async () => {
+    const s = await start()
+    await s.openDetail()
+    playFromDetail()
+    await waitFor(() => expect(s.api.watch.start).toHaveBeenCalled())
+    gate.crash = true
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    act(() => s.cb.open(ep('p1', '2')))
+    fireEvent.click(await screen.findByRole('button', { name: 'Zatvori' }))
+    await waitFor(() => expect(s.onDetail()).toBe(true))
+    expect(s.api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ playbackId: 'p1', reason: 'back' }))
+  })
+  it('a next/previous with no episode number forgets the origin', async () => {
+    const s = await start()
+    await s.openDetail()
+    playFromDetail()
+    await s.openPlayer({ ...ep('p1', '2'), episode: null })
+    fireEvent.click(screen.getByRole('button', { name: 'Sledeća epizoda' }))
+    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    expect(s.api.watch.start).toHaveBeenCalledTimes(1)
+    await s.openPlayer(ep('p2', '2')) // a fresh start from Home
+    clickBack()
+    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    expect(s.onDetail()).toBe(false)
+  })
+  it('a top bar click while the player module is still loading is not lost', async () => {
+    let release
+    gate.hold = new Promise((r) => { release = r })
+    const s = await start()
+    act(() => s.cb.open(ep('p1', '2')))
+    await waitFor(() => expect(document.querySelector('.player__loading')).not.toBeNull())
+    expect(document.querySelector('.player__video')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
+    expect(await screen.findByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
+    expect(document.querySelector('.player')).toBeNull()
+    expect(s.api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ playbackId: 'p1' }))
+    release()
+  })
+  it('a top bar click over the crash screen is not lost', async () => {
+    const s = await start()
+    gate.crash = true
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    act(() => s.cb.open(ep('p1', '2')))
+    await screen.findByRole('button', { name: 'Zatvori' })
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
+    expect(await screen.findByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
+    expect(document.querySelector('.error-fallback--overlay')).toBeNull()
   })
 })

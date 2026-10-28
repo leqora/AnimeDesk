@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ApiContext } from './api.js'
 import { I18nProvider, useT } from './i18n/I18nContext.jsx'
 import { TopBar } from './components/TopBar.jsx'
@@ -44,6 +44,12 @@ function PlayerFallback() {
       </div>
     </div>
   )
+}
+
+// Rendered next to PlayerView inside Suspense: its effects only run once the player really mounted.
+function MountSignal({ mounted }) {
+  useLayoutEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [mounted])
+  return null
 }
 
 // Ctrl/Cmd+Z runs the newest "Undo" toast. Not while typing, over a dialog, or under the player.
@@ -214,7 +220,11 @@ export default function App({ api, sound: injectedSound }) {
   // true for one commit when a player opens, so top bar menus that were open close
   const [playerOpening, setPlayerOpening] = useState(false)
   useEffect(() => { if (playerOpening) setPlayerOpening(false) }, [playerOpening])
-  useEffect(() => { if (!player) { setPlayerIdle(false); setBarActive(false) } }, [player])
+  // barActive is not reset here: TopBar owns hover/focus/menus and reports changes only, so a cursor resting on the bar
+  // must keep the bar visible when the next episode opens
+  useEffect(() => { if (!player) setPlayerIdle(false) }, [player])
+  // true while PlayerView itself is mounted (not its loading fallback, not the crash screen)
+  const playerMounted = useRef(false)
   // top bar actions during playback: the episode is closed first ('nav'), then the remembered action runs
   const [closeRequest, setCloseRequest] = useState(null)
   const afterPlayerClose = useRef(null)
@@ -451,8 +461,23 @@ export default function App({ api, sound: injectedSound }) {
   const closeWhatsNew = () => { if (whatsNew?.mode === 'after') api.whatsNew.seen(); setWhatsNew(null) }
 
   const overlay = player != null || reconnecting != null
+  // The player never got going (still loading, or crashed): main still waits for this playback, so tell it and drop the player.
+  const dropPlayer = () => {
+    if (player == null) return
+    api.player.closed({ playbackId: player.playbackId, position: null, duration: null, maxPercent: 0, reason: 'back' })
+    setPlayer(null)
+    setCloseRequest(null)
+    setPlayerAttempt((n) => n + 1)
+  }
   const leavePlayerThen = (action) => {
     if (player == null) { action(); return }
+    if (!playerMounted.current) { // no PlayerView to answer a close request: run the action right away
+      afterPlayerClose.current = null
+      originRef.current = null
+      dropPlayer()
+      action()
+      return
+    }
     afterPlayerClose.current = action
     setCloseRequest((r) => ({ seq: (r?.seq ?? 0) + 1 }))
   }
@@ -517,9 +542,9 @@ export default function App({ api, sound: injectedSound }) {
         {player && (
           <ErrorBoundary key={player.playbackId} className="error-fallback--overlay" actionLabelKey="error.close" onAction={() => {
             // main still waits for this playback to end (session, held celebrations); null keeps the last reported position
-            api.player.closed({ playbackId: player.playbackId, position: null, duration: null, maxPercent: 0, reason: 'back' })
-            setPlayer(null)
-            setPlayerAttempt((n) => n + 1)
+            const title = player.title
+            dropPlayer()
+            returnFromPlayer(title) // same as Back
           }}>
             <Suspense fallback={<PlayerFallback />}>
             <PlayerView
@@ -534,10 +559,12 @@ export default function App({ api, sound: injectedSound }) {
                 if (reason === 'nav') { originRef.current = null; afterClose?.() } // top bar action; it goes to the chosen page, never back to an origin
                 else if (reason === 'next' || reason === 'prev') {
                   if (player.episode != null) continueWatching({ query: player.title, anime: player.title, episode: String(nextEpisodeNumber(player.episode, reason === 'next' ? 1 : -1)) }, { chain: true })
+                  else originRef.current = null // nothing follows, so there is nothing to come back from either
                 } else if (reason === 'external') originRef.current = null // playback continues in mpv; nothing to come back from
                 else returnFromPlayer(player.title)
               }}
             />
+              <MountSignal mounted={playerMounted} />
             </Suspense>
           </ErrorBoundary>
         )}

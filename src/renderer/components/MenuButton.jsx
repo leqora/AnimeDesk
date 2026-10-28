@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Icon } from './Icon.jsx'
-import { useLatest } from '../player/useLatest.js'
+import { useReportOpen } from '../player/useReportOpen.js'
 
 // Button that opens a menu (role="menu") of role="menuitem" children. Roving focus by code, so items are tabIndex -1.
 // An item that navigates carries data-navigates: focus then stays with the app's own page focus instead of returning here.
@@ -21,14 +21,7 @@ export function MenuButton({ label, icon, children, header = null, footer = null
   const openAt = (where) => { startAt.current = where; setOpen(true) }
 
   useEffect(() => { if (closeWhen) setOpen(false) }, [closeWhen])
-  const reported = useRef(false)
-  const onChange = useLatest(onOpenChange)
-  useEffect(() => {
-    if (reported.current === open) return
-    reported.current = open
-    onChange.current?.(open)
-  }, [open])
-  useEffect(() => () => { if (reported.current) onChange.current?.(false) }, [])
+  useReportOpen(open, onOpenChange)
 
   useEffect(() => {
     if (!open) return
