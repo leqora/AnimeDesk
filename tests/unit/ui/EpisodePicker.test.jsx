@@ -32,6 +32,19 @@ describe('EpisodePicker', () => {
     expect(bar).toHaveTextContent('X')
     expect(container.querySelector('.episode-bar')).toBeNull()
   })
+  it('quality and mode stay together in the toolbar', () => {
+    const { container } = renderUi(<EpisodePicker {...base({ prefs: {}, onPrefs: vi.fn() })} toolbar={<span>X</span>} />)
+    const prefs = container.querySelector('.ep-toolbar .ep-toolbar__prefs')
+    expect(prefs).not.toBeNull()
+    expect(prefs).toContainElement(screen.getByLabelText('Kvalitet'))
+    expect(prefs).toContainElement(screen.getByLabelText('Režim'))
+  })
+  it('quality and mode come before the toolbarEnd block in DOM and tab order', () => {
+    const { container } = renderUi(<EpisodePicker {...base({ prefs: {}, onPrefs: vi.fn() })} toolbar={<span>X</span>} toolbarEnd={<div className="check-group">Auto</div>} />)
+    const kids = [...container.querySelector('.ep-toolbar').children].map((e) => e.className)
+    expect(kids.indexOf('ep-toolbar__prefs')).toBeGreaterThan(-1)
+    expect(kids.indexOf('ep-toolbar__prefs')).toBeLessThan(kids.indexOf('check-group'))
+  })
   it('keeps quality and sub/dub in the sticky bar and renders no toolbar without the toolbar prop', () => {
     const { container } = renderUi(<EpisodePicker {...base({ prefs: {}, onPrefs: vi.fn() })} />)
     expect(container.querySelector('.ep-toolbar')).toBeNull()

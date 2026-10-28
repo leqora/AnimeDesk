@@ -29,6 +29,12 @@ describe('TopBar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Raspored' }))
     expect(p.onNavigate).toHaveBeenLastCalledWith('schedule')
   })
+  it('the logo goes to Home', () => {
+    const p = props({ page: 'watchlist' })
+    renderUi(<TopBar {...p} />)
+    fireEvent.click(screen.getByRole('button', { name: /ANIMEDESK/ }))
+    expect(p.onNavigate).toHaveBeenCalledWith('home')
+  })
   it('right side keeps every sidebar function', () => {
     const p = props({ onOpenPalette: vi.fn() })
     renderUi(<TopBar {...p} />)

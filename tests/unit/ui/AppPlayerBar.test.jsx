@@ -191,6 +191,15 @@ describe('App top bar over the player', () => {
       await waitFor(() => expect(document.activeElement).toBe(document.querySelector('main.content')))
     })
 
+    it('the logo during playback closes the episode and opens Home', async () => {
+      const { api, open } = await start()
+      await open()
+      fireEvent.click(screen.getByRole('button', { name: /ANIMEDESK/ }))
+      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+      expect(api.player.closed).toHaveBeenCalledTimes(1)
+      expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'nav', playbackId: 'p1' }))
+    })
+
     it('avatar menu "Profil" during playback closes the player first', async () => {
       const { api, open } = await start()
       await open()

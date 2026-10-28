@@ -71,6 +71,8 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; letter-spacing:
 h2 { font-size: 22px; }
 h3 { font-size: 17px; }
 button, input, select, textarea { font: inherit; color: inherit; }
+/* The native option list is painted opaque by Windows; the translucent glass of select would leave the options light-on-white. */
+select option { background-color: var(--panel-opaque); color: var(--text); }
 button { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 7px 14px; cursor: pointer; transition: transform 150ms var(--ease), opacity 150ms var(--ease); }
 button:hover:not(:disabled) { background: var(--glass-strong); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
 .schedule-state button[aria-disabled="true"] { cursor: not-allowed; }
@@ -109,7 +111,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .app-shell--playing .topbar { z-index: var(--z-topbar-player); background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 85%, transparent), transparent); border-bottom-color: transparent; transition: opacity 200ms var(--ease); }
 /* the bar is also `inert` (no Tab, no clicks, hidden from screen readers) while hidden */
 .topbar--hidden { opacity: 0; pointer-events: none; }
-.topbar__logo { flex: none; font-family: var(--font-display); font-size: 20px; letter-spacing: .06em; background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.topbar__logo { flex: none; padding: 0; border: 0; border-radius: 0; cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .06em; background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 /* wraps the nav / Menu pair so focus can be tracked across the breakpoint, without changing the layout */
 .topbar__navwrap { display: contents; }
 .topbar__nav { overflow: hidden; display: flex; flex-wrap: nowrap; align-self: stretch; gap: 4px; min-width: 0; }
@@ -118,6 +120,8 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .topbar__link:hover:not(:disabled) { background: transparent; color: var(--text); }
 .topbar__link--active { color: var(--text); }
 .topbar__link--active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); } /* no glow: .topbar__nav clips overflow */
+.topbar__logo:hover:not(:disabled) { background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; } /* keep the gradient text on hover */
+.topbar__logo:active:not(:disabled) { transform: none; } /* the brand mark does not nudge on click */
 .topbar__link:focus-visible { outline-offset: -2px; } /* inside the box, so .topbar__nav overflow does not cut the ring */
 .topbar__right { margin-left: auto; display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; flex: none; }
 .topbar__palette { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; color: var(--text-muted); font-size: 13px; }
@@ -224,8 +228,11 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .ep-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 12px; }
 .ep-toolbar .ep-view { margin-bottom: 0; }
 .ep-toolbar__count { color: var(--text-muted); font-size: 14px; }
-/* The auto-download block may shrink and wrap its text instead of pushing "Mode" onto a second row; the selects keep their size. */
-.ep-toolbar .check-group { flex: 1 1 220px; min-width: 0; }
+/* The auto-download block keeps a readable width and drops to its own full-width row when it does not fit, instead of shrinking. */
+.ep-toolbar .check-group { flex: 1 1 260px; min-width: 260px; }
+.ep-toolbar__prefs { display: flex; flex-wrap: nowrap; gap: 10px 14px; }
+/* Labels sit above the selects here: side by side they would not fit one row with the rest of the toolbar at a 1000 px window. */
+.ep-toolbar__prefs .field--inline { flex-direction: column; align-items: flex-start; gap: 2px; }
 .ep-toolbar .field--inline { flex: none; }
 /* detail: 16:9 episode cards */
 .ep-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px 14px; }

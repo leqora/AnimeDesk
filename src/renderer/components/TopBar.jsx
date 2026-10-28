@@ -59,7 +59,7 @@ export function TopBar({ page, onNavigate, health, onSemaphoreClick, profileName
       onFocus={() => setFocusIn(true)}
       onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setFocusIn(false) }}
     >
-      <div className="topbar__logo">{t('app.name')}</div>
+      <button type="button" className="topbar__logo" aria-label={`${t('app.name')} – ${t('nav.home')}`} onClick={() => onNavigate('home')}>{t('app.name')}</button>
       <div className="topbar__navwrap" ref={navRef}>
       {narrow ? (
         <MenuButton label={t('topbar.menu')} className="topbar__menu" closeWhen={closeMenus} onOpenChange={menuChange}>

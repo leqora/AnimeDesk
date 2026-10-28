@@ -221,21 +221,22 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const episodeToolbar = (
     <>
       <span className="ep-toolbar__count">{t('detail.watchedCount', { watched: watched.length, total: entry.totalEpisodes ?? '?' })}</span>
-      {canAuto && (
-        <div className="check-group">
-          <label className="check">
-            <input
-              type="checkbox" checked={auto} disabled={downloadDir == null && !auto}
-              aria-describedby="auto-download-hint" onChange={(e) => toggleAuto(e.target.checked)}
-            />
-            {t('detail.autoDownload')}
-          </label>
-          <p id="auto-download-hint" className="check-hint muted">
-            {downloadDir === null ? t('detail.autoDownloadNoDir') : auto && `${t('detail.autoDownloadOn')}${entry.status === 'watching' ? '' : ` ${t('detail.autoDownloadNotWatching')}`}`}
-          </p>
-        </div>
-      )}
     </>
+  )
+  // After the Quality/Mode selects (see EpisodePicker), so the tab order matches the visual order.
+  const episodeToolbarEnd = canAuto && (
+    <div className="check-group">
+      <label className="check">
+        <input
+          type="checkbox" checked={auto} disabled={downloadDir == null && !auto}
+          aria-describedby="auto-download-hint" onChange={(e) => toggleAuto(e.target.checked)}
+        />
+        {t('detail.autoDownload')}
+      </label>
+      <p id="auto-download-hint" className="check-hint muted">
+        {downloadDir === null ? t('detail.autoDownloadNoDir') : auto && `${t('detail.autoDownloadOn')}${entry.status === 'watching' ? '' : ` ${t('detail.autoDownloadNotWatching')}`}`}
+      </p>
+    </div>
   )
   const spoilerRow = series && (series.meta === 'unreliable' || series.meta === 'ok') && (
     <div className="row spoiler-row">
@@ -270,6 +271,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
             onNote={openNoteFocused}
             onToggleWatched={(ep) => toggleWatched(Number(ep))}
             toolbar={episodeToolbar}
+            toolbarEnd={episodeToolbarEnd}
             afterToolbar={spoilerRow}
           />
           {noteEp != null && (

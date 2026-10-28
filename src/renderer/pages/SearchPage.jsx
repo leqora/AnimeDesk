@@ -11,7 +11,7 @@ import { animeLineTitle, normalizeTitle } from '../../shared/domain.js'
 
 const byNumber = (a, b) => Number(a) - Number(b)
 
-export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, pendingSearch = null, onPendingSearchHandled = () => {}, onFocusChange = () => {}, embedded = false }) {
+export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, pendingSearch = null, onPendingSearchHandled = () => {}, onFocusChange = () => {}, embedded = false, onEpisodePicked = () => {}, reopenSearch = null, onReopenHandled = () => {} }) {
   const api = useApi()
   const t = useT()
   const [query, setQuery] = useState('')
@@ -20,6 +20,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const [anime, setAnime] = useState(null)
   const [selected, setSelected] = useState([])
   const [watched, setWatched] = useState([])
+  const [reloadTick, setReloadTick] = useState(0) // bumped on reopen so `watched` is read again for the same series
   const [playing, setPlaying] = useState(null)
   const [error, setError] = useState(null)
   const [showDetails, setShowDetails] = useState(false)
@@ -35,8 +36,13 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   // When the episode picker appears while focus is lost (the search button that held it is gone), land on its heading.
   const pickerHeading = useRef(null)
   const pickerKey = phase === 'episode' && menu ? menu.requestId : null
+  const focusReopened = useRef(false) // set by a reopen: App parked focus on <main>, so the list heading may take it from there
   useEffect(() => {
-    if (pickerKey && (document.activeElement === document.body || !document.activeElement)) pickerHeading.current?.focus()
+    if (!pickerKey) return
+    const active = document.activeElement
+    const lost = !active || active === document.body || (focusReopened.current && active.matches?.('main.content'))
+    focusReopened.current = false
+    if (lost) pickerHeading.current?.focus()
   }, [pickerKey])
 
   // The session id and phase are mirrored in a ref so the unmount cleanup sees the latest values.
@@ -99,7 +105,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
       setWatched(e?.watchedEpisodes ?? [])
     })
     return () => { stale = true }
-  }, [api, anime])
+  }, [api, anime, reloadTick])
 
   const start = (params) => {
     live.current.lastParams = params
@@ -142,6 +148,19 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     }
   }, [pendingWatch, ready])
 
+  // "Back" from a player that was started in the episode list: that list was a live session's menu and it is gone, so start it again.
+  useEffect(() => {
+    if (reopenSearch && ready) {
+      if (live.current.sessionId) live.current.ignore.add(live.current.sessionId)
+      setAnime(reopenSearch.series)
+      setReloadTick((n) => n + 1)
+      focusReopened.current = true
+      setMenu(null)
+      start({ query: reopenSearch.series, anime: reopenSearch.series })
+      onReopenHandled()
+    }
+  }, [reopenSearch, ready])
+
   const search = (text) => {
     setAnime(null)
     start({ query: text.trim() })
@@ -177,7 +196,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     else api.watch.answerMenu(requestId, line)
   }
   const toggle = (ep) => setSelected((s) => (s.includes(ep) ? s.filter((x) => x !== ep) : [...s, ep]))
-  const watchSelected = () => { const ep = [...selected].sort(byNumber)[0]; if (ep) { live.current.lastEpisode = ep; answer(ep) } }
+  const watchSelected = () => { const ep = [...selected].sort(byNumber)[0]; if (ep) { live.current.lastEpisode = ep; answer(ep); if (anime) onEpisodePicked(anime) } }
 
   const changePrefs = async (patch) => {
     const started = live.current.startedMode ?? prefs.mode ?? settings.mode

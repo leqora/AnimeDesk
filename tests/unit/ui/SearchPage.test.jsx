@@ -127,6 +127,21 @@ describe('SearchPage', () => {
     act(() => handlers.end({ sessionId: 's9', retry: true, result: { ok: true } }))
     expect(screen.getByText('Pretraga…')).toBeInTheDocument()
   })
+  it('a late session end after reopening does not reset the list', async () => {
+    const { api, handlers } = withEvents()
+    const onReopenHandled = vi.fn()
+    const view = renderUi(<SearchPage {...props()} />, { api })
+    await waitFor(() => expect(handlers.menu).toBeDefined())
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2'] }))
+    act(() => handlers.playing({ title: 'Show', episode: '2' }))
+    view.rerender(<SearchPage {...props({ reopenSearch: { series: 'Show', seq: 1 }, onReopenHandled })} />)
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledWith({ query: 'Show', anime: 'Show' }))
+    expect(onReopenHandled).toHaveBeenCalledTimes(1)
+    act(() => handlers.end({ sessionId: 's1', result: { ok: true } })) // the old session winds down late
+    expect(screen.getByText('Pretraga…')).toBeInTheDocument()
+    act(() => handlers.menu({ requestId: 'r2', sessionId: 's2', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2'] }))
+    expect(screen.getByRole('button', { name: 'Gledaj' })).toBeInTheDocument()
+  })
   it('a recovery end while its own playing phase is shown returns to idle', async () => {
     const { api, handlers } = withEvents()
     renderUi(<SearchPage {...props()} />, { api })

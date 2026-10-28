@@ -19,9 +19,18 @@ describe('returnTarget', () => {
     expect(returnTarget({ origin: detail, behind: null, mode: 'origin', libraryEntryId: 'a1' })).toEqual({ kind: 'navigate', route: detail })
   })
   it('the episodes setting goes to the library series', () => {
-    expect(returnTarget({ origin: home, behind: null, mode: 'episodes', libraryEntryId: 'a1' })).toEqual({ kind: 'navigate', route: detail })
+    expect(returnTarget({ origin: home, behind: null, mode: 'episodes', libraryEntryId: 'a1' })).toEqual({ kind: 'navigate', route: detail, tab: 'episodes' })
   })
   it('the episodes setting falls back to the origin when the series is not in the library', () => {
     expect(returnTarget({ origin: { page: 'schedule', animeId: null }, behind: null, mode: 'episodes', libraryEntryId: null })).toEqual({ kind: 'navigate', route: { page: 'schedule', animeId: null } })
+  })
+  it('returns to the search episode list when the origin is a search', () => {
+    expect(returnTarget({ origin: { page: 'home', animeId: null, search: 'Naruto' }, behind: null, mode: 'origin', libraryEntryId: null })).toEqual({ kind: 'search', series: 'Naruto' })
+  })
+  it('the episodes setting wins over a search origin', () => {
+    expect(returnTarget({ origin: { page: 'home', animeId: null, search: 'Naruto' }, behind: null, mode: 'episodes', libraryEntryId: 'a1' })).toEqual({ kind: 'navigate', route: detail, tab: 'episodes' })
+  })
+  it('the episodes setting goes back when the series detail is right behind', () => {
+    expect(returnTarget({ origin: detail, behind: detail, mode: 'episodes', libraryEntryId: 'a1' })).toEqual({ kind: 'back', tab: 'episodes' })
   })
 })

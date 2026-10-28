@@ -22,6 +22,9 @@ describe('styles.css', () => {
     expect(rule).toContain('background: var(--cta)')
     expect(rule).toContain('border-color: var(--cta)')
   })
+  it('keeps the logo still on click (as specific as the global button:active nudge)', () => {
+    expect(css).toMatch(/\.topbar__logo:active:not\(:disabled\) \{ transform: none; \}/)
+  })
   it('reserves a stable scrollbar gutter on .content so the layout does not jump', () => {
     const rule = /(^|\n)\.content \{([^}]*)\}/.exec(css)?.[2] ?? ''
     expect(rule).toContain('scrollbar-gutter: stable')
@@ -113,6 +116,15 @@ ${sel} {`)
     expect(css).not.toMatch(/\.ep-card--next \.ep-card__frame[^{]*\{[^}]*outline/)
     expect(css).not.toMatch(/\.ep-card:focus-within \.ep-card__frame/)
     expect(css).toMatch(/\.ep-card__open:focus-visible \.ep-card__frame[^{]*\{[^}]*outline: 2px solid var\(--accent-2\)/)
+  })
+  it('select options have an opaque background', () => {
+    const m = css.match(/(?:^|\n)select option[^{]*\{([^}]*)\}/)
+    expect(m).not.toBeNull()
+    expect(m[1]).toContain('background-color: var(--panel-opaque)')
+    expect(m[1]).toContain('color: var(--text)')
+  })
+  it('the auto-download block keeps its label on one line and wraps to its own row instead of shrinking', () => {
+    expect(css).toMatch(/\.ep-toolbar \.check-group \{[^}]*flex: 1 1 260px;[^}]*min-width: 260px/)
   })
   it('has no leftover rules of the old detail banner', () => {
     expect(css).not.toMatch(/^\.banner[ _.{:]/m)
