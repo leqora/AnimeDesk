@@ -38,7 +38,7 @@ const PRELOAD_FALLBACK_MS = 3000
 function PlayerFallback() {
   const t = useT()
   return (
-    <div className="player">
+    <div className="player" tabIndex={-1}>
       <div className="player__loading" role="status" aria-label={t('player.loading')}>
         <span className="player__spinner" aria-hidden="true" />
       </div>

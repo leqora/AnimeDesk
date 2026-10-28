@@ -71,6 +71,8 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; letter-spacing:
 h2 { font-size: 22px; }
 h3 { font-size: 17px; }
 button, input, select, textarea { font: inherit; color: inherit; }
+/* The native option list is painted opaque by Windows; the translucent glass of select would leave the options light-on-white. */
+select option { background-color: var(--panel-opaque); color: var(--text); }
 button { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 7px 14px; cursor: pointer; transition: transform 150ms var(--ease), opacity 150ms var(--ease); }
 button:hover:not(:disabled) { background: var(--glass-strong); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
 .schedule-state button[aria-disabled="true"] { cursor: not-allowed; }
@@ -225,7 +227,10 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .ep-toolbar .ep-view { margin-bottom: 0; }
 .ep-toolbar__count { color: var(--text-muted); font-size: 14px; }
 /* The auto-download block may shrink and wrap its text instead of pushing "Mode" onto a second row; the selects keep their size. */
-.ep-toolbar .check-group { flex: 1 1 220px; min-width: 0; }
+.ep-toolbar .check-group { flex: 1 1 100px; min-width: 0; }
+.ep-toolbar__prefs { display: flex; flex-wrap: nowrap; gap: 10px 14px; }
+/* Labels sit above the selects here: side by side they would not fit one row with the rest of the toolbar at a 1000 px window. */
+.ep-toolbar__prefs .field--inline { flex-direction: column; align-items: flex-start; gap: 2px; }
 .ep-toolbar .field--inline { flex: none; }
 /* detail: 16:9 episode cards */
 .ep-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px 14px; }

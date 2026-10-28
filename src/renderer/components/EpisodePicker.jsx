@@ -107,7 +107,7 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
           {viewSwitch}
           {hideButton}
           {toolbar}
-          {prefsSelects}
+          {prefsSelects && <div className="ep-toolbar__prefs">{prefsSelects}</div>}
         </div>
       )}
       {toolbar != null && afterToolbar}
