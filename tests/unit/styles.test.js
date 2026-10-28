@@ -123,6 +123,9 @@ ${sel} {`)
     expect(m[1]).toContain('background-color: var(--panel-opaque)')
     expect(m[1]).toContain('color: var(--text)')
   })
+  it('the auto-download block keeps its label on one line and wraps to its own row instead of shrinking', () => {
+    expect(css).toMatch(/\.ep-toolbar \.check-group \{[^}]*flex: 1 1 260px;[^}]*min-width: 260px/)
+  })
   it('has no leftover rules of the old detail banner', () => {
     expect(css).not.toMatch(/^\.banner[ _.{:]/m)
   })

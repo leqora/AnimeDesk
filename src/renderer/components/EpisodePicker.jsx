@@ -8,7 +8,7 @@ import { GROUP_SIZE, episodeGroups, findEpisodeIndex, firstUnwatchedIndex } from
 
 const QUALITIES = ['best', '1080', '720', '480', '360', 'worst']
 
-export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, prefsLoading = false, onPrefs = null, groupKey = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, hideMarked = false, onHideMarked = null, toolbar = null, afterToolbar = null, onPlay = null, nextEp = null, ready = true, onNote = null, onToggleWatched = null, children }) {
+export function EpisodePicker({ episodes, selected, watched, noted = [], onToggle, prefs = null, prefsLoading = false, onPrefs = null, groupKey = null, series = null, poster = null, onReveal = null, loadThumb = null, progress = {}, hideMarked = false, onHideMarked = null, toolbar = null, toolbarEnd = null, afterToolbar = null, onPlay = null, nextEp = null, ready = true, onNote = null, onToggleWatched = null, children }) {
   const t = useT()
   const groups = episodeGroups(episodes)
   // The chosen group is remembered per series in the history entry (survives leaving the page and coming back); without a key it is local.
@@ -108,6 +108,7 @@ export function EpisodePicker({ episodes, selected, watched, noted = [], onToggl
           {hideButton}
           {toolbar}
           {prefsSelects && <div className="ep-toolbar__prefs">{prefsSelects}</div>}
+          {toolbarEnd}
         </div>
       )}
       {toolbar != null && afterToolbar}

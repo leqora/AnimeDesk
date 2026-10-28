@@ -229,7 +229,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .ep-toolbar .ep-view { margin-bottom: 0; }
 .ep-toolbar__count { color: var(--text-muted); font-size: 14px; }
 /* The auto-download block may shrink and wrap its text instead of pushing "Mode" onto a second row; the selects keep their size. */
-.ep-toolbar .check-group { flex: 1 1 100px; min-width: 0; }
+.ep-toolbar .check-group { flex: 1 1 260px; min-width: 260px; }
 .ep-toolbar__prefs { display: flex; flex-wrap: nowrap; gap: 10px 14px; }
 /* Labels sit above the selects here: side by side they would not fit one row with the rest of the toolbar at a 1000 px window. */
 .ep-toolbar__prefs .field--inline { flex-direction: column; align-items: flex-start; gap: 2px; }
