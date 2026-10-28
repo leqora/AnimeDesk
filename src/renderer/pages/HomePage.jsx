@@ -18,7 +18,7 @@ export const pickHeroEntries = (entries, max = 5) => entries.filter((e) => e.sta
 export const watchingNow = (entries) => entries.filter((e) => e.status === 'watching').sort(byRecent).slice(0, 10)
 export const pinnedEntries = (entries) => entries.filter((e) => e.pinnedAt).sort((a, b) => String(a.pinnedAt).localeCompare(String(b.pinnedAt)))
 
-export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, onContinue, onOpenAnime, pendingSearch = null, onPendingSearchHandled = () => {}, onSearch = () => {} }) {
+export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, onContinue, onOpenAnime, pendingSearch = null, onPendingSearchHandled = () => {}, onSearch = () => {}, onEpisodePicked = () => {}, reopenSearch = null, onReopenHandled = () => {} }) {
   const api = useApi()
   const t = useT()
   const toast = useToast()
@@ -137,7 +137,7 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
           )}
         </>
       )}
-      <SearchPage embedded ready={ready} settings={settings} onSettings={onSettings} onOpenWizard={onOpenWizard} pendingWatch={pendingWatch} onPendingHandled={onPendingHandled} pendingSearch={pendingSearch} onPendingSearchHandled={onPendingSearchHandled} onFocusChange={setFocused} />
+      <SearchPage embedded ready={ready} settings={settings} onSettings={onSettings} onOpenWizard={onOpenWizard} pendingWatch={pendingWatch} onPendingHandled={onPendingHandled} pendingSearch={pendingSearch} onPendingSearchHandled={onPendingSearchHandled} onFocusChange={setFocused} onEpisodePicked={onEpisodePicked} reopenSearch={reopenSearch} onReopenHandled={onReopenHandled} />
     </div>
   )
 }

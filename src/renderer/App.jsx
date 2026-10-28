@@ -230,6 +230,7 @@ export default function App({ api, sound: injectedSound }) {
   const afterPlayerClose = useRef(null)
   // Where the current episode was started from (a route), so "Back" from the player returns there; null = nowhere to return.
   const originRef = useRef(null)
+  const [reopenSearch, setReopenSearch] = useState(null) // { series, seq }: Search restarts the episode list of that series
   const playerOpenedRef = useRef(false) // a player opened since the last fresh start
   const playedSessions = useRef(new Set()) // sessions that reached playback (their late end is not a failed start)
   const [bootFailed, setBootFailed] = useState(false)
@@ -437,6 +438,8 @@ export default function App({ api, sound: injectedSound }) {
     setPendingWatch(params)
     nav.navigate({ page: 'home', animeId: null })
   }
+  // Search picked an episode from its list: remember the series so "Back" from the player can reopen that list
+  const onEpisodePicked = (title) => { originRef.current = { page: 'home', animeId: null, search: title }; playerOpenedRef.current = false }
   // "Back" from the player: to where the episode was started (or, by setting, to the series' episode list)
   const returnFromPlayer = async (title) => {
     const origin = originRef.current
@@ -448,10 +451,14 @@ export default function App({ api, sound: injectedSound }) {
       try { libraryEntryId = ((await api.library.list()) ?? []).find((e) => normalizeTitle(e.aniCliTitle ?? e.title).toLowerCase() === key)?.id ?? null } catch (err) { console.warn('return to episodes: library read failed', err?.message) }
     }
     const target = returnTarget({ origin, behind: nav.behind, mode, libraryEntryId })
-    if (target.kind === 'back') nav.back()
+    if (target.kind === 'back') { nav.back(); if (target.tab) nav.setRouteState('tab', target.tab) }
     else if (target.kind === 'navigate') {
       nav.navigate(target.route)
-      if (mode === 'episodes' && libraryEntryId) nav.setRouteState('tab', 'episodes')
+      if (target.tab) nav.setRouteState('tab', target.tab)
+    } else if (target.kind === 'search') {
+      // the episode list was the menu of a live session that ended with the playback: ask Search for a fresh one
+      nav.navigate({ page: 'home', animeId: null })
+      setReopenSearch((r) => ({ series: target.series, seq: (r?.seq ?? 0) + 1 }))
     }
     setFocusMain(true)
   }
@@ -526,7 +533,7 @@ export default function App({ api, sound: injectedSound }) {
               <ErrorBoundary>
                 <RouteStateContext.Provider value={{ state: nav.entry.state, set: nav.setRouteState }}>
                 {page === 'home' && (
-                  <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onSearch={searchAnime} />
+                  <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onSearch={searchAnime} onEpisodePicked={onEpisodePicked} reopenSearch={reopenSearch} onReopenHandled={() => setReopenSearch(null)} />
                 )}
                 {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} onSearch={searchAnime} playerOpen={overlay} />}
                 {page === 'discover' && <DiscoverPage ready={ready} onOpenAnime={openAnime} onSearch={searchAnime} />}

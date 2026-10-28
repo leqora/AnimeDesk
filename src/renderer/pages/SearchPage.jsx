@@ -11,7 +11,7 @@ import { animeLineTitle, normalizeTitle } from '../../shared/domain.js'
 
 const byNumber = (a, b) => Number(a) - Number(b)
 
-export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, pendingSearch = null, onPendingSearchHandled = () => {}, onFocusChange = () => {}, embedded = false }) {
+export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingWatch, onPendingHandled, pendingSearch = null, onPendingSearchHandled = () => {}, onFocusChange = () => {}, embedded = false, onEpisodePicked = () => {}, reopenSearch = null, onReopenHandled = () => {} }) {
   const api = useApi()
   const t = useT()
   const [query, setQuery] = useState('')
@@ -142,6 +142,17 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     }
   }, [pendingWatch, ready])
 
+  // "Back" from a player that was started in the episode list: that list was a live session's menu and it is gone, so start it again.
+  useEffect(() => {
+    if (reopenSearch && ready) {
+      if (live.current.sessionId) live.current.ignore.add(live.current.sessionId)
+      setAnime(reopenSearch.series)
+      setMenu(null)
+      start({ query: reopenSearch.series, anime: reopenSearch.series })
+      onReopenHandled()
+    }
+  }, [reopenSearch, ready])
+
   const search = (text) => {
     setAnime(null)
     start({ query: text.trim() })
@@ -177,7 +188,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     else api.watch.answerMenu(requestId, line)
   }
   const toggle = (ep) => setSelected((s) => (s.includes(ep) ? s.filter((x) => x !== ep) : [...s, ep]))
-  const watchSelected = () => { const ep = [...selected].sort(byNumber)[0]; if (ep) { live.current.lastEpisode = ep; answer(ep) } }
+  const watchSelected = () => { const ep = [...selected].sort(byNumber)[0]; if (ep) { live.current.lastEpisode = ep; answer(ep); if (anime) onEpisodePicked(anime) } }
 
   const changePrefs = async (patch) => {
     const started = live.current.startedMode ?? prefs.mode ?? settings.mode
