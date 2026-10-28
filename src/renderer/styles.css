@@ -111,7 +111,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .app-shell--playing .topbar { z-index: var(--z-topbar-player); background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 85%, transparent), transparent); border-bottom-color: transparent; transition: opacity 200ms var(--ease); }
 /* the bar is also `inert` (no Tab, no clicks, hidden from screen readers) while hidden */
 .topbar--hidden { opacity: 0; pointer-events: none; }
-.topbar__logo { flex: none; font-family: var(--font-display); font-size: 20px; letter-spacing: .06em; background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.topbar__logo { flex: none; padding: 0; border: 0; border-radius: 0; cursor: pointer; font-family: var(--font-display); font-size: 20px; letter-spacing: .06em; background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 /* wraps the nav / Menu pair so focus can be tracked across the breakpoint, without changing the layout */
 .topbar__navwrap { display: contents; }
 .topbar__nav { overflow: hidden; display: flex; flex-wrap: nowrap; align-self: stretch; gap: 4px; min-width: 0; }
@@ -120,6 +120,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .topbar__link:hover:not(:disabled) { background: transparent; color: var(--text); }
 .topbar__link--active { color: var(--text); }
 .topbar__link--active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); } /* no glow: .topbar__nav clips overflow */
+.topbar__logo:hover:not(:disabled) { background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; } /* keep the gradient text on hover */
 .topbar__link:focus-visible { outline-offset: -2px; } /* inside the box, so .topbar__nav overflow does not cut the ring */
 .topbar__right { margin-left: auto; display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; flex: none; }
 .topbar__palette { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; color: var(--text-muted); font-size: 13px; }
