@@ -22,6 +22,9 @@ describe('styles.css', () => {
     expect(rule).toContain('background: var(--cta)')
     expect(rule).toContain('border-color: var(--cta)')
   })
+  it('keeps the logo still on click (as specific as the global button:active nudge)', () => {
+    expect(css).toMatch(/\.topbar__logo:active:not\(:disabled\) \{ transform: none; \}/)
+  })
   it('reserves a stable scrollbar gutter on .content so the layout does not jump', () => {
     const rule = /(^|\n)\.content \{([^}]*)\}/.exec(css)?.[2] ?? ''
     expect(rule).toContain('scrollbar-gutter: stable')

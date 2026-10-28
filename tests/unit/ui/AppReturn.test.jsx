@@ -60,7 +60,7 @@ async function searchPlay(s, { open = true } = {}) {
   act(() => s.cb.playing({ title: 'Show', episode: '2', sessionId: 's1' }))
   await s.openPlayer(ep('p1', '2'))
 }
-const playFromDetail =() => fireEvent.click(screen.getByRole('button', { name: /^Nastavi EP 2/ }))
+const playFromDetail = () => fireEvent.click(screen.getByRole('button', { name: /^Nastavi EP 2/ }))
 
 beforeEach(() => {
   HTMLMediaElement.prototype.play = vi.fn(function () { return Promise.resolve() })
@@ -180,6 +180,37 @@ describe('Back from a player started in the Search episode list', () => {
     act(() => { fireEvent(document.querySelector('.player__video'), new Event('ended')) })
     fireEvent.click(within(document.querySelector('.player__card')).getByRole('button', { name: 'Nazad' }))
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledWith(reopened))
+  })
+  it('the reopened list marks the just-watched episode as watched', async () => {
+    const s = await start()
+    await searchPlay(s)
+    s.api.library.list.mockResolvedValue([{ ...entry, watchedEpisodes: [1, 2] }]) // the player saved its progress
+    clickBack()
+    await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledWith(reopened))
+    act(() => s.cb.menu({ requestId: 'r2', sessionId: 's2', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
+    const two = await screen.findByRole('button', { name: '2' })
+    await waitFor(() => expect(two.className).toContain('ep--watched'))
+  })
+  it('the reopened list takes focus once it arrives', async () => {
+    const s = await start()
+    await searchPlay(s)
+    clickBack()
+    await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledWith(reopened))
+    act(() => s.cb.menu({ requestId: 'r2', sessionId: 's2', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
+    const heading = await screen.findByRole('heading', { name: /Izaberi epizodu/ })
+    await waitFor(() => expect(document.activeElement).toBe(heading))
+  })
+  it('back after Next still reopens the search list', async () => {
+    const s = await start()
+    await searchPlay(s)
+    act(() => s.cb.playing({ title: 'Show', episode: '2', sessionId: 's1' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sledeća epizoda' }))
+    await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledTimes(1))
+    act(() => s.cb.end({ sessionId: 's1', retry: false, result: { ok: true } }))
+    await s.openPlayer(ep('p2', '3'))
+    clickBack()
+    await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledTimes(2))
+    expect(s.api.watch.start).toHaveBeenLastCalledWith(reopened)
   })
   it('a top bar click during a search playback does not reopen the list', async () => {
     const s = await start()
