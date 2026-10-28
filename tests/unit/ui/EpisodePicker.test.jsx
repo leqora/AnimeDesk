@@ -32,6 +32,13 @@ describe('EpisodePicker', () => {
     expect(bar).toHaveTextContent('X')
     expect(container.querySelector('.episode-bar')).toBeNull()
   })
+  it('quality and mode stay together in the toolbar', () => {
+    const { container } = renderUi(<EpisodePicker {...base({ prefs: {}, onPrefs: vi.fn() })} toolbar={<span>X</span>} />)
+    const prefs = container.querySelector('.ep-toolbar .ep-toolbar__prefs')
+    expect(prefs).not.toBeNull()
+    expect(prefs).toContainElement(screen.getByLabelText('Kvalitet'))
+    expect(prefs).toContainElement(screen.getByLabelText('Režim'))
+  })
   it('keeps quality and sub/dub in the sticky bar and renders no toolbar without the toolbar prop', () => {
     const { container } = renderUi(<EpisodePicker {...base({ prefs: {}, onPrefs: vi.fn() })} />)
     expect(container.querySelector('.ep-toolbar')).toBeNull()

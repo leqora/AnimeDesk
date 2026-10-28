@@ -114,6 +114,12 @@ ${sel} {`)
     expect(css).not.toMatch(/\.ep-card:focus-within \.ep-card__frame/)
     expect(css).toMatch(/\.ep-card__open:focus-visible \.ep-card__frame[^{]*\{[^}]*outline: 2px solid var\(--accent-2\)/)
   })
+  it('select options have an opaque background', () => {
+    const m = css.match(/(?:^|\n)select option[^{]*\{([^}]*)\}/)
+    expect(m).not.toBeNull()
+    expect(m[1]).toContain('background-color: var(--panel-opaque)')
+    expect(m[1]).toContain('color: var(--text)')
+  })
   it('has no leftover rules of the old detail banner', () => {
     expect(css).not.toMatch(/^\.banner[ _.{:]/m)
   })

@@ -5,7 +5,7 @@ import { Icon } from './Icon.jsx'
 export function PlayerReconnecting({ state, title, episode, error, onRetry, onBack }) {
   const t = useT()
   return (
-    <div className="player player--reconnect">
+    <div className="player player--reconnect" tabIndex={-1}>
       <div className="player__top">
         <button type="button" onClick={onBack}><Icon name="back" /> {t('search.back')}</button>
         <h2 className="player__title">{title} <span className="hud">{t('player.episode', { episode: episode ?? '?' })}</span></h2>

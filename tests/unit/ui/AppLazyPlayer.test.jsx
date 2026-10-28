@@ -31,6 +31,7 @@ describe('App lazy player', () => {
     const { open } = await start()
     open(episode('p1'))
     expect(screen.getByRole('status', { name: 'Učitavanje' })).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Učitavanje' }).closest('.player')).toHaveAttribute('tabindex', '-1') // the loading screen can hold focus
     await act(async () => done({ PlayerView: FakePlayer }))
     expect(await screen.findByTestId('fake-player')).toBeInTheDocument()
   })

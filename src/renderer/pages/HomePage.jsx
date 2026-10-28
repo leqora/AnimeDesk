@@ -119,6 +119,11 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
           {heroEntries.length > 0
             ? <HomeHero entries={heroEntries} ready={ready} reduced={reduced} onContinue={onContinue} onDetails={onOpenAnime} />
             : (peekSettled || frozen.current) && <PopularHero slides={frozen.current ?? []} reduced={reduced} onSearch={(query) => (query ? onSearch(query) : focusSearch())} />}
+        </>
+      )}
+      <SearchPage embedded ready={ready} settings={settings} onSettings={onSettings} onOpenWizard={onOpenWizard} pendingWatch={pendingWatch} onPendingHandled={onPendingHandled} pendingSearch={pendingSearch} onPendingSearchHandled={onPendingSearchHandled} onFocusChange={setFocused} />
+      {!focused && (
+        <>
           {pinned.length > 0 && <Rail title={t('home.favorites')} count={pinned.length}>{pinned.map(card)}</Rail>}
           {rail.length > 0 && (
             <Rail title={t('home.continueWatching')} count={rail.length} variant="wide">
@@ -137,7 +142,6 @@ export function HomePage({ ready, settings, onSettings, onOpenWizard, pendingWat
           )}
         </>
       )}
-      <SearchPage embedded ready={ready} settings={settings} onSettings={onSettings} onOpenWizard={onOpenWizard} pendingWatch={pendingWatch} onPendingHandled={onPendingHandled} pendingSearch={pendingSearch} onPendingSearchHandled={onPendingSearchHandled} onFocusChange={setFocused} />
     </div>
   )
 }

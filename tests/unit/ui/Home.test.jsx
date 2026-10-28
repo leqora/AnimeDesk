@@ -35,6 +35,16 @@ describe('HomePage', () => {
     expect(onOpenAnime).toHaveBeenCalledWith('b')
     expect(screen.getByRole('button', { name: 'Traži' })).toBeInTheDocument()
   })
+  it('search sits right below the hero, above the rails', async () => {
+    const api = makeFakeApi({ library: { list: vi.fn(async () => [entry()]) } })
+    const { container } = renderUi(<HomePage ready settings={{ ...DEFAULT_SETTINGS }} onSettings={() => {}} onOpenWizard={() => {}} pendingWatch={null} onPendingHandled={() => {}} onContinue={() => {}} onOpenAnime={() => {}} />, { api })
+    const rail = await screen.findByRole('region', { name: 'Nastavi gledanje' })
+    const hero = container.querySelector('.home-hero, .page-banner')
+    const input = container.querySelector('#search-input')
+    expect(hero).not.toBeNull()
+    expect(hero.compareDocumentPosition(input) & window.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(input.compareDocumentPosition(rail) & window.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
 })
 
 describe('WatchlistPage animeId', () => {
