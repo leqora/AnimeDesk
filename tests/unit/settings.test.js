@@ -41,6 +41,13 @@ describe('settings', () => {
     s.update({ downloadDir: null })
     expect(createSettings(file).get().downloadDir).toBeNull()
   })
+  it('persists returnAfterEpisode through update() and rejects other values', () => {
+    const s = createSettings(file)
+    s.update({ returnAfterEpisode: 'episodes' })
+    expect(createSettings(file).get().returnAfterEpisode).toBe('episodes')
+    s.update({ returnAfterEpisode: 'x' })
+    expect(createSettings(file).get().returnAfterEpisode).toBe('origin')
+  })
   it('get() returns a copy', () => {
     const s = createSettings(file)
     s.get().language = 'en'

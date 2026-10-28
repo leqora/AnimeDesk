@@ -16,11 +16,17 @@ const flush = () => act(async () => { await Promise.resolve(); await Promise.res
 
 async function start({ settings = {}, library = [entry] } = {}) {
   const cb = {}
+  // Home's search page registers its own handlers too: keep every subscriber and notify all, like the real event bus
+  const ends = new Set()
+  const playings = new Set()
+  const sub = (set) => (f) => { set.add(f); return () => set.delete(f) }
+  cb.end = (e) => [...ends].forEach((f) => f(e))
+  cb.playing = (e) => [...playings].forEach((f) => f(e))
   const api = makeFakeApi({
     settings: { get: vi.fn(async () => ({ ...DEFAULT_SETTINGS, ...settings })) },
     library: { list: vi.fn(async () => library) },
-    player: { onOpen: vi.fn((f) => { cb.open = f; return () => {} }) },
-    watch: { onSessionEnd: vi.fn((f) => { cb.end = f; return () => {} }), onPlaying: vi.fn((f) => { cb.playing = f; return () => {} }) },
+    player: { onOpen: vi.fn((f) => { cb.open = f; return () => {} }), onRetry: vi.fn((f) => { cb.retry = f; return () => {} }), onClose: vi.fn((f) => { cb.close = f; return () => {} }) },
+    watch: { onSessionEnd: vi.fn(sub(ends)), onPlaying: vi.fn(sub(playings)) },
   })
   api.onOpenAnime = vi.fn((f) => { cb.anime = f; return () => {} })
   render(<App api={api} />)
@@ -119,5 +125,19 @@ describe('Back from the player', () => {
     await waitFor(() => expect(document.querySelector('.player')).toBeNull())
     expect(s.onDetail()).toBe(false)
     expect(await screen.findByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
+  })
+  it('Back on a failed reconnect forgets the origin', async () => {
+    const s = await start()
+    await s.openDetail()
+    playFromDetail()
+    await s.openPlayer(ep('p1', '2'))
+    act(() => s.cb.retry({ title: 'Show', episode: '2', state: 'failed', error: 'unknown', sessionId: null }))
+    act(() => s.cb.close())
+    fireEvent.click(await screen.findByRole('button', { name: 'Nazad' }))
+    expect(s.onDetail()).toBe(false)
+    await s.openPlayer(ep('p2', '2')) // started from the Home search box
+    clickBack()
+    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    expect(s.onDetail()).toBe(false)
   })
 })
