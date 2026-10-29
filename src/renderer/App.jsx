@@ -182,6 +182,7 @@ export default function App({ api, sound: injectedSound }) {
   const [paletteOpen, setPaletteOpen] = useState(false)
   // one-shot: after the palette has unmounted (so Modal's opener restore is done) focus goes to the page
   const [focusMain, setFocusMain] = useState(false)
+  const [homeResetSeq, setHomeResetSeq] = useState(0) // bumped when Home is pressed on Home
   useEffect(() => {
     if (!focusMain || paletteOpen) return
     // a toast that took focus on purpose (the "Poništi" button after a removal) keeps it
@@ -425,7 +426,17 @@ export default function App({ api, sound: injectedSound }) {
     setFocusImport(true)
     api.stats.get().then(setStats).catch((err) => console.warn('stats refresh after import failed', err?.message))
   }
-  const navigate = (p) => { if (p !== page) sound.play('navigate'); setReopenSearch(null); nav.navigate({ page: p, animeId: null }) }
+  // Home pressed while already on Home: an open search list returns to its start (HomePage -> SearchPage resetSeq), top of the page.
+  const navigate = (p) => {
+    if (p !== page) sound.play('navigate')
+    setReopenSearch(null)
+    if (p === 'home' && page === 'home') {
+      setHomeResetSeq((n) => n + 1)
+      if (mainRef.current) mainRef.current.scrollTop = 0
+      setFocusMain(true)
+    }
+    nav.navigate({ page: p, animeId: null })
+  }
   const openAnime = (id) => { setReopenSearch(null); nav.navigate({ page: 'watchlist', animeId: id }) }
   openRef.current = { anime: openAnime, page: navigate }
   const closeDetail = () => (nav.canBack ? nav.back() : nav.navigate({ page: 'watchlist', animeId: null }))
@@ -533,7 +544,7 @@ export default function App({ api, sound: injectedSound }) {
               <ErrorBoundary>
                 <RouteStateContext.Provider value={{ state: nav.entry.state, set: nav.setRouteState }}>
                 {page === 'home' && (
-                  <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onSearch={searchAnime} onEpisodePicked={onEpisodePicked} reopenSearch={reopenSearch} onReopenHandled={() => setReopenSearch(null)} />
+                  <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onSearch={searchAnime} onEpisodePicked={onEpisodePicked} reopenSearch={reopenSearch} onReopenHandled={() => setReopenSearch(null)} resetSeq={homeResetSeq} />
                 )}
                 {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} onSearch={searchAnime} playerOpen={overlay} />}
                 {page === 'discover' && <DiscoverPage ready={ready} onOpenAnime={openAnime} onSearch={searchAnime} />}

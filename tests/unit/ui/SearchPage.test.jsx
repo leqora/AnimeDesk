@@ -495,6 +495,109 @@ describe('Search page header (v0.19.0)', () => {
   })
 })
 
+describe('search while an episode plays', () => {
+  const withAll = () => {
+    const handlers = {}
+    const capture = (name) => vi.fn((cb) => { handlers[name] = cb; return () => {} })
+    const api = makeFakeApi({ watch: { onMenu: capture('menu'), onPlaying: capture('playing'), onSessionEnd: capture('end'), onTitle: capture('title') } })
+    return { api, handlers }
+  }
+  const searchFor = (text) => {
+    fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: text } })
+    fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+  }
+  // A plays; a new search starts session B whose episode list is shown.
+  const playingThenList = async (api, handlers) => {
+    api.watch.start.mockResolvedValueOnce({ sessionId: 'B' })
+    act(() => handlers.playing({ title: 'Show', episode: '1', sessionId: 'A' }))
+    searchFor('other')
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledWith({ query: 'other' }))
+    await flushPromises()
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 'B', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2'] }))
+    expect(screen.getByRole('button', { name: 'Gledaj' })).toBeInTheDocument()
+  }
+  it('search works while an episode plays', async () => {
+    const { api, handlers } = withAll()
+    renderUi(<SearchPage {...props()} />, { api })
+    act(() => handlers.playing({ title: 'Show', episode: '1', sessionId: 'A' }))
+    expect(screen.getByText('Pušta se: Show — epizoda 1')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Traži' })).toBeEnabled()
+    searchFor('other')
+    expect(api.watch.start).toHaveBeenCalledWith({ query: 'other' })
+  })
+  it('the playing session ending does not wipe a newer list', async () => {
+    const { api, handlers } = withAll()
+    renderUi(<SearchPage {...props()} />, { api })
+    await playingThenList(api, handlers)
+    act(() => handlers.end({ sessionId: 'A', retry: false, result: { ok: true } }))
+    expect(screen.getByRole('button', { name: 'Gledaj' })).toBeInTheDocument()
+    expect(screen.queryByText(/Pušta se/)).not.toBeInTheDocument()
+  })
+  it('a recovery of the playing session does not touch a newer list', async () => {
+    const { api, handlers } = withAll()
+    renderUi(<SearchPage {...props()} />, { api })
+    await playingThenList(api, handlers)
+    act(() => handlers.playing({ title: 'Show', episode: '1', sessionId: 'R' }))
+    act(() => handlers.end({ sessionId: 'R', retry: true, result: { ok: false, error: 'no-sources' } }))
+    expect(screen.getByRole('button', { name: 'Gledaj' })).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+  it('remount during playback', async () => {
+    const { api, handlers } = withAll()
+    const first = renderUi(<SearchPage {...props()} />, { api })
+    act(() => handlers.playing({ title: 'Show', episode: '1', sessionId: 'A' }))
+    first.unmount()
+    expect(api.watch.cancel).not.toHaveBeenCalled()
+    renderUi(<SearchPage {...props()} />, { api })
+    await playingThenList(api, handlers)
+    act(() => handlers.end({ sessionId: 'A', retry: false, result: { ok: true } }))
+    expect(screen.getByRole('button', { name: 'Gledaj' })).toBeInTheDocument()
+  })
+  it('unmount cancels only the list session, never the playing one', async () => {
+    const { api, handlers } = withAll()
+    const view = renderUi(<SearchPage {...props()} />, { api })
+    await playingThenList(api, handlers)
+    view.unmount()
+    expect(api.watch.cancel).toHaveBeenCalledTimes(1)
+    expect(api.watch.cancel).toHaveBeenCalledWith('B')
+  })
+  it('ending the list returns to the playing message', async () => {
+    const { api, handlers } = withAll()
+    renderUi(<SearchPage {...props()} />, { api })
+    await playingThenList(api, handlers)
+    act(() => handlers.end({ sessionId: 'B', retry: false, result: { ok: false, error: 'cancelled' } }))
+    expect(screen.getByText('Pušta se: Show — epizoda 1')).toBeInTheDocument()
+  })
+})
+describe('resetSeq', () => {
+  it('closes the open list and keeps the typed text', async () => {
+    const handlers = {}
+    const capture = (name) => vi.fn((cb) => { handlers[name] = cb; return () => {} })
+    const api = makeFakeApi({ watch: { onMenu: capture('menu'), onPlaying: capture('playing'), onSessionEnd: capture('end') } })
+    api.watch.start.mockResolvedValueOnce({ sessionId: 'B' })
+    const view = renderUi(<SearchPage {...props({ resetSeq: 0 })} />, { api })
+    fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: 'other' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalled())
+    await flushPromises()
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 'B', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show'] }))
+    expect(screen.getByRole('button', { name: /Show/ })).toBeInTheDocument()
+    view.rerender(<SearchPage {...props({ resetSeq: 1 })} />)
+    expect(api.watch.cancel).toHaveBeenCalledWith('B')
+    expect(screen.queryByRole('button', { name: /Show/ })).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Naziv animea…')).toHaveValue('other')
+    expect(screen.getByRole('button', { name: 'Traži' })).toBeEnabled()
+    act(() => handlers.end({ sessionId: 'B', retry: false, result: { ok: false, error: 'cancelled' } }))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+  it('does nothing on the first value or without an open list', async () => {
+    const { api } = withEvents()
+    const view = renderUi(<SearchPage {...props({ resetSeq: 3 })} />, { api })
+    view.rerender(<SearchPage {...props({ resetSeq: 4 })} />)
+    expect(api.watch.cancel).not.toHaveBeenCalled()
+  })
+})
+
 describe('Search embedded in Home', () => {
   it('has a section heading like the rails and no page header or subtitle', () => {
     const { container } = renderUi(<SearchPage embedded {...props()} />)
