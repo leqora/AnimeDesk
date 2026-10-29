@@ -11,11 +11,20 @@ export function animeLineTitle(line) {
   return String(line).replace(/^\s*\d+\s+/, '').trim()
 }
 
-// First episode not yet watched among 1..max(totalEpisodes, highest watched); 1 when all are watched.
-export function nextEpisode(entry) {
-  const max = Math.max(entry.totalEpisodes ?? 0, ...entry.watchedEpisodes.map(Math.ceil), 1)
-  for (let ep = 1; ep <= max; ep++) if (!entry.watchedEpisodes.includes(ep)) return ep
-  // Unknown total: the series may go on, so continue after the last watched episode; a finished known series restarts at 1.
-  if (entry.totalEpisodes == null) return max + 1
-  return 1
+// The episode "Continue" offers: the one after the highest watched whole episode, or the latest started one beyond it
+// (a saved position in `progress`, keyed by episode number). Past a known total: the first unwatched, or 1 when all are watched.
+export function nextEpisode(entry, progress = {}) {
+  const watched = entry.watchedEpisodes
+  const total = entry.totalEpisodes ?? null
+  const h = watched.reduce((m, n) => Math.max(m, Math.floor(n)), 0)
+  let c = h + 1
+  for (const key of Object.keys(progress ?? {})) {
+    const n = /^\d+$/.test(key) ? Number(key) : NaN
+    if (n > h && (total == null || n <= total) && !watched.includes(n)) c = Math.max(c, n)
+  }
+  if (total != null && c > total) {
+    for (let ep = 1; ep <= total; ep++) if (!watched.includes(ep)) return ep
+    return 1
+  }
+  return c
 }

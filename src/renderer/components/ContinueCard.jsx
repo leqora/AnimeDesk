@@ -35,9 +35,9 @@ export function ContinueCard({ entry, ready, onContinue, onOpen }) {
   const toast = useToast()
   const lineId = useId()
   const key = entry.aniCliTitle ?? entry.title
-  const next = nextEpisode(entry)
-  const info = usePosterInfo(entry.title, entry.aniListId)
   const progress = useEpisodeProgress(key)
+  const next = nextEpisode(entry, progress)
+  const info = usePosterInfo(entry.title, entry.aniListId)
   const rawThumb = useNextThumb(entry, next)
   // An image that fails to load (a removed cache file, a broken thumb) falls through to the next source.
   const [bad, setBad] = useState([])
