@@ -95,6 +95,8 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
       }
     }
     const mpvResumed = () => {
+      // A new episode in mpv must not leave the in-app player running (and playing) underneath.
+      if (internalPlayer?.isActive?.()) internalPlayer.stop()
       const saved = info.episode != null ? positions?.get(info.title, info.episode) ?? null : null
       return saved ? mpv([...info.mpvArgs, `--start=${Math.floor(saved.position)}`], { resumeAt: saved.position }) : mpv(info.mpvArgs)
     }
