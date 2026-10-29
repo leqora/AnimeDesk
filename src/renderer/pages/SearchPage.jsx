@@ -53,7 +53,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const [prefsLoaded, setPrefsLoaded] = useState(false)
   // ignore: sessions we cancelled on purpose (mode switch, series prefs) — their late events must not touch the new session
   // startedMode: the sub/dub the running session was started with (ani-cli reads it only at start)
-  const live = useRef({ listSession: null, playingSession: null, phase: 'idle', ignore: new Set(), lastEpisode: null, startedMode: null, startSeq: 0, abandoned: new Set() })
+  const live = useRef({ listSession: null, playingSession: null, phase: 'idle', ignore: new Set(), lastEpisode: null, startedMode: null, startSeq: 0, abandoned: new Set(), pendingStart: null, earlyEnds: new Map() })
   useEffect(() => { live.current.phase = phase }, [phase])
   // Stay focused between the anime and episode menus (and during a sub/dub restart) so the home sections do not flash back.
   // A "no dub" error for the chosen series also stays on top, so "Play subtitled" is not pushed below the home sections.
@@ -66,6 +66,9 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
       api.watch.onMenu((m) => {
         const l = live.current
         if (l.ignore.has(m.sessionId) || m.sessionId === l.playingSession) return
+        // Only our own list session, or the answer to a live start that has not replied yet, may show a menu.
+        const startLive = l.pendingStart != null && !l.abandoned.has(l.pendingStart)
+        if (m.sessionId !== l.listSession && !(l.phase === 'busy' && startLive)) return
         l.listSession = m.sessionId; setMenu(m); setSelected([]); setPhase(m.kind === 'episode' ? 'episode' : 'anime')
       }),
       api.watch.onPlaying((p) => {
@@ -98,8 +101,13 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
         }
         // A recovery session is started by main, never by this page.
         if (retry) return
-        // Some other session while our list is live (e.g. a stale one): not ours to end.
+        // Some other session while our list is live or our start has not replied: not ours to end — but keep the
+        // end of a start that fails so fast it ends before its reply, and settle it when the reply names the session.
         if (l.listSession && l.listSession !== sessionId) return
+        if (!l.listSession && l.pendingStart != null) {
+          if (!l.abandoned.has(l.pendingStart)) l.earlyEnds.set(sessionId, { result, failed })
+          return
+        }
         l.listSession = null
         focusReopened.current = false // a reopen that ended without a list must not move focus later
         setMenu(null)
@@ -144,6 +152,8 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     // Until the new session answers, nothing from the previous one (e.g. a late probed title) may land here.
     live.current.listSession = null
     const seq = ++live.current.startSeq
+    live.current.pendingStart = seq
+    live.current.earlyEnds.clear()
     setError(null)
     setShowDetails(false)
     setNotice(null)
@@ -151,12 +161,38 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     setPhase('busy')
     api.watch.start(params)
       .then((r) => {
-        if (live.current.abandoned.delete(seq) && r?.sessionId) { live.current.ignore.add(r.sessionId); api.watch.cancel(r.sessionId); return }
-        if (seq !== live.current.startSeq) return
-        if (r?.sessionId && r.sessionId !== live.current.playingSession) live.current.listSession = r.sessionId
-        live.current.startedMode = r?.mode ?? null
+        const l = live.current
+        if (l.abandoned.delete(seq)) {
+          if (l.pendingStart === seq) l.pendingStart = null
+          if (r?.sessionId) { l.ignore.add(r.sessionId); api.watch.cancel(r.sessionId) }
+          return
+        }
+        if (seq !== l.startSeq) return
+        l.pendingStart = null
+        const sid = r?.sessionId
+        l.startedMode = r?.mode ?? null
+        if (!sid) return
+        if (sid === l.playingSession) {
+          // The reply names a session that already reported playing (an adopted prefetch): nothing to list.
+          if (l.phase === 'busy') setPhase('playing')
+          return
+        }
+        l.listSession = sid
+        const early = l.earlyEnds.get(sid)
+        l.earlyEnds.clear()
+        if (early) {
+          l.listSession = null
+          setMenu(null)
+          setPhase(l.playingSession ? 'playing' : 'idle')
+          if (early.failed) setError(early.result)
+        }
       })
-      .catch(() => { setPhase('idle'); setError({ error: 'unknown' }) })
+      .catch(() => {
+        const l = live.current
+        if (l.abandoned.delete(seq) || seq !== l.startSeq) return
+        l.pendingStart = null
+        setPhase('idle'); setError({ error: 'unknown' })
+      })
   }
   const retrySame = () => start({ ...live.current.lastParams, ...(anime ? { query: anime, anime } : {}), ...(live.current.lastEpisode != null ? { episode: live.current.lastEpisode } : {}) })
   // Cancel the running session on purpose and start a fresh one for this series (prefs are read only at start).

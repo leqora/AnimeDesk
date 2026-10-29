@@ -134,8 +134,13 @@ describe('SearchPage', () => {
     const onReopenHandled = vi.fn()
     const view = renderUi(<SearchPage {...props()} />, { api })
     await waitFor(() => expect(handlers.menu).toBeDefined())
+    fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: 'show' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalled())
+    await flushPromises()
     act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2'] }))
     act(() => handlers.playing({ title: 'Show', episode: '2' }))
+    api.watch.start.mockResolvedValueOnce({ sessionId: 's2' }) // the reopened session answers with the id its menu carries
     view.rerender(<SearchPage {...props({ reopenSearch: { series: 'Show', seq: 1 }, onReopenHandled })} />)
     await waitFor(() => expect(api.watch.start).toHaveBeenCalledWith({ query: 'Show', anime: 'Show' }))
     expect(onReopenHandled).toHaveBeenCalledTimes(1)
@@ -184,7 +189,12 @@ describe('SearchPage', () => {
     await waitFor(() => expect(handlers.menu).toBeDefined())
     view.rerender(<SearchPage {...props({ reopenSearch: { series: 'Show', seq: 1 }, onReopenHandled: vi.fn() })} />)
     await waitFor(() => expect(api.watch.start).toHaveBeenCalledWith({ query: 'Show', anime: 'Show' }))
+    await flushPromises()
     act(() => handlers.end({ sessionId: 's1', result: { ok: false, error: 'no-sources' } })) // no list ever arrives
+    api.watch.start.mockResolvedValueOnce({ sessionId: 's2' }) // a later search; its menu carries its own id
+    fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: 'later' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+    await flushPromises()
     const main = document.createElement('main')
     main.className = 'content'; main.tabIndex = -1
     document.body.appendChild(main)
@@ -490,7 +500,11 @@ describe('Search page header (v0.19.0)', () => {
     const { api, handlers } = withEvents()
     renderUi(<SearchPage {...props()} />, { api })
     await waitFor(() => expect(handlers.menu).toBeDefined())
-    act(() => handlers.menu({ requestId: 'r1', kind: 'anime', lines: ['1\tShow (12 episodes)'] }))
+    fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: 'show' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalled())
+    await flushPromises()
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 's1', kind: 'anime', lines: ['1\tShow (12 episodes)'] }))
     expect(await screen.findByRole('heading', { level: 3, name: 'Izaberi anime' })).toBeInTheDocument()
   })
 })
@@ -567,6 +581,78 @@ describe('search while an episode plays', () => {
     await playingThenList(api, handlers)
     act(() => handlers.end({ sessionId: 'B', retry: false, result: { ok: false, error: 'cancelled' } }))
     expect(screen.getByText('Pušta se: Show — epizoda 1')).toBeInTheDocument()
+  })
+})
+describe('start reply racing session events', () => {
+  const setup = () => {
+    const handlers = {}
+    const capture = (name) => vi.fn((cb) => { handlers[name] = cb; return () => {} })
+    const api = makeFakeApi({ watch: { onMenu: capture('menu'), onPlaying: capture('playing'), onSessionEnd: capture('end') } })
+    let reply
+    api.watch.start.mockImplementation(() => new Promise((r) => { reply = r }))
+    return { api, handlers, reply: (v) => act(async () => { reply(v); await Promise.resolve() }) }
+  }
+  const searchFor = (text) => {
+    fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: text } })
+    fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+  }
+  it('playing event before the start reply (adopted prefetch) still ends in the playing phase', async () => {
+    const { api, handlers, reply } = setup()
+    renderUi(<SearchPage {...props({ pendingWatch: { query: 'Show', anime: 'Show', episode: '3' } })} />, { api })
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalled())
+    act(() => handlers.playing({ title: 'Show', episode: '3', sessionId: 'C' }))
+    await reply({ sessionId: 'C' })
+    expect(screen.getByText('Pušta se: Show — epizoda 3')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Traži' })).toBeEnabled()
+    act(() => handlers.end({ sessionId: 'C', retry: false, result: { ok: true } }))
+    expect(screen.queryByText(/Pušta se/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Traži' })).toBeEnabled()
+  })
+  it('a menu arriving after a Home reset during a pending start is not shown', async () => {
+    const { api, handlers, reply } = setup()
+    const view = renderUi(<SearchPage {...props({ resetSeq: 0 })} />, { api })
+    searchFor('other')
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalled())
+    view.rerender(<SearchPage {...props({ resetSeq: 1 })} />)
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 'B', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show'] }))
+    expect(screen.queryByRole('button', { name: /Show/ })).not.toBeInTheDocument()
+    await reply({ sessionId: 'B' })
+    expect(api.watch.cancel).toHaveBeenCalledWith('B')
+    expect(screen.getByRole('button', { name: 'Traži' })).toBeEnabled()
+  })
+  it('the end of an unrelated session during a pending start does not touch it', async () => {
+    const { api, handlers, reply } = setup()
+    renderUi(<SearchPage {...props()} />, { api })
+    searchFor('other')
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalled())
+    act(() => handlers.end({ sessionId: 'A', retry: false, result: { ok: false, error: 'unknown' } }))
+    expect(screen.getByText('Pretraga…')).toBeInTheDocument()
+    await reply({ sessionId: 'B' })
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 'B', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2'] }))
+    expect(screen.getByRole('button', { name: 'Gledaj' })).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+  it('a fast failure of the new session that ends before the reply is still shown', async () => {
+    const { api, handlers, reply } = setup()
+    renderUi(<SearchPage {...props()} />, { api })
+    searchFor('other')
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalled())
+    act(() => handlers.end({ sessionId: 'B', retry: false, result: { ok: false, error: 'no-results', stderr: '' } }))
+    await reply({ sessionId: 'B' })
+    expect(screen.getByRole('alert')).toHaveTextContent('Nema rezultata.')
+    expect(screen.getByRole('button', { name: 'Traži' })).toBeEnabled()
+  })
+  it('a failed start that was superseded does not show an error', async () => {
+    const handlers = {}
+    const api = makeFakeApi({ watch: { onMenu: vi.fn((cb) => { handlers.menu = cb; return () => {} }) } })
+    let fail
+    api.watch.start.mockImplementationOnce(() => new Promise((_, rej) => { fail = rej })).mockResolvedValueOnce({ sessionId: 'B' })
+    const view = renderUi(<SearchPage {...props({ resetSeq: 0 })} />, { api })
+    searchFor('one')
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalled())
+    view.rerender(<SearchPage {...props({ resetSeq: 1 })} />)
+    await act(async () => { fail(new Error('x')); await Promise.resolve() })
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })
 describe('resetSeq', () => {

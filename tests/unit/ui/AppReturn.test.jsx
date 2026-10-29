@@ -37,6 +37,9 @@ async function start({ settings = {}, library = [entry], light = 'green' } = {})
     player: { onOpen: vi.fn((f) => { cb.open = f; return () => {} }), onRetry: vi.fn((f) => { cb.retry = f; return () => {} }), onClose: vi.fn((f) => { cb.close = f; return () => {} }) },
     watch: { onSessionEnd: vi.fn(sub(ends)), onPlaying: vi.fn(sub(playings)), onMenu: vi.fn(sub(menus)), onTitle: vi.fn(sub(titles)) },
   })
+  // like main: every start answers with a fresh session id, and a menu is only shown for the session that was started
+  let sessions = 0
+  api.watch.start.mockImplementation(async () => ({ sessionId: `s${++sessions}` }))
   api.onOpenAnime = vi.fn((f) => { cb.anime = f; return () => {} })
   render(<App api={api} />)
   await screen.findByLabelText('Naziv animea…')
@@ -50,7 +53,15 @@ async function start({ settings = {}, library = [entry], light = 'green' } = {})
 }
 const clickBack = () => fireEvent.click(screen.getAllByRole('button', { name: 'Nazad' }).find((b) => !b.closest('[aria-hidden="true"]')))
 // Home's Search: the episode list of "Show" is the menu of session s1; pick episode 2 and let the player open
+async function searchList(s) {
+  fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: 'show' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+  await waitFor(() => expect(s.api.watch.start).toHaveBeenCalled())
+  await flush()
+  s.api.watch.start.mockClear()
+}
 async function searchPlay(s, { open = true } = {}) {
+  await searchList(s)
   act(() => s.cb.menu({ requestId: 'r1', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
   act(() => s.cb.title({ sessionId: 's1', title: 'Show' }))
   fireEvent.click(await screen.findByRole('button', { name: '2' }))
@@ -224,9 +235,9 @@ describe('Back from a player started in the Search episode list', () => {
     await searchPlay(s)
     clickBack()
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledTimes(1))
-    // the old session's late end is ignored (fake sessions share the id s1), the reopened one is cancelled: Home shows its rails again
+    // the old session's late end is ignored, the reopened one (s2) is cancelled: Home shows its rails again
     act(() => s.cb.end({ sessionId: 's1', retry: false, result: { ok: true } }))
-    act(() => s.cb.end({ sessionId: 's1', retry: false, result: { ok: false, error: 'cancelled' } }))
+    act(() => s.cb.end({ sessionId: 's2', retry: false, result: { ok: false, error: 'cancelled' } }))
     fireEvent.click(await screen.findByRole('button', { name: /Nastavi EP 2: Show/ }))
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledTimes(2))
     await s.openPlayer(ep('p2', '2'))
@@ -256,6 +267,7 @@ describe('Back on the reconnecting screen', () => {
   it('Back on the reconnecting screen after a search playback reopens the episode list', async () => {
     const s = await start()
     await searchPlay(s)
+    s.api.watch.start.mockResolvedValue({ sessionId: 's3' }) // the reopened session answers with the id its menu carries
     stall(s)
     clickBack()
     expect(s.api.watch.cancel).toHaveBeenCalledWith('s2')
@@ -344,6 +356,7 @@ describe('Player that never gets going', () => {
   })
   it('Close on the player crash screen after a search playback reopens the list', async () => {
     const s = await start()
+    await searchList(s)
     act(() => s.cb.menu({ requestId: 'r1', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
     act(() => s.cb.title({ sessionId: 's1', title: 'Show' }))
     fireEvent.click(await screen.findByRole('button', { name: '2' }))
