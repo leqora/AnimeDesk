@@ -4,7 +4,7 @@ import { act, waitFor } from '@testing-library/react'
 import { renderHookUi, makeFakeApi } from './helpers.jsx'
 import { useSeriesEpisodes } from '../../../src/renderer/episodes/useSeriesEpisodes.js'
 import { useEpisodeView } from '../../../src/renderer/episodes/useEpisodeView.js'
-import { useEpisodeProgress } from '../../../src/renderer/episodes/useEpisodeProgress.js'
+import { useEpisodeProgress, useEpisodeProgressState } from '../../../src/renderer/episodes/useEpisodeProgress.js'
 
 const LIST = { episodes: [{ number: '1', runtime: 24, visibility: 'preview', title: 'Naslov 1', hasThumb: true }], source: 'menu', meta: 'ok' }
 
@@ -144,5 +144,29 @@ describe('useSeriesEpisodes marks', () => {
     await waitFor(() => expect(forSeries).toHaveBeenCalledTimes(2))
     unmount()
     expect(unsub).toHaveBeenCalled()
+  })
+})
+
+describe('useEpisodeProgressState', () => {
+  it('loaded is false while pending, true after resolve and after reject, false again on a title change', async () => {
+    let resolveA
+    const forSeries = vi.fn((title) => (title === 'A' ? new Promise((r) => { resolveA = r }) : title === 'B' ? Promise.reject(new Error('x')) : new Promise(() => {})))
+    const api = makeFakeApi({ positions: { forSeries } })
+    const { result, rerender } = renderHookUi(({ title }) => useEpisodeProgressState(title), { api, initialProps: { title: 'A' } })
+    expect(result.current.loaded).toBe(false)
+    await act(async () => { resolveA({ 3: { position: 60, duration: 1440 } }) })
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+    expect(result.current.progress['3'].position).toBe(60)
+    rerender({ title: 'C' })
+    expect(result.current.loaded).toBe(false)
+    rerender({ title: 'B' })
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+    expect(result.current.progress).toEqual({})
+  })
+  it('a missing title is loaded with an empty map, and useEpisodeProgress still returns the map', () => {
+    const { result } = renderHookUi(() => useEpisodeProgressState(null), { api: makeFakeApi() })
+    expect(result.current).toEqual({ progress: {}, loaded: true })
+    const r2 = renderHookUi(() => useEpisodeProgress(null), { api: makeFakeApi() })
+    expect(r2.result.current).toEqual({})
   })
 })

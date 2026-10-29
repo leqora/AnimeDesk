@@ -2,7 +2,7 @@ import { useT } from '../i18n/I18nContext.jsx'
 import { useAniListInfo } from '../anilist/useAniListInfo.js'
 import { useBanner } from '../anilist/useBanner.js'
 import { usePosterTint } from '../theme/usePosterTint.js'
-import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
+import { useEpisodeProgressState } from '../episodes/useEpisodeProgress.js'
 import { useNow } from '../useNow.js'
 import { nextEpisode } from '../../shared/domain.js'
 import { newEpisodeCount } from '../../shared/airing.js'
@@ -30,7 +30,7 @@ function Slide({ entry, ready, now, onContinue, onDetails }) {
   const banner = useBanner({ kind: 'series', entryId: entry.id, info: info?.id ?? null })
   const tint = usePosterTint(info?.poster ?? null)
   const key = entry.aniCliTitle ?? entry.title
-  const progress = useEpisodeProgress(key)
+  const { progress, loaded } = useEpisodeProgressState(key)
   const next = nextEpisode(entry, progress)
   const saved = progress[String(next)]
   const fresh = newEpisodeCount(entry, info, now)
@@ -44,8 +44,8 @@ function Slide({ entry, ready, now, onContinue, onDetails }) {
         {meta && <div className="home-hero__meta hud">{meta}</div>}
         <AiringLine info={info} now={now} />
         <div className="home-hero__actions">
-          <button type="button" className="primary home-hero__cta" disabled={!ready} onClick={() => onContinue({ query: key, anime: key, episode: String(next) })}>
-            <Icon name="play" /> {saved ? t('home.continueEpFrom', { episode: next, time: formatTime(saved.position) }) : t('home.continueEp', { episode: next })}
+          <button type="button" className="primary home-hero__cta" disabled={!ready || !loaded} onClick={() => onContinue({ query: key, anime: key, episode: String(next) })}>
+            <Icon name="play" /> {!loaded ? t('home.continueShort') : saved ? t('home.continueEpFrom', { episode: next, time: formatTime(saved.position) }) : t('home.continueEp', { episode: next })}
           </button>
           <button type="button" className="home-hero__glass" onClick={() => onDetails(entry.id)}><Icon name="info" /> {t('home.details')}</button>
         </div>

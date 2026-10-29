@@ -5,7 +5,7 @@ import { Icon } from './Icon.jsx'
 import { NewBadge } from './AiringLine.jsx'
 import { nextEpisode } from '../../shared/domain.js'
 import { newEpisodeCount } from '../../shared/airing.js'
-import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
+import { useEpisodeProgressState } from '../episodes/useEpisodeProgress.js'
 
 export function isSeriesComplete(entry) {
   const total = entry.totalEpisodes
@@ -38,15 +38,18 @@ export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null
   const t = useT()
   const lineId = useId()
   const key = entry.aniCliTitle ?? entry.title
-  const progress = useEpisodeProgress(key)
+  const { progress, loaded } = useEpisodeProgressState(key)
   const info = usePosterInfo(entry.title, entry.aniListId)
   // Cards have no clock of their own; they re-render on every library/position change.
   const fresh = newEpisodeCount(entry, info, Date.now())
   const total = entry.totalEpisodes
+  // AniList's count is for display only (badge, bar, label); "complete", the line and the next episode stay on entry.totalEpisodes.
+  const displayTotal = total ?? (info?.match === 'close' ? null : info?.episodes) ?? null
   const complete = isSeriesComplete(entry)
   const finished = complete || entry.status === 'completed'
-  const watched = Number.isInteger(total) && total > 0 ? Math.min(entry.watchedEpisodes.length, total) : entry.watchedEpisodes.length
-  const ratio = Number.isInteger(total) && total > 0 ? Math.min(1, watched / total) : null
+  const hasTotal = Number.isInteger(displayTotal) && displayTotal > 0
+  const watched = hasTotal ? Math.min(entry.watchedEpisodes.length, displayTotal) : entry.watchedEpisodes.length
+  const ratio = hasTotal ? Math.min(1, watched / displayTotal) : null
   const next = nextEpisode(entry, progress)
   const line = cardLine(entry, progress)
   const peek = line ? null : episodesLine(entry, info, t)
@@ -54,7 +57,7 @@ export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null
     <div className="card media-card" data-status={entry.status} data-complete={complete ? 'true' : undefined}>
       <button
         type="button" className="media-card__open" onClick={() => onOpen(entry.id)}
-        aria-label={t('card.label', { title: entry.title, watched, total: total ?? '?', status: t(`status.${entry.status}`) }) + (fresh > 0 ? t.n('airing.newLabel', fresh) : '')}
+        aria-label={t('card.label', { title: entry.title, watched, total: displayTotal ?? '?', status: t(`status.${entry.status}`) }) + (fresh > 0 ? t.n('airing.newLabel', fresh) : '')}
         aria-describedby={line || peek ? lineId : undefined}
       >
         <PosterFrame info={info}>
@@ -63,7 +66,7 @@ export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null
           <span className="media-card__status" aria-hidden="true" />
           <NewBadge count={fresh} />
           <span className="badge badge--progress" aria-hidden="true">
-            {complete ? `✓ ${total}/${total}` : <>{watched}<span className="muted">/{total ?? '?'}</span></>}
+            {complete ? `✓ ${total}/${total}` : <>{watched}<span className="muted">/{displayTotal ?? '?'}</span></>}
           </span>
           {showScore && entry.rating ? <span className="badge badge--score" aria-hidden="true">★ {entry.rating}</span> : null}
         </PosterFrame>
@@ -73,7 +76,7 @@ export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null
       </button>
       <div className="media-card__actions">
         {!finished && (
-          <button type="button" className="primary media-card__play" disabled={!ready} aria-label={t('home.continueEp', { episode: next })} onClick={() => onContinue({ query: key, anime: key, episode: String(next) })}>
+          <button type="button" className="primary media-card__play" disabled={!ready || !loaded} aria-label={loaded ? t('home.continueEp', { episode: next }) : t('home.continueShort')} onClick={() => onContinue({ query: key, anime: key, episode: String(next) })}>
             <Icon name="play" />
           </button>
         )}

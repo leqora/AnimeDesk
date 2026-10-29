@@ -10,7 +10,7 @@ import { EpisodePicker } from '../components/EpisodePicker.jsx'
 import { AniListMatch } from '../components/AniListMatch.jsx'
 import { RecommendationCard } from '../components/RecommendationCard.jsx'
 import { useSeriesEpisodes } from '../episodes/useSeriesEpisodes.js'
-import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
+import { useEpisodeProgressState } from '../episodes/useEpisodeProgress.js'
 import { nextEpisode, normalizeTitle } from '../../shared/domain.js'
 import { useNow } from '../useNow.js'
 import { isSeriesComplete } from '../components/MediaCard.jsx'
@@ -109,7 +109,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const watched = entry.watchedEpisodes
   const animeKey = entry.aniCliTitle ?? entry.title
   const { series, update, thumb } = useSeriesEpisodes({ title: animeKey, aniListId: entry.aniListId ?? null })
-  const progress = useEpisodeProgress(animeKey)
+  const { progress, loaded: progressLoaded } = useEpisodeProgressState(animeKey)
   const maxEp = Math.max(entry.totalEpisodes ?? 0, ...watched.map(Math.ceil), 1)
   // The real ani-cli list (or 1..max) comes from main; until it answers, 1..max as before.
   const episodes = series?.episodes?.length ? series.episodes.map((e) => e.number) : Array.from({ length: maxEp }, (_, i) => String(i + 1))
@@ -322,10 +322,10 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   return (
     <section className="page">
       <DetailHero
-        entry={entry} info={info} ready={ready} nextEp={nextEp} saved={saved} finished={finished} fresh={fresh} now={now}
+        entry={entry} info={info} ready={ready} loaded={progressLoaded} nextEp={nextEp} saved={saved} finished={finished} fresh={fresh} now={now}
         metaToggle={metaToggle} playerOpen={playerOpen}
         onBack={onBack}
-        onContinue={() => onContinue({ query: animeKey, anime: animeKey, episode: String(nextEp) })}
+        onContinue={() => onContinue({ query: animeKey, anime: animeKey, episode: finished ? '1' : String(nextEp) })}
         onTogglePin={togglePin}
         onStatus={(status) => save({ status })}
         onRemove={remove}

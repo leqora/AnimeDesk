@@ -42,21 +42,52 @@ describe('MediaCard', () => {
     const open = screen.getByRole('button', { name: 'Show — 3/12, Gledam' })
     expect(open).toHaveAccessibleDescription('EP 4 · ostalo 16 min')
   })
-  it('continues the next episode without opening, and opens on the poster', () => {
+  it('continues the next episode without opening, and opens on the poster', async () => {
     const onOpen = vi.fn()
     const onContinue = vi.fn()
     card({ onOpen, onContinue })
-    fireEvent.click(screen.getByRole('button', { name: 'Nastavi EP 4' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Nastavi EP 4' }))
     expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '4' })
     expect(onOpen).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: /^Show —/ }))
     expect(onOpen).toHaveBeenCalledWith('a')
   })
-  it('disables play until ready and handles an unknown total', () => {
+  it('disables play until ready and handles an unknown total', async () => {
     const { container } = card({ ready: false, entry: entry({ totalEpisodes: null }) })
-    expect(screen.getByRole('button', { name: 'Nastavi EP 4' })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: 'Nastavi EP 4' })).toBeDisabled()
     expect(container.querySelector('.badge--progress')).toHaveTextContent('3/?')
     expect(container.querySelector('.media-card__bar')).toBeNull()
+  })
+  it('play waits for the saved positions: disabled and without a number until they arrive', async () => {
+    let resolve
+    const api = makeFakeApi({ positions: { forSeries: vi.fn(() => new Promise((r) => { resolve = r })) } })
+    card({ entry: entry({ totalEpisodes: 220, watchedEpisodes: [129] }) }, api)
+    expect(screen.getByRole('button', { name: 'Nastavi' })).toBeDisabled()
+    await act(async () => { resolve({ 130: { position: 60, duration: 1440 } }) })
+    expect(await screen.findByRole('button', { name: 'Nastavi EP 130' })).toBeEnabled()
+  })
+  it('shows the AniList total when the entry has none', async () => {
+    const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => ({ id: 1, episodes: 220, match: 'exact', poster: null })) } })
+    const { container } = card({ entry: entry({ totalEpisodes: null, watchedEpisodes: [1] }) }, api)
+    await waitFor(() => expect(container.querySelector('.badge--progress')).toHaveTextContent('1/220'))
+    expect(screen.getByRole('button', { name: /^Show — 1\/220, Gledam/ })).toBeInTheDocument()
+    expect(Number(container.querySelector('.media-card__bar').style.getPropertyValue('--ratio'))).toBeCloseTo(1 / 220, 5)
+  })
+  it('keeps "?" for a close AniList match', async () => {
+    const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => ({ id: 1, episodes: 220, match: 'close', poster: null })) } })
+    const { container } = card({ entry: entry({ totalEpisodes: null, watchedEpisodes: [1] }) }, api)
+    await waitFor(() => expect(api.anilist.forTitle).toHaveBeenCalled())
+    await act(async () => {})
+    expect(container.querySelector('.badge--progress')).toHaveTextContent('1/?')
+    expect(container.querySelector('.media-card__bar')).toBeNull()
+  })
+  it('the AniList total never marks a series complete or hides play', async () => {
+    const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => ({ id: 1, episodes: 12, match: 'exact', poster: null })) } })
+    const { container } = card({ entry: entry({ totalEpisodes: null, watchedEpisodes: Array.from({ length: 12 }, (_, i) => i + 1) }) }, api)
+    await waitFor(() => expect(container.querySelector('.badge--progress')).toHaveTextContent('12/12'))
+    expect(container.querySelector('.badge--progress')).not.toHaveTextContent('✓')
+    expect(container.querySelector('.media-card')).not.toHaveAttribute('data-complete')
+    expect(container.querySelector('.media-card__play')).not.toBeNull()
   })
   it('marks a completed series and offers no play', () => {
     const { container } = card({ entry: entry({ status: 'completed', totalEpisodes: 2, watchedEpisodes: [1, 2] }) })
