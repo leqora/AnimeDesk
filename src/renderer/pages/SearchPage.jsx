@@ -71,6 +71,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
         // A recovery session is started by main, never by this page; only undo the 'playing' phase its own onPlaying set.
         if (retry && live.current.phase !== 'playing') return
         live.current.sessionId = null
+        focusReopened.current = false // a reopen that ended without a list must not move focus later
         setMenu(null)
         setPlaying(null)
         setPhase('idle')
@@ -140,6 +141,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
   useEffect(() => {
     if (pendingWatch && ready) {
+      if (reopenSearch) onReopenHandled() // a newer request wins; the pending reopen is dropped
       setAnime(pendingWatch.anime)
       // The previous episode's session is still winding down; its late sessionEnd must not reset this one.
       if (live.current.sessionId) live.current.ignore.add(live.current.sessionId)
@@ -150,24 +152,26 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
   // "Back" from a player that was started in the episode list: that list was a live session's menu and it is gone, so start it again.
   useEffect(() => {
-    if (reopenSearch && ready) {
-      if (live.current.sessionId) live.current.ignore.add(live.current.sessionId)
-      setAnime(reopenSearch.series)
-      setReloadTick((n) => n + 1)
-      focusReopened.current = true
-      setMenu(null)
-      start({ query: reopenSearch.series, anime: reopenSearch.series })
-      onReopenHandled()
-    }
+    if (!reopenSearch || !ready) return
+    if (pendingWatch || pendingSearch) { onReopenHandled(); return } // a newer request wins
+    if (live.current.sessionId) live.current.ignore.add(live.current.sessionId)
+    setAnime(reopenSearch.series)
+    setReloadTick((n) => n + 1)
+    focusReopened.current = true
+    setMenu(null)
+    start({ query: reopenSearch.series, anime: reopenSearch.series })
+    onReopenHandled()
   }, [reopenSearch, ready])
 
   const search = (text) => {
+    if (reopenSearch) onReopenHandled()
     setAnime(null)
     start({ query: text.trim() })
   }
   // A search request from outside (e.g. a Home card): fill the input and run the same path as Enter.
   useEffect(() => {
     if (pendingSearch && ready) {
+      if (reopenSearch) onReopenHandled()
       setQuery(pendingSearch.query)
       if (pendingSearch.query.trim()) search(pendingSearch.query)
       onPendingSearchHandled()

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { useState } from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { renderUi, makeFakeApi } from './helpers.jsx'
@@ -11,6 +12,7 @@ function withEvents() {
   const api = makeFakeApi({ watch: { onMenu: capture('menu'), onPlaying: capture('playing'), onSessionEnd: capture('end') } })
   return { api, handlers }
 }
+const flushPromises = () => act(async () => { await Promise.resolve(); await Promise.resolve() })
 const props = (over = {}) => ({ ready: true, settings: { ...DEFAULT_SETTINGS }, onSettings: vi.fn(), onOpenWizard: vi.fn(), pendingWatch: null, onPendingHandled: vi.fn(), ...over })
 
 describe('SearchPage', () => {
@@ -141,6 +143,56 @@ describe('SearchPage', () => {
     expect(screen.getByText('Pretraga…')).toBeInTheDocument()
     act(() => handlers.menu({ requestId: 'r2', sessionId: 's2', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2'] }))
     expect(screen.getByRole('button', { name: 'Gledaj' })).toBeInTheDocument()
+  })
+  it('a pending reopen is dropped when the user searches before the app is ready', async () => {
+    const { api } = withEvents()
+    const onReopenHandled = vi.fn()
+    // like App: handling the reopen clears the request
+    function Host({ ready }) {
+      const [reopen, setReopen] = useState({ series: 'Show', seq: 1 })
+      return <SearchPage {...props({ ready, reopenSearch: reopen, onReopenHandled: () => { onReopenHandled(); setReopen(null) } })} />
+    }
+    const view = renderUi(<Host ready={false} />, { api })
+    fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: 'Other' } })
+    fireEvent.submit(screen.getByLabelText('Naziv animea…').closest('form'))
+    expect(onReopenHandled).toHaveBeenCalledTimes(1)
+    view.rerender(<Host ready={true} />)
+    await flushPromises()
+    expect(api.watch.start).not.toHaveBeenCalledWith({ query: 'Show', anime: 'Show' })
+  })
+  it('a pending Continue wins over a pending reopen', async () => {
+    const { api } = withEvents()
+    const onReopenHandled = vi.fn()
+    renderUi(<SearchPage {...props({ pendingWatch: { query: 'Other', anime: 'Other', episode: '3' }, reopenSearch: { series: 'Show', seq: 1 }, onReopenHandled })} />, { api })
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalled())
+    expect(api.watch.start).toHaveBeenCalledTimes(1)
+    expect(api.watch.start).toHaveBeenCalledWith({ query: 'Other', anime: 'Other', episode: '3' })
+    expect(onReopenHandled).toHaveBeenCalled()
+  })
+  it('a pending search wins over a pending reopen', async () => {
+    const { api } = withEvents()
+    const onReopenHandled = vi.fn()
+    renderUi(<SearchPage {...props({ pendingSearch: { query: 'Other' }, onPendingSearchHandled: vi.fn(), reopenSearch: { series: 'Show', seq: 1 }, onReopenHandled })} />, { api })
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalled())
+    expect(api.watch.start).toHaveBeenCalledTimes(1)
+    expect(api.watch.start).toHaveBeenCalledWith({ query: 'Other' })
+    expect(onReopenHandled).toHaveBeenCalled()
+  })
+  it('a reopen that ends without an episode list does not steal focus later', async () => {
+    const { api, handlers } = withEvents()
+    const view = renderUi(<SearchPage {...props()} />, { api })
+    await waitFor(() => expect(handlers.menu).toBeDefined())
+    view.rerender(<SearchPage {...props({ reopenSearch: { series: 'Show', seq: 1 }, onReopenHandled: vi.fn() })} />)
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledWith({ query: 'Show', anime: 'Show' }))
+    act(() => handlers.end({ sessionId: 's1', result: { ok: false, error: 'no-sources' } })) // no list ever arrives
+    const main = document.createElement('main')
+    main.className = 'content'; main.tabIndex = -1
+    document.body.appendChild(main)
+    main.focus()
+    act(() => handlers.menu({ requestId: 'r2', sessionId: 's2', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2'] }))
+    await screen.findByRole('button', { name: 'Gledaj' })
+    expect(document.activeElement).toBe(main)
+    main.remove()
   })
   it('a recovery end while its own playing phase is shown returns to idle', async () => {
     const { api, handlers } = withEvents()

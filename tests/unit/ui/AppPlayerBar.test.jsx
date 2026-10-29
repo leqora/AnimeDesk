@@ -200,6 +200,17 @@ describe('App top bar over the player', () => {
       expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'nav', playbackId: 'p1' }))
     })
 
+    it('the logo during playback shows Home, not the page the episode was started from', async () => {
+      const { open } = await start()
+      fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
+      expect(await screen.findByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
+      await open()
+      fireEvent.click(screen.getByRole('button', { name: /ANIMEDESK/ }))
+      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+      expect(screen.getByRole('button', { name: 'Početna' })).toHaveAttribute('aria-current', 'page')
+      expect(screen.queryByRole('heading', { name: 'Podešavanja' })).toBeNull()
+    })
+
     it('avatar menu "Profil" during playback closes the player first', async () => {
       const { api, open } = await start()
       await open()

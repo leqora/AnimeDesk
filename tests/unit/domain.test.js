@@ -17,15 +17,39 @@ describe('domain', () => {
 })
 
 describe('nextEpisode', () => {
-  it('returns the first unwatched episode', () => {
-    expect(nextEpisode({ totalEpisodes: 12, watchedEpisodes: [1, 2, 4] })).toBe(3)
-    expect(nextEpisode({ totalEpisodes: 3, watchedEpisodes: [1, 2, 3] })).toBe(1)
-    expect(nextEpisode({ totalEpisodes: null, watchedEpisodes: [] })).toBe(1)
+  const e = (watchedEpisodes, totalEpisodes = null) => ({ totalEpisodes, watchedEpisodes })
+  const pos = (...eps) => Object.fromEntries(eps.map((n) => [String(n), { position: 60, duration: 1400 }]))
+  it('continues after the highest watched episode, not the first gap', () => {
+    expect(nextEpisode(e([1, 2, 4], 12))).toBe(5)
+    expect(nextEpisode(e([112], 220))).toBe(113)
+    expect(nextEpisode(e([], 12))).toBe(1)
+    expect(nextEpisode(e([]))).toBe(1)
   })
-  it('continues after the last watched episode when the total is unknown', () => {
-    expect(nextEpisode({ totalEpisodes: null, watchedEpisodes: [1, 2] })).toBe(3)
-    expect(nextEpisode({ totalEpisodes: undefined, watchedEpisodes: [2, 1, 3] })).toBe(4)
-    expect(nextEpisode({ totalEpisodes: null, watchedEpisodes: [1, 3] })).toBe(2)
-    expect(nextEpisode({ totalEpisodes: null, watchedEpisodes: [1, 2, 2.5] })).toBe(3)
+  it('continues after the highest watched episode when the total is unknown', () => {
+    expect(nextEpisode(e([1, 2]))).toBe(3)
+    expect(nextEpisode(e([2, 1, 3], undefined))).toBe(4)
+    expect(nextEpisode(e([1, 3]))).toBe(4)
+    expect(nextEpisode(e([1, 2, 2.5]))).toBe(3)
+  })
+  it('offers the last started episode after the watched ones', () => {
+    expect(nextEpisode(e([112], 220), pos(113, 114))).toBe(114)
+    expect(nextEpisode(e([]), pos(7))).toBe(7)
+  })
+  it('ignores a saved position below the highest watched episode', () => {
+    expect(nextEpisode(e([112], 220), pos(50))).toBe(113)
+  })
+  it('ignores a saved position of an already watched episode', () => {
+    expect(nextEpisode(e([1, 2, 3, 5], 12), pos(5))).toBe(6)
+  })
+  it('ignores non-integer and beyond-total saved positions', () => {
+    expect(nextEpisode(e([112], 220), pos('12.5'))).toBe(113)
+    expect(nextEpisode(e([112], 220), pos('113.5', 'x', 300))).toBe(113)
+    expect(nextEpisode(e([1, 2], 3), pos(9))).toBe(3)
+  })
+  it('wraps to the first unwatched episode past the known total, or 1 when all are watched', () => {
+    expect(nextEpisode(e([1, 2, 3], 3))).toBe(1)
+    expect(nextEpisode(e([3], 3))).toBe(1)
+    expect(nextEpisode(e([2, 3], 3))).toBe(1)
+    expect(nextEpisode(e([1, 3], 3))).toBe(2)
   })
 })
