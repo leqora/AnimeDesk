@@ -152,15 +152,15 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
 
   // "Back" from a player that was started in the episode list: that list was a live session's menu and it is gone, so start it again.
   useEffect(() => {
-    if (reopenSearch && ready) {
-      if (live.current.sessionId) live.current.ignore.add(live.current.sessionId)
-      setAnime(reopenSearch.series)
-      setReloadTick((n) => n + 1)
-      focusReopened.current = true
-      setMenu(null)
-      start({ query: reopenSearch.series, anime: reopenSearch.series })
-      onReopenHandled()
-    }
+    if (!reopenSearch || !ready) return
+    if (pendingWatch || pendingSearch) { onReopenHandled(); return } // a newer request wins
+    if (live.current.sessionId) live.current.ignore.add(live.current.sessionId)
+    setAnime(reopenSearch.series)
+    setReloadTick((n) => n + 1)
+    focusReopened.current = true
+    setMenu(null)
+    start({ query: reopenSearch.series, anime: reopenSearch.series })
+    onReopenHandled()
   }, [reopenSearch, ready])
 
   const search = (text) => {

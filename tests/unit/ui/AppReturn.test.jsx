@@ -18,7 +18,7 @@ const entry = { id: 'a1', title: 'Show', aniCliTitle: 'Show', aniListId: null, s
 const ep = (id, episode) => ({ playbackId: id, title: 'Show', episode, kind: 'hls', src: `http://127.0.0.1:9/${id}`, subtitleUrl: null, resumeAt: null, totalEpisodes: 12 })
 const flush = () => act(async () => { await Promise.resolve(); await Promise.resolve() })
 
-async function start({ settings = {}, library = [entry] } = {}) {
+async function start({ settings = {}, library = [entry], light = 'green' } = {}) {
   const cb = {}
   // Home's search page registers its own handlers too: keep every subscriber and notify all, like the real event bus
   const ends = new Set()
@@ -33,6 +33,7 @@ async function start({ settings = {}, library = [entry] } = {}) {
   const api = makeFakeApi({
     settings: { get: vi.fn(async () => ({ ...DEFAULT_SETTINGS, ...settings })) },
     library: { list: vi.fn(async () => library) },
+    health: { get: vi.fn(async () => ({ light, reason: 'ok' })), onChange: vi.fn((f) => { cb.health = f; return () => {} }) },
     player: { onOpen: vi.fn((f) => { cb.open = f; return () => {} }), onRetry: vi.fn((f) => { cb.retry = f; return () => {} }), onClose: vi.fn((f) => { cb.close = f; return () => {} }) },
     watch: { onSessionEnd: vi.fn(sub(ends)), onPlaying: vi.fn(sub(playings)), onMenu: vi.fn(sub(menus)), onTitle: vi.fn(sub(titles)) },
   })
@@ -248,8 +249,8 @@ describe('Back on the reconnecting screen', () => {
   const reopened = { query: 'Show', anime: 'Show' }
   // the playback stalls: main reports the retry and the player goes away, leaving the reconnecting screen
   const stall = (s, over = {}) => {
-    act(() => s.cb.end({ sessionId: 's1', retry: true, result: { ok: true } }))
     act(() => s.cb.retry({ title: 'Show', episode: '2', state: 'reconnecting', sessionId: 's2', ...over }))
+    act(() => s.cb.end({ sessionId: 's1', retry: false, result: { ok: true } })) // like main: the user session ends after the retry starts
     act(() => s.cb.close())
   }
   it('Back on the reconnecting screen after a search playback reopens the episode list', async () => {
@@ -262,8 +263,23 @@ describe('Back on the reconnecting screen', () => {
     expect(s.api.watch.cancel.mock.invocationCallOrder[0]).toBeLessThan(s.api.watch.start.mock.invocationCallOrder[0])
     // the cancelled recovery session ends late: the reopened list stays
     act(() => s.cb.end({ sessionId: 's2', retry: true, result: { ok: false, error: 'cancelled' } }))
+    expect(screen.getByText('Pretraga…')).toBeInTheDocument()
     act(() => s.cb.menu({ requestId: 'r2', sessionId: 's3', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
     expect(await screen.findByRole('heading', { name: /Izaberi epizodu/ })).toBeInTheDocument()
+  })
+  it('a pending reopen does not survive leaving Home before the app is ready', async () => {
+    const s = await start()
+    await searchPlay(s)
+    act(() => s.cb.health({ light: 'red', reason: 'missing-tools' }))
+    stall(s)
+    clickBack()
+    await flush()
+    fireEvent.click(screen.getByRole('button', { name: 'Watchlist' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Watchlist' })).toHaveAttribute('aria-current', 'page'))
+    act(() => s.cb.health({ light: 'green', reason: 'ok' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Početna' }))
+    await flush()
+    expect(s.api.watch.start).not.toHaveBeenCalled()
   })
   it('Back on the failed reconnect screen reopens the episode list', async () => {
     const s = await start()

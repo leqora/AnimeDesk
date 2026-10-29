@@ -425,8 +425,8 @@ export default function App({ api, sound: injectedSound }) {
     setFocusImport(true)
     api.stats.get().then(setStats).catch((err) => console.warn('stats refresh after import failed', err?.message))
   }
-  const navigate = (p) => { if (p !== page) sound.play('navigate'); nav.navigate({ page: p, animeId: null }) }
-  const openAnime = (id) => nav.navigate({ page: 'watchlist', animeId: id })
+  const navigate = (p) => { if (p !== page) sound.play('navigate'); setReopenSearch(null); nav.navigate({ page: p, animeId: null }) }
+  const openAnime = (id) => { setReopenSearch(null); nav.navigate({ page: 'watchlist', animeId: id }) }
   openRef.current = { anime: openAnime, page: navigate }
   const closeDetail = () => (nav.canBack ? nav.back() : nav.navigate({ page: 'watchlist', animeId: null }))
   // a removed series has no detail to come back to: step back, or swap the entry in place when there is no history
