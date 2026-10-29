@@ -8,6 +8,7 @@ import { SkipButton } from './SkipButton.jsx'
 import { NextEpisodeCard } from './NextEpisodeCard.jsx'
 import { ResumePrompt } from './ResumePrompt.jsx'
 import { SubtitleOverlay } from './SubtitleOverlay.jsx'
+import { MiniChrome } from './MiniChrome.jsx'
 import { usePlayerHealth } from '../player/usePlayerHealth.js'
 import { useLatest } from '../player/useLatest.js'
 import { useFlash } from '../player/useFlash.js'
@@ -18,6 +19,7 @@ import { formatBoost, stepBoost } from '../../shared/volumeBoost.js'
 import { usePlayerSubtitles } from '../player/usePlayerSubtitles.js'
 import { usePlaybackRate } from '../player/usePlaybackRate.js'
 import { useHlsSource } from '../player/useHlsSource.js'
+import { useMiniDrag } from '../player/useMiniDrag.js'
 import { useEpisodeEnd } from '../player/useEpisodeEnd.js'
 import { usePlayerShortcuts, QUIET } from '../player/usePlayerShortcuts.js'
 import { trackMax, bufferedRanges, sameRanges, segmentAt, isLastEpisode, qualityLabel, qualityName } from '../../shared/player.js'
@@ -28,7 +30,7 @@ const CLICK_DELAY_MS = 220
 const ENDING_FALLBACK_S = 30
 
 const headStatus = (url) => fetch(url, { method: 'HEAD' }).then((r) => r.status)
-export function PlayerView({ open, settings, fullscreen, onSettings, onClose, initialRate = 1, onRate, onIdleChange, holdControls = false, closeRequest = null, HlsImpl = Hls, probeSub = headStatus }) {
+export function PlayerView({ open, settings, fullscreen, onSettings, onClose, initialRate = 1, onRate, onIdleChange, holdControls = false, closeRequest = null, mini = false, miniCorner = 'br', onMinimize, onExpand, onMiniCorner, quietMount = false, HlsImpl = Hls, probeSub = headStatus }) {
   const api = useApi()
   const t = useT()
   const root = useRef(null)
@@ -73,13 +75,19 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   // the top bar follows the controls: App shows it only while they are visible
   const idleChange = useLatest(onIdleChange)
   useEffect(() => { idleChange.current?.(idle) }, [idle])
-  const ending = useEpisodeEnd({ autoNext: settings.autoNext, lastEpisode, onNext: () => close('next') })
+  const ending = useEpisodeEnd({ autoNext: settings.autoNext && !mini, lastEpisode, onNext: () => close('next') })
   const { end } = ending
+  // shrinking while the countdown runs must not carry the user off to the next episode: fall back to the manual choice
+  const wasMini = useRef(mini)
+  useEffect(() => {
+    if (mini && !wasMini.current && ending.end === 'countdown') ending.cancel()
+    wasMini.current = mini
+  }, [mini])
   const health = usePlayerHealth({ video, active: resume == null && !end && !failed, onStall: () => fail() })
   const segment = segmentAt(time, skips)
   const inEnding = !end && !lastEpisode && (segment === 'ed' || (!skips?.ed && duration > 0 && time >= duration - ENDING_FALLBACK_S))
   // latest props for long-lived handlers (keydown, intervals, hls.js callbacks) so they are never stale
-  const latest = useLatest({ api, open, onClose, fullscreen, inEnding })
+  const latest = useLatest({ api, open, onClose, fullscreen, inEnding, mini })
 
   const readQuality = () => setQuality(qualityLabel(video.current?.videoHeight))
   useEffect(() => {
@@ -124,6 +132,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   useEffect(() => () => clearTimeout(clickTimer.current), [])
   // Take focus on show, unless it is already inside the player (ResumePrompt autoFocus) or in a modal dialog.
   useEffect(() => {
+    if (quietMount) return
     const a = document.activeElement
     if (root.current?.contains(a) || a?.closest?.('[aria-modal="true"]')) return
     root.current?.focus()
@@ -140,8 +149,8 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   const step = (s) => { const v = video.current; v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + s)) }
   const toggleFullscreen = () => latest.current.api.window.setFullscreen(!latest.current.fullscreen)
   // A click waits briefly so a double click can toggle fullscreen without also pausing.
-  const onVideoClick = () => { clearTimeout(clickTimer.current); clickTimer.current = setTimeout(togglePlay, CLICK_DELAY_MS) }
-  const onVideoDoubleClick = () => { clearTimeout(clickTimer.current); toggleFullscreen() }
+  const onVideoClick = () => { if (latest.current.mini) return; clearTimeout(clickTimer.current); clickTimer.current = setTimeout(togglePlay, CLICK_DELAY_MS) }
+  const onVideoDoubleClick = () => { if (latest.current.mini) return; clearTimeout(clickTimer.current); toggleFullscreen() }
 
   usePlayerShortcuts({
     ' ': togglePlay,
@@ -158,7 +167,8 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
     ']': () => rate.step(1),
     '\\': rate.reset,
     n: () => { if (!lastEpisode) close('next'); return QUIET },
-  }, { onHandled: poke })
+  }, { onHandled: poke, enabled: !mini })
+  useMiniDrag({ ref: root, enabled: mini, corner: miniCorner, onCorner: onMiniCorner, onClick: onExpand })
 
   const finishEpisode = () => {
     video.current?.pause()
@@ -198,7 +208,8 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   const startAt = (sec) => { video.current.currentTime = sec; setResume(null); play() }
 
   return (
-    <div ref={root} tabIndex={-1} className={`player${idle ? ' player--idle' : ''}${fullscreen ? ' player--fullscreen' : ''}`} onMouseMove={poke} onFocus={poke}>
+    <div ref={root} tabIndex={-1} className={`player${idle && !mini ? ' player--idle' : ''}${fullscreen && !mini ? ' player--fullscreen' : ''}${mini ? ' player--mini' : ''}`} onMouseMove={poke} onFocus={poke}
+      {...(mini ? { role: 'region', 'aria-label': t('player.miniLabel', { title: open.title, episode: open.episode ?? '?' }) } : {})}>
       <video
         ref={video} className="player__video" crossOrigin="anonymous"
         onLoadedMetadata={onLoadedMetadata} onTimeUpdate={onTimeUpdate} onProgress={readBuffered}
@@ -211,18 +222,64 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
       >
         {open.subtitleUrl && <track ref={trackEl} kind="subtitles" src={open.subtitleUrl} />}
       </video>
-      {subs.on && subs.available && <SubtitleOverlay cues={subs.cues} subtitles={settings.subtitles} raised={!idle} />}
-      <div className="player__top">
-        <button type="button" onClick={() => close('back')}><Icon name="back" /> {t('search.back')}</button>
-        <h2 className="player__title">{open.title} <span className="hud">{t('player.episode', { episode: open.episode ?? '?' })}</span></h2>
-      </div>
-      {failed && (
-        <div className="player__error notice notice--error" role="alert">
-          <span>{t('player.error')}</span>
-          {failed === 'retryable' && <button type="button" className="primary" onClick={retryNow}>{t('player.retry')}</button>}
-          <button type="button" className={failed === 'retryable' ? undefined : 'primary'} onClick={() => close('external')}>{t('player.playExternal')}</button>
-          <button type="button" onClick={() => close('back')}>{t('search.back')}</button>
+      {mini ? (
+        <MiniChrome
+          pinned={Boolean(failed || end)}
+          title={open.title} episode={open.episode} playing={playing} progress={duration > 0 ? time / duration : 0}
+          onTogglePlay={togglePlay} onExpand={onExpand} onClose={() => close('nav')}
+        >
+          {failed && (
+            <div className="mini__state" role="alert">
+              <span>{t('player.miniError')}</span>
+              {failed === 'retryable' && <button type="button" className="primary" onClick={retryNow}>{t('player.retry')}</button>}
+            </div>
+          )}
+          {end && end !== 'done' && !failed && (
+            <div className="mini__state" role="status">
+              <button type="button" className="primary" onClick={() => close('next')}>{t('player.next')}</button>
+            </div>
+          )}
+        </MiniChrome>
+      ) : (
+        <>
+        {subs.on && subs.available && <SubtitleOverlay cues={subs.cues} subtitles={settings.subtitles} raised={!idle} />}
+        <div className="player__top">
+          <button type="button" onClick={() => close('back')}><Icon name="back" /> {t('search.back')}</button>
+          <h2 className="player__title">{open.title} <span className="hud">{t('player.episode', { episode: open.episode ?? '?' })}</span></h2>
+          <span className="player__spacer" />
+          {onMinimize && <button type="button" onClick={onMinimize} aria-label={t('player.mini')} title={t('player.mini')}><Icon name="mini" /></button>}
         </div>
+        {failed && (
+          <div className="player__error notice notice--error" role="alert">
+            <span>{t('player.error')}</span>
+            {failed === 'retryable' && <button type="button" className="primary" onClick={retryNow}>{t('player.retry')}</button>}
+            <button type="button" className={failed === 'retryable' ? undefined : 'primary'} onClick={() => close('external')}>{t('player.playExternal')}</button>
+            <button type="button" onClick={() => close('back')}>{t('search.back')}</button>
+          </div>
+        )}
+        {resume != null && <ResumePrompt at={resume} onResume={() => startAt(resume)} onRestart={() => startAt(0)} />}
+        {resume == null && <SkipButton segment={segment} onSkip={() => { video.current.currentTime = skips[segment].end }} />}
+        {inEnding && resume == null && <button type="button" className="player__next primary" onClick={() => close('next')}>{t('player.next')}</button>}
+        {flash.text && <div className="player__flash hud" role="status">{flash.text}</div>}
+        {end && <NextEpisodeCard mode={end} seconds={ending.left} onNext={() => close('next')} onCancel={ending.cancel} onBack={() => close('ended')} />}
+        <PlayerControls
+          segments={['op', 'ed', 'recap'].filter((k) => skips?.[k]).map((k) => ({ kind: k, ...skips[k] }))}
+          time={time} duration={duration} buffered={buffered} quality={quality} playing={playing} muted={volume.muted} volume={volume.volume} subsOn={subs.on}
+          subsAvailable={subs.available} subsHint={subs.hint}
+          menu={{
+            open: menuOpen, onOpen: setMenuOpen,
+            rate: rate.rate, language: settings.language, onRate: rate.setRate,
+            boost, onBoost: (v) => { pendingBoost.current = v; onSettings({ volumeBoost: v }); showBoost(v) },
+            subs: { on: subs.on, available: subs.available, hint: subs.hint, offsetLabel: subs.offsetLabel, size: settings.subtitles.size },
+            onToggleSubs: subs.toggle, onSubOffset: subs.shift, onSubOffsetReset: subs.reset, onSubSize: (n) => onSettings({ subtitles: { size: n } }),
+          }}
+          fullscreen={fullscreen} canPrev={Number(open.episode) > 1} canNext={!lastEpisode}
+          onTogglePlay={togglePlay} onSeek={(s) => { video.current.currentTime = s }} onStep={step}
+          onPrev={() => close('prev')} onNext={() => close('next')}
+          onToggleMute={volume.toggleMute} onVolume={volume.setVolume}
+          onToggleSubs={subs.toggle} onToggleFullscreen={toggleFullscreen}
+        />
+        </>
       )}
       {health.buffering && !failed && resume == null && !end && (
         <div className="player__loading" role="status" aria-label={t('player.loading')}>
@@ -230,28 +287,6 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
           {health.slow && <span className="hud">{t('player.slow')}</span>}
         </div>
       )}
-      {resume != null && <ResumePrompt at={resume} onResume={() => startAt(resume)} onRestart={() => startAt(0)} />}
-      {resume == null && <SkipButton segment={segment} onSkip={() => { video.current.currentTime = skips[segment].end }} />}
-      {inEnding && resume == null && <button type="button" className="player__next primary" onClick={() => close('next')}>{t('player.next')}</button>}
-      {flash.text && <div className="player__flash hud" role="status">{flash.text}</div>}
-      {end && <NextEpisodeCard mode={end} seconds={ending.left} onNext={() => close('next')} onCancel={ending.cancel} onBack={() => close('ended')} />}
-      <PlayerControls
-        segments={['op', 'ed', 'recap'].filter((k) => skips?.[k]).map((k) => ({ kind: k, ...skips[k] }))}
-        time={time} duration={duration} buffered={buffered} quality={quality} playing={playing} muted={volume.muted} volume={volume.volume} subsOn={subs.on}
-        subsAvailable={subs.available} subsHint={subs.hint}
-        menu={{
-          open: menuOpen, onOpen: setMenuOpen,
-          rate: rate.rate, language: settings.language, onRate: rate.setRate,
-          boost, onBoost: (v) => { pendingBoost.current = v; onSettings({ volumeBoost: v }); showBoost(v) },
-          subs: { on: subs.on, available: subs.available, hint: subs.hint, offsetLabel: subs.offsetLabel, size: settings.subtitles.size },
-          onToggleSubs: subs.toggle, onSubOffset: subs.shift, onSubOffsetReset: subs.reset, onSubSize: (n) => onSettings({ subtitles: { size: n } }),
-        }}
-        fullscreen={fullscreen} canPrev={Number(open.episode) > 1} canNext={!lastEpisode}
-        onTogglePlay={togglePlay} onSeek={(s) => { video.current.currentTime = s }} onStep={step}
-        onPrev={() => close('prev')} onNext={() => close('next')}
-        onToggleMute={volume.toggleMute} onVolume={volume.setVolume}
-        onToggleSubs={subs.toggle} onToggleFullscreen={toggleFullscreen}
-      />
     </div>
   )
 }

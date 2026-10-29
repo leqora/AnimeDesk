@@ -30,6 +30,12 @@ describe('miniLayout', () => {
     expect(nearestCorner({ x: 20, y: 76 }, vp, size)).toBe('tl')
     expect(nearestCorner({ x: 860, y: 555 }, vp, size)).toBe('br')
   })
+  it('picks the corner whose mini position is closest, not by the viewport midpoint', () => {
+    // the usable y range is 76..555, so its midpoint (315.5) decides, not the viewport's (400)
+    expect(nearestCorner({ x: 100, y: 300 }, vp, size)).toBe('tl')
+    expect(nearestCorner({ x: 100, y: 330 }, vp, size)).toBe('bl')
+    expect(nearestCorner({ x: 800, y: 300 }, vp, size)).toBe('tr')
+  })
   it('clamps a position into the bounds', () => {
     expect(clampPos({ x: -50, y: 10 }, vp, size)).toEqual({ x: 20, y: 76 })
     expect(clampPos({ x: 5000, y: 5000 }, vp, size)).toEqual({ x: 860, y: 555 })

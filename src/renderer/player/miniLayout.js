@@ -23,10 +23,16 @@ export function miniRect(corner, viewport, size) {
   return { x: corner[1] === 'l' ? b.left : b.right, y: corner[0] === 't' ? b.top : b.bottom }
 }
 
+// The corner whose resting position is closest (Euclidean) to the dropped top-left position.
 export function nearestCorner(pos, viewport, size) {
-  const cx = pos.x + size.width / 2
-  const cy = pos.y + size.height / 2
-  return `${cy < viewport.height / 2 ? 't' : 'b'}${cx < viewport.width / 2 ? 'l' : 'r'}`
+  let best = 'br'
+  let bestDist = Infinity
+  for (const corner of ['tl', 'tr', 'bl', 'br']) {
+    const r = miniRect(corner, viewport, size)
+    const d = (r.x - pos.x) ** 2 + (r.y - pos.y) ** 2
+    if (d < bestDist) { bestDist = d; best = corner }
+  }
+  return best
 }
 
 export function clampPos(pos, viewport, size) {

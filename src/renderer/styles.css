@@ -19,6 +19,7 @@
   --scrim: rgba(5, 5, 12, 0.72);
   --topbar-h: 56px;
   /* layers, bottom to top: bar over the page, player, bar over the player (only while visible), dialogs, toasts, level-up */
+  --z-mini: 15; /* the floating mini player: over the page, under the bar and its menus */
   --z-topbar: 20;
   --z-popup: 30;
   --z-player: 40;
@@ -572,6 +573,18 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 /* player */
 .player { container-type: size; position: fixed; inset: 0; z-index: var(--z-player); background: var(--bg); display: flex; flex-direction: column; }
 .player:focus { outline: none; }
+/* mini mode: the same player box shrunk into a floating 16:9 window; width, height, left and top are set inline by useMiniDrag */
+.player--mini { inset: auto; z-index: var(--z-mini); width: 400px; height: 225px; border-radius: var(--radius); box-shadow: 0 10px 30px color-mix(in srgb, var(--bg) 75%, transparent), 0 0 0 1px var(--glass-border); overflow: hidden; cursor: grab; touch-action: none; user-select: none; }
+.player--mini.player--dragging { cursor: grabbing; }
+.player--snap { transition: transform 200ms var(--ease); }
+.player--mini .player__spinner { width: 28px; height: 28px; border-width: 3px; }
+.mini__bar { position: absolute; top: 0; left: 0; right: 0; z-index: 1; display: flex; align-items: center; gap: 4px; padding: 6px 8px; background: linear-gradient(0deg, transparent, color-mix(in srgb, var(--bg) 85%, transparent)); opacity: 0; transition: opacity 150ms var(--ease); }
+.player--mini:hover .mini__bar, .player--mini:focus-within .mini__bar, .mini__bar--pinned { opacity: 1; }
+.mini__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.mini__bar button { padding: 4px 6px; line-height: 0; }
+.mini__progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: color-mix(in srgb, var(--text) 18%, transparent); pointer-events: none; }
+.mini__progress > span { display: block; height: 100%; background: var(--accent); transform-origin: left; }
+.mini__state { position: absolute; left: 0; right: 0; bottom: 14px; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 10px; text-align: center; }
 .player__video { flex: 1; width: 100%; min-height: 0; background: var(--bg); }
 .player__top, .player__bar { position: absolute; left: 0; right: 0; padding: 14px 18px; display: flex; gap: 12px; align-items: center; background: linear-gradient(0deg, transparent, color-mix(in srgb, var(--bg) 85%, transparent)); transition: opacity 200ms var(--ease); }
 .player__top { top: 0; }
