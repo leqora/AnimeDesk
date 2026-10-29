@@ -30,6 +30,17 @@ describe('HomeHero', () => {
     expect(container.querySelector('.home-hero__progress > span').style.getPropertyValue('--ratio')).toBe(String(495 / 1440))
     expect(screen.getByText('ostalo 16 min')).toBeInTheDocument()
   })
+  it('Continue offers the episode after the highest watched, or the latest started one', async () => {
+    const onContinue = vi.fn()
+    const a = renderUi(<HomeHero entries={[entry({ totalEpisodes: 220, watchedEpisodes: [112] })]} {...props} onContinue={onContinue} />, { api: apiWith() })
+    fireEvent.click(screen.getByRole('button', { name: /Nastavi EP 113/ }))
+    expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '113' })
+    a.unmount()
+    const api = apiWith({ positions: { forSeries: vi.fn(async () => ({ 113: { position: 60, duration: 1440 }, 114: { position: 495, duration: 1440 } })) } })
+    renderUi(<HomeHero entries={[entry({ id: 'b', totalEpisodes: 220, watchedEpisodes: [112] })]} {...props} onContinue={onContinue} />, { api })
+    fireEvent.click(await screen.findByRole('button', { name: /Nastavi EP 114 od 8:15/ }))
+    expect(onContinue).toHaveBeenLastCalledWith({ query: 'Show', anime: 'Show', episode: '114' })
+  })
   it('uses the banner when allowed, else the tinted poster', async () => {
     const withBanner = apiWith({ anilist: { banner: vi.fn(async () => 'animedesk-img://banner/ab12') } })
     const a = renderUi(<HomeHero entries={[entry()]} {...props} />, { api: withBanner })

@@ -10,7 +10,8 @@ const card = (props = {}, api = makeFakeApi()) => renderUi(<MediaCard entry={ent
 describe('cardLine', () => {
   it('picks the line under the title', () => {
     expect(cardLine(entry(), { 4: { remaining: 16 } })).toEqual({ key: 'card.remaining', vars: { episode: 4, min: 16 } })
-    expect(cardLine(entry(), { 7: { remaining: 3 } })).toEqual({ key: 'card.next', vars: { episode: 4 } })
+    expect(cardLine(entry(), { 7: { remaining: 3 } })).toEqual({ key: 'card.remaining', vars: { episode: 7, min: 3 } })
+    expect(cardLine(entry(), { 2: { remaining: 3 } })).toEqual({ key: 'card.next', vars: { episode: 4 } })
     expect(cardLine(entry({ watchedEpisodes: Array.from({ length: 12 }, (_, i) => i + 1) }), {})).toEqual({ key: 'card.completed', vars: {} })
     expect(cardLine(entry({ status: 'planned', watchedEpisodes: [] }), {})).toBeNull()
     expect(cardLine(entry({ status: 'watching', watchedEpisodes: [] }), {})).toEqual({ key: 'card.next', vars: { episode: 1 } })
@@ -23,6 +24,12 @@ describe('cardLine', () => {
 })
 
 describe('MediaCard', () => {
+  it('Continue offers the episode after the highest watched, with the same number in the label and click', async () => {
+    const onContinue = vi.fn()
+    card({ entry: entry({ totalEpisodes: 220, watchedEpisodes: [112] }), onContinue })
+    fireEvent.click(await screen.findByRole('button', { name: /Nastavi EP 113/ }))
+    expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '113' })
+  })
   it('shows progress on the poster and the saved position under the title', async () => {
     const api = makeFakeApi({ positions: { forSeries: vi.fn(async () => ({ 4: { position: 495, duration: 1440 } })) } })
     const { container } = card({}, api)

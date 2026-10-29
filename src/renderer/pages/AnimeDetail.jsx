@@ -113,7 +113,7 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
   const maxEp = Math.max(entry.totalEpisodes ?? 0, ...watched.map(Math.ceil), 1)
   // The real ani-cli list (or 1..max) comes from main; until it answers, 1..max as before.
   const episodes = series?.episodes?.length ? series.episodes.map((e) => e.number) : Array.from({ length: maxEp }, (_, i) => String(i + 1))
-  const nextEp = nextEpisode(entry)
+  const nextEp = nextEpisode(entry, progress)
   const finished = entry.status === 'completed' || isSeriesComplete(entry) // nextEp wraps to 1 here
   const now = useNow()
   const fresh = newEpisodeCount(entry, info, now)

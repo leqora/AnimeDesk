@@ -57,6 +57,23 @@ describe('ContinueCard', () => {
     renderUi(<ContinueCard entry={entry()} {...cb} />, { api: apiWith() })
     expect(screen.getByText('Epizoda 5')).toBeInTheDocument()
   })
+  it('Continue offers the episode after the highest watched', async () => {
+    const onContinue = vi.fn()
+    const api = apiWith({ episodes: { thumb: vi.fn(async () => null) } })
+    renderUi(<ContinueCard entry={entry({ totalEpisodes: 220, watchedEpisodes: [112] })} ready onContinue={onContinue} onOpen={() => {}} />, { api })
+    expect(await screen.findByText('Epizoda 113')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Nastavi EP 113: Show/ }))
+    expect(onContinue).toHaveBeenCalledWith({ query: 'Show CLI', anime: 'Show CLI', episode: '113' })
+    await waitFor(() => expect(api.episodes.thumb).toHaveBeenCalledWith(expect.objectContaining({ episode: 113 })))
+  })
+  it('Continue offers the latest started episode beyond the watched ones', async () => {
+    const onContinue = vi.fn()
+    const api = apiWith({ positions: { forSeries: vi.fn(async () => ({ 113: { position: 300, duration: 1440 }, 114: { position: 720, duration: 1440 } })) } })
+    renderUi(<ContinueCard entry={entry({ totalEpisodes: 220, watchedEpisodes: [112] })} ready onContinue={onContinue} onOpen={() => {}} />, { api })
+    expect(await screen.findByText('Epizoda 114 · ostalo 12 min')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Nastavi EP 114: Show/ }))
+    expect(onContinue).toHaveBeenCalledWith({ query: 'Show CLI', anime: 'Show CLI', episode: '114' })
+  })
   it('click plays, small buttons open details and pin', () => {
     const onContinue = vi.fn()
     const onOpen = vi.fn()

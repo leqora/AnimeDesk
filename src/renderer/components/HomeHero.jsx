@@ -31,7 +31,7 @@ function Slide({ entry, ready, now, onContinue, onDetails }) {
   const tint = usePosterTint(info?.poster ?? null)
   const key = entry.aniCliTitle ?? entry.title
   const progress = useEpisodeProgress(key)
-  const next = nextEpisode(entry)
+  const next = nextEpisode(entry, progress)
   const saved = progress[String(next)]
   const fresh = newEpisodeCount(entry, info, now)
   const meta = heroMeta(info, t)
