@@ -146,20 +146,7 @@ describe('Back from the player', () => {
     expect(s.onDetail()).toBe(false)
     expect(await screen.findByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
   })
-  it('Back on a failed reconnect forgets the origin', async () => {
-    const s = await start()
-    await s.openDetail()
-    playFromDetail()
-    await s.openPlayer(ep('p1', '2'))
-    act(() => s.cb.retry({ title: 'Show', episode: '2', state: 'failed', error: 'unknown', sessionId: null }))
-    act(() => s.cb.close())
-    fireEvent.click(await screen.findByRole('button', { name: 'Nazad' }))
-    expect(s.onDetail()).toBe(false)
-    await s.openPlayer(ep('p2', '2')) // started from the Home search box
-    clickBack()
-    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
-    expect(s.onDetail()).toBe(false)
-  })})
+})
 
 describe('Back from a player started in the Search episode list', () => {
   const reopened = { query: 'Show', anime: 'Show' }
@@ -257,6 +244,47 @@ describe('Back from a player started in the Search episode list', () => {
   })
 })
 
+describe('Back on the reconnecting screen', () => {
+  const reopened = { query: 'Show', anime: 'Show' }
+  // the playback stalls: main reports the retry and the player goes away, leaving the reconnecting screen
+  const stall = (s, over = {}) => {
+    act(() => s.cb.end({ sessionId: 's1', retry: true, result: { ok: true } }))
+    act(() => s.cb.retry({ title: 'Show', episode: '2', state: 'reconnecting', sessionId: 's2', ...over }))
+    act(() => s.cb.close())
+  }
+  it('Back on the reconnecting screen after a search playback reopens the episode list', async () => {
+    const s = await start()
+    await searchPlay(s)
+    stall(s)
+    clickBack()
+    expect(s.api.watch.cancel).toHaveBeenCalledWith('s2')
+    await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledWith(reopened))
+    expect(s.api.watch.cancel.mock.invocationCallOrder[0]).toBeLessThan(s.api.watch.start.mock.invocationCallOrder[0])
+    // the cancelled recovery session ends late: the reopened list stays
+    act(() => s.cb.end({ sessionId: 's2', retry: true, result: { ok: false, error: 'cancelled' } }))
+    act(() => s.cb.menu({ requestId: 'r2', sessionId: 's3', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
+    expect(await screen.findByRole('heading', { name: /Izaberi epizodu/ })).toBeInTheDocument()
+  })
+  it('Back on the failed reconnect screen reopens the episode list', async () => {
+    const s = await start()
+    await searchPlay(s)
+    stall(s, { state: 'failed', error: 'unknown', sessionId: null })
+    clickBack()
+    await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledWith(reopened))
+    expect(s.api.watch.cancel).not.toHaveBeenCalled()
+  })
+  it('Back on the reconnecting screen returns to the detail when the episode started there', async () => {
+    const s = await start()
+    await s.openDetail()
+    playFromDetail()
+    await s.openPlayer(ep('p1', '2'))
+    stall(s)
+    clickBack()
+    await waitFor(() => expect(s.onDetail()).toBe(true))
+    expect(s.api.watch.cancel).toHaveBeenCalledWith('s2')
+  })
+})
+
 describe('Closing the player with a reason', () => {
   it('external playback does not return to the origin', async () => {
     const s = await start()
@@ -297,6 +325,19 @@ describe('Player that never gets going', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Zatvori' }))
     await waitFor(() => expect(s.onDetail()).toBe(true))
     expect(s.api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ playbackId: 'p1', reason: 'back' }))
+  })
+  it('Close on the player crash screen after a search playback reopens the list', async () => {
+    const s = await start()
+    act(() => s.cb.menu({ requestId: 'r1', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
+    act(() => s.cb.title({ sessionId: 's1', title: 'Show' }))
+    fireEvent.click(await screen.findByRole('button', { name: '2' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Gledaj' })).toBeEnabled())
+    fireEvent.click(screen.getByRole('button', { name: 'Gledaj' }))
+    gate.crash = true
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    act(() => s.cb.open(ep('p1', '2')))
+    fireEvent.click(await screen.findByRole('button', { name: 'Zatvori' }))
+    await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledWith({ query: 'Show', anime: 'Show' }))
   })
   it('a next/previous with no episode number forgets the origin', async () => {
     const s = await start()

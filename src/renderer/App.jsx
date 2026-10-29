@@ -579,7 +579,13 @@ export default function App({ api, sound: injectedSound }) {
           <PlayerReconnecting
             state={reconnecting.state} title={reconnecting.title} episode={reconnecting.episode} error={reconnecting.error}
             onRetry={() => api.player.retryAgain()}
-            onBack={() => { if (reconnecting.state === 'reconnecting' && reconnecting.sessionId) api.watch.cancel(reconnecting.sessionId); originRef.current = null; setReconnecting(null) }}
+            onBack={() => {
+              // like Back from the player: cancel the recovery session first, then return to where the episode started
+              const r = reconnecting
+              if (r.state === 'reconnecting' && r.sessionId) api.watch.cancel(r.sessionId)
+              setReconnecting(null)
+              returnFromPlayer(r.title)
+            }}
           />
         )}
         {paletteOpen && <CommandPalette fullscreen={fullscreen} onRun={runPalette} onClose={() => setPaletteOpen(false)} />}
