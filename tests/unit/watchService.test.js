@@ -157,6 +157,24 @@ describe('watchService', () => {
     expect(player.play).toHaveBeenCalledWith(['--force-media-title=Fake Anime Episode 2', 'https://v', '--start=421'], expect.any(Object))
     expect(library.recordWatched).toHaveBeenCalled()
   })
+  it('stops the in-app playback before starting mpv for another episode', async () => {
+    const order = []
+    const internalPlayer = { play: vi.fn(), isActive: () => true, stop: vi.fn(() => order.push('stop')) }
+    const { svc, player } = setup({ settings: { playerMode: 'external' }, internalPlayer })
+    player.play.mockImplementation(async () => { order.push('mpv'); return { exitCode: 0, maxPercent: 90 } })
+    svc.watch({ query: 'fake' })
+    await flush()
+    expect(internalPlayer.stop).toHaveBeenCalledTimes(1)
+    expect(order).toEqual(['stop', 'mpv'])
+  })
+  it('does not stop the in-app player for "Play in mpv" of the same episode', async () => {
+    const internalPlayer = { play: vi.fn(async () => ({ exitCode: 0, maxPercent: 30, position: 421.7, duration: 1400, reason: 'external' })), isActive: () => true, stop: vi.fn() }
+    const { svc, player } = setup({ settings: { playerMode: 'internal' }, internalPlayer })
+    svc.watch({ query: 'fake' })
+    await flush()
+    expect(player.play).toHaveBeenCalled()
+    expect(internalPlayer.stop).not.toHaveBeenCalled()
+  })
   it('shares the recorded state across the in-app to mpv handover (records once, no position save after)', async () => {
     const internalPlayer = {
       play: vi.fn(async (_info, { onProgress }) => {
