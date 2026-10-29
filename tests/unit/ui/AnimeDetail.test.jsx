@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { screen, fireEvent, waitFor, act, within } from '@testing-library/react'
 import { renderUi, makeFakeApi } from './helpers.jsx'
 import { AnimeDetail } from '../../../src/renderer/pages/AnimeDetail.jsx'
 
@@ -437,5 +437,23 @@ describe('AnimeDetail episode cards', () => {
     expect(play).toBeDisabled()
     fireEvent.click(play)
     expect(onContinue).not.toHaveBeenCalled()
+  })
+})
+
+describe('AnimeDetail continue and rewatch', () => {
+  it('rewatch plays episode 1 when the total is unknown', async () => {
+    const onContinue = vi.fn()
+    mount(makeFakeApi(), { onContinue }, entry({ status: 'completed', totalEpisodes: null, watchedEpisodes: [1, 2, 3] }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Gledaj ponovo' }))
+    expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '1' })
+  })
+  it('Continue waits for the saved positions: disabled and without a number until they arrive', async () => {
+    let resolve
+    const api = makeFakeApi({ positions: { forSeries: vi.fn(() => new Promise((r) => { resolve = r })) } })
+    mount(api, {}, entry({ totalEpisodes: 220, watchedEpisodes: [129] }))
+    const hero = document.querySelector('.detail-hero')
+    expect(within(hero).getByRole('button', { name: 'Nastavi' })).toBeDisabled()
+    await act(async () => { resolve({ 130: { position: 205, duration: 1440 } }) })
+    expect(await within(hero).findByRole('button', { name: 'Nastavi EP 130 od 3:25' })).toBeEnabled()
   })
 })

@@ -231,6 +231,7 @@
   "continue.episode": "Epizoda {n}",
   "continue.episodeLeft": "Epizoda {n} · ostalo {m} min",
   "home.continue": "Nastavi gledanje",
+  "home.continueShort": "Nastavi",
   "home.continueEp": "Nastavi EP {episode}",
   "home.continueEpFrom": "Nastavi EP {episode} od {time}",
   "home.details": "Detalji",

@@ -72,7 +72,7 @@ async function searchPlay(s, { open = true } = {}) {
   act(() => s.cb.playing({ title: 'Show', episode: '2', sessionId: 's1' }))
   await s.openPlayer(ep('p1', '2'))
 }
-const playFromDetail = () => fireEvent.click(screen.getByRole('button', { name: /^Nastavi EP 2/ }))
+const playFromDetail = async () => fireEvent.click(await screen.findByRole('button', { name: /^Nastavi EP 2/ }))
 
 beforeEach(() => {
   HTMLMediaElement.prototype.play = vi.fn(function () { return Promise.resolve() })
@@ -87,7 +87,7 @@ describe('Back from the player', () => {
     const s = await start()
     await s.openDetail()
     fireEvent.click(screen.getByRole('tab', { name: 'Beleške' }))
-    playFromDetail()
+    await playFromDetail()
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalled())
     expect(s.onDetail()).toBe(false)
     await s.openPlayer(ep('p1', '2'))
@@ -98,7 +98,7 @@ describe('Back from the player', () => {
   it('next episode keeps the origin', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await s.openPlayer(ep('p1', '2'))
     fireEvent.click(screen.getByRole('button', { name: 'Sledeća epizoda' }))
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledTimes(2))
@@ -117,7 +117,7 @@ describe('Back from the player', () => {
   it('a failed start forgets the origin', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalled())
     act(() => s.cb.end({ sessionId: 's1', retry: false, result: { ok: false, error: 'unknown' } }))
     expect(s.onDetail()).toBe(false)
@@ -129,7 +129,7 @@ describe('Back from the player', () => {
   it('the late end of the previous playback does not forget the origin', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await s.openPlayer(ep('p1', '2'))
     act(() => s.cb.playing({ title: 'Show', episode: '2', sessionId: 's1' }))
     fireEvent.click(screen.getByRole('button', { name: 'Sledeća epizoda' }))
@@ -151,7 +151,7 @@ describe('Back from the player', () => {
   it('topbar navigation during playback does not return to the origin', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await s.openPlayer(ep('p1', '2'))
     fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
     await waitFor(() => expect(document.querySelector('.player')).toBeNull())
@@ -304,7 +304,7 @@ describe('Back on the reconnecting screen', () => {
   it('Back on the reconnecting screen returns to the detail when the episode started there', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await s.openPlayer(ep('p1', '2'))
     stall(s)
     clickBack()
@@ -317,7 +317,7 @@ describe('Closing the player with a reason', () => {
   it('external playback does not return to the origin', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalled())
     await s.openPlayer({ ...ep('p1', '2'), kind: 'file' })
     fireEvent(document.querySelector('.player__video'), new Event('error')) // an undecodable file offers the external player
@@ -332,7 +332,7 @@ describe('Closing the player with a reason', () => {
   it('ended from the detail returns to the detail', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalled())
     await s.openPlayer(ep('p1', '12'))
     act(() => { fireEvent(document.querySelector('.player__video'), new Event('ended')) })
@@ -345,7 +345,7 @@ describe('Player that never gets going', () => {
   it('closing a crashed player behaves like Back (returns to the origin)', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalled())
     gate.crash = true
     vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -371,7 +371,7 @@ describe('Player that never gets going', () => {
   it('a next/previous with no episode number forgets the origin', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await s.openPlayer({ ...ep('p1', '2'), episode: null })
     fireEvent.click(screen.getByRole('button', { name: 'Sledeća epizoda' }))
     await waitFor(() => expect(document.querySelector('.player')).toBeNull())

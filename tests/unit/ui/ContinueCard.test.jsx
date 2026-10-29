@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { screen, fireEvent, waitFor } from '@testing-library/react'
+import { screen, fireEvent, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderUi, makeFakeApi } from './helpers.jsx'
 import { ContinueCard } from '../../../src/renderer/components/ContinueCard.jsx'
@@ -43,10 +43,21 @@ describe('ContinueCard', () => {
   })
   it('the button is described by the visible episode line', async () => {
     renderUi(<ContinueCard entry={entry()} {...cb} />, { api: apiWith() })
-    const open = screen.getByRole('button', { name: /Nastavi EP 5: Show/ })
+    const open = await screen.findByRole('button', { name: /Nastavi EP 5: Show/ })
     const line = await screen.findByText('Epizoda 5')
     expect(open).toHaveAttribute('aria-describedby', line.id)
     expect(open).toHaveAccessibleDescription('Epizoda 5')
+  })
+  it('Continue waits for the saved positions: disabled and without a number until they arrive', async () => {
+    let resolve
+    const api = apiWith({ positions: { forSeries: vi.fn(() => new Promise((r) => { resolve = r })) } })
+    renderUi(<ContinueCard entry={entry({ totalEpisodes: 220, watchedEpisodes: [129] })} {...cb} />, { api })
+    const pending = screen.getByRole('button', { name: 'Nastavi: Show' })
+    expect(pending).toBeDisabled()
+    expect(pending.textContent).not.toContain('Epizoda')
+    await act(async () => { resolve({ 130: { position: 300, duration: 1440 } }) })
+    expect(await screen.findByRole('button', { name: /Nastavi EP 130: Show/ })).toBeEnabled()
+    expect(screen.getByText('Epizoda 130 · ostalo 19 min')).toBeInTheDocument()
   })
   it('text: with the saved position and without, never an episode title', async () => {
     const saved = apiWith({ positions: { forSeries: vi.fn(async () => ({ 5: { position: 720, duration: 1440 } })) } })
@@ -55,7 +66,7 @@ describe('ContinueCard', () => {
     expect(screen.getByText('Show')).toBeInTheDocument()
     a.unmount()
     renderUi(<ContinueCard entry={entry()} {...cb} />, { api: apiWith() })
-    expect(screen.getByText('Epizoda 5')).toBeInTheDocument()
+    expect(await screen.findByText('Epizoda 5')).toBeInTheDocument()
   })
   it('Continue offers the episode after the highest watched', async () => {
     const onContinue = vi.fn()
@@ -74,12 +85,12 @@ describe('ContinueCard', () => {
     fireEvent.click(screen.getByRole('button', { name: /Nastavi EP 114: Show/ }))
     expect(onContinue).toHaveBeenCalledWith({ query: 'Show CLI', anime: 'Show CLI', episode: '114' })
   })
-  it('click plays, small buttons open details and pin', () => {
+  it('click plays, small buttons open details and pin', async () => {
     const onContinue = vi.fn()
     const onOpen = vi.fn()
     const api = apiWith()
     renderUi(<ContinueCard entry={entry()} ready onContinue={onContinue} onOpen={onOpen} />, { api })
-    fireEvent.click(screen.getByRole('button', { name: /Nastavi EP 5/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Nastavi EP 5/ }))
     expect(onContinue).toHaveBeenCalledWith({ query: 'Show CLI', anime: 'Show CLI', episode: '5' })
     fireEvent.click(screen.getByRole('button', { name: /Detalji/ }))
     expect(onOpen).toHaveBeenCalledWith('a')
@@ -89,6 +100,7 @@ describe('ContinueCard', () => {
   it('real Tab order: card, details, pin', async () => {
     const user = userEvent.setup()
     renderUi(<ContinueCard entry={entry()} {...cb} />, { api: apiWith() })
+    await screen.findByRole('button', { name: /Nastavi EP 5/ })
     await user.tab()
     expect(document.activeElement).toBe(screen.getByRole('button', { name: /Nastavi EP 5/ }))
     await user.tab()

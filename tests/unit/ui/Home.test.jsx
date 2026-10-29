@@ -66,6 +66,7 @@ describe('pinned + cards', () => {
     renderUi(<HomePage ready settings={{ ...DEFAULT_SETTINGS }} onSettings={() => {}} onOpenWizard={() => {}} pendingWatch={null} onPendingHandled={() => {}} onContinue={onContinue} onOpenAnime={() => {}} />, { api })
     const rail = await screen.findByRole('region', { name: 'Nastavi gledanje' })
     expect(rail.querySelector('.continue-card')).not.toBeNull()
+    await waitFor(() => expect(rail.querySelector('.continue-card__open')).toBeEnabled())
     fireEvent.click(rail.querySelector('.continue-card__open'))
     expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '3' })
   })
