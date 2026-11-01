@@ -580,7 +580,7 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 .player--mini .player__spinner { width: 28px; height: 28px; border-width: 3px; }
 .mini__bar { position: absolute; top: 0; left: 0; right: 0; z-index: 1; display: flex; align-items: center; gap: 4px; padding: 6px 8px; background: linear-gradient(0deg, transparent, color-mix(in srgb, var(--bg) 85%, transparent)); opacity: 0; transition: opacity 150ms var(--ease); }
 .player--mini:hover .mini__bar, .player--mini:focus-within .mini__bar, .mini__bar--pinned { opacity: 1; }
-.mini__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.mini__spacer { flex: 1; }
 .mini__bar button { padding: 4px 6px; line-height: 0; }
 .mini__progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: color-mix(in srgb, var(--text) 18%, transparent); pointer-events: none; }
 .mini__progress > span { display: block; height: 100%; background: var(--accent); transform-origin: left; }

@@ -2,14 +2,14 @@ import { useT } from '../i18n/I18nContext.jsx'
 import { Icon } from './Icon.jsx'
 
 // The floating mini player's overlay: a thin bar (shown on hover / focus), a progress line, and always-visible
-// children (end-of-episode or error actions). Only the series title and the episode number are shown.
+// children (end-of-episode or error actions). It shows no text: the region's aria-label carries the title and episode.
 // `onTogglePlay` is optional: the reconnecting stand-in has nothing to play or pause.
-export function MiniChrome({ title, episode, playing, progress = 0, pinned = false, onTogglePlay, onExpand, onClose, children }) {
+export function MiniChrome({ playing, progress = 0, pinned = false, onTogglePlay, onExpand, onClose, children }) {
   const t = useT()
   return (
     <>
       <div className={`mini__bar${pinned ? ' mini__bar--pinned' : ''}`}>
-        <span className="mini__title">{title} <span className="hud">{t('player.episode', { episode: episode ?? '?' })}</span></span>
+        <span className="mini__spacer" />
         {onTogglePlay && (
           <button type="button" onClick={onTogglePlay} aria-label={playing ? t('player.pause') : t('player.play')} title={playing ? t('player.pause') : t('player.play')}>
             <Icon name={playing ? 'pause' : 'play'} size={16} />

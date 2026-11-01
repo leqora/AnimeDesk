@@ -27,6 +27,7 @@ import { trackMax, bufferedRanges, sameRanges, segmentAt, isLastEpisode, quality
 const PROGRESS_MS = 5000
 const QUALITY_FLASH_MS = 4000
 const CLICK_DELAY_MS = 220
+const EXPAND_GUARD_MS = 400 // the click that expands the mini must not continue as a click / double click on the full video
 const ENDING_FALLBACK_S = 30
 
 const headStatus = (url) => fetch(url, { method: 'HEAD' }).then((r) => r.status)
@@ -79,8 +80,16 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   const { end } = ending
   // shrinking while the countdown runs must not carry the user off to the next episode: fall back to the manual choice
   const wasMini = useRef(mini)
+  const expandedAt = useRef(-Infinity)
+  // Take focus unless it is already inside the player or in a modal dialog.
+  const takeFocus = () => {
+    const a = document.activeElement
+    if (root.current?.contains(a) || a?.closest?.('[aria-modal="true"]')) return
+    root.current?.focus()
+  }
   useEffect(() => {
     if (mini && !wasMini.current && ending.end === 'countdown') ending.cancel()
+    if (!mini && wasMini.current) { expandedAt.current = Date.now(); takeFocus() }
     wasMini.current = mini
   }, [mini])
   const health = usePlayerHealth({ video, active: resume == null && !end && !failed, onStall: () => fail() })
@@ -132,10 +141,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   useEffect(() => () => clearTimeout(clickTimer.current), [])
   // Take focus on show, unless it is already inside the player (ResumePrompt autoFocus) or in a modal dialog.
   useEffect(() => {
-    if (quietMount) return
-    const a = document.activeElement
-    if (root.current?.contains(a) || a?.closest?.('[aria-modal="true"]')) return
-    root.current?.focus()
+    if (!quietMount) takeFocus()
   }, [])
   useHlsSource({ video, open, HlsImpl, onFatal: fail })
   useEffect(() => {
@@ -149,8 +155,9 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   const step = (s) => { const v = video.current; v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + s)) }
   const toggleFullscreen = () => latest.current.api.window.setFullscreen(!latest.current.fullscreen)
   // A click waits briefly so a double click can toggle fullscreen without also pausing.
-  const onVideoClick = () => { if (latest.current.mini) return; clearTimeout(clickTimer.current); clickTimer.current = setTimeout(togglePlay, CLICK_DELAY_MS) }
-  const onVideoDoubleClick = () => { if (latest.current.mini) return; clearTimeout(clickTimer.current); toggleFullscreen() }
+  const inMiniGuard = () => latest.current.mini || Date.now() - expandedAt.current < EXPAND_GUARD_MS
+  const onVideoClick = () => { if (inMiniGuard()) return; clearTimeout(clickTimer.current); clickTimer.current = setTimeout(togglePlay, CLICK_DELAY_MS) }
+  const onVideoDoubleClick = () => { if (inMiniGuard()) { clearTimeout(clickTimer.current); return }; clearTimeout(clickTimer.current); toggleFullscreen() }
 
   usePlayerShortcuts({
     ' ': togglePlay,

@@ -24,7 +24,7 @@ export function useMiniDrag({ ref, enabled = true, corner, onCorner, onClick }) 
   useLayoutEffect(() => {
     const el = ref.current
     if (!enabled || !el) return undefined
-    const onResize = () => place(el, latest.current.corner)
+    const onResize = () => { if (!el.classList.contains('player--dragging')) place(el, latest.current.corner) }
     window.addEventListener('resize', onResize)
     return () => {
       window.removeEventListener('resize', onResize)
@@ -66,12 +66,17 @@ export function useMiniDrag({ ref, enabled = true, corner, onCorner, onClick }) 
         if (!cancelled) latest.current.onClick?.()
         return
       }
-      const next = nearestCorner(d.pos, d.vp, d.size)
-      const target = miniRect(next, d.vp, d.size)
+      // the window may have been resized during the drag: judge the drop against the current viewport
+      const vp = viewport()
+      const size = miniSize(vp.width)
+      const dropped = clampPos(d.pos, vp, size)
+      const next = nearestCorner(dropped, vp, size)
+      const target = miniRect(next, vp, size)
+      place(el, next)
       // Slide into the corner with a transform only: jump to the target, then undo the offset with a transition.
       el.style.left = `${target.x}px`
       el.style.top = `${target.y}px`
-      el.style.transform = `translate(${d.pos.x - target.x}px, ${d.pos.y - target.y}px)`
+      el.style.transform = `translate(${dropped.x - target.x}px, ${dropped.y - target.y}px)`
       el.getBoundingClientRect()
       el.classList.add('player--snap')
       el.style.transform = ''
@@ -80,7 +85,7 @@ export function useMiniDrag({ ref, enabled = true, corner, onCorner, onClick }) 
       latest.current.onCorner?.(next)
     }
     const down = (e) => {
-      if (e.button > 0 || e.target?.closest?.('button, a, input, select')) return
+      if (e.button > 0 || e.isPrimary === false || e.target?.closest?.('button, a, input, select')) return
       const vp = viewport()
       const size = miniSize(vp.width)
       const start = miniRect(latest.current.corner, vp, size)
