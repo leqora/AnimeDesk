@@ -157,6 +157,12 @@ describe('Back from the player', () => {
     await waitFor(() => expect(document.querySelector('.player')).toHaveClass('player--mini'))
     expect(s.onDetail()).toBe(false)
     expect(await screen.findByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Uvećaj' }))
+    await waitFor(() => expect(document.querySelector('.player')).not.toHaveClass('player--mini'))
+    clickBack()
+    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    expect(s.onDetail()).toBe(false) // the minimized episode's origin was forgotten by the navigation
+    expect(screen.getByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
   })
 })
 
@@ -219,6 +225,13 @@ describe('Back from a player started in the Search episode list', () => {
     expect(document.querySelector('.player')).toHaveClass('player--mini')
     await flush()
     expect(s.api.watch.start).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Uvećaj' }))
+    await waitFor(() => expect(document.querySelector('.player')).not.toHaveClass('player--mini'))
+    clickBack()
+    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    await flush()
+    expect(s.api.watch.start).not.toHaveBeenCalled() // no reopen of the Search list
+    expect(screen.getByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
   })
   it('a failed search start does not reopen the list', async () => {
     const s = await start()

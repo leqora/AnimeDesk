@@ -237,6 +237,10 @@ export default function App({ api, sound: injectedSound }) {
   const playerMounted = useRef(false)
   // Where the current episode was started from (a route), so "Back" from the player returns there; null = nowhere to return.
   const originRef = useRef(null)
+  const miniOriginRef = useRef(null) // the origin that belonged to the episode being minimized
+  const setOrigin = (o) => { originRef.current = o; miniOriginRef.current = null }
+  const playerRef = useRef(player)
+  playerRef.current = player
   const [reopenSearch, setReopenSearch] = useState(null) // { series, seq }: Search restarts the episode list of that series
   const playerOpenedRef = useRef(false) // a player opened since the last fresh start
   const playedSessions = useRef(new Set()) // sessions that reached playback (their late end is not a failed start)
@@ -253,8 +257,11 @@ export default function App({ api, sound: injectedSound }) {
     if (hadReconnecting.current && reconnecting == null && player == null) setMini(false)
     hadReconnecting.current = reconnecting != null
   }, [reconnecting, player])
-  // moving to another page while mini forgets where the episode was started from
-  useEffect(() => { if (miniRef.current) originRef.current = null }, [nav.route])
+  // moving to another page while mini forgets where the MINIMIZED episode was started from; an origin set since
+  // (a new episode started while mini) is not touched
+  useEffect(() => {
+    if (miniRef.current && originRef.current === miniOriginRef.current) originRef.current = null
+  }, [nav.route])
   useEffect(() => {
     const blocked = () => navKeys.current.blocked || document.querySelector('[aria-modal="true"]') != null
     const onKey = (e) => {
@@ -384,12 +391,16 @@ export default function App({ api, sound: injectedSound }) {
   // A start that ends without ever playing (error, cancelled menu) leaves the user on Home: forget where it came from.
   // Mpv playback has no in-app player to come back from, so it forgets the origin too.
   useEffect(() => {
+    // the player is gone and no recovery is pending (stopped for mpv, cancelled): mini must not linger
+    const dropStaleMini = () => { if (miniRef.current && playerRef.current == null && reconnectingRef.current == null) setMini(false) }
     const offs = [
       api.watch.onPlaying((p) => {
+        dropStaleMini()
         if (p?.sessionId) playedSessions.current.add(p.sessionId)
         if (settingsRef.current?.playerMode === 'external') originRef.current = null
       }),
       api.watch.onSessionEnd(({ sessionId, retry }) => {
+        if (!retry) dropStaleMini()
         if (retry || playedSessions.current.delete(sessionId) || playerOpenedRef.current) return
         originRef.current = null
       }),
@@ -461,13 +472,13 @@ export default function App({ api, sound: injectedSound }) {
   const onRemoved = () => { if (nav.canBack) nav.back(); else nav.replace({ page: 'watchlist', animeId: null }); setFocusMain(true) }
   // chain = the next/previous episode of a playback that is already going: it keeps the origin of the first start
   const continueWatching = (params, { chain = false } = {}) => {
-    if (!chain) originRef.current = nav.route
+    if (!chain) setOrigin(nav.route)
     playerOpenedRef.current = false
     setPendingWatch(params)
     nav.navigate({ page: 'home', animeId: null })
   }
   // Search picked an episode from its list: remember the series so "Back" from the player can reopen that list
-  const onEpisodePicked = (title) => { originRef.current = { page: 'home', animeId: null, search: title }; playerOpenedRef.current = false }
+  const onEpisodePicked = (title) => { setOrigin({ page: 'home', animeId: null, search: title }); playerOpenedRef.current = false }
   // "Back" from the player: to where the episode was started (or, by setting, to the series' episode list)
   const returnFromPlayer = async (title) => {
     const origin = originRef.current
@@ -498,6 +509,7 @@ export default function App({ api, sound: injectedSound }) {
   // Leave window fullscreen, shrink the episode into the mini player and (unless the action sets focus itself) focus the page.
   const minimize = ({ focus = true } = {}) => {
     if (fullscreenRef.current) api.window.setFullscreen(false)
+    miniOriginRef.current = originRef.current
     setMini(true)
     if (focus) setFocusMain(true)
   }

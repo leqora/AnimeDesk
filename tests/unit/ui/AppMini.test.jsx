@@ -4,17 +4,21 @@ import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import App from '../../../src/renderer/App.jsx'
 import { makeFakeApi } from './helpers.jsx'
 
+const gate = vi.hoisted(() => ({ crash: false }))
 vi.mock('../../../src/renderer/player/loadPlayer.js', async () => {
   const { PlayerView } = await import('../../../src/renderer/components/PlayerView.jsx')
-  return { loadPlayer: async () => ({ PlayerView }) }
+  const { createElement } = await import('react')
+  const Guarded = (props) => { if (gate.crash) throw new Error('boom'); return createElement(PlayerView, props) }
+  return { loadPlayer: async () => ({ PlayerView: Guarded }) }
 })
+const entry = { id: 'a1', title: 'Show', aniCliTitle: 'Show', aniListId: null, status: 'watching', rating: null, comment: '', totalEpisodes: 12, watchedEpisodes: [1], episodeNotes: {}, lastWatchedAt: null, pinnedAt: null }
 
 const ep = (id, episode = '3') => ({ playbackId: id, title: 'Show', episode, kind: 'hls', src: `http://127.0.0.1:9/${id}`, subtitleUrl: null, resumeAt: null, totalEpisodes: 12 })
 const flush = () => act(async () => { await Promise.resolve(); await Promise.resolve() })
 const mini = () => document.querySelector('.player--mini')
 const pointer = (target, type, x, y) => act(() => { target.dispatchEvent(new MouseEvent(type, { bubbles: true, clientX: x, clientY: y })) })
 
-async function start({ fullscreen = false } = {}) {
+async function start({ fullscreen = false, library = [] } = {}) {
   const cb = {}
   const ends = new Set()
   const playings = new Set()
@@ -27,9 +31,11 @@ async function start({ fullscreen = false } = {}) {
   cb.title = (e) => [...titles].forEach((f) => f(e))
   const api = makeFakeApi({
     window: { getFullscreen: vi.fn(async () => fullscreen) },
+    library: { list: vi.fn(async () => library) },
     player: { onOpen: vi.fn((f) => { cb.open = f; return () => {} }), onRetry: vi.fn((f) => { cb.retry = f; return () => {} }), onClose: vi.fn((f) => { cb.close = f; return () => {} }) },
     watch: { onSessionEnd: vi.fn(sub(ends)), onPlaying: vi.fn(sub(playings)), onMenu: vi.fn(sub(menus)), onTitle: vi.fn(sub(titles)) },
   })
+  api.onOpenAnime = vi.fn((f) => { cb.anime = f; return () => {} })
   let sessions = 0
   api.watch.start.mockImplementation(async () => ({ sessionId: `s${++sessions}` }))
   render(<App api={api} />)
@@ -60,7 +66,7 @@ beforeEach(() => {
   window.requestIdleCallback = vi.fn(() => 1)
   window.cancelIdleCallback = vi.fn()
 })
-afterEach(() => { delete window.requestIdleCallback; delete window.cancelIdleCallback })
+afterEach(() => { gate.crash = false; delete window.requestIdleCallback; delete window.cancelIdleCallback })
 
 describe('App mini player', () => {
   it('top bar page click minimizes instead of closing', async () => {
@@ -170,6 +176,89 @@ describe('App mini player', () => {
     expect(s.api.watch.cancel).toHaveBeenCalledWith('r1')
     await waitFor(() => expect(document.querySelector('.player')).toBeNull())
     expect(screen.getByRole('button', { name: 'Watchlist' })).toHaveAttribute('aria-current', 'page')
+    await waitFor(() => expect(document.activeElement).toBe(document.querySelector('main.content')))
+  })
+
+  it('x on the reconnecting mini forgets the origin', async () => {
+    const s = await start()
+    await s.pickFromSearch('2')
+    await s.open({ ...ep('p1', '2'), title: 'Naruto' })
+    fireEvent.click(screen.getByRole('button', { name: 'Mini plejer' }))
+    await waitFor(() => expect(mini()).not.toBeNull())
+    act(() => s.cb.close())
+    act(() => s.cb.retry({ state: 'reconnecting', title: 'Naruto', episode: '2', sessionId: 'r1' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Zatvori' }))
+    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    await s.open(ep('p9', '5')) // a later episode started with no origin
+    s.api.watch.start.mockClear()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Nazad' }).find((b) => !b.closest('[aria-hidden="true"]')))
+    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    await flush()
+    expect(s.api.watch.start).not.toHaveBeenCalled()
+  })
+
+  it('a new episode started from the detail while mini returns to that detail', async () => {
+    const s = await start({ library: [entry] })
+    act(() => s.cb.anime({ animeId: 'a1' }))
+    await waitFor(() => expect(document.querySelector('.detail-hero')).not.toBeNull())
+    fireEvent.click(await screen.findByRole('button', { name: /^Nastavi EP 2/ }))
+    await s.open(ep('p1', '2'))
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
+    await waitFor(() => expect(mini()).not.toBeNull())
+    act(() => s.cb.anime({ animeId: 'a1' })) // back on the detail while the first episode is still mini
+    await waitFor(() => expect(document.querySelector('.detail-hero')).not.toBeNull())
+    fireEvent.click(await screen.findByRole('button', { name: /^Nastavi EP 2/ }))
+    await waitFor(() => expect(s.api.watch.start).toHaveBeenCalled())
+    act(() => s.cb.close())
+    await s.open(ep('p2', '2'))
+    expect(mini()).toBeNull()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Nazad' }).find((b) => !b.closest('[aria-hidden="true"]')))
+    await waitFor(() => expect(document.querySelector('.detail-hero')).not.toBeNull())
+  })
+
+  it('an episode picked in Search while mini reopens that list on Back', async () => {
+    const s = await start()
+    await s.open()
+    fireEvent.click(screen.getByRole('button', { name: 'Watchlist' }))
+    await waitFor(() => expect(mini()).not.toBeNull())
+    fireEvent.click(screen.getByRole('button', { name: 'Početna' }))
+    await s.pickFromSearch('2')
+    act(() => s.cb.close())
+    await s.open({ ...ep('p2', '2'), title: 'Naruto' })
+    expect(mini()).toBeNull()
+    s.api.watch.start.mockClear()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Nazad' }).find((b) => !b.closest('[aria-hidden="true"]')))
+    await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledWith({ query: 'Naruto', anime: 'Naruto' }))
+  })
+
+  it.each([
+    ['the session ends', (s) => s.cb.end({ sessionId: 's0', retry: false, result: { ok: true } })],
+    ['mpv starts playing', (s) => s.cb.playing({ title: 'Show', episode: '4', sessionId: 's7' })],
+  ])('mini does not outlive a closed player when %s', async (_n, fire) => {
+    const s = await start()
+    await s.open()
+    fireEvent.click(screen.getByRole('button', { name: 'Mini plejer' }))
+    await waitFor(() => expect(mini()).not.toBeNull())
+    act(() => s.cb.close())
+    act(() => fire(s))
+    act(() => s.cb.retry({ state: 'reconnecting', title: 'Show', episode: '3', sessionId: 'r1' }))
+    expect(document.querySelector('.player--reconnect')).not.toBeNull()
+    expect(document.querySelector('.player--mini')).toBeNull()
+  })
+
+  it('a crash while mini shows the full error screen and Close drops the player', async () => {
+    const s = await start()
+    await s.open()
+    gate.crash = true
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    fireEvent.click(screen.getByRole('button', { name: 'Mini plejer' }))
+    const close = await screen.findByRole('button', { name: 'Zatvori' })
+    expect(document.querySelector('.error-fallback--overlay')).not.toBeNull()
+    expect(document.querySelector('main.content')).toHaveAttribute('inert')
+    fireEvent.click(close)
+    expect(s.api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'back', playbackId: 'p1' }))
+    await waitFor(() => expect(document.querySelector('.error-fallback--overlay')).toBeNull())
+    vi.restoreAllMocks()
   })
 
   it('a new episode opens full', async () => {
