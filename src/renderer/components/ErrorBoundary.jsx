@@ -19,7 +19,7 @@ export class ErrorBoundary extends Component {
 
   static getDerivedStateFromError(error) { return { error } }
 
-  componentDidCatch(error, info) { console.error('UI error', error, info?.componentStack) }
+  componentDidCatch(error, info) { console.error('UI error', error, info?.componentStack); this.props.onCatch?.(error) }
 
   render() {
     const { actionLabelKey, onAction, className, children } = this.props

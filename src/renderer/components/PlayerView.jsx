@@ -31,7 +31,7 @@ const EXPAND_GUARD_MS = 400 // the click that expands the mini must not continue
 const ENDING_FALLBACK_S = 30
 
 const headStatus = (url) => fetch(url, { method: 'HEAD' }).then((r) => r.status)
-export function PlayerView({ open, settings, fullscreen, onSettings, onClose, initialRate = 1, onRate, onIdleChange, holdControls = false, closeRequest = null, mini = false, miniCorner = 'br', onMinimize, onExpand, onMiniCorner, quietMount = false, HlsImpl = Hls, probeSub = headStatus }) {
+export function PlayerView({ open, settings, fullscreen, onSettings, onClose, initialRate = 1, onRate, onIdleChange, holdControls = false, mini = false, miniCorner = 'br', onMinimize, onExpand, onMiniCorner, quietMount = false, HlsImpl = Hls, probeSub = headStatus }) {
   const api = useApi()
   const t = useT()
   const root = useRef(null)
@@ -118,11 +118,6 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
     latest.current.api.player.closed({ ...snapshot(), reason })
     latest.current.onClose(reason)
   }
-  // the app asks to leave (a top bar action during playback): same path as "Back", with its own reason
-  // only a request made after this playback mounted counts (the prop outlives remounts)
-  const requestSeq = closeRequest?.seq
-  const mountSeq = useRef(requestSeq)
-  useEffect(() => { if (requestSeq != null && requestSeq !== mountSeq.current) close('nav') }, [requestSeq])
   // Main owns the recovery budget: it either closes this player and reconnects, or says the automatic try is used up.
   const fail = async () => {
     if (failing.current || closed.current) return

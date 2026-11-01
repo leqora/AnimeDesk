@@ -148,13 +148,13 @@ describe('Back from the player', () => {
     await waitFor(() => expect(s.onDetail()).toBe(true))
     expect(screen.getByRole('tab', { name: 'Epizode' })).toHaveAttribute('aria-selected', 'true')
   })
-  it('topbar navigation during playback does not return to the origin', async () => {
+  it('topbar navigation during playback minimizes the episode and does not return to the origin', async () => {
     const s = await start()
     await s.openDetail()
     await playFromDetail()
     await s.openPlayer(ep('p1', '2'))
     fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
-    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    await waitFor(() => expect(document.querySelector('.player')).toHaveClass('player--mini'))
     expect(s.onDetail()).toBe(false)
     expect(await screen.findByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
   })
@@ -211,12 +211,12 @@ describe('Back from a player started in the Search episode list', () => {
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledTimes(2))
     expect(s.api.watch.start).toHaveBeenLastCalledWith(reopened)
   })
-  it('a top bar click during a search playback does not reopen the list', async () => {
+  it('a top bar click during a search playback minimizes it and does not reopen the list', async () => {
     const s = await start()
     await searchPlay(s)
     fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
     expect(await screen.findByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
-    expect(document.querySelector('.player')).toBeNull()
+    expect(document.querySelector('.player')).toHaveClass('player--mini')
     await flush()
     expect(s.api.watch.start).not.toHaveBeenCalled()
   })

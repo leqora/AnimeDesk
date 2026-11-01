@@ -180,24 +180,24 @@ describe('App top bar over the player', () => {
   })
 
   describe('actions during playback', () => {
-    it('clicking a topbar page during playback closes the player and opens the page', async () => {
+    it('clicking a topbar page during playback minimizes the player and opens the page', async () => {
       const { api, open } = await start()
       await open()
+      const video = document.querySelector('video')
       fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
-      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
-      expect(api.player.closed).toHaveBeenCalledTimes(1)
-      expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'nav', playbackId: 'p1' }))
+      await waitFor(() => expect(document.querySelector('.player')).toHaveClass('player--mini'))
+      expect(api.player.closed).not.toHaveBeenCalled()
+      expect(document.querySelector('video')).toBe(video)
       expect(await screen.findByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
       await waitFor(() => expect(document.activeElement).toBe(document.querySelector('main.content')))
     })
 
-    it('the logo during playback closes the episode and opens Home', async () => {
+    it('the logo during playback minimizes the episode and opens Home', async () => {
       const { api, open } = await start()
       await open()
       fireEvent.click(screen.getByRole('button', { name: /ANIMEDESK/ }))
-      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
-      expect(api.player.closed).toHaveBeenCalledTimes(1)
-      expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'nav', playbackId: 'p1' }))
+      await waitFor(() => expect(document.querySelector('.player')).toHaveClass('player--mini'))
+      expect(api.player.closed).not.toHaveBeenCalled()
     })
 
     it('the logo during playback shows Home, not the page the episode was started from', async () => {
@@ -206,18 +206,18 @@ describe('App top bar over the player', () => {
       expect(await screen.findByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
       await open()
       fireEvent.click(screen.getByRole('button', { name: /ANIMEDESK/ }))
-      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+      await waitFor(() => expect(document.querySelector('.player')).toHaveClass('player--mini'))
       expect(screen.getByRole('button', { name: 'Početna' })).toHaveAttribute('aria-current', 'page')
       expect(screen.queryByRole('heading', { name: 'Podešavanja' })).toBeNull()
     })
 
-    it('avatar menu "Profil" during playback closes the player first', async () => {
+    it('avatar menu "Profil" during playback minimizes the player first', async () => {
       const { api, open } = await start()
       await open()
       fireEvent.click(screen.getByRole('button', { name: 'Nalog' }))
       fireEvent.click(screen.getByRole('menuitem', { name: 'Profil' }))
-      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
-      expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'nav' }))
+      await waitFor(() => expect(document.querySelector('.player')).toHaveClass('player--mini'))
+      expect(api.player.closed).not.toHaveBeenCalled()
       expect(await screen.findByRole('heading', { name: 'Profil' })).toBeInTheDocument()
     })
 
@@ -231,27 +231,28 @@ describe('App top bar over the player', () => {
       expect(document.querySelector('.player')).toBeInTheDocument()
     })
 
-    it('palette pill during playback closes the player and opens the palette', async () => {
+    it('palette pill during playback minimizes the player and opens the palette', async () => {
       const { api, open } = await start()
       await open()
       fireEvent.click(screen.getByRole('button', { name: 'Brza pretraga' }))
-      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
-      expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'nav' }))
+      await waitFor(() => expect(document.querySelector('.player')).toHaveClass('player--mini'))
+      expect(api.player.closed).not.toHaveBeenCalled()
       expect(await screen.findByRole('dialog')).toBeInTheDocument()
     })
 
-    it('a later playback is not closed by an earlier top bar request', async () => {
+    it('a new episode after a minimized one opens full and is not closed', async () => {
       const { api, open } = await start()
       await open()
       fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
-      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+      await waitFor(() => expect(document.querySelector('.player')).toHaveClass('player--mini'))
       await open({ ...episode, playbackId: 'p2' })
       await flush()
       expect(document.querySelector('.player')).toBeInTheDocument()
-      expect(api.player.closed).toHaveBeenCalledTimes(1)
+      expect(document.querySelector('.player')).not.toHaveClass('player--mini')
+      expect(api.player.closed).not.toHaveBeenCalled()
     })
 
-    it('bell item opening a series during playback closes the player first', async () => {
+    it('bell item opening a series during playback minimizes the player first', async () => {
       const { api, open } = await start({ apiOver: {
         library: { list: vi.fn(async () => [{ id: 'a1', title: 'Show' }]) },
         notifications: { list: vi.fn(async () => ({ items: [{ id: 'n1', animeId: 'a1', title: 'Show', episode: '4', at: new Date().toISOString(), read: false }], unread: 1 })) },
@@ -259,18 +260,17 @@ describe('App top bar over the player', () => {
       await open()
       fireEvent.click(screen.getByRole('button', { name: /Obaveštenja/ }))
       fireEvent.click(await screen.findByRole('button', { name: /Show — EP 4/ }))
-      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
-      expect(api.player.closed).toHaveBeenCalledTimes(1)
-      expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'nav' }))
+      await waitFor(() => expect(document.querySelector('.player')).toHaveClass('player--mini'))
+      expect(api.player.closed).not.toHaveBeenCalled()
       await waitFor(() => expect(document.querySelector('.topbar [aria-current="page"]')).toHaveAccessibleName('Watchlist'))
     })
 
-    it('semaphore during playback closes the player and opens the wizard', async () => {
+    it('semaphore during playback minimizes the player and opens the wizard', async () => {
       const { api, open } = await start()
       await open()
       fireEvent.click(screen.getByRole('button', { name: /Sve radi|Provera|Potrebna instalacija|Izvor trenutno|Ažuriranje/ }))
-      await waitFor(() => expect(document.querySelector('.player')).toBeNull())
-      expect(api.player.closed).toHaveBeenCalledWith(expect.objectContaining({ reason: 'nav' }))
+      await waitFor(() => expect(document.querySelector('.player')).toHaveClass('player--mini'))
+      expect(api.player.closed).not.toHaveBeenCalled()
       expect(await screen.findByRole('dialog')).toBeInTheDocument()
     })
   })
