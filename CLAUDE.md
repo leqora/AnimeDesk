@@ -13,7 +13,7 @@ Windows desktop aplikacija (Electron + React) koja je grafički interfejs za ori
 
 ## Git i objavljivanje
 
-- Identitet (lokalno u repou): `leqora <dzonzi777@gmail.com>`. Svaki commit završava sa `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Identitet (lokalno u repou): `leqora <132832709+leqora@users.noreply.github.com>`. Svaki commit završava sa `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - Rad na grani `feat/...`, spajanje u `main` sa `--no-ff`; push i release **samo uz dozvolu korisnika**.
 - `gh` je u `~/scoop/shims` (u Bash-u: `export PATH="$HOME/scoop/shims:$PATH"`), prijavljen kao leqora.
 - **Objava verzije:**
