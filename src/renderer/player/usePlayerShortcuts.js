@@ -9,10 +9,11 @@ export const MENU_SLIDER = '.player__menu input[type="range"]'
 export const QUIET = 'quiet'
 export const shortcutKey = (e) => KEY_BY_CODE[e.code] ?? (e.key.length === 1 ? e.key.toLowerCase() : e.key)
 
-export function usePlayerShortcuts(actions, { onHandled } = {}) {
-  const latest = useLatest({ actions, onHandled })
+export function usePlayerShortcuts(actions, { onHandled, enabled = true } = {}) {
+  const latest = useLatest({ actions, onHandled, enabled })
   useEffect(() => {
     const onKey = (e) => {
+      if (!latest.current.enabled) return // e.g. the mini player: the keys belong to the page
       // Only text entry keeps its keys; a focused slider or select must not swallow the player shortcuts.
       if (e.ctrlKey || e.altKey || e.metaKey || e.target?.closest?.(TEXT_FIELD)) return
       if (e.target?.closest?.(MENU_SLIDER)) return

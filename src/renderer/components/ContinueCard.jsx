@@ -5,7 +5,7 @@ import { useToast } from '../toast/ToastProvider.jsx'
 import { usePosterInfo } from './Poster.jsx'
 import { useBanner } from '../anilist/useBanner.js'
 import { usePosterTint } from '../theme/usePosterTint.js'
-import { useEpisodeProgress } from '../episodes/useEpisodeProgress.js'
+import { useEpisodeProgressState } from '../episodes/useEpisodeProgress.js'
 import { nextEpisode } from '../../shared/domain.js'
 import { Icon } from './Icon.jsx'
 
@@ -35,7 +35,7 @@ export function ContinueCard({ entry, ready, onContinue, onOpen }) {
   const toast = useToast()
   const lineId = useId()
   const key = entry.aniCliTitle ?? entry.title
-  const progress = useEpisodeProgress(key)
+  const { progress, loaded } = useEpisodeProgressState(key)
   const next = nextEpisode(entry, progress)
   const info = usePosterInfo(entry.title, entry.aniListId)
   const rawThumb = useNextThumb(entry, next)
@@ -47,7 +47,7 @@ export function ContinueCard({ entry, ready, onContinue, onOpen }) {
   const banner = typeof rawBanner === 'string' && bad.includes(rawBanner) ? null : rawBanner
   const tint = usePosterTint(thumb === null && !banner ? (info?.poster ?? null) : null)
   const saved = progress[String(next)]
-  const line = saved ? t('continue.episodeLeft', { n: next, m: saved.remaining }) : t('continue.episode', { n: next })
+  const line = !loaded ? '' : saved ? t('continue.episodeLeft', { n: next, m: saved.remaining }) : t('continue.episode', { n: next })
   const image = typeof thumb === 'string' ? thumb : (typeof banner === 'string' ? banner : null)
   const minutes = info?.match !== 'close' && info?.duration > 0 ? info.duration : null
 
@@ -58,7 +58,7 @@ export function ContinueCard({ entry, ready, onContinue, onOpen }) {
 
   return (
     <div className="continue-card">
-      <button type="button" className="continue-card__open" disabled={!ready} aria-describedby={lineId} aria-label={`${t('home.continueEp', { episode: next })}: ${entry.title}`} onClick={() => onContinue({ query: key, anime: key, episode: String(next) })}>
+      <button type="button" className="continue-card__open" disabled={!ready || !loaded} aria-describedby={loaded ? lineId : undefined} aria-label={`${loaded ? t('home.continueEp', { episode: next }) : t('home.continueShort')}: ${entry.title}`} onClick={() => onContinue({ query: key, anime: key, episode: String(next) })}>
         <span className="continue-card__frame" style={tint ? { '--poster-tint': tint } : undefined}>
           {image ? <img className="continue-card__img" src={image} alt="" onError={() => markBad(image)} />
             : thumb === undefined || banner === undefined ? <span className="poster poster--skeleton" aria-hidden="true" />

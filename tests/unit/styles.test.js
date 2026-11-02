@@ -76,6 +76,10 @@ ${sel} {`)
     expect(order).toEqual([...order].sort((x, y) => x - y))
     expect(new Set(order).size).toBe(order.length)
     expect(z('.error-fallback--overlay')).toBe(z('.player'))
+    // the mini player floats over the page but under the bar, so the bar's menus stay on top of it
+    expect(token('mini')).toBeGreaterThan(0)
+    expect(token('mini')).toBeLessThan(z('.topbar'))
+    expect(css).toMatch(/\.player--mini \{[^}]*z-index: var\(--z-mini\)/)
     expect(css).toMatch(/\.app-shell--playing \.topbar \{[^}]*z-index: var\(--z-topbar-player\)/)
   })
   it('lets subtitles scale with the player', () => {

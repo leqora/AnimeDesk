@@ -81,7 +81,7 @@ describe('WatchlistPage', () => {
     const { container } = renderUi(<WatchlistPage ready onContinue={onContinue} />, { api })
     await screen.findByRole('button', { name: 'Show — 2/4, Gledam' })
     expect(container.querySelector('.badge--score')).toHaveTextContent('★ 8')
-    fireEvent.click(screen.getByRole('button', { name: 'Nastavi EP 3' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Nastavi EP 3' }))
     expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '3' })
     fireEvent.click(screen.getByRole('button', { name: 'Dodaj u omiljene: Show' }))
     expect(await screen.findByText('Možeš zakačiti najviše 5 serija. Otkači neku pa pokušaj ponovo.')).toBeInTheDocument()
@@ -333,11 +333,11 @@ describe('AnimeDetail', () => {
     const { container } = renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />, { api })
     expect(await within(container.querySelector('.detail-hero')).findByRole('button', { name: /Nastavi EP 3 od 8:15/ })).toBeInTheDocument()
   })
-  it('keeps the banner usable without AniList info', () => {
+  it('keeps the banner usable without AniList info', async () => {
     const { container } = renderUi(<AnimeDetail entry={entry()} ready onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />)
     const banner = container.querySelector('.detail-hero')
     expect(within(banner).getByRole('heading', { name: 'Frieren' })).toBeInTheDocument()
-    expect(within(banner).getByRole('button', { name: /Nastavi EP 3/ })).toBeInTheDocument()
+    expect(await within(banner).findByRole('button', { name: /Nastavi EP 3/ })).toBeInTheDocument()
     expect(banner.querySelector('.detail-hero__meta')).toBeNull()
     expect(banner.querySelector('.chips')).toBeNull()
   })
@@ -406,15 +406,15 @@ describe('AnimeDetail', () => {
     const onContinue = vi.fn()
     const onBack = vi.fn()
     const { api } = renderUi(<AnimeDetail entry={entry()} ready onBack={onBack} onChanged={() => {}} onContinue={onContinue} />)
-    fireEvent.click(screen.getByRole('button', { name: /Nastavi EP 3/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Nastavi EP 3/ }))
     expect(onContinue).toHaveBeenCalledWith({ query: 'Frieren', anime: 'Frieren', episode: '3' })
     { fireEvent.click(screen.getByRole('button', { name: 'Još' })); fireEvent.click(screen.getByRole('menuitem', { name: 'Ukloni iz Watchlist-e' })) }
     await waitFor(() => expect(api.library.remove).toHaveBeenCalledWith('a1'))
     expect(onBack).toHaveBeenCalled()
   })
-  it('disables continue when components are not ready', () => {
+  it('disables continue when components are not ready', async () => {
     renderUi(<AnimeDetail entry={entry()} ready={false} onBack={() => {}} onChanged={() => {}} onContinue={() => {}} />)
-    expect(screen.getByRole('button', { name: /Nastavi EP 3/ })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: /Nastavi EP 3/ })).toBeDisabled()
   })
   it('shows a banner with the blurred poster', async () => {
     const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => ({ ...info, poster: 'data:image/png;base64,AA' })) } })

@@ -18,10 +18,20 @@ describe('HomeHero', () => {
     expect(await screen.findByText('2023 · TV · 28 ep. · Action · Adventure · Fantasy')).toBeInTheDocument()
     expect(container.textContent).not.toContain('SECRET DESCRIPTION')
     expect(container.querySelector('.home-hero')).not.toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: /Nastavi EP 3/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Nastavi EP 3/ }))
     expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '3' })
     fireEvent.click(screen.getByRole('button', { name: /Detalji/ }))
     expect(onDetails).toHaveBeenCalledWith('a')
+  })
+  it('Continue waits for the saved positions: disabled and without a number until they arrive', async () => {
+    let resolve
+    const api = apiWith({ positions: { forSeries: vi.fn(() => new Promise((r) => { resolve = r })) } })
+    renderUi(<HomeHero entries={[entry({ totalEpisodes: 220, watchedEpisodes: [129] })]} {...props} />, { api })
+    const pending = screen.getByRole('button', { name: 'Nastavi' })
+    expect(pending).toBeDisabled()
+    expect(pending.textContent).not.toMatch(/EP|\d/)
+    await act(async () => { resolve({ 130: { position: 60, duration: 1440 } }) })
+    expect(await screen.findByRole('button', { name: /Nastavi EP 130 od 1:00/ })).toBeEnabled()
   })
   it('offers the saved position with the time left and a progress bar', async () => {
     const api = apiWith({ positions: { forSeries: vi.fn(async () => ({ 3: { position: 495, duration: 1440 } })) } })
@@ -33,7 +43,7 @@ describe('HomeHero', () => {
   it('Continue offers the episode after the highest watched, or the latest started one', async () => {
     const onContinue = vi.fn()
     const a = renderUi(<HomeHero entries={[entry({ totalEpisodes: 220, watchedEpisodes: [112] })]} {...props} onContinue={onContinue} />, { api: apiWith() })
-    fireEvent.click(screen.getByRole('button', { name: /Nastavi EP 113/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Nastavi EP 113/ }))
     expect(onContinue).toHaveBeenCalledWith({ query: 'Show', anime: 'Show', episode: '113' })
     a.unmount()
     const api = apiWith({ positions: { forSeries: vi.fn(async () => ({ 113: { position: 60, duration: 1440 }, 114: { position: 495, duration: 1440 } })) } })

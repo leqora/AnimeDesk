@@ -40,23 +40,31 @@ function subscribe(api, cb) {
 
 // Saved positions of one series (by ani-cli title), refreshed when main reports a change. Only numbers and times —
 // never anything about what happens in an episode. Only the latest request may set the state.
-export function useEpisodeProgress(title) {
+// `loaded` turns true after the first answer (success or failure) for the current title and is false right after a title change.
+export function useEpisodeProgressState(title) {
   const api = useApi()
   const [progress, setProgress] = useState(EMPTY)
+  const [loadedFor, setLoadedFor] = useState(null)
   useEffect(() => {
     setProgress(EMPTY)
+    setLoadedFor(null)
     if (!title) return undefined
     let live = true
     let seq = 0
     const load = () => {
       const n = ++seq
       api.positions.forSeries(title)
-        .then((r) => { if (live && n === seq) { const next = toProgress(r); setProgress((prev) => (sameProgress(prev, next) ? prev : next)) } })
-        .catch(() => { if (live && n === seq) setProgress(EMPTY) })
+        .then((r) => { if (live && n === seq) { const next = toProgress(r); setProgress((prev) => (sameProgress(prev, next) ? prev : next)); setLoadedFor(title) } })
+        .catch(() => { if (live && n === seq) { setProgress(EMPTY); setLoadedFor(title) } })
     }
     load()
     const off = subscribe(api, load)
     return () => { live = false; off() }
   }, [api, title])
-  return progress
+  if (!title) return { progress: EMPTY, loaded: true }
+  return { progress, loaded: loadedFor === title }
+}
+
+export function useEpisodeProgress(title) {
+  return useEpisodeProgressState(title).progress
 }

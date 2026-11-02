@@ -37,6 +37,9 @@ async function start({ settings = {}, library = [entry], light = 'green' } = {})
     player: { onOpen: vi.fn((f) => { cb.open = f; return () => {} }), onRetry: vi.fn((f) => { cb.retry = f; return () => {} }), onClose: vi.fn((f) => { cb.close = f; return () => {} }) },
     watch: { onSessionEnd: vi.fn(sub(ends)), onPlaying: vi.fn(sub(playings)), onMenu: vi.fn(sub(menus)), onTitle: vi.fn(sub(titles)) },
   })
+  // like main: every start answers with a fresh session id, and a menu is only shown for the session that was started
+  let sessions = 0
+  api.watch.start.mockImplementation(async () => ({ sessionId: `s${++sessions}` }))
   api.onOpenAnime = vi.fn((f) => { cb.anime = f; return () => {} })
   render(<App api={api} />)
   await screen.findByLabelText('Naziv animea…')
@@ -50,7 +53,15 @@ async function start({ settings = {}, library = [entry], light = 'green' } = {})
 }
 const clickBack = () => fireEvent.click(screen.getAllByRole('button', { name: 'Nazad' }).find((b) => !b.closest('[aria-hidden="true"]')))
 // Home's Search: the episode list of "Show" is the menu of session s1; pick episode 2 and let the player open
+async function searchList(s) {
+  fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: 'show' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+  await waitFor(() => expect(s.api.watch.start).toHaveBeenCalled())
+  await flush()
+  s.api.watch.start.mockClear()
+}
 async function searchPlay(s, { open = true } = {}) {
+  await searchList(s)
   act(() => s.cb.menu({ requestId: 'r1', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
   act(() => s.cb.title({ sessionId: 's1', title: 'Show' }))
   fireEvent.click(await screen.findByRole('button', { name: '2' }))
@@ -61,7 +72,7 @@ async function searchPlay(s, { open = true } = {}) {
   act(() => s.cb.playing({ title: 'Show', episode: '2', sessionId: 's1' }))
   await s.openPlayer(ep('p1', '2'))
 }
-const playFromDetail = () => fireEvent.click(screen.getByRole('button', { name: /^Nastavi EP 2/ }))
+const playFromDetail = async () => fireEvent.click(await screen.findByRole('button', { name: /^Nastavi EP 2/ }))
 
 beforeEach(() => {
   HTMLMediaElement.prototype.play = vi.fn(function () { return Promise.resolve() })
@@ -76,7 +87,7 @@ describe('Back from the player', () => {
     const s = await start()
     await s.openDetail()
     fireEvent.click(screen.getByRole('tab', { name: 'Beleške' }))
-    playFromDetail()
+    await playFromDetail()
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalled())
     expect(s.onDetail()).toBe(false)
     await s.openPlayer(ep('p1', '2'))
@@ -87,7 +98,7 @@ describe('Back from the player', () => {
   it('next episode keeps the origin', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await s.openPlayer(ep('p1', '2'))
     fireEvent.click(screen.getByRole('button', { name: 'Sledeća epizoda' }))
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledTimes(2))
@@ -106,7 +117,7 @@ describe('Back from the player', () => {
   it('a failed start forgets the origin', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalled())
     act(() => s.cb.end({ sessionId: 's1', retry: false, result: { ok: false, error: 'unknown' } }))
     expect(s.onDetail()).toBe(false)
@@ -118,7 +129,7 @@ describe('Back from the player', () => {
   it('the late end of the previous playback does not forget the origin', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await s.openPlayer(ep('p1', '2'))
     act(() => s.cb.playing({ title: 'Show', episode: '2', sessionId: 's1' }))
     fireEvent.click(screen.getByRole('button', { name: 'Sledeća epizoda' }))
@@ -137,15 +148,21 @@ describe('Back from the player', () => {
     await waitFor(() => expect(s.onDetail()).toBe(true))
     expect(screen.getByRole('tab', { name: 'Epizode' })).toHaveAttribute('aria-selected', 'true')
   })
-  it('topbar navigation during playback does not return to the origin', async () => {
+  it('topbar navigation during playback minimizes the episode and does not return to the origin', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await s.openPlayer(ep('p1', '2'))
     fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
-    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    await waitFor(() => expect(document.querySelector('.player')).toHaveClass('player--mini'))
     expect(s.onDetail()).toBe(false)
     expect(await screen.findByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Uvećaj' }))
+    await waitFor(() => expect(document.querySelector('.player')).not.toHaveClass('player--mini'))
+    clickBack()
+    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    expect(s.onDetail()).toBe(false) // the minimized episode's origin was forgotten by the navigation
+    expect(screen.getByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
   })
 })
 
@@ -200,14 +217,21 @@ describe('Back from a player started in the Search episode list', () => {
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledTimes(2))
     expect(s.api.watch.start).toHaveBeenLastCalledWith(reopened)
   })
-  it('a top bar click during a search playback does not reopen the list', async () => {
+  it('a top bar click during a search playback minimizes it and does not reopen the list', async () => {
     const s = await start()
     await searchPlay(s)
     fireEvent.click(screen.getByRole('button', { name: 'Podešavanja' }))
     expect(await screen.findByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
-    expect(document.querySelector('.player')).toBeNull()
+    expect(document.querySelector('.player')).toHaveClass('player--mini')
     await flush()
     expect(s.api.watch.start).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Uvećaj' }))
+    await waitFor(() => expect(document.querySelector('.player')).not.toHaveClass('player--mini'))
+    clickBack()
+    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    await flush()
+    expect(s.api.watch.start).not.toHaveBeenCalled() // no reopen of the Search list
+    expect(screen.getByRole('heading', { name: 'Podešavanja' })).toBeInTheDocument()
   })
   it('a failed search start does not reopen the list', async () => {
     const s = await start()
@@ -224,9 +248,9 @@ describe('Back from a player started in the Search episode list', () => {
     await searchPlay(s)
     clickBack()
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledTimes(1))
-    // the old session's late end is ignored (fake sessions share the id s1), the reopened one is cancelled: Home shows its rails again
+    // the old session's late end is ignored, the reopened one (s2) is cancelled: Home shows its rails again
     act(() => s.cb.end({ sessionId: 's1', retry: false, result: { ok: true } }))
-    act(() => s.cb.end({ sessionId: 's1', retry: false, result: { ok: false, error: 'cancelled' } }))
+    act(() => s.cb.end({ sessionId: 's2', retry: false, result: { ok: false, error: 'cancelled' } }))
     fireEvent.click(await screen.findByRole('button', { name: /Nastavi EP 2: Show/ }))
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalledTimes(2))
     await s.openPlayer(ep('p2', '2'))
@@ -256,6 +280,7 @@ describe('Back on the reconnecting screen', () => {
   it('Back on the reconnecting screen after a search playback reopens the episode list', async () => {
     const s = await start()
     await searchPlay(s)
+    s.api.watch.start.mockResolvedValue({ sessionId: 's3' }) // the reopened session answers with the id its menu carries
     stall(s)
     clickBack()
     expect(s.api.watch.cancel).toHaveBeenCalledWith('s2')
@@ -292,7 +317,7 @@ describe('Back on the reconnecting screen', () => {
   it('Back on the reconnecting screen returns to the detail when the episode started there', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await s.openPlayer(ep('p1', '2'))
     stall(s)
     clickBack()
@@ -305,7 +330,7 @@ describe('Closing the player with a reason', () => {
   it('external playback does not return to the origin', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalled())
     await s.openPlayer({ ...ep('p1', '2'), kind: 'file' })
     fireEvent(document.querySelector('.player__video'), new Event('error')) // an undecodable file offers the external player
@@ -320,7 +345,7 @@ describe('Closing the player with a reason', () => {
   it('ended from the detail returns to the detail', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalled())
     await s.openPlayer(ep('p1', '12'))
     act(() => { fireEvent(document.querySelector('.player__video'), new Event('ended')) })
@@ -333,7 +358,7 @@ describe('Player that never gets going', () => {
   it('closing a crashed player behaves like Back (returns to the origin)', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await waitFor(() => expect(s.api.watch.start).toHaveBeenCalled())
     gate.crash = true
     vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -344,6 +369,7 @@ describe('Player that never gets going', () => {
   })
   it('Close on the player crash screen after a search playback reopens the list', async () => {
     const s = await start()
+    await searchList(s)
     act(() => s.cb.menu({ requestId: 'r1', sessionId: 's1', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
     act(() => s.cb.title({ sessionId: 's1', title: 'Show' }))
     fireEvent.click(await screen.findByRole('button', { name: '2' }))
@@ -358,7 +384,7 @@ describe('Player that never gets going', () => {
   it('a next/previous with no episode number forgets the origin', async () => {
     const s = await start()
     await s.openDetail()
-    playFromDetail()
+    await playFromDetail()
     await s.openPlayer({ ...ep('p1', '2'), episode: null })
     fireEvent.click(screen.getByRole('button', { name: 'Sledeća epizoda' }))
     await waitFor(() => expect(document.querySelector('.player')).toBeNull())

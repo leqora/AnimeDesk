@@ -151,4 +151,56 @@ describe('navigation', () => {
     expect(await screen.findByLabelText('Naziv animea')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Nazad' })).not.toBeInTheDocument()
   })
+  describe('logo on Home with an open search list', () => {
+    const openList = async (narrow = false) => {
+      const handlers = {}
+      const capture = (name) => vi.fn((cb) => { handlers[name] = cb; return () => {} })
+      if (narrow) window.matchMedia = vi.fn((query) => ({ matches: true, media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
+      const api = makeFakeApi({ library: { list: vi.fn(async () => LIB) }, watch: { onMenu: capture('menu'), onPlaying: capture('playing'), onSessionEnd: capture('end') } })
+      api.watch.start.mockResolvedValue({ sessionId: 'B' })
+      render(<App api={api} />)
+      await screen.findByRole('region', { name: 'Nastavi gledanje' })
+      fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: 'show' } })
+      fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+      await waitFor(() => expect(api.watch.start).toHaveBeenCalled())
+      await act(async () => { await Promise.resolve() })
+      act(() => handlers.menu({ requestId: 'r1', sessionId: 'B', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show'] }))
+      expect(await screen.findByRole('button', { name: /^Show$/ })).toBeInTheDocument()
+      const main = document.querySelector('main.content')
+      main.scrollTop = 300
+      return { api, main }
+    }
+    afterEach(() => { delete window.matchMedia })
+    const expectReset = async (api, main) => {
+      await waitFor(() => expect(api.watch.cancel).toHaveBeenCalledWith('B'))
+      expect(screen.queryByRole('button', { name: /^Show$/ })).not.toBeInTheDocument()
+      expect(screen.getByLabelText('Naziv animea…')).toHaveValue('show')
+      expect(main.scrollTop).toBe(0)
+      await waitFor(() => expect(document.activeElement).toBe(main))
+    }
+    it('logo returns to Home top and closes the list', async () => {
+      const { api, main } = await openList()
+      fireEvent.click(screen.getByRole('button', { name: /ANIMEDESK – Početna/ }))
+      await expectReset(api, main)
+    })
+    it('the Početna link does the same', async () => {
+      const { api, main } = await openList()
+      fireEvent.click(screen.getByRole('button', { name: 'Početna' }))
+      await expectReset(api, main)
+    })
+    it('Meni → Početna does the same on a narrow window', async () => {
+      const { api, main } = await openList(true)
+      fireEvent.click(screen.getByRole('button', { name: 'Meni' }))
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Početna' }))
+      await expectReset(api, main)
+    })
+    it('without an open list nothing is cancelled', async () => {
+      const api = makeFakeApi({ library: { list: vi.fn(async () => LIB) } })
+      render(<App api={api} />)
+      await screen.findByRole('region', { name: 'Nastavi gledanje' })
+      fireEvent.click(screen.getByRole('button', { name: /ANIMEDESK – Početna/ }))
+      expect(api.watch.cancel).not.toHaveBeenCalled()
+      expect(screen.getByRole('region', { name: 'Nastavi gledanje' })).toBeInTheDocument()
+    })
+  })
 })

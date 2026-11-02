@@ -95,6 +95,8 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
       }
     }
     const mpvResumed = () => {
+      // A new episode in mpv must not leave the in-app player running (and playing) underneath.
+      if (internalPlayer?.isActive?.()) internalPlayer.stop()
       const saved = info.episode != null ? positions?.get(info.title, info.episode) ?? null : null
       return saved ? mpv([...info.mpvArgs, `--start=${Math.floor(saved.position)}`], { resumeAt: saved.position }) : mpv(info.mpvArgs)
     }
@@ -123,7 +125,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
   // One ani-cli session. `resume` marks a recovery: it answers menus only automatically and reports its own failure.
   function spawn(params, resume = null, { quiet = false } = {}) {
     let sessionId = null
-    const entry = { session: null, params, playing: false, cancelled: false, retrying: false, opened: false, animeLine: null, qualityFallback: null, failure: null, quiet, gate: quiet ? makeGate() : null, prefetchKey: null, prefetchFor: null, parked: false, adopted: false, freeRetryUsed: false, ended: false, probe: null, probed: false, probedTitle: null }
+    const entry = { session: null, params, resume, playing: false, cancelled: false, retrying: false, opened: false, animeLine: null, qualityFallback: null, failure: null, quiet, gate: quiet ? makeGate() : null, prefetchKey: null, prefetchFor: null, parked: false, adopted: false, freeRetryUsed: false, ended: false, probe: null, probed: false, probedTitle: null }
     const remember = (prompt, line) => { if (line != null && menuKind(prompt) === 'anime') entry.animeLine = line }
     // Remember the real episode list for the series page; a failed write must never stop ani-cli.
     const saveList = (lines) => {
@@ -180,6 +182,9 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
           // Parked: ani-cli waits for the "player" until watch() adopts this session or it is discarded.
           if (!(await entry.gate.promise)) return 1
         }
+        if (entry.cancelled) return 1
+        // A playback the user asked for is about to open: a recovery still reconnecting must not replace it later.
+        if (!resume && !entry.quiet) cancelPendingRecoveries()
         entry.opened = true
         notify(EVENTS.playing, { title: info.title, episode: info.episode, sessionId })
         entry.playing = true
@@ -225,6 +230,15 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
       }
     })
     return entry
+  }
+
+  function cancelPendingRecoveries() {
+    lastFailed = null
+    for (const e of sessions.values()) {
+      if (!e.resume || e.opened || e.ended || e.cancelled) continue
+      e.cancelled = true
+      e.session.kill()
+    }
   }
 
   // Same series, episode, quality and mode as the stalled playback; the anime picked in a menu is reused by name.

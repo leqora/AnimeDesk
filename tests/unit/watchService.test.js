@@ -157,6 +157,24 @@ describe('watchService', () => {
     expect(player.play).toHaveBeenCalledWith(['--force-media-title=Fake Anime Episode 2', 'https://v', '--start=421'], expect.any(Object))
     expect(library.recordWatched).toHaveBeenCalled()
   })
+  it('stops the in-app playback before starting mpv for another episode', async () => {
+    const order = []
+    const internalPlayer = { play: vi.fn(), isActive: () => true, stop: vi.fn(() => order.push('stop')) }
+    const { svc, player } = setup({ settings: { playerMode: 'external' }, internalPlayer })
+    player.play.mockImplementation(async () => { order.push('mpv'); return { exitCode: 0, maxPercent: 90 } })
+    svc.watch({ query: 'fake' })
+    await flush()
+    expect(internalPlayer.stop).toHaveBeenCalledTimes(1)
+    expect(order).toEqual(['stop', 'mpv'])
+  })
+  it('does not stop the in-app player for "Play in mpv" of the same episode', async () => {
+    const internalPlayer = { play: vi.fn(async () => ({ exitCode: 0, maxPercent: 30, position: 421.7, duration: 1400, reason: 'external' })), isActive: () => true, stop: vi.fn() }
+    const { svc, player } = setup({ settings: { playerMode: 'internal' }, internalPlayer })
+    svc.watch({ query: 'fake' })
+    await flush()
+    expect(player.play).toHaveBeenCalled()
+    expect(internalPlayer.stop).not.toHaveBeenCalled()
+  })
   it('shares the recorded state across the in-app to mpv handover (records once, no position save after)', async () => {
     const internalPlayer = {
       play: vi.fn(async (_info, { onProgress }) => {
@@ -500,6 +518,44 @@ describe('watchService recovery', () => {
     sessions[1].finish({ ok: false, error: 'cancelled', stderr: '' })
     await flush()
     expect(events.some(([c, p]) => c === EVENTS.playerRetry && p.state === 'failed')).toBe(false)
+  })
+  it('a user-started playback cancels a recovery that has not opened yet', async () => {
+    const { svc, sessions, internalPlayer, events, args } = retrySetup()
+    svc.watch({ query: 'show', anime: 'Show', episode: '3' })
+    sessions[0].opts.onPlay({ args })
+    await flush()
+    svc.recover({ playbackId: 'p1', position: 200 })
+    await flush()
+    expect(sessions).toHaveLength(2)
+    svc.watch({ query: 'other', anime: 'Other', episode: '5' })
+    const b = sessions.findLast((s) => s.opts.episodes === '5')
+    const before = internalPlayer.play.mock.calls.length
+    b.opts.onPlay({ args: ['--force-media-title=Other Episode 5', 'https://v'] })
+    await flush()
+    expect(sessions[1].kill).toHaveBeenCalled()
+    sessions[1].finish({ ok: false, error: 'cancelled', stderr: '' })
+    await flush()
+    expect(events).toContainEqual([EVENTS.sessionEnd, expect.objectContaining({ sessionId: 's2', retry: true })])
+    expect(events.some(([c, p]) => c === EVENTS.playerRetry && p.state === 'failed')).toBe(false)
+    // the late recovery never reaches the player
+    await sessions[1].opts.onPlay({ args })
+    expect(internalPlayer.play.mock.calls.length).toBe(before + 1)
+    svc.retryAgain()
+    expect(sessions.filter((s) => s.opts.episodes === '3')).toHaveLength(2)
+  })
+  it('a user-started playback leaves a recovery that already opened alone', async () => {
+    const { svc, sessions, args } = retrySetup()
+    svc.watch({ query: 'show', anime: 'Show', episode: '3' })
+    sessions[0].opts.onPlay({ args })
+    await flush()
+    svc.recover({ playbackId: 'p1', position: 200 })
+    await flush()
+    sessions[1].opts.onPlay({ args })
+    await flush()
+    svc.watch({ query: 'other', anime: 'Other', episode: '5' })
+    sessions.findLast((s) => s.opts.episodes === '5').opts.onPlay({ args: ['--force-media-title=Other Episode 5', 'https://v'] })
+    await flush()
+    expect(sessions[1].kill).not.toHaveBeenCalled()
   })
   it('passes the ani-cli quality fallback to the player', async () => {
     const { svc, sessions, internalPlayer, args } = retrySetup()

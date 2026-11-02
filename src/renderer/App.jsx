@@ -182,6 +182,7 @@ export default function App({ api, sound: injectedSound }) {
   const [paletteOpen, setPaletteOpen] = useState(false)
   // one-shot: after the palette has unmounted (so Modal's opener restore is done) focus goes to the page
   const [focusMain, setFocusMain] = useState(false)
+  const [homeResetSeq, setHomeResetSeq] = useState(0) // bumped when Home is pressed on Home
   useEffect(() => {
     if (!focusMain || paletteOpen) return
     // a toast that took focus on purpose (the "Poništi" button after a removal) keeps it
@@ -214,6 +215,15 @@ export default function App({ api, sound: injectedSound }) {
     return () => clearTimeout(id)
   }, [])
   const [reconnecting, setReconnecting] = useState(null)
+  // The episode (or the reconnecting screen) shrunk into the floating mini player; PlayerView stays mounted either way.
+  const [mini, setMini] = useState(false)
+  const [miniCorner, setMiniCorner] = useState('br')
+  const miniRef = useRef(mini)
+  miniRef.current = mini
+  // a reopening after a recovery that happened in mini must not steal focus
+  const [quietMount, setQuietMount] = useState(false)
+  // everything that treats the player as a full-page overlay applies to the FULL player only
+  const fullPlayer = (player != null || reconnecting != null) && !mini
   // the top bar shows over the player only together with the player controls (idle = controls hidden)
   const [playerIdle, setPlayerIdle] = useState(false)
   const [barActive, setBarActive] = useState(false)
@@ -225,11 +235,12 @@ export default function App({ api, sound: injectedSound }) {
   useEffect(() => { if (!player) setPlayerIdle(false) }, [player])
   // true while PlayerView itself is mounted (not its loading fallback, not the crash screen)
   const playerMounted = useRef(false)
-  // top bar actions during playback: the episode is closed first ('nav'), then the remembered action runs
-  const [closeRequest, setCloseRequest] = useState(null)
-  const afterPlayerClose = useRef(null)
   // Where the current episode was started from (a route), so "Back" from the player returns there; null = nowhere to return.
   const originRef = useRef(null)
+  const miniOriginRef = useRef(null) // the origin that belonged to the episode being minimized
+  const setOrigin = (o) => { originRef.current = o; miniOriginRef.current = null }
+  const playerRef = useRef(player)
+  playerRef.current = player
   const [reopenSearch, setReopenSearch] = useState(null) // { series, seq }: Search restarts the episode list of that series
   const playerOpenedRef = useRef(false) // a player opened since the last fresh start
   const playedSessions = useRef(new Set()) // sessions that reached playback (their late end is not a failed start)
@@ -237,10 +248,20 @@ export default function App({ api, sound: injectedSound }) {
 
   // Alt+Left/Right and the mouse back/forward buttons walk the history; not while the player or a modal is up.
   const navKeys = useRef({})
-  navKeys.current = { back: nav.back, forward: nav.forward, blocked: player != null || reconnecting != null }
+  navKeys.current = { back: nav.back, forward: nav.forward, blocked: fullPlayer }
   // the palette must not stay open over the player / reconnecting overlay (no focus move to main here)
-  const overlayOpen = player != null || reconnecting != null
-  useEffect(() => { if (overlayOpen) setPaletteOpen(false) }, [overlayOpen])
+  useEffect(() => { if (fullPlayer) setPaletteOpen(false) }, [fullPlayer])
+  // a recovery that ended without reopening the episode (cancelled, failed) takes the mini player with it
+  const hadReconnecting = useRef(false)
+  useEffect(() => {
+    if (hadReconnecting.current && reconnecting == null && player == null) setMini(false)
+    hadReconnecting.current = reconnecting != null
+  }, [reconnecting, player])
+  // moving to another page while mini forgets where the MINIMIZED episode was started from; an origin set since
+  // (a new episode started while mini) is not touched
+  useEffect(() => {
+    if (miniRef.current && originRef.current === miniOriginRef.current) originRef.current = null
+  }, [nav.route])
   useEffect(() => {
     const blocked = () => navKeys.current.blocked || document.querySelector('[aria-modal="true"]') != null
     const onKey = (e) => {
@@ -347,18 +368,24 @@ export default function App({ api, sound: injectedSound }) {
       lastRate.current = { title: p.title, episode: p.episode, rate }
       setPlayerRate(rate)
       setReconnecting(null)
-      setPaletteOpen(false) // unmount the palette Modal in the same commit, before the player takes focus
+      reconnectingRef.current = null // refs follow the IPC events at once, so dropStaleMini never sees a render-old value
+      playerRef.current = p
+      // a recovery of the same episode while mini reopens it quietly, still mini; anything else opens full
+      const quiet = recovered && miniRef.current
+      setQuietMount(quiet)
+      if (!quiet) {
+        setMini(false)
+        setPaletteOpen(false) // unmount the palette Modal in the same commit, before the player takes focus
+        setPlayerOpening(true)
+      }
       setPlayerIdle(false)
-      setPlayerOpening(true)
-      afterPlayerClose.current = null
       playerOpenedRef.current = true
-      setCloseRequest(null)
       setPlayer(p)
     }
     const offs = [
       api.player.onOpen(onOpen),
-      api.player.onClose(() => setPlayer(null)),
-      api.player.onRetry(setReconnecting),
+      api.player.onClose(() => { playerRef.current = null; setPlayer(null) }), // mini survives: a recovery (player-retry) may follow
+      api.player.onRetry((r) => { reconnectingRef.current = r; setReconnecting(r) }),
     ]
     return () => offs.forEach((off) => off())
   }, [api])
@@ -366,12 +393,16 @@ export default function App({ api, sound: injectedSound }) {
   // A start that ends without ever playing (error, cancelled menu) leaves the user on Home: forget where it came from.
   // Mpv playback has no in-app player to come back from, so it forgets the origin too.
   useEffect(() => {
+    // the player is gone and no recovery is pending (stopped for mpv, cancelled): mini must not linger
+    const dropStaleMini = () => { if (miniRef.current && playerRef.current == null && reconnectingRef.current == null) setMini(false) }
     const offs = [
       api.watch.onPlaying((p) => {
+        dropStaleMini()
         if (p?.sessionId) playedSessions.current.add(p.sessionId)
         if (settingsRef.current?.playerMode === 'external') originRef.current = null
       }),
       api.watch.onSessionEnd(({ sessionId, retry }) => {
+        if (!retry) dropStaleMini()
         if (retry || playedSessions.current.delete(sessionId) || playerOpenedRef.current) return
         originRef.current = null
       }),
@@ -425,7 +456,17 @@ export default function App({ api, sound: injectedSound }) {
     setFocusImport(true)
     api.stats.get().then(setStats).catch((err) => console.warn('stats refresh after import failed', err?.message))
   }
-  const navigate = (p) => { if (p !== page) sound.play('navigate'); setReopenSearch(null); nav.navigate({ page: p, animeId: null }) }
+  // Home pressed while already on Home: an open search list returns to its start (HomePage -> SearchPage resetSeq), top of the page.
+  const navigate = (p) => {
+    if (p !== page) sound.play('navigate')
+    setReopenSearch(null)
+    if (p === 'home' && page === 'home') {
+      setHomeResetSeq((n) => n + 1)
+      if (mainRef.current) mainRef.current.scrollTop = 0
+      setFocusMain(true)
+    }
+    nav.navigate({ page: p, animeId: null })
+  }
   const openAnime = (id) => { setReopenSearch(null); nav.navigate({ page: 'watchlist', animeId: id }) }
   openRef.current = { anime: openAnime, page: navigate }
   const closeDetail = () => (nav.canBack ? nav.back() : nav.navigate({ page: 'watchlist', animeId: null }))
@@ -433,13 +474,13 @@ export default function App({ api, sound: injectedSound }) {
   const onRemoved = () => { if (nav.canBack) nav.back(); else nav.replace({ page: 'watchlist', animeId: null }); setFocusMain(true) }
   // chain = the next/previous episode of a playback that is already going: it keeps the origin of the first start
   const continueWatching = (params, { chain = false } = {}) => {
-    if (!chain) originRef.current = nav.route
+    if (!chain) setOrigin(nav.route)
     playerOpenedRef.current = false
     setPendingWatch(params)
     nav.navigate({ page: 'home', animeId: null })
   }
   // Search picked an episode from its list: remember the series so "Back" from the player can reopen that list
-  const onEpisodePicked = (title) => { originRef.current = { page: 'home', animeId: null, search: title }; playerOpenedRef.current = false }
+  const onEpisodePicked = (title) => { setOrigin({ page: 'home', animeId: null, search: title }); playerOpenedRef.current = false }
   // "Back" from the player: to where the episode was started (or, by setting, to the series' episode list)
   const returnFromPlayer = async (title) => {
     const origin = originRef.current
@@ -467,28 +508,35 @@ export default function App({ api, sound: injectedSound }) {
   const openWhatsNew = () => setWhatsNew({ mode: 'before', version: updateState.version, notes: updateState.notes })
   const closeWhatsNew = () => { if (whatsNew?.mode === 'after') api.whatsNew.seen(); setWhatsNew(null) }
 
-  const overlay = player != null || reconnecting != null
+  // Leave window fullscreen, shrink the episode into the mini player and (unless the action sets focus itself) focus the page.
+  const minimize = ({ focus = true } = {}) => {
+    if (fullscreenRef.current) api.window.setFullscreen(false)
+    miniOriginRef.current = originRef.current
+    setMini(true)
+    if (focus) setFocusMain(true)
+  }
+  const expand = () => { setMini(false); setPaletteOpen(false); setPlayerOpening(true) }
   // The player never got going (still loading, or crashed): main still waits for this playback, so tell it and drop the player.
   const dropPlayer = () => {
     if (player == null) return
     api.player.closed({ playbackId: player.playbackId, position: null, duration: null, maxPercent: 0, reason: 'back' })
     setPlayer(null)
-    setCloseRequest(null)
+    setMini(false)
     setPlayerAttempt((n) => n + 1)
   }
-  const leavePlayerThen = (action) => {
-    if (player == null) { action(); return }
-    if (!playerMounted.current) { // no PlayerView to answer a close request: run the action right away
-      afterPlayerClose.current = null
+  // Top bar actions during a full episode minimize it (it keeps playing) and run the action right away.
+  const leavePlayerThen = (action, { focus = true } = {}) => {
+    if (mini) { action(); return }
+    if (player != null && !playerMounted.current) { // no PlayerView to shrink: drop it and run the action
       originRef.current = null
       dropPlayer()
       action()
       return
     }
-    afterPlayerClose.current = action
-    setCloseRequest((r) => ({ seq: (r?.seq ?? 0) + 1 }))
+    if (player != null || reconnecting != null) minimize({ focus })
+    action()
   }
-  const barHidden = overlay && (reconnecting != null || fullscreen || (playerIdle && !barActive))
+  const barHidden = fullPlayer && (reconnecting != null || fullscreen || (playerIdle && !barActive))
   const runPalette = (a) => {
     setPaletteOpen(false)
     if (a.type === 'anime') openAnime(a.id)
@@ -503,27 +551,27 @@ export default function App({ api, sound: injectedSound }) {
     <ApiContext.Provider value={api}>
       <I18nProvider lang={settings.language}>
         <ToastProvider hold={Boolean(levelUp) && !motionOff}>
-        <UndoShortcut disabled={overlay} />
-        <PaletteShortcut open={paletteOpen} disabled={overlay} onToggle={setPaletteOpen} />
-        <div className={player ? 'app-shell app-shell--playing' : 'app-shell'} ref={shellRef} data-at-top={atTop ? 'true' : 'false'}>
+        <UndoShortcut disabled={fullPlayer} />
+        <PaletteShortcut open={paletteOpen} disabled={fullPlayer} onToggle={setPaletteOpen} />
+        <div className={player && !mini ? 'app-shell app-shell--playing' : 'app-shell'} ref={shellRef} data-at-top={atTop ? 'true' : 'false'}>
           <TopBar
             page={page}
-            onNavigate={(p, o) => leavePlayerThen(() => { navigate(p); if (o?.focusMain || player != null) setFocusMain(true) })}
+            onNavigate={(p, o) => leavePlayerThen(() => { navigate(p); if (o?.focusMain || fullPlayer) setFocusMain(true) })}
             health={health}
-            onSemaphoreClick={() => leavePlayerThen(() => setWizardOpen(true))}
+            onSemaphoreClick={() => leavePlayerThen(() => setWizardOpen(true), { focus: false })}
             profileName={settings.profileName || settings.systemName}
             stats={stats}
             version={updateState.currentVersion}
             onOpenAnime={(id) => leavePlayerThen(() => openAnime(id))}
             libraryIds={libraryIds}
-            closeMenus={playerOpening || reconnecting != null || barHidden}
+            closeMenus={playerOpening || (reconnecting != null && !mini) || barHidden}
             hidden={barHidden}
             onActiveChange={setBarActive}
             fullscreen={fullscreen}
             onToggleFullscreen={() => api.window.setFullscreen(!fullscreen)}
-            onOpenPalette={() => leavePlayerThen(() => setPaletteOpen(true))}
+            onOpenPalette={() => leavePlayerThen(() => setPaletteOpen(true), { focus: false })}
           />
-          <main className="content" ref={mainRef} tabIndex={-1} inert={overlay} aria-hidden={overlay ? 'true' : undefined} onScroll={(e) => setAtTop(e.currentTarget.scrollTop === 0)}>
+          <main className="content" ref={mainRef} tabIndex={-1} inert={fullPlayer} aria-hidden={fullPlayer ? 'true' : undefined} onScroll={(e) => setAtTop(e.currentTarget.scrollTop === 0)}>
             <div className="content__notices">
               <ExternalPlayerBar onGone={() => setFocusMain(true)} />
               <UpdateBanner state={updateState} onWhatsNew={openWhatsNew} />
@@ -533,9 +581,9 @@ export default function App({ api, sound: injectedSound }) {
               <ErrorBoundary>
                 <RouteStateContext.Provider value={{ state: nav.entry.state, set: nav.setRouteState }}>
                 {page === 'home' && (
-                  <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onSearch={searchAnime} onEpisodePicked={onEpisodePicked} reopenSearch={reopenSearch} onReopenHandled={() => setReopenSearch(null)} />
+                  <HomePage ready={ready} settings={settings} onSettings={updateSettings} onOpenWizard={() => setWizardOpen(true)} pendingWatch={pendingWatch} onPendingHandled={() => setPendingWatch(null)} onContinue={continueWatching} onOpenAnime={openAnime} pendingSearch={pendingSearch} onPendingSearchHandled={() => setPendingSearch(null)} onSearch={searchAnime} onEpisodePicked={onEpisodePicked} reopenSearch={reopenSearch} onReopenHandled={() => setReopenSearch(null)} resetSeq={homeResetSeq} />
                 )}
-                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} onSearch={searchAnime} playerOpen={overlay} />}
+                {page === 'watchlist' && <WatchlistPage ready={ready} onContinue={continueWatching} animeId={animeId} onOpen={openAnime} onBack={closeDetail} onRemoved={onRemoved} onSearch={searchAnime} playerOpen={fullPlayer} />}
                 {page === 'discover' && <DiscoverPage ready={ready} onOpenAnime={openAnime} onSearch={searchAnime} />}
                 {page === 'schedule' && <SchedulePage ready={ready} onOpenAnime={openAnime} onSearch={searchAnime} />}
                 {page === 'downloads' && <DownloadsPage />}
@@ -547,7 +595,7 @@ export default function App({ api, sound: injectedSound }) {
           </main>
         </div>
         {player && (
-          <ErrorBoundary key={player.playbackId} className="error-fallback--overlay" actionLabelKey="error.close" onAction={() => {
+          <ErrorBoundary key={player.playbackId} className="error-fallback--overlay" actionLabelKey="error.close" onCatch={() => setMini(false)} onAction={() => {
             // main still waits for this playback to end (session, held celebrations); null keeps the last reported position
             const title = player.title
             dropPlayer()
@@ -557,13 +605,12 @@ export default function App({ api, sound: injectedSound }) {
             <PlayerView
               key={player.playbackId} // PlayerView's per-playback refs/state rely on a remount per playback
               open={player} settings={settings} fullscreen={fullscreen} onSettings={updateSettings}
-              initialRate={playerRate} onIdleChange={setPlayerIdle} holdControls={barActive} closeRequest={closeRequest} onRate={(rate) => { if (lastRate.current) lastRate.current.rate = rate }}
+              initialRate={playerRate} onIdleChange={setPlayerIdle} holdControls={barActive} onRate={(rate) => { if (lastRate.current) lastRate.current.rate = rate }}
+              mini={mini} miniCorner={miniCorner} onMiniCorner={setMiniCorner} onMinimize={() => minimize()} onExpand={expand} quietMount={quietMount}
               onClose={(reason) => {
                 setPlayer(null)
-                setCloseRequest(null)
-                const afterClose = afterPlayerClose.current
-                afterPlayerClose.current = null
-                if (reason === 'nav') { originRef.current = null; afterClose?.() } // top bar action; it goes to the chosen page, never back to an origin
+                setMini(false)
+                if (reason === 'nav') { originRef.current = null; setFocusMain(true) } // the mini player's x: stay on the current page
                 else if (reason === 'next' || reason === 'prev') {
                   if (player.episode != null) continueWatching({ query: player.title, anime: player.title, episode: String(nextEpisodeNumber(player.episode, reason === 'next' ? 1 : -1)) }, { chain: true })
                   else originRef.current = null // nothing follows, so there is nothing to come back from either
@@ -577,6 +624,7 @@ export default function App({ api, sound: injectedSound }) {
         )}
         {!player && reconnecting && (
           <PlayerReconnecting
+            mini={mini} miniCorner={miniCorner} onMiniCorner={setMiniCorner} onExpand={expand}
             state={reconnecting.state} title={reconnecting.title} episode={reconnecting.episode} error={reconnecting.error}
             onRetry={() => api.player.retryAgain()}
             onBack={() => {
@@ -584,7 +632,8 @@ export default function App({ api, sound: injectedSound }) {
               const r = reconnecting
               if (r.state === 'reconnecting' && r.sessionId) api.watch.cancel(r.sessionId)
               setReconnecting(null)
-              returnFromPlayer(r.title)
+              if (mini) { originRef.current = null; setMini(false); setFocusMain(true) } // mini: stay on the current page
+              else returnFromPlayer(r.title)
             }}
           />
         )}
@@ -592,7 +641,7 @@ export default function App({ api, sound: injectedSound }) {
         {wizardOpen && <SetupWizard health={health} onClose={() => setWizardOpen(false)} />}
         {asks.length > 0 && <AskDialog ask={asks[0]} onDone={() => setAsks((q) => q.slice(1))} />}
         <Celebrations levelUp={levelUp} toast={toast} stats={stats} motionOff={motionOff} onLevelUpDone={() => setLevelUp(null)} onToastDone={() => setToast(null)} />
-        <RateLimitNotice api={api} overlay={overlay} />
+        <RateLimitNotice api={api} overlay={fullPlayer} />
         {whatsNew && <WhatsNewDialog mode={whatsNew.mode} version={whatsNew.version} notes={whatsNew.notes} status={updateState.status} onClose={closeWhatsNew} />}
         </ToastProvider>
       </I18nProvider>

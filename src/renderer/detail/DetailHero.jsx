@@ -16,7 +16,7 @@ import { formatLabel } from '../components/SequelCard.jsx'
 // A "close" AniList guess shows poster-level data only (year, genres): no format, duration, airing status or description.
 // metaToggle: null (no menu item) or { off, onChange(off) }.
 export function DetailHero({
-  entry, info, ready = true, nextEp, saved = null, finished = false, fresh = 0, now,
+  entry, info, ready = true, loaded = true, nextEp, saved = null, finished = false, fresh = 0, now,
   metaToggle = null, onBack, onContinue, onTogglePin, onStatus, onRemove, onPickAniList, playerOpen = false,
 }) {
   const t = useT()
@@ -70,8 +70,8 @@ export function DetailHero({
               </ul>
             )}
             <div className="detail-hero__actions" ref={actionsRef}>
-              <button type="button" className="primary home-hero__cta" disabled={!ready} onClick={onContinue}>
-                <Icon name="play" /> {finished ? t('detail.rewatch') : saved ? t('home.continueEpFrom', { episode: nextEp, time: formatTime(saved.position) }) : t('home.continueEp', { episode: nextEp })}
+              <button type="button" className="primary home-hero__cta" disabled={!ready || (!loaded && !finished)} onClick={onContinue}>
+                <Icon name="play" /> {finished ? t('detail.rewatch') : !loaded ? t('home.continueShort') : saved ? t('home.continueEpFrom', { episode: nextEp, time: formatTime(saved.position) }) : t('home.continueEp', { episode: nextEp })}
               </button>
               <button type="button" className="home-hero__glass" aria-pressed={Boolean(entry.pinnedAt)} onClick={onTogglePin}>
                 <Icon name="star" /> {entry.pinnedAt ? t('pin.remove') : t('pin.add')}
