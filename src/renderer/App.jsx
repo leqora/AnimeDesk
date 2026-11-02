@@ -368,6 +368,8 @@ export default function App({ api, sound: injectedSound }) {
       lastRate.current = { title: p.title, episode: p.episode, rate }
       setPlayerRate(rate)
       setReconnecting(null)
+      reconnectingRef.current = null // refs follow the IPC events at once, so dropStaleMini never sees a render-old value
+      playerRef.current = p
       // a recovery of the same episode while mini reopens it quietly, still mini; anything else opens full
       const quiet = recovered && miniRef.current
       setQuietMount(quiet)
@@ -382,8 +384,8 @@ export default function App({ api, sound: injectedSound }) {
     }
     const offs = [
       api.player.onOpen(onOpen),
-      api.player.onClose(() => setPlayer(null)), // mini survives: a recovery (player-retry) may follow
-      api.player.onRetry(setReconnecting),
+      api.player.onClose(() => { playerRef.current = null; setPlayer(null) }), // mini survives: a recovery (player-retry) may follow
+      api.player.onRetry((r) => { reconnectingRef.current = r; setReconnecting(r) }),
     ]
     return () => offs.forEach((off) => off())
   }, [api])

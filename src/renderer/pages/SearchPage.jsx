@@ -90,7 +90,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
         if (l.ignore.delete(sessionId)) return
         const failed = !result.ok && result.error !== 'cancelled' && !retry
         // The playing episode ended: only its own state goes; a list opened meanwhile stays.
-        if (sessionId === l.playingSession || (retry && l.phase === 'playing')) {
+        if (sessionId === l.playingSession || (retry && l.playingSession == null && l.phase === 'playing')) {
           l.playingSession = null
           setPlaying(null)
           if (l.phase === 'playing') {
@@ -189,7 +189,11 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
       })
       .catch(() => {
         const l = live.current
-        if (l.abandoned.delete(seq) || seq !== l.startSeq) return
+        if (l.abandoned.delete(seq)) {
+          if (l.pendingStart === seq) l.pendingStart = null
+          return
+        }
+        if (seq !== l.startSeq) return
         l.pendingStart = null
         setPhase('idle'); setError({ error: 'unknown' })
       })

@@ -227,7 +227,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
       {mini ? (
         <MiniChrome
           pinned={Boolean(failed || end)}
-          title={open.title} episode={open.episode} playing={playing} progress={duration > 0 ? time / duration : 0}
+          playing={playing} progress={duration > 0 ? time / duration : 0}
           onTogglePlay={togglePlay} onExpand={onExpand} onClose={() => close('nav')}
         >
           {failed && (

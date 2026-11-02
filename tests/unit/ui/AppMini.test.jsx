@@ -165,6 +165,19 @@ describe('App mini player', () => {
     expect(dialog.contains(document.activeElement)).toBe(true)
   })
 
+  it('a non-retry session end right behind player-retry does not drop the mini', async () => {
+    const s = await start()
+    await s.open()
+    fireEvent.click(screen.getByRole('button', { name: 'Mini plejer' }))
+    await waitFor(() => expect(mini()).not.toBeNull())
+    act(() => s.cb.close())
+    act(() => {
+      s.cb.retry({ state: 'reconnecting', title: 'Show', episode: '3', sessionId: 'r1' })
+      s.cb.end({ sessionId: 'A', retry: false, result: { ok: true } })
+    })
+    expect(document.querySelector('.player--reconnect.player--mini')).not.toBeNull()
+  })
+
   it('x on the reconnecting mini cancels the session and stays on the page', async () => {
     const s = await start()
     await s.open()

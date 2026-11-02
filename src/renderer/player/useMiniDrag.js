@@ -42,6 +42,7 @@ export function useMiniDrag({ ref, enabled = true, corner, onCorner, onClick }) 
     let snapTimer = null
 
     const move = (e) => {
+      if (e.pointerId !== drag.id) return // another pointer (second finger) is not this drag
       const dx = e.clientX - drag.x
       const dy = e.clientY - drag.y
       drag.dist = Math.hypot(dx, dy)
@@ -56,6 +57,7 @@ export function useMiniDrag({ ref, enabled = true, corner, onCorner, onClick }) 
       try { el.releasePointerCapture?.(drag.id) } catch { /* not captured */ }
     }
     const up = (e) => {
+      if (e.pointerId !== drag.id) return
       const d = drag
       stop()
       drag = null

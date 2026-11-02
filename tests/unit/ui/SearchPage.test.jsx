@@ -556,6 +556,13 @@ describe('search while an episode plays', () => {
     expect(screen.getByRole('button', { name: 'Gledaj' })).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
+  it('the end of an old recovery does not wipe a session that plays now', async () => {
+    const { api, handlers } = withAll()
+    renderUi(<SearchPage {...props()} />, { api })
+    act(() => handlers.playing({ title: 'Show', episode: '3', sessionId: 'B' }))
+    act(() => handlers.end({ sessionId: 'R', retry: true, result: { ok: false, error: 'cancelled' } }))
+    expect(screen.getByText('Pušta se: Show — epizoda 3')).toBeInTheDocument()
+  })
   it('remount during playback', async () => {
     const { api, handlers } = withAll()
     const first = renderUi(<SearchPage {...props()} />, { api })
@@ -641,6 +648,19 @@ describe('start reply racing session events', () => {
     await reply({ sessionId: 'B' })
     expect(screen.getByRole('alert')).toHaveTextContent('Nema rezultata.')
     expect(screen.getByRole('button', { name: 'Traži' })).toBeEnabled()
+  })
+  it('an abandoned start that fails leaves no pending start behind', async () => {
+    const handlers = {}
+    const api = makeFakeApi({ watch: { onMenu: vi.fn((cb) => { handlers.menu = cb; return () => {} }), onSessionEnd: vi.fn((cb) => { handlers.end = cb; return () => {} }) } })
+    let fail
+    api.watch.start.mockImplementationOnce(() => new Promise((_, rej) => { fail = rej }))
+    const view = renderUi(<SearchPage {...props({ resetSeq: 0 })} />, { api })
+    searchFor('one')
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalled())
+    view.rerender(<SearchPage {...props({ resetSeq: 1 })} />)
+    await act(async () => { fail(new Error('x')); await Promise.resolve() })
+    act(() => handlers.end({ sessionId: 'X', retry: false, result: { ok: false, error: 'no-results', stderr: '' } }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Nema rezultata.')
   })
   it('a failed start that was superseded does not show an error', async () => {
     const handlers = {}
