@@ -712,3 +712,56 @@ describe('Search embedded in Home', () => {
     expect(container.querySelector('.rail__head h3.hud').textContent).toBe('Pretraga')
   })
 })
+
+describe('search session bookkeeping', () => {
+  const searchFor = (text) => {
+    fireEvent.change(screen.getByLabelText('Naziv animea…'), { target: { value: text } })
+    fireEvent.click(screen.getByRole('button', { name: 'Traži' }))
+  }
+  it('reset while a picked series reads its prefs keeps the page reset', async () => {
+    const { api, handlers } = withEvents()
+    api.watch.start.mockResolvedValueOnce({ sessionId: 'B' })
+    let resolvePrefs
+    api.seriesPrefs.get.mockImplementationOnce(() => new Promise((res) => { resolvePrefs = res }))
+    const view = renderUi(<SearchPage {...props({ resetSeq: 0 })} />, { api })
+    searchFor('show')
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(1))
+    await flushPromises()
+    act(() => handlers.menu({ requestId: 'r1', sessionId: 'B', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Show'] }))
+    fireEvent.click(screen.getByRole('button', { name: /Show/ }))
+    view.rerender(<SearchPage {...props({ resetSeq: 1 })} />)
+    await act(async () => { resolvePrefs({ quality: '720' }); await Promise.resolve(); await Promise.resolve() })
+    expect(api.watch.start).toHaveBeenCalledTimes(1)
+    expect(api.watch.answerMenu).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: /Show/ })).not.toBeInTheDocument()
+    expect(screen.queryByText('Pretraga…')).not.toBeInTheDocument()
+  })
+  it('Home reset does not cancel a busy Continue start', async () => {
+    const { api, handlers } = withEvents()
+    let resolveStart
+    api.watch.start.mockImplementationOnce(() => new Promise((res) => { resolveStart = res }))
+    const view = renderUi(<SearchPage {...props({ resetSeq: 0, pendingWatch: { query: 'Show', anime: 'Show', episode: '5' } })} />, { api })
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(1))
+    view.rerender(<SearchPage {...props({ resetSeq: 1 })} />)
+    await act(async () => { resolveStart({ sessionId: 's1' }); await Promise.resolve(); await Promise.resolve() })
+    expect(api.watch.cancel).not.toHaveBeenCalled()
+    act(() => handlers.playing({ sessionId: 's1', title: 'Show', episode: '5' }))
+    expect(screen.getByText('Pušta se: Show — epizoda 5')).toBeInTheDocument()
+  })
+  it('a superseded start cancels its session when it replies', async () => {
+    const { api, handlers } = withEvents()
+    let resolveFirst
+    api.watch.start.mockImplementationOnce(() => new Promise((res) => { resolveFirst = res })).mockResolvedValueOnce({ sessionId: 'new' })
+    const view = renderUi(<SearchPage {...props()} />, { api })
+    searchFor('a')
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(1))
+    // The first search is still pending; a second start supersedes it.
+    view.rerender(<SearchPage {...props({ pendingWatch: { query: 'b', anime: 'b' } })} />)
+    await waitFor(() => expect(api.watch.start).toHaveBeenCalledTimes(2))
+    await flushPromises()
+    await act(async () => { resolveFirst({ sessionId: 'old' }); await Promise.resolve(); await Promise.resolve() })
+    expect(api.watch.cancel).toHaveBeenCalledWith('old')
+    act(() => handlers.menu({ requestId: 'r9', sessionId: 'old', kind: 'anime', prompt: 'Select anime: ', lines: ['1 Ghost'] }))
+    expect(screen.queryByRole('button', { name: /Ghost/ })).not.toBeInTheDocument()
+  })
+})

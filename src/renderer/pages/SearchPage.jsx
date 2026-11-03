@@ -53,7 +53,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const [prefsLoaded, setPrefsLoaded] = useState(false)
   // ignore: sessions we cancelled on purpose (mode switch, series prefs) — their late events must not touch the new session
   // startedMode: the sub/dub the running session was started with (ani-cli reads it only at start)
-  const live = useRef({ listSession: null, playingSession: null, phase: 'idle', ignore: new Set(), lastEpisode: null, startedMode: null, startSeq: 0, abandoned: new Set(), pendingStart: null, earlyEnds: new Map() })
+  const live = useRef({ listSession: null, playingSession: null, phase: 'idle', ignore: new Set(), lastEpisode: null, startedMode: null, startSeq: 0, abandoned: new Set(), pendingStart: null, earlyEnds: new Map(), resetCount: 0, pendingPlay: false })
   useEffect(() => { live.current.phase = phase }, [phase])
   // Stay focused between the anime and episode menus (and during a sub/dub restart) so the home sections do not flash back.
   // A "no dub" error for the chosen series also stays on top, so "Play subtitled" is not pushed below the home sections.
@@ -152,6 +152,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     // Until the new session answers, nothing from the previous one (e.g. a late probed title) may land here.
     live.current.listSession = null
     const seq = ++live.current.startSeq
+    live.current.pendingPlay = params.episode != null // a play start (e.g. Continue) survives a Home reset
     live.current.pendingStart = seq
     live.current.earlyEnds.clear()
     setError(null)
@@ -167,7 +168,11 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
           if (r?.sessionId) { l.ignore.add(r.sessionId); api.watch.cancel(r.sessionId) }
           return
         }
-        if (seq !== l.startSeq) return
+        if (seq !== l.startSeq) {
+          // Superseded by a newer start: its session would wait on a menu nobody shows.
+          if (r?.sessionId && r.sessionId !== l.playingSession) { l.ignore.add(r.sessionId); api.watch.cancel(r.sessionId) }
+          return
+        }
         l.pendingStart = null
         const sid = r?.sessionId
         l.startedMode = r?.mode ?? null
@@ -239,7 +244,9 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     if (resetSeq === lastReset.current) return
     lastReset.current = resetSeq
     const l = live.current
+    l.resetCount++ // a pickAnime still reading prefs must not undo this reset
     if (l.phase === 'idle' || l.phase === 'playing') return
+    if (!l.listSession && l.pendingPlay) return // a busy play start is left alone so its episode still opens
     if (l.listSession) { l.ignore.add(l.listSession); api.watch.cancel(l.listSession); l.listSession = null }
     else l.abandoned.add(l.startSeq) // start() still waiting for its session id: cancel it when it arrives
     focusReopened.current = false
@@ -275,11 +282,13 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const pickAnime = async (line) => {
     const title = animeLineTitle(line)
     const requestId = menu.requestId
+    const resets = live.current.resetCount
     setAnime(title)
     setMenu(null)
     setPhase('busy')
     // The session was started with prefs resolved for the search text; saved prefs of the picked series need a fresh start.
     const p = await api.seriesPrefs.get(title).catch(() => null)
+    if (live.current.resetCount !== resets) return // Home reset meanwhile; it already cancelled the list
     if (p?.quality || p?.mode) restartFor(title)
     else api.watch.answerMenu(requestId, line)
   }
