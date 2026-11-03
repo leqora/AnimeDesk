@@ -32,9 +32,9 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   // The last episode list of a series, kept so "Back" can show it (read-only) while the reopened live menu loads.
   const [cachedList, setCachedList] = useState(null) // { anime, lines }
   const [reopening, setReopening] = useState(false)
-  const cachedView = reopening && phase === 'busy' && cachedList && anime != null && cachedList.anime === anime ? cachedList : null
+  const cachedView = reopening && phase === 'busy' && cachedList && anime != null && normalizeTitle(cachedList.anime).toLowerCase() === normalizeTitle(anime).toLowerCase() ? cachedList : null
   const episodeMenu = liveMenu ?? cachedView?.lines ?? null
-  useEffect(() => { if (liveMenu && anime) setCachedList({ anime, lines: liveMenu }) }, [menu, anime, phase])
+  useEffect(() => { if (liveMenu && anime) setCachedList({ anime, lines: liveMenu }) }, [menu?.requestId, anime, phase])
   const { series, update: updateSpoilers, thumb } = useSeriesEpisodes({ title: episodeMenu ? anime : null, list: episodeMenu })
   const posterInfo = usePosterInfo(episodeMenu ? anime : null)
   const progress = useEpisodeProgress(episodeMenu ? anime : null)
@@ -286,6 +286,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     search(query)
   }
   const answer = (line) => {
+    if (!menu) return
     api.watch.answerMenu(menu.requestId, line)
     setMenu(null)
     setPhase(line == null ? 'idle' : 'busy')
@@ -390,7 +391,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
       )}
 
       {((phase === 'episode' && menu) || cachedView) && (
-        <div className="page" inert={cachedView ? '' : undefined} aria-busy={cachedView ? 'true' : undefined}>
+        <div className="page" inert={Boolean(cachedView)} aria-busy={cachedView ? 'true' : undefined}>
           <div className="row"><button type="button" onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button></div>
           <h3 ref={pickerHeading} tabIndex={-1}>{anime ?? (titleMissing ? t('search.titleUnknown', { query: live.current.lastParams?.query ?? '' }) : t('search.titlePending'))} — {t('search.selectEpisode')}</h3>
           <EpisodePicker episodes={episodeMenu} selected={selected} watched={watched} onToggle={toggle} prefs={prefs} prefsLoading={anime != null && !prefsLoaded} onPrefs={anime ? changePrefs : null} groupKey={anime ? normalizeTitle(anime).toLowerCase() : null}
