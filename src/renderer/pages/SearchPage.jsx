@@ -368,7 +368,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
           {showDetails && <pre className="details">{error.stderr}</pre>}
         </div>
       )}
-      {phase === 'busy' && (cachedView ? <p className="muted" role="status">{t('search.refreshing')}</p> : <p className="muted">{t('search.searching')}</p>)}
+      {phase === 'busy' && !cachedView && <p className="muted">{t('search.searching')}</p>}
       {phase === 'playing' && playing && <p>{t('search.playing', { title: playing.title, episode: playing.episode })}</p>}
 
       {phase === 'anime' && menu && (
@@ -391,8 +391,12 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
       )}
 
       {((phase === 'episode' && menu) || cachedView) && (
-        <div className="page" inert={Boolean(cachedView)} aria-busy={cachedView ? 'true' : undefined}>
-          <div className="row"><button type="button" onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button></div>
+        <div className="page">
+          <div className="row">
+            <button type="button" disabled={Boolean(cachedView)} onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button>
+            {cachedView && <span className="muted" role="status">{t('search.refreshing')}</span>}
+          </div>
+          <div className={cachedView ? 'page search-cached' : 'page'} inert={Boolean(cachedView)} aria-busy={cachedView ? 'true' : undefined}>
           <h3 ref={pickerHeading} tabIndex={-1}>{anime ?? (titleMissing ? t('search.titleUnknown', { query: live.current.lastParams?.query ?? '' }) : t('search.titlePending'))} — {t('search.selectEpisode')}</h3>
           <EpisodePicker episodes={episodeMenu} selected={selected} watched={watched} onToggle={toggle} prefs={prefs} prefsLoading={anime != null && !prefsLoaded} onPrefs={anime ? changePrefs : null} groupKey={anime ? normalizeTitle(anime).toLowerCase() : null}
             series={series} poster={posterInfo?.poster ?? null} onReveal={(ep) => updateSpoilers({ episode: ep })} loadThumb={thumb} progress={progress}
@@ -408,6 +412,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
             <button type="button" disabled={!anime || !!cachedView} onClick={addToWatchlist}>{t('search.addToWatchlist')}</button>
             <button type="button" onClick={() => answer(null)}>{t('search.cancel')}</button>
           </EpisodePicker>
+          </div>
         </div>
       )}
     </section>

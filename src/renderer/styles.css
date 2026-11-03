@@ -712,3 +712,6 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 .watchlist-add { flex-wrap: wrap; }
 .watchlist-add input { width: 150px; max-width: 100%; }
 .chip-btn { backdrop-filter: blur(var(--blur)); }
+
+/* Last episode list shown read-only while the live one reloads */
+.search-cached { opacity: 0.6; }

@@ -229,7 +229,13 @@ describe('SearchPage', () => {
     expect(screen.queryByText('Pretraga…')).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Osvežavam listu epizoda…')
     for (const name of ['Gledaj', 'Preuzmi izabrane', 'Dodaj u watchlist']) expect(screen.getByRole('button', { name })).toBeDisabled()
-    expect(screen.getByRole('heading', { name: /Naruto — Izaberi epizodu/ }).parentElement).toHaveAttribute('inert')
+    const wrap = screen.getByRole('heading', { name: /Naruto — Izaberi epizodu/ }).parentElement
+    expect(wrap).toHaveAttribute('inert')
+    expect(wrap).toHaveClass('search-cached')
+    const status = screen.getByRole('status')
+    expect(status.closest('[inert]')).toBeNull()
+    expect(status.parentElement).toBe(screen.getByRole('button', { name: /Nazad/ }).parentElement)
+    expect(screen.getByRole('button', { name: /Nazad/ })).toBeDisabled()
     const before = api.watch.answerMenu.mock.calls.length
     fireEvent.click(screen.getByRole('button', { name: '1' }))
     expect(screen.getByRole('button', { name: 'Gledaj' })).toBeDisabled()
@@ -237,6 +243,7 @@ describe('SearchPage', () => {
     act(() => handlers.menu({ requestId: 'r3', sessionId: 's2', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
     expect(screen.queryByText('Osvežavam listu epizoda…')).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /Naruto — Izaberi epizodu/ }).parentElement).not.toHaveAttribute('inert')
+    expect(screen.getByRole('heading', { name: /Naruto — Izaberi epizodu/ }).parentElement).not.toHaveClass('search-cached')
     fireEvent.click(screen.getByRole('button', { name: '1' }))
     expect(screen.getByRole('button', { name: 'Gledaj' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Dodaj u watchlist' })).toBeEnabled()
