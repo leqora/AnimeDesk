@@ -15,8 +15,9 @@ export function isSeriesComplete(entry) {
 }
 
 // The line under the title. Only "EP N" — never an episode title (those only come through seriesEpisodes in main).
-export function cardLine(entry, progress) {
+export function cardLine(entry, progress, loaded = true) {
   if (entry.status === 'completed' || isSeriesComplete(entry)) return { key: 'card.completed', vars: {} }
+  if (!loaded) return null // the next episode may still move once the saved positions arrive
   const next = nextEpisode(entry, progress)
   const saved = progress[String(next)]
   if (saved) return { key: 'card.remaining', vars: { episode: next, min: saved.remaining } }
@@ -51,7 +52,7 @@ export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null
   const watched = hasTotal ? Math.min(entry.watchedEpisodes.length, displayTotal) : entry.watchedEpisodes.length
   const ratio = hasTotal ? Math.min(1, watched / displayTotal) : null
   const next = nextEpisode(entry, progress)
-  const line = cardLine(entry, progress)
+  const line = cardLine(entry, progress, loaded)
   const peek = line ? null : episodesLine(entry, info, t)
   return (
     <div className="card media-card" data-status={entry.status} data-complete={complete ? 'true' : undefined}>

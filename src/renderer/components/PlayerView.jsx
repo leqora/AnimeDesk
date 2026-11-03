@@ -72,7 +72,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   }
   const subs = usePlayerSubtitles({ video, trackEl, open, mode, settings, onSettings, probeSub, flash: flash.show })
   const rate = usePlaybackRate({ video, flash: flash.show, language: settings.language, initial: initialRate, onChange: onRate })
-  const { idle, poke, show: showControls } = useIdle({ video, hold: menuOpen || holdControls })
+  const { idle, poke, show: showControls } = useIdle({ video, hold: menuOpen || holdControls, enabled: !mini })
   // the top bar follows the controls: App shows it only while they are visible
   const idleChange = useLatest(onIdleChange)
   useEffect(() => { idleChange.current?.(idle) }, [idle])
