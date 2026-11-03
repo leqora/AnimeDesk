@@ -373,6 +373,7 @@ export default function App({ api, sound: injectedSound }) {
       // a recovery of the same episode while mini reopens it quietly, still mini; anything else opens full
       const quiet = recovered && miniRef.current
       setQuietMount(quiet)
+      if (!quiet) setMiniCorner('br') // the dragged corner belongs to the episode; a quiet recovery keeps it
       if (!quiet) {
         setMini(false)
         setPaletteOpen(false) // unmount the palette Modal in the same commit, before the player takes focus
@@ -385,7 +386,18 @@ export default function App({ api, sound: injectedSound }) {
     const offs = [
       api.player.onOpen(onOpen),
       api.player.onClose(() => { playerRef.current = null; setPlayer(null) }), // mini survives: a recovery (player-retry) may follow
-      api.player.onRetry((r) => { reconnectingRef.current = r; setReconnecting(r) }),
+      api.player.onRetry((r) => {
+        if (r.state === 'cancelled') {
+          // Main dropped a recovery without opening anything else: clear its screen (only if it is the one shown).
+          if (reconnectingRef.current?.sessionId !== r.sessionId) return
+          reconnectingRef.current = null
+          setReconnecting(null)
+          if (document.activeElement?.closest?.('.player')) setFocusMain(true)
+          return
+        }
+        reconnectingRef.current = r
+        setReconnecting(r)
+      }),
     ]
     return () => offs.forEach((off) => off())
   }, [api])

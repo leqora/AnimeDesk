@@ -73,6 +73,18 @@ describe('useIdle', () => {
     act(() => result.current.show())
     expect(result.current.idle).toBe(false)
   })
+  it('enabled:false never sets idle; enabling starts the 3 s timer', () => {
+    const video = { current: { paused: false } }
+    const { result, rerender } = renderHook(({ enabled }) => useIdle({ video, hold: false, enabled }), { initialProps: { enabled: false } })
+    act(() => result.current.poke())
+    act(() => vi.advanceTimersByTime(5000))
+    expect(result.current.idle).toBe(false)
+    rerender({ enabled: true })
+    act(() => vi.advanceTimersByTime(2999))
+    expect(result.current.idle).toBe(false)
+    act(() => vi.advanceTimersByTime(1))
+    expect(result.current.idle).toBe(true)
+  })
 })
 
 describe('usePlayerVolume', () => {

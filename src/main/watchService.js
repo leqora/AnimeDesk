@@ -238,6 +238,8 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
       if (!e.resume || e.opened || e.ended || e.cancelled) continue
       e.cancelled = true
       e.session.kill()
+      // The renderer would otherwise keep "reconnecting" up when no player-open follows (mpv, a downloaded episode).
+      try { notify(EVENTS.playerRetry, { title: e.resume.title, episode: e.resume.episode, state: 'cancelled', sessionId: e.session.sessionId }) } catch (err) { console.warn('watch: playerRetry notify failed', err?.message) }
     }
   }
 
@@ -357,6 +359,7 @@ export function createWatchService({ aniCli, player, internalPlayer = null, libr
 
   async function playLocal({ file, title, episode, mode = 'sub' }) {
     const mpvArgs = [`--force-media-title=${title} Episode ${episode}`, file]
+    cancelPendingRecoveries() // a recovery still reconnecting must not replace this playback later
     celebrations.hold()
     let r
     try { r = await runPlayer({ mpvArgs, file, title, episode: String(episode), url: file, referrer: null, subUrl: null, mode }) } finally { celebrations.release() }

@@ -28,7 +28,13 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const [notice, setNotice] = useState(null)
   // A lone search result is picked by ani-cli itself; main probes its title and reports null when it cannot.
   const [titleMissing, setTitleMissing] = useState(false)
-  const episodeMenu = phase === 'episode' && menu ? menu.lines.map((l) => l.trim()) : null
+  const liveMenu = phase === 'episode' && menu ? menu.lines.map((l) => l.trim()) : null
+  // The last episode list of a series, kept so "Back" can show it (read-only) while the reopened live menu loads.
+  const [cachedList, setCachedList] = useState(null) // { anime, lines }
+  const [reopening, setReopening] = useState(false)
+  const cachedView = reopening && phase === 'busy' && cachedList && anime != null && normalizeTitle(cachedList.anime).toLowerCase() === normalizeTitle(anime).toLowerCase() ? cachedList : null
+  const episodeMenu = liveMenu ?? cachedView?.lines ?? null
+  useEffect(() => { if (liveMenu && anime) setCachedList({ anime, lines: liveMenu }) }, [menu?.requestId, anime, phase])
   const { series, update: updateSpoilers, thumb } = useSeriesEpisodes({ title: episodeMenu ? anime : null, list: episodeMenu })
   const posterInfo = usePosterInfo(episodeMenu ? anime : null)
   const progress = useEpisodeProgress(episodeMenu ? anime : null)
@@ -53,7 +59,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const [prefsLoaded, setPrefsLoaded] = useState(false)
   // ignore: sessions we cancelled on purpose (mode switch, series prefs) — their late events must not touch the new session
   // startedMode: the sub/dub the running session was started with (ani-cli reads it only at start)
-  const live = useRef({ listSession: null, playingSession: null, phase: 'idle', ignore: new Set(), lastEpisode: null, startedMode: null, startSeq: 0, abandoned: new Set(), pendingStart: null, earlyEnds: new Map() })
+  const live = useRef({ listSession: null, playingSession: null, phase: 'idle', ignore: new Set(), lastEpisode: null, startedMode: null, startSeq: 0, abandoned: new Set(), pendingStart: null, earlyEnds: new Map(), resetCount: 0, pendingPlay: false })
   useEffect(() => { live.current.phase = phase }, [phase])
   // Stay focused between the anime and episode menus (and during a sub/dub restart) so the home sections do not flash back.
   // A "no dub" error for the chosen series also stays on top, so "Play subtitled" is not pushed below the home sections.
@@ -69,7 +75,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
         // Only our own list session, or the answer to a live start that has not replied yet, may show a menu.
         const startLive = l.pendingStart != null && !l.abandoned.has(l.pendingStart)
         if (m.sessionId !== l.listSession && !(l.phase === 'busy' && startLive)) return
-        l.listSession = m.sessionId; setMenu(m); setSelected([]); setPhase(m.kind === 'episode' ? 'episode' : 'anime')
+        l.listSession = m.sessionId; setReopening(false); setMenu(m); setSelected([]); setPhase(m.kind === 'episode' ? 'episode' : 'anime')
       }),
       api.watch.onPlaying((p) => {
         const l = live.current
@@ -109,6 +115,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
           return
         }
         l.listSession = null
+        setReopening(false)
         focusReopened.current = false // a reopen that ended without a list must not move focus later
         setMenu(null)
         setPhase(l.playingSession ? 'playing' : 'idle')
@@ -152,12 +159,14 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     // Until the new session answers, nothing from the previous one (e.g. a late probed title) may land here.
     live.current.listSession = null
     const seq = ++live.current.startSeq
+    live.current.pendingPlay = params.episode != null // a play start (e.g. Continue) survives a Home reset
     live.current.pendingStart = seq
     live.current.earlyEnds.clear()
     setError(null)
     setShowDetails(false)
     setNotice(null)
     setTitleMissing(false)
+    setReopening(false) // only the reopen effect turns this on again, after its start()
     setPhase('busy')
     api.watch.start(params)
       .then((r) => {
@@ -167,7 +176,11 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
           if (r?.sessionId) { l.ignore.add(r.sessionId); api.watch.cancel(r.sessionId) }
           return
         }
-        if (seq !== l.startSeq) return
+        if (seq !== l.startSeq) {
+          // Superseded by a newer start: its session would wait on a menu nobody shows (a superseded play start is cancelled on purpose too: the newer request wins).
+          if (r?.sessionId && r.sessionId !== l.playingSession) { l.ignore.add(r.sessionId); api.watch.cancel(r.sessionId) }
+          return
+        }
         l.pendingStart = null
         const sid = r?.sessionId
         l.startedMode = r?.mode ?? null
@@ -182,6 +195,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
         l.earlyEnds.clear()
         if (early) {
           l.listSession = null
+          setReopening(false)
           setMenu(null)
           setPhase(l.playingSession ? 'playing' : 'idle')
           if (early.failed) setError(early.result)
@@ -195,7 +209,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
         }
         if (seq !== l.startSeq) return
         l.pendingStart = null
-        setPhase('idle'); setError({ error: 'unknown' })
+        setReopening(false); setPhase('idle'); setError({ error: 'unknown' })
       })
   }
   const retrySame = () => start({ ...live.current.lastParams, ...(anime ? { query: anime, anime } : {}), ...(live.current.lastEpisode != null ? { episode: live.current.lastEpisode } : {}) })
@@ -230,6 +244,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     focusReopened.current = true
     setMenu(null)
     start({ query: reopenSearch.series, anime: reopenSearch.series })
+    setReopening(true)
     onReopenHandled()
   }, [reopenSearch, ready])
 
@@ -240,9 +255,12 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     lastReset.current = resetSeq
     const l = live.current
     if (l.phase === 'idle' || l.phase === 'playing') return
+    if (l.phase === 'busy' && l.pendingPlay) return // a busy play start (before or after its reply) is left alone so its episode still opens
+    l.resetCount++ // a pickAnime still reading prefs must not undo this reset
     if (l.listSession) { l.ignore.add(l.listSession); api.watch.cancel(l.listSession); l.listSession = null }
     else l.abandoned.add(l.startSeq) // start() still waiting for its session id: cancel it when it arrives
     focusReopened.current = false
+    setReopening(false)
     setMenu(null); setSelected([]); setError(null); setNotice(null); setShowDetails(false); setAnime(null)
     setPhase(l.playingSession ? 'playing' : 'idle')
   }, [resetSeq])
@@ -268,6 +286,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     search(query)
   }
   const answer = (line) => {
+    if (!menu) return
     api.watch.answerMenu(menu.requestId, line)
     setMenu(null)
     setPhase(line == null ? 'idle' : 'busy')
@@ -275,11 +294,13 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
   const pickAnime = async (line) => {
     const title = animeLineTitle(line)
     const requestId = menu.requestId
+    const resets = live.current.resetCount
     setAnime(title)
     setMenu(null)
     setPhase('busy')
     // The session was started with prefs resolved for the search text; saved prefs of the picked series need a fresh start.
     const p = await api.seriesPrefs.get(title).catch(() => null)
+    if (live.current.resetCount !== resets) return // Home reset meanwhile; it already cancelled the list
     if (p?.quality || p?.mode) restartFor(title)
     else api.watch.answerMenu(requestId, line)
   }
@@ -347,7 +368,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
           {showDetails && <pre className="details">{error.stderr}</pre>}
         </div>
       )}
-      {phase === 'busy' && <p className="muted">{t('search.searching')}</p>}
+      {phase === 'busy' && !cachedView && <p className="muted">{t('search.searching')}</p>}
       {phase === 'playing' && playing && <p>{t('search.playing', { title: playing.title, episode: playing.episode })}</p>}
 
       {phase === 'anime' && menu && (
@@ -369,24 +390,29 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
         </div>
       )}
 
-      {phase === 'episode' && menu && (
+      {((phase === 'episode' && menu) || cachedView) && (
         <div className="page">
-          <div className="row"><button type="button" onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button></div>
+          <div className="row">
+            <button type="button" disabled={Boolean(cachedView)} onClick={() => answer(null)}><Icon name="back" /> {t('search.back')}</button>
+            {cachedView && <span className="muted" role="status">{t('search.refreshing')}</span>}
+          </div>
+          <div className={cachedView ? 'page search-cached' : 'page'} inert={Boolean(cachedView)} aria-busy={cachedView ? 'true' : undefined}>
           <h3 ref={pickerHeading} tabIndex={-1}>{anime ?? (titleMissing ? t('search.titleUnknown', { query: live.current.lastParams?.query ?? '' }) : t('search.titlePending'))} — {t('search.selectEpisode')}</h3>
           <EpisodePicker episodes={episodeMenu} selected={selected} watched={watched} onToggle={toggle} prefs={prefs} prefsLoading={anime != null && !prefsLoaded} onPrefs={anime ? changePrefs : null} groupKey={anime ? normalizeTitle(anime).toLowerCase() : null}
             series={series} poster={posterInfo?.poster ?? null} onReveal={(ep) => updateSpoilers({ episode: ep })} loadThumb={thumb} progress={progress}
             hideMarked={Boolean(prefs.hideFiller)} onHideMarked={anime ? (v) => changePrefs({ hideFiller: v }) : null}>
-            <button type="button" className="primary" disabled={!ready || selected.length === 0} onClick={watchSelected}>{t('search.watch')}</button>
-            <button type="button" disabled={!ready || selected.length === 0 || !anime} onClick={downloadSelected}>{t('search.download')}</button>
+            <button type="button" className="primary" disabled={!ready || !!cachedView || selected.length === 0} onClick={watchSelected}>{t('search.watch')}</button>
+            <button type="button" disabled={!ready || !!cachedView || selected.length === 0 || !anime} onClick={downloadSelected}>{t('search.download')}</button>
             {!settings.downloadDir && (
               <label className="check">
                 <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
                 {t('downloads.rememberFolder')}
               </label>
             )}
-            <button type="button" disabled={!anime} onClick={addToWatchlist}>{t('search.addToWatchlist')}</button>
+            <button type="button" disabled={!anime || !!cachedView} onClick={addToWatchlist}>{t('search.addToWatchlist')}</button>
             <button type="button" onClick={() => answer(null)}>{t('search.cancel')}</button>
           </EpisodePicker>
+          </div>
         </div>
       )}
     </section>

@@ -192,6 +192,38 @@ describe('App mini player', () => {
     await waitFor(() => expect(document.activeElement).toBe(document.querySelector('main.content')))
   })
 
+  it('a cancelled recovery clears the reconnecting mini; one for another session changes nothing', async () => {
+    const s = await start()
+    await s.open()
+    fireEvent.click(screen.getByRole('button', { name: 'Watchlist' }))
+    await waitFor(() => expect(mini()).not.toBeNull())
+    act(() => s.cb.close())
+    act(() => s.cb.retry({ state: 'reconnecting', title: 'Show', episode: '3', sessionId: 'r1' }))
+    expect(document.querySelector('.player--reconnect.player--mini')).not.toBeNull()
+    act(() => s.cb.retry({ state: 'cancelled', title: 'Show', episode: '3', sessionId: 'zz' }))
+    expect(document.querySelector('.player--reconnect.player--mini')).not.toBeNull()
+    act(() => s.cb.retry({ state: 'cancelled', title: 'Show', episode: '3', sessionId: 'r1' }))
+    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    expect(mini()).toBeNull()
+    expect(screen.getByRole('button', { name: 'Watchlist' })).toHaveAttribute('aria-current', 'page')
+    // focus was inside the reconnecting element: it moves to the page
+    await waitFor(() => expect(document.activeElement).toBe(document.querySelector('main.content')))
+  })
+
+  it('a cancelled recovery does not move focus that is outside the reconnecting element', async () => {
+    const s = await start()
+    await s.open()
+    fireEvent.click(screen.getByRole('button', { name: 'Watchlist' }))
+    await waitFor(() => expect(mini()).not.toBeNull())
+    act(() => s.cb.close())
+    act(() => s.cb.retry({ state: 'reconnecting', title: 'Show', episode: '3', sessionId: 'r1' }))
+    const btn = screen.getByRole('button', { name: 'Watchlist' })
+    btn.focus()
+    act(() => s.cb.retry({ state: 'cancelled', title: 'Show', episode: '3', sessionId: 'r1' }))
+    await waitFor(() => expect(document.querySelector('.player')).toBeNull())
+    expect(document.activeElement).toBe(btn)
+  })
+
   it('x on the reconnecting mini forgets the origin', async () => {
     const s = await start()
     await s.pickFromSearch('2')
@@ -302,6 +334,42 @@ describe('App mini player', () => {
     await waitFor(() => expect(mini()).toBeNull())
     fireEvent.click(screen.getByRole('button', { name: 'Mini plejer' }))
     await waitFor(() => expect(mini()).not.toBeNull())
+    expect(mini().style.left).toBe('20px')
+  })
+
+  const dragTopLeft = async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Mini plejer' }))
+    await waitFor(() => expect(mini()).not.toBeNull())
+    const bottomRight = mini().style.left
+    pointer(mini(), 'pointerdown', 900, 600)
+    pointer(window, 'pointermove', 300, 300)
+    pointer(window, 'pointermove', 100, 100)
+    pointer(window, 'pointerup', 100, 100)
+    await waitFor(() => expect(mini().style.left).toBe('20px'))
+    return bottomRight
+  }
+
+  it('a new episode starts the mini player bottom-right again', async () => {
+    const s = await start()
+    await s.open()
+    const bottomRight = await dragTopLeft()
+    act(() => s.cb.open(ep('p2', '4')))
+    await waitFor(() => expect(mini()).toBeNull())
+    fireEvent.click(screen.getByRole('button', { name: 'Mini plejer' }))
+    await waitFor(() => expect(mini()).not.toBeNull())
+    expect(mini().style.left).toBe(bottomRight)
+  })
+
+  it('a quiet recovery of the same episode keeps the dragged corner', async () => {
+    const s = await start()
+    await s.open()
+    await dragTopLeft()
+    act(() => s.cb.close())
+    act(() => s.cb.retry({ state: 'reconnecting', title: 'Show', episode: '3', sessionId: 'r1' }))
+    act(() => s.cb.open(ep('p2')))
+    await waitFor(() => expect(document.querySelector('video')).not.toBeNull())
+    await flush()
+    expect(mini()).not.toBeNull()
     expect(mini().style.left).toBe('20px')
   })
 })
