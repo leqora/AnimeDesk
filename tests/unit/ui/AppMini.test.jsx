@@ -336,4 +336,40 @@ describe('App mini player', () => {
     await waitFor(() => expect(mini()).not.toBeNull())
     expect(mini().style.left).toBe('20px')
   })
+
+  const dragTopLeft = async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Mini plejer' }))
+    await waitFor(() => expect(mini()).not.toBeNull())
+    const bottomRight = mini().style.left
+    pointer(mini(), 'pointerdown', 900, 600)
+    pointer(window, 'pointermove', 300, 300)
+    pointer(window, 'pointermove', 100, 100)
+    pointer(window, 'pointerup', 100, 100)
+    await waitFor(() => expect(mini().style.left).toBe('20px'))
+    return bottomRight
+  }
+
+  it('a new episode starts the mini player bottom-right again', async () => {
+    const s = await start()
+    await s.open()
+    const bottomRight = await dragTopLeft()
+    act(() => s.cb.open(ep('p2', '4')))
+    await waitFor(() => expect(mini()).toBeNull())
+    fireEvent.click(screen.getByRole('button', { name: 'Mini plejer' }))
+    await waitFor(() => expect(mini()).not.toBeNull())
+    expect(mini().style.left).toBe(bottomRight)
+  })
+
+  it('a quiet recovery of the same episode keeps the dragged corner', async () => {
+    const s = await start()
+    await s.open()
+    await dragTopLeft()
+    act(() => s.cb.close())
+    act(() => s.cb.retry({ state: 'reconnecting', title: 'Show', episode: '3', sessionId: 'r1' }))
+    act(() => s.cb.open(ep('p2')))
+    await waitFor(() => expect(document.querySelector('video')).not.toBeNull())
+    await flush()
+    expect(mini()).not.toBeNull()
+    expect(mini().style.left).toBe('20px')
+  })
 })

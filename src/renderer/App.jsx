@@ -373,6 +373,7 @@ export default function App({ api, sound: injectedSound }) {
       // a recovery of the same episode while mini reopens it quietly, still mini; anything else opens full
       const quiet = recovered && miniRef.current
       setQuietMount(quiet)
+      if (!quiet) setMiniCorner('br') // the dragged corner belongs to the episode; a quiet recovery keeps it
       if (!quiet) {
         setMini(false)
         setPaletteOpen(false) // unmount the palette Modal in the same commit, before the player takes focus
