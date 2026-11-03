@@ -169,7 +169,7 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
           return
         }
         if (seq !== l.startSeq) {
-          // Superseded by a newer start: its session would wait on a menu nobody shows.
+          // Superseded by a newer start: its session would wait on a menu nobody shows (a superseded play start is cancelled on purpose too: the newer request wins).
           if (r?.sessionId && r.sessionId !== l.playingSession) { l.ignore.add(r.sessionId); api.watch.cancel(r.sessionId) }
           return
         }
@@ -244,9 +244,9 @@ export function SearchPage({ ready, settings, onSettings, onOpenWizard, pendingW
     if (resetSeq === lastReset.current) return
     lastReset.current = resetSeq
     const l = live.current
-    l.resetCount++ // a pickAnime still reading prefs must not undo this reset
     if (l.phase === 'idle' || l.phase === 'playing') return
-    if (!l.listSession && l.pendingPlay) return // a busy play start is left alone so its episode still opens
+    if (l.phase === 'busy' && l.pendingPlay) return // a busy play start (before or after its reply) is left alone so its episode still opens
+    l.resetCount++ // a pickAnime still reading prefs must not undo this reset
     if (l.listSession) { l.ignore.add(l.listSession); api.watch.cancel(l.listSession); l.listSession = null }
     else l.abandoned.add(l.startSeq) // start() still waiting for its session id: cancel it when it arrives
     focusReopened.current = false
