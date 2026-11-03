@@ -16,6 +16,12 @@ describe('cardLine', () => {
     expect(cardLine(entry({ status: 'planned', watchedEpisodes: [] }), {})).toBeNull()
     expect(cardLine(entry({ status: 'watching', watchedEpisodes: [] }), {})).toEqual({ key: 'card.next', vars: { episode: 1 } })
   })
+  it('shows no "next" line until the saved positions are loaded, but still shows completed', () => {
+    expect(cardLine(entry(), {}, false)).toBeNull()
+    expect(cardLine(entry({ status: 'watching', watchedEpisodes: [] }), {}, false)).toBeNull()
+    expect(cardLine(entry({ status: 'completed' }), {}, false)).toEqual({ key: 'card.completed', vars: {} })
+    expect(cardLine(entry(), {}, true)).toEqual({ key: 'card.next', vars: { episode: 4 } })
+  })
   it('only calls a series complete when every episode 1..total is watched', () => {
     expect(isSeriesComplete(entry({ totalEpisodes: 2, watchedEpisodes: [1, 2] }))).toBe(true)
     expect(isSeriesComplete(entry({ totalEpisodes: 2, watchedEpisodes: [1, 3] }))).toBe(false)
@@ -65,6 +71,14 @@ describe('MediaCard', () => {
     expect(screen.getByRole('button', { name: 'Nastavi' })).toBeDisabled()
     await act(async () => { resolve({ 130: { position: 60, duration: 1440 } }) })
     expect(await screen.findByRole('button', { name: 'Nastavi EP 130' })).toBeEnabled()
+  })
+  it('shows no next/remaining text while positions are pending', async () => {
+    let resolve
+    const api = makeFakeApi({ positions: { forSeries: vi.fn(() => new Promise((r) => { resolve = r })) } })
+    card({}, api)
+    expect(screen.queryByText(/EP 4/)).toBeNull()
+    await act(async () => { resolve({}) })
+    expect(await screen.findByText('Sledeća: EP 4')).toBeInTheDocument()
   })
   it('shows the AniList total when the entry has none', async () => {
     const api = makeFakeApi({ anilist: { forTitle: vi.fn(async () => ({ id: 1, episodes: 220, match: 'exact', poster: null })) } })

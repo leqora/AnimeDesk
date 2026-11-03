@@ -5,6 +5,7 @@ import { renderUi, makeFakeApi } from './helpers.jsx'
 import { FakeHls } from './fakeHls.js'
 import { PlayerView } from '../../../src/renderer/components/PlayerView.jsx'
 import { PlayerReconnecting } from '../../../src/renderer/components/PlayerReconnecting.jsx'
+import { HIDE_MS } from '../../../src/renderer/player/useIdle.js'
 import { DEFAULT_SETTINGS } from '../../../src/main/settings.js'
 
 const open = (over = {}) => ({ playbackId: 'p1', title: 'Naruto', episode: '130', kind: 'hls', src: 'http://127.0.0.1:9/s/t/p1/playlist', subtitleUrl: 'http://127.0.0.1:9/s/t/p1/sub', resumeAt: null, totalEpisodes: 220, ...over })
@@ -45,6 +46,22 @@ describe('PlayerView mini', () => {
     expect(document.querySelector('video')).toBe(video)
     expect(FakeHls.instances).toHaveLength(1)
     expect(FakeHls.last.destroy).not.toHaveBeenCalled()
+  })
+  it('no idle timer in mini: controls are visible after expand and idle only HIDE_MS later', () => {
+    vi.useFakeTimers()
+    const onIdleChange = vi.fn()
+    const { rerender, video, meta } = view({ mini: true, onIdleChange })
+    act(() => meta())
+    expect(video.paused).toBe(false)
+    act(() => { vi.advanceTimersByTime(5000) })
+    expect(onIdleChange).not.toHaveBeenCalledWith(true)
+    rerender({ mini: false, onIdleChange })
+    expect(document.querySelector('.player')).not.toHaveClass('player--idle')
+    act(() => { vi.advanceTimersByTime(HIDE_MS - 1) })
+    expect(document.querySelector('.player')).not.toHaveClass('player--idle')
+    act(() => { vi.advanceTimersByTime(1) })
+    expect(document.querySelector('.player')).toHaveClass('player--idle')
+    expect(onIdleChange).toHaveBeenLastCalledWith(true)
   })
   it('mini hides the full controls and subtitles', () => {
     const { rerender, video } = view()
