@@ -288,7 +288,7 @@ describe('Back on the reconnecting screen', () => {
     expect(s.api.watch.cancel.mock.invocationCallOrder[0]).toBeLessThan(s.api.watch.start.mock.invocationCallOrder[0])
     // the cancelled recovery session ends late: the reopened list stays
     act(() => s.cb.end({ sessionId: 's2', retry: true, result: { ok: false, error: 'cancelled' } }))
-    expect(screen.getByText('Pretraga…')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Osvežavam listu epizoda…') // the last list of the series stays visible while it reloads
     act(() => s.cb.menu({ requestId: 'r2', sessionId: 's3', kind: 'episode', prompt: 'Select episode: ', lines: ['1', '2', '3'] }))
     expect(await screen.findByRole('heading', { name: /Izaberi epizodu/ })).toBeInTheDocument()
   })
