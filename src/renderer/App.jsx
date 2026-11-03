@@ -385,7 +385,18 @@ export default function App({ api, sound: injectedSound }) {
     const offs = [
       api.player.onOpen(onOpen),
       api.player.onClose(() => { playerRef.current = null; setPlayer(null) }), // mini survives: a recovery (player-retry) may follow
-      api.player.onRetry((r) => { reconnectingRef.current = r; setReconnecting(r) }),
+      api.player.onRetry((r) => {
+        if (r.state === 'cancelled') {
+          // Main dropped a recovery without opening anything else: clear its screen (only if it is the one shown).
+          if (reconnectingRef.current?.sessionId !== r.sessionId) return
+          reconnectingRef.current = null
+          setReconnecting(null)
+          if (document.activeElement?.closest?.('.player')) setFocusMain(true)
+          return
+        }
+        reconnectingRef.current = r
+        setReconnecting(r)
+      }),
     ]
     return () => offs.forEach((off) => off())
   }, [api])
