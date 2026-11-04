@@ -599,7 +599,7 @@ export default function App({ api, sound: injectedSound }) {
                 {page === 'discover' && <DiscoverPage ready={ready} onOpenAnime={openAnime} onSearch={searchAnime} />}
                 {page === 'schedule' && <SchedulePage ready={ready} onOpenAnime={openAnime} onSearch={searchAnime} />}
                 {page === 'downloads' && <DownloadsPage />}
-                {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} />}
+                {page === 'profile' && <ProfilePage stats={stats} name={settings.profileName || settings.systemName} lang={settings.language} onOpenAnime={openAnime} />}
                 {page === 'settings' && <SettingsPage key={settingsKey} focusImport={focusImport} settings={settings} onSettings={updateSettings} onImported={onImported} onTestSound={() => sound.play('levelUp')} updateState={updateState} />}
                 </RouteStateContext.Provider>
               </ErrorBoundary>
