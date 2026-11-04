@@ -570,6 +570,8 @@
   "boost.shortcutHint": "Shift + ↑ / ↓",
   "settings.volumeBoost": "Pojačanje zvuka",
   "settings.volumeBoostHint": "Za tihe epizode. U spoljnom mpv-u važi od sledećeg pokretanja.",
+  "settings.framePreview": "Pregled kadra na traci",
+  "settings.framePreviewHint": "Prikazuje kadar iznad trake dok držiš miš nad njom. Za epizodu koju prvi put gledaš, samo do mesta do kog si stigao.",
   "externalPlayer.label": "Spoljni plejer",
   "externalPlayer.playing": "Pušta se u mpv-u: {title} · EP {episode}",
   "externalPlayer.playingNoEpisode": "Pušta se u mpv-u: {title}",

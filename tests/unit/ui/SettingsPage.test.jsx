@@ -221,4 +221,12 @@ describe('Settings page header (v0.19.0)', () => {
     expect(head).toHaveTextContent('Plejer, preuzimanja, nalog i alati')
     expect(container.querySelectorAll('.settings-section').length).toBeGreaterThan(3)
   })
+  it('has a frame preview checkbox, on by default', () => {
+    const onSettings = vi.fn()
+    renderUi(<SettingsPage settings={{ ...DEFAULT_SETTINGS }} onSettings={onSettings} />)
+    const box = screen.getByRole('checkbox', { name: 'Pregled kadra na traci' })
+    expect(box).toBeChecked()
+    fireEvent.click(box)
+    expect(onSettings).toHaveBeenLastCalledWith({ framePreview: false })
+  })
 })
