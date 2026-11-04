@@ -27,21 +27,29 @@ export function createProgress({ file, achievementsFile, computeSnapshot, comput
   const persist = () => writeJsonAtomic(achievementsFile, { version: 1, unlocked })
   const metIds = () => computeAchievements().filter((a) => a.met).map((a) => a.id)
 
+  // ready only after a successful read/re-derive, so a failed init is retried and never treats history as new.
+  let silentRederive = false
   function initAchievements() {
     if (!enabled || ready) return
-    ready = true
     try {
       const { data, corrupt } = readJson(achievementsFile, null)
+      if (corrupt) silentRederive = true // the bad file was already moved aside; a retry must not count a retro
       const valid = data && typeof data === 'object' && data.unlocked && typeof data.unlocked === 'object' && !Array.isArray(data.unlocked)
       if (valid && !corrupt) {
         unlocked = { ...data.unlocked }
+        ready = true
         return
       }
-      if (corrupt || data !== null) console.error('progress: achievements file unreadable, re-deriving')
+      if (silentRederive || data !== null) {
+        silentRederive = true
+        console.error('progress: achievements file unreadable, re-deriving')
+      }
       const ids = metIds()
-      unlocked = Object.fromEntries(ids.map((id) => [id, now()]))
-      if (!corrupt && data === null) pendingRetro = ids.length
+      const map = Object.fromEntries(ids.map((id) => [id, now()]))
+      unlocked = map
       persist()
+      if (!silentRederive) pendingRetro = ids.length
+      ready = true
     } catch (err) {
       console.error('progress: achievements init failed', err)
     }
@@ -51,6 +59,7 @@ export function createProgress({ file, achievementsFile, computeSnapshot, comput
     if (!enabled) return
     try {
       initAchievements()
+      if (!ready) return
       const ids = newlyUnlocked(computeAchievements(), unlocked)
       if (!ids.length) return
       const at = now()
@@ -111,10 +120,12 @@ export function createProgress({ file, achievementsFile, computeSnapshot, comput
     }
     if (!enabled) return
     try {
-      ready = true
-      unlocked = Object.fromEntries(metIds().map((id) => [id, unlocked[id] ?? now()]))
+      const next = Object.fromEntries(metIds().map((id) => [id, unlocked[id] ?? now()]))
+      const prev = unlocked
+      unlocked = next
+      try { persist() } catch (err) { unlocked = prev; throw err }
       pendingRetro = 0
-      persist()
+      ready = true
     } catch (err) {
       console.error('progress: achievements rebase failed', err)
     }
