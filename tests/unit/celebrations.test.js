@@ -38,4 +38,13 @@ describe('celebrations', () => {
     c.notify(EVENTS.levelUp, { level: 2 })
     expect(send).not.toHaveBeenCalled()
   })
+  it('achievementsUnlocked is held while hold() and sent on release()', () => {
+    const send = vi.fn()
+    const c = createCelebrations(send)
+    c.hold()
+    c.notify(EVENTS.achievementsUnlocked, { ids: ['a'] })
+    expect(send).not.toHaveBeenCalled()
+    c.release()
+    expect(send).toHaveBeenCalledWith(EVENTS.achievementsUnlocked, { ids: ['a'] })
+  })
 })
