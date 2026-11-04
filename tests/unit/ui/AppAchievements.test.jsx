@@ -4,14 +4,14 @@ import { render, screen, fireEvent, act, waitFor, within } from '@testing-librar
 import App from '../../../src/renderer/App.jsx'
 import { makeFakeApi } from './helpers.jsx'
 
-function setup({ retro = 0, whatsNew = null, whatsNewDelay = false } = {}) {
+function setup({ retro = 0, whatsNew = null, whatsNewDelay = false, retroFails = false, whatsNewFails = false } = {}) {
   const handlers = {}
   const api = makeFakeApi({
     stats: {
       onAchievements: vi.fn((cb) => { handlers.achievements = cb; return () => {} }),
-      takeRetro: vi.fn(async () => ({ count: retro })),
+      takeRetro: vi.fn(async () => { if (retroFails) throw new Error('boom'); return { count: retro } }),
     },
-    whatsNew: { get: vi.fn(() => (whatsNewDelay ? new Promise((r) => setTimeout(() => r(whatsNew), 20)) : Promise.resolve(whatsNew))), seen: vi.fn(async () => {}) },
+    whatsNew: { get: vi.fn(() => (whatsNewFails ? Promise.reject(new Error('boom')) : whatsNewDelay ? new Promise((r) => setTimeout(() => r(whatsNew), 20)) : Promise.resolve(whatsNew))), seen: vi.fn(async () => {}) },
   })
   const sound = { play: vi.fn(() => true) }
   render(<App api={api} sound={sound} />)
@@ -36,6 +36,21 @@ describe('App retroactive achievements toast', () => {
     await waitFor(() => expect(api.stats.takeRetro).toHaveBeenCalled())
     await screen.findByRole('button', { name: 'Početna' })
     expect(document.querySelector('.toast')).toBeNull()
+  })
+})
+
+describe('App startup notices fail independently', () => {
+  it('a rejected takeRetro still opens the What is New dialog, no retro toast', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    setup({ retroFails: true, whatsNew: { version: '0.22.0', notes: 'Novo' } })
+    await screen.findByRole('dialog', { name: 'Ažurirano na 0.22.0' })
+    fireEvent.click(screen.getByRole('button', { name: 'Zatvori' }))
+    expect(document.querySelector('.toast')).toBeNull()
+  })
+  it('a rejected whatsNew.get still shows the retro toast', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    setup({ retro: 2, whatsNewFails: true })
+    expect(await screen.findByText('Otključano 2 dostignuća za dosadašnje gledanje')).toBeInTheDocument()
   })
 })
 

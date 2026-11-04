@@ -327,7 +327,9 @@ export default function App({ api, sound: injectedSound }) {
     // The retro count is claimed once per mount; its toast waits for the "updated to" dialog to close.
     if (!retroTaken.current) {
       retroTaken.current = true
-      Promise.all([api.whatsNew.get(), api.stats.takeRetro()]).then(([w, r]) => {
+      // independent failure: neither call may drop or delay the other's result
+      const safe = (call, fallback, what) => Promise.resolve().then(call).catch((err) => { console.warn(`${what} failed`, err?.message); return fallback })
+      Promise.all([safe(() => api.whatsNew.get(), null, 'whatsNew.get'), safe(() => api.stats.takeRetro(), { count: 0 }, 'stats.takeRetro')]).then(([w, r]) => {
         if (w) setWhatsNew({ mode: 'after', ...w })
         else if (r?.count > 0) setAchievements((q) => [...q, { retro: r.count }])
         retroCount.current = w ? (r?.count ?? 0) : 0
