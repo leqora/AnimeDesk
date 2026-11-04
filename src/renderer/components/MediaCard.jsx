@@ -6,6 +6,8 @@ import { NewBadge } from './AiringLine.jsx'
 import { nextEpisode } from '../../shared/domain.js'
 import { newEpisodeCount } from '../../shared/airing.js'
 import { useEpisodeProgressState } from '../episodes/useEpisodeProgress.js'
+import { useCardMenu } from './useCardMenu.js'
+import { LibraryCardMenu } from './LibraryCardMenu.jsx'
 
 export function isSeriesComplete(entry) {
   const total = entry.totalEpisodes
@@ -38,6 +40,7 @@ export function episodesLine(entry, info, t) {
 export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null, showScore = false }) {
   const t = useT()
   const lineId = useId()
+  const { rootProps, open, menuProps } = useCardMenu({ label: entry.title })
   const key = entry.aniCliTitle ?? entry.title
   const { progress, loaded } = useEpisodeProgressState(key)
   const info = usePosterInfo(entry.title, entry.aniListId)
@@ -55,9 +58,9 @@ export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null
   const line = cardLine(entry, progress, loaded)
   const peek = line ? null : episodesLine(entry, info, t)
   return (
-    <div className="card media-card" data-status={entry.status} data-complete={complete ? 'true' : undefined}>
+    <div className="card media-card" {...rootProps} data-status={entry.status} data-complete={complete ? 'true' : undefined}>
       <button
-        type="button" className="media-card__open" onClick={() => onOpen(entry.id)}
+        type="button" className="media-card__open" data-card-main aria-keyshortcuts="Shift+F10" onClick={() => onOpen(entry.id)}
         aria-label={t('card.label', { title: entry.title, watched, total: displayTotal ?? '?', status: t(`status.${entry.status}`) }) + (fresh > 0 ? t.n('airing.newLabel', fresh) : '')}
         aria-describedby={line || peek ? lineId : undefined}
       >
@@ -87,6 +90,7 @@ export function MediaCard({ entry, ready, onOpen, onContinue, onTogglePin = null
           </button>
         )}
       </div>
+      {open && <LibraryCardMenu entry={entry} next={next} canContinue={!finished} ready={ready && loaded} onContinue={onContinue} onOpen={onOpen} menuProps={menuProps} />}
     </div>
   )
 }

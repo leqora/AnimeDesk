@@ -8,6 +8,8 @@ import { usePosterTint } from '../theme/usePosterTint.js'
 import { useEpisodeProgressState } from '../episodes/useEpisodeProgress.js'
 import { nextEpisode } from '../../shared/domain.js'
 import { Icon } from './Icon.jsx'
+import { useCardMenu } from './useCardMenu.js'
+import { LibraryCardMenu } from './LibraryCardMenu.jsx'
 
 // The thumbnail of the next episode, only as main allows it (seriesEpisodes decides). undefined = loading, null = none.
 function useNextThumb(entry, episode) {
@@ -34,6 +36,7 @@ export function ContinueCard({ entry, ready, onContinue, onOpen }) {
   const t = useT()
   const toast = useToast()
   const lineId = useId()
+  const { rootProps, open, menuProps } = useCardMenu({ label: entry.title })
   const key = entry.aniCliTitle ?? entry.title
   const { progress, loaded } = useEpisodeProgressState(key)
   const next = nextEpisode(entry, progress)
@@ -57,8 +60,8 @@ export function ContinueCard({ entry, ready, onContinue, onOpen }) {
   }
 
   return (
-    <div className="continue-card">
-      <button type="button" className="continue-card__open" disabled={!ready || !loaded} aria-describedby={loaded ? lineId : undefined} aria-label={`${loaded ? t('home.continueEp', { episode: next }) : t('home.continueShort')}: ${entry.title}`} onClick={() => onContinue({ query: key, anime: key, episode: String(next) })}>
+    <div className="continue-card" {...rootProps}>
+      <button type="button" className="continue-card__open" data-card-main aria-keyshortcuts="Shift+F10" disabled={!ready || !loaded} aria-describedby={loaded ? lineId : undefined} aria-label={`${loaded ? t('home.continueEp', { episode: next }) : t('home.continueShort')}: ${entry.title}`} onClick={() => onContinue({ query: key, anime: key, episode: String(next) })}>
         <span className="continue-card__frame" style={tint ? { '--poster-tint': tint } : undefined}>
           {image ? <img className="continue-card__img" src={image} alt="" onError={() => markBad(image)} />
             : thumb === undefined || banner === undefined ? <span className="poster poster--skeleton" aria-hidden="true" />
@@ -80,6 +83,7 @@ export function ContinueCard({ entry, ready, onContinue, onOpen }) {
         <button type="button" aria-label={`${t('home.details')}: ${entry.title}`} onClick={() => onOpen(entry.id)}><Icon name="info" /></button>
         <button type="button" className="continue-card__pin" aria-pressed={Boolean(entry.pinnedAt)} aria-label={`${entry.pinnedAt ? t('pin.remove') : t('pin.add')}: ${entry.title}`} onClick={togglePin}><Icon name="star" /></button>
       </div>
+      {open && <LibraryCardMenu entry={entry} next={next} canContinue ready={ready && loaded} onContinue={onContinue} onOpen={onOpen} menuProps={menuProps} />}
     </div>
   )
 }
