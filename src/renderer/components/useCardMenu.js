@@ -17,7 +17,7 @@ export function focusPage() {
 
 // Context menu for a card. Spread rootProps on the card root; render <ContextMenu {...menuProps}> when `open`.
 // Opens on right click (at the pointer) and on Shift+F10 / the ContextMenu key (under the card).
-export function useCardMenu({ label }) {
+export function useCardMenu({ label, enabled = true }) {
   const [position, setPosition] = useState(null)
   const rootEl = useRef(null)
   const returnTo = useRef(null)
@@ -69,6 +69,7 @@ export function useCardMenu({ label }) {
   }
 
   const onContextMenu = (e) => {
+    if (!enabled) return
     if (e.target.closest?.('.context-menu')) { e.preventDefault(); return }
     if (e.target.closest?.(EDITABLE)) return
     if (Date.now() - openedByKeyAt.current < KEY_OPEN_GUARD_MS) { e.preventDefault(); return }
@@ -79,6 +80,7 @@ export function useCardMenu({ label }) {
   }
 
   const onKeyDown = (e) => {
+    if (!enabled) return
     if (e.key !== 'ContextMenu' && !(e.key === 'F10' && e.shiftKey)) return
     if (e.target.closest?.('.context-menu')) return
     if (blocked(e.currentTarget)) return

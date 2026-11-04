@@ -1,6 +1,9 @@
 import { useId } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
 import { PosterFrame } from './Poster.jsx'
+import { useCardMenu } from './useCardMenu.js'
+import { DiscoveryCardMenu } from './DiscoveryCardMenu.jsx'
+import { useAddToWatchlist } from '../library/useAddToWatchlist.js'
 
 const KNOWN_FORMATS = new Set(['TV', 'TV_SHORT', 'MOVIE', 'SPECIAL', 'OVA', 'ONA'])
 export const formatLabel = (format, t) => (KNOWN_FORMATS.has(format) ? t(`sequels.format.${format}`) : String(format).replace(/_/g, ' '))
@@ -21,10 +24,12 @@ export function SequelCard({ item, ready, onSearch, onHide }) {
   const badgeId = useId()
   const meta = sequelMeta(item, t)
   const releasing = item.status === 'RELEASING'
+  const adder = useAddToWatchlist(item)
+  const { rootProps, open, menuProps } = useCardMenu({ label: item.title })
   return (
-    <div className="card media-card sequel-card">
+    <div className="card media-card sequel-card" {...rootProps}>
       <button
-        type="button" className="media-card__open" disabled={!ready} onClick={() => onSearch(item.romaji ?? item.title)}
+        type="button" className="media-card__open" data-card-main aria-keyshortcuts="Shift+F10" disabled={!ready} onClick={() => onSearch(item.romaji ?? item.title)}
         aria-label={t('sequels.open', { title: item.title })} aria-describedby={releasing ? `${badgeId} ${lineId}` : lineId}
       >
         <PosterFrame info={{ poster: item.poster }}>
@@ -40,6 +45,7 @@ export function SequelCard({ item, ready, onSearch, onHide }) {
       <div className="media-card__actions">
         <button type="button" className="sequel-card__hide" aria-label={t('sequels.hide', { title: item.title })} onClick={(e) => onHide(item, e.detail === 0)}>×</button>
       </div>
+      {open && <DiscoveryCardMenu item={item} kind="sequel" ready={ready} onSearch={onSearch} onHide={onHide} adder={adder} menuProps={menuProps} />}
     </div>
   )
 }
