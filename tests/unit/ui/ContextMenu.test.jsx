@@ -171,4 +171,29 @@ describe('ContextMenu', () => {
     expect(menu.style.left).toBe('980px')
     expect(menu.style.top).toBe('100px')
   })
+
+  it('releasesFocus closes first with release and a settle promise, then runs onSelect', async () => {
+    const order = []
+    const onClose = vi.fn((reason) => order.push(`close:${reason}`))
+    const onSelect = vi.fn(() => { order.push('select') })
+    setup({ onClose }, <MenuItem releasesFocus onSelect={onSelect}>Rm</MenuItem>)
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Rm' }))
+    expect(order).toEqual(['close:release', 'select'])
+    expect(onClose).toHaveBeenCalledTimes(1)
+    await expect(onClose.mock.calls[0][1]).resolves.toBeUndefined()
+  })
+
+  it('releasesFocus settles even when onSelect rejects', async () => {
+    const { onClose } = setup({}, <MenuItem releasesFocus onSelect={() => Promise.reject(new Error('x'))}>Rm</MenuItem>)
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Rm' }))
+    await expect(onClose.mock.calls[0][1]).resolves.toBeUndefined()
+  })
+
+  it('a disabled releasesFocus item does nothing', () => {
+    const onSelect = vi.fn()
+    const { onClose } = setup({}, <MenuItem disabled releasesFocus onSelect={onSelect}>Rm</MenuItem>)
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Rm' }))
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+  })
 })

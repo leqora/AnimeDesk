@@ -1,10 +1,13 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { createContext, useContext, useEffect, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { placeMenu } from '../../shared/menuPosition.js'
 import { useMenuKeys } from './useMenuKeys.js'
 
 const ITEM = '[role^="menuitem"]'
 const DEFAULT_TOPBAR = 56
+// A keyboard-opened menu is followed by the browser's own contextmenu for that key press for this long: not a click elsewhere.
+export const KEY_OPEN_GUARD_MS = 500
+const MenuCtx = createContext(null)
 
 function topLimit() {
   const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h'))
@@ -19,7 +22,7 @@ export function ContextMenu({ label, position, onClose, children }) {
   const menuRef = useRef(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
-  const close = (reason) => onCloseRef.current?.(reason)
+  const close = (...args) => onCloseRef.current?.(...args)
 
   useLayoutEffect(() => {
     const menu = menuRef.current
@@ -39,7 +42,7 @@ export function ContextMenu({ label, position, onClose, children }) {
     const openedAt = performance.now()
     const onDown = (e) => { if (outside(e)) close('outside') }
     // A menu opened from the keyboard can be followed by the browser's own contextmenu for that same key press: not a click elsewhere.
-    const onContext = (e) => { if (outside(e) && !(position.kind === 'anchor' && performance.now() - openedAt < 500)) close('outside') }
+    const onContext = (e) => { if (outside(e) && !(position.kind === 'anchor' && performance.now() - openedAt < KEY_OPEN_GUARD_MS)) close('outside') }
     const onScroll = (e) => { if (outside(e)) close('scroll') }
     const onResize = () => close('resize')
     const onBlur = () => close('blur')
@@ -57,10 +60,17 @@ export function ContextMenu({ label, position, onClose, children }) {
     }
   }, [])
 
+  // releasesFocus items: close first (focus is left to fall, so a toast can take it), then run the action; onClose gets a promise that settles when it is done.
+  const release = (run) => {
+    let settle
+    const settled = new Promise((resolve) => { settle = resolve })
+    close('release', settled)
+    try { Promise.resolve(run()).then(() => settle(), () => settle()) } catch { settle() }
+  }
   const onKeyDown = useMenuKeys(menuRef, { onClose: close })
   const onClick = (e) => {
     const item = e.target.closest?.(ITEM)
-    if (!item || !menuRef.current?.contains(item) || item.getAttribute('aria-disabled') === 'true') return
+    if (!item || !menuRef.current?.contains(item) || item.getAttribute('aria-disabled') === 'true' || item.hasAttribute('data-release')) return
     close(item.hasAttribute('data-navigates') ? 'navigate' : 'select')
   }
   // relatedTarget null means the focused item went away (or focus went to nothing); mousedown/blur cover real departures.
@@ -70,14 +80,18 @@ export function ContextMenu({ label, position, onClose, children }) {
   }
 
   return createPortal(
-    <div ref={menuRef} className="context-menu" role="menu" aria-label={label} onKeyDown={onKeyDown} onClick={onClick} onBlur={onBlur}>
-      {children}
-    </div>,
+    <MenuCtx.Provider value={release}>
+      <div ref={menuRef} className="context-menu" role="menu" aria-label={label} onKeyDown={onKeyDown} onClick={onClick} onBlur={onBlur}>
+        {children}
+      </div>
+    </MenuCtx.Provider>,
     document.body,
   )
 }
 
-export function MenuItem({ icon, onSelect, disabled = false, navigates = false, checked, children }) {
+// releasesFocus: for an action that removes the card and shows a toast that must take focus. The menu closes first, without restoring focus.
+export function MenuItem({ icon, onSelect, disabled = false, navigates = false, releasesFocus = false, checked, children }) {
+  const release = useContext(MenuCtx)
   const radio = checked !== undefined
   return (
     <button
@@ -86,9 +100,10 @@ export function MenuItem({ icon, onSelect, disabled = false, navigates = false, 
       aria-checked={radio ? checked : undefined}
       aria-disabled={disabled ? 'true' : undefined}
       data-navigates={navigates ? '' : undefined}
+      data-release={releasesFocus ? '' : undefined}
       tabIndex={-1}
       className="context-menu__item"
-      onClick={() => { if (!disabled) onSelect?.() }}
+      onClick={() => { if (disabled) return; if (releasesFocus && release) release(() => onSelect?.()); else onSelect?.() }}
     >
       {icon && <span className="context-menu__icon" aria-hidden="true">{icon}</span>}
       <span className="context-menu__label">{children}</span>

@@ -149,7 +149,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .menu-button__item:focus-visible { outline: 2px solid var(--accent-2); outline-offset: -2px; }
 
 /* card context menu: same surface as .menu-button__popup, fixed to the window (placeMenu sets left/top), above the mini player */
-.context-menu { position: fixed; left: 0; top: 0; z-index: var(--z-popup); display: flex; flex-direction: column; gap: 2px; min-width: 200px; max-width: min(320px, calc(100vw - 16px)); padding: 6px; background: var(--panel-opaque); border: 1px solid var(--glass-border); border-radius: var(--radius); box-shadow: 0 12px 32px var(--scrim); }
+.context-menu { position: fixed; left: 0; top: 0; z-index: var(--z-popup); display: flex; flex-direction: column; gap: 2px; min-width: 200px; max-width: min(320px, calc(100vw - 16px)); padding: 6px; max-height: calc(100vh - var(--topbar-h, 56px) - 16px); overflow-y: auto; background: var(--panel-opaque); border: 1px solid var(--glass-border); border-radius: var(--radius); box-shadow: 0 12px 32px var(--scrim); }
 .context-menu__item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; text-align: left; background: transparent; border-color: transparent; border-radius: var(--radius-sm); }
 .context-menu__item[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
 .context-menu__item:focus-visible { outline: 2px solid var(--accent-2); outline-offset: -2px; }

@@ -1,8 +1,12 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { KEY_OPEN_GUARD_MS } from './ContextMenu.jsx'
 
 const EDITABLE = 'input, textarea, select, [contenteditable="true"]'
-const KEY_OPEN_GUARD_MS = 500
+// After a released action settles, give React time to render and run the effects of what it showed (a toast takes focus in a passive effect).
+const RELEASE_GRACE_MS = 50
 const REFOCUS = new Set(['escape', 'outside', 'select', 'tab'])
+// The menu goes away with these, taking focus with it if it is inside: focus must not fall to body.
+const REFOCUS_IF_IN_MENU = new Set(['scroll', 'resize', 'blur'])
 
 // Only one card menu is open at a time: opening a new one closes this.
 let closeCurrent = null
@@ -25,19 +29,30 @@ export function useCardMenu({ label }) {
 
   const setRoot = useCallback((node) => { if (node) rootEl.current = node }, [])
 
-  const restoreFocus = () => {
+  const usable = (el) => !!el && el !== document.body && el.isConnected && !el.disabled && !el.closest?.('[inert]')
+
+  const restoreFocus = (options) => {
     const back = returnTo.current
     returnTo.current = null
-    if (back?.isConnected && !back.disabled) { back.focus(); return }
+    if (usable(back)) { back.focus(options); return }
     const main = rootEl.current?.querySelector('[data-card-main]')
-    if (main && !main.disabled) { main.focus(); return }
+    if (usable(main)) { main.focus(options); return }
     focusPage()
   }
 
-  const onClose = useCallback((reason) => {
+  const onClose = useCallback((reason, settled) => {
+    const inMenu = !!document.activeElement?.closest?.('.context-menu')
     setPosition(null)
     if (closeCurrent === myClose.current) closeCurrent = null
     if (REFOCUS.has(reason)) restoreFocus()
+    else if (REFOCUS_IF_IN_MENU.has(reason) && inMenu) restoreFocus({ preventScroll: true })
+    else if (reason === 'release') {
+      // Focus is left to fall so the action's toast can take it; if nothing did once the action settled, do not leave it on body.
+      Promise.resolve(settled).then(() => setTimeout(() => {
+        const a = document.activeElement
+        if (!a || a === document.body) restoreFocus()
+      }, RELEASE_GRACE_MS))
+    }
   }, [])
   myClose.current = onClose
 
@@ -71,7 +86,19 @@ export function useCardMenu({ label }) {
   }
 
   const onFocus = () => { focusInside.current = true }
-  const onBlur = (e) => { if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget) && !e.relatedTarget.closest?.('.context-menu')) focusInside.current = false }
+  const onBlur = (e) => {
+    const next = e.relatedTarget
+    if (next) {
+      if (!e.currentTarget.contains(next) && !next.closest?.('.context-menu')) focusInside.current = false
+      return
+    }
+    // Null: focus went to nothing (clicked empty page) or the focused element is being removed. Decide after the dust settles;
+    // a card that unmounts in between has already handled its own focus.
+    setTimeout(() => {
+      const a = document.activeElement
+      if (!rootEl.current?.contains(a) && !a?.closest?.('.context-menu')) focusInside.current = false
+    }, 0)
+  }
 
   // The card goes away while focus is in it (or in its menu): focus would fall to body, so hand it to the page.
   useLayoutEffect(() => () => {

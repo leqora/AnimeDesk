@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen, fireEvent, act } from '@testing-library/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { renderUi } from './helpers.jsx'
 import { ContextMenu, MenuItem } from '../../../src/renderer/components/ContextMenu.jsx'
 import { useCardMenu } from '../../../src/renderer/components/useCardMenu.js'
 
-function Card({ name, spy = () => {}, mainDisabled = false, onSelect = () => {} }) {
+function Card({ name, spy = () => {}, mainDisabled = false, onSelect = () => {}, release = false }) {
   const { rootProps, open, menuProps } = useCardMenu({ label: name })
   return (
     <div data-testid={`card-${name}`} {...rootProps}>
@@ -15,7 +15,7 @@ function Card({ name, spy = () => {}, mainDisabled = false, onSelect = () => {} 
       <input aria-label={`field-${name}`} />
       {open && (
         <ContextMenu {...menuProps}>
-          <MenuItem onSelect={() => { spy(); onSelect() }}>{`A-${name}`}</MenuItem>
+          <MenuItem releasesFocus={release} onSelect={() => { spy(); return onSelect() }}>{`A-${name}`}</MenuItem>
         </ContextMenu>
       )}
     </div>
@@ -145,5 +145,51 @@ describe('useCardMenu', () => {
     renderUi(<div inert><main className="content" tabIndex={-1}><Card name="A" /></main></div>)
     act(() => { screen.getByText('main-A').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })) })
     expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  it.each([
+    ['scroll', () => fireEvent.scroll(main())],
+    ['resize', () => fireEvent(window, new Event('resize'))],
+    ['blur', () => fireEvent(window, new Event('blur'))],
+  ])('%s closes and keeps focus on the element that opened the menu (not body)', (_n, trigger) => {
+    page(<Card name="A" />)
+    const other = screen.getByText('other-A')
+    other.focus()
+    fireEvent.keyDown(other, { key: 'F10', shiftKey: true })
+    expect(screen.getByRole('menuitem')).toHaveFocus()
+    act(() => { trigger() })
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(other).toHaveFocus()
+  })
+
+  it('release: focus is left to a focus-taking element that appears after the action', async () => {
+    function Host() {
+      const [toast, setToast] = useState(false)
+      return (
+        <>
+          <Card name="A" release onSelect={async () => { await Promise.resolve(); setToast(true) }} />
+          {toast && <ToastLike />}
+        </>
+      )
+    }
+    function ToastLike() {
+      useEffect(() => { if (document.activeElement === document.body) document.getElementById('undo').focus() }, [])
+      return <button type="button" id="undo">Undo</button>
+    }
+    page(<Host />)
+    fireEvent.contextMenu(screen.getByText('main-A'), { clientX: 5, clientY: 5 })
+    await act(async () => { fireEvent.click(screen.getByRole('menuitem')) })
+    await act(async () => { await new Promise((r) => setTimeout(r, 120)) })
+    expect(screen.getByText('Undo')).toHaveFocus()
+  })
+
+  it('release: a rejected action does not leave focus on body', async () => {
+    page(<Card name="A" release onSelect={() => Promise.reject(new Error('x'))} />)
+    const other = screen.getByText('other-A')
+    other.focus()
+    fireEvent.keyDown(other, { key: 'F10', shiftKey: true })
+    fireEvent.click(screen.getByRole('menuitem'))
+    await act(async () => { await new Promise((r) => setTimeout(r, 120)) })
+    expect(other).toHaveFocus()
   })
 })
