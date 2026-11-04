@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, cleanup } from '@testing-library/react'
 import { useFramePreview } from '../../../src/renderer/player/useFramePreview.js'
 import { captureFrame } from '../../../src/renderer/player/captureFrame.js'
 import { PREVIEW_DEBOUNCE_MS, PREVIEW_IDLE_MS, PREVIEW_SEEK_TIMEOUT_MS } from '../../../src/shared/framePreview.js'
@@ -27,6 +27,7 @@ beforeEach(() => {
   vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {})
 })
 afterEach(() => {
+  cleanup()
   vi.useRealTimers()
   vi.restoreAllMocks()
   host.current.remove()
@@ -44,13 +45,15 @@ const hoverAt = (r, at) => { act(() => r.current.hover(at)); settleDebounce() }
 describe('captureFrame', () => {
   it('returns null without a video size or a 2D context', () => {
     expect(captureFrame({ videoWidth: 0 })).toBeNull()
-    expect(captureFrame({ videoWidth: 10 })).toBeNull() // jsdom: no 2D context
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+    expect(captureFrame({ videoWidth: 10, readyState: 4 })).toBeNull()
+    expect(captureFrame({ videoWidth: 10, readyState: 1 })).toBeNull()
   })
   it('draws 160x90 and returns a jpeg data url', () => {
     const ctx = { drawImage: vi.fn() }
     const canvas = { getContext: () => ctx, toDataURL: vi.fn(() => 'data:x'), width: 0, height: 0 }
     vi.spyOn(document, 'createElement').mockReturnValue(canvas)
-    const v = { videoWidth: 1920 }
+    const v = { videoWidth: 1920, readyState: 4 }
     expect(captureFrame(v)).toBe('data:x')
     expect(canvas.width).toBe(160)
     expect(canvas.height).toBe(90)
@@ -60,7 +63,7 @@ describe('captureFrame', () => {
   it('lets a SecurityError through', () => {
     const canvas = { getContext: () => ({ drawImage() {} }), toDataURL: () => { throw new DOMException('x', 'SecurityError') } }
     vi.spyOn(document, 'createElement').mockReturnValue(canvas)
-    expect(() => captureFrame({ videoWidth: 5 })).toThrow()
+    expect(() => captureFrame({ videoWidth: 5, readyState: 4 })).toThrow()
   })
 })
 
@@ -99,21 +102,76 @@ describe('useFramePreview', () => {
     expect(previewVideo().currentTime).toBe(30)
   })
 
-  it('keeps one seek in flight and starts the newest target after it settles', () => {
+  it('replaces the outstanding seek with the newest target', () => {
     const { result } = setup()
     hoverAt(result, 30)
     const h = FakeHls.last
     h.stopLoad.mockClear()
     hoverAt(result, 60)
     expect(h.stopLoad).toHaveBeenCalled()
-    expect(h.startLoad).toHaveBeenCalledTimes(1)
-    expect(previewVideo().currentTime).toBe(30)
-    seeked()
+    expect(previewVideo().currentTime).toBe(60)
     expect(h.startLoad).toHaveBeenCalledTimes(2)
     expect(h.startLoad).toHaveBeenLastCalledWith(60)
-    expect(previewVideo().currentTime).toBe(60)
     seeked()
     expect(result.current.frame).toEqual({ allowed: true, src: 'data:image/jpeg;base64,F60', exact: true })
+    act(() => result.current.hover(30))
+    expect(result.current.frame.src).toBeNull() // the 30 frame was never captured
+  })
+
+  it('ignores a seeked whose position does not match the target', () => {
+    const cap = vi.fn(capture)
+    const { result } = setup({ capture: cap })
+    hoverAt(result, 30)
+    previewVideo().currentTime = 99
+    seeked()
+    expect(cap).not.toHaveBeenCalled()
+    expect(result.current.frame.src).toBeNull()
+  })
+
+  it('leave abandons the flight so the next hover fetches at once', () => {
+    const { result } = setup()
+    hoverAt(result, 30)
+    act(() => result.current.leave())
+    hoverAt(result, 60)
+    expect(FakeHls.last.startLoad).toHaveBeenLastCalledWith(60)
+  })
+
+  it('a manifest parsed after leave does not start loading', () => {
+    class Lazy extends FakeHls { constructor(c) { super(c); this.levels = [] } }
+    const { result } = setup({ HlsImpl: Lazy })
+    hoverAt(result, 30)
+    act(() => result.current.leave())
+    FakeHls.last.levels = [{}]
+    act(() => FakeHls.last.emit(FakeHls.Events.MANIFEST_PARSED))
+    expect(FakeHls.last.startLoad).not.toHaveBeenCalled()
+  })
+
+  describe('requestVideoFrameCallback', () => {
+    it('captures on the callback', () => {
+      let cb
+      const orig = HTMLMediaElement.prototype.requestVideoFrameCallback
+      HTMLMediaElement.prototype.requestVideoFrameCallback = (f) => { cb = f }
+      try {
+        const { result } = setup()
+        hoverAt(result, 30)
+        act(() => { previewVideo().dispatchEvent(new Event('seeked')) })
+        expect(result.current.frame.src).toBeNull()
+        act(() => cb())
+        expect(result.current.frame.src).toBe('data:image/jpeg;base64,F30')
+      } finally { HTMLMediaElement.prototype.requestVideoFrameCallback = orig }
+    })
+    it('falls back to a timer when it never fires', () => {
+      const orig = HTMLMediaElement.prototype.requestVideoFrameCallback
+      HTMLMediaElement.prototype.requestVideoFrameCallback = () => {}
+      try {
+        const { result } = setup()
+        hoverAt(result, 30)
+        act(() => { previewVideo().dispatchEvent(new Event('seeked')); vi.advanceTimersByTime(199) })
+        expect(result.current.frame.src).toBeNull()
+        act(() => { vi.advanceTimersByTime(1) })
+        expect(result.current.frame.src).toBe('data:image/jpeg;base64,F30')
+      } finally { HTMLMediaElement.prototype.requestVideoFrameCallback = orig }
+    })
   })
 
   it('serves a cache hit without a new fetch', () => {
@@ -184,7 +242,22 @@ describe('useFramePreview', () => {
       statusRef.current.buffering = true
       const { result } = setup()
       hoverAt(result, 30)
-      expect(FakeHls.instances.length === 0 || FakeHls.last.startLoad.mock.calls.length === 0).toBe(true)
+      expect(FakeHls.instances.length).toBe(1)
+      expect(FakeHls.last.startLoad).not.toHaveBeenCalled()
+    })
+
+    it('does not fetch when the main player failed', () => {
+      statusRef.current.failed = true
+      const { result } = setup()
+      hoverAt(result, 30)
+      expect(FakeHls.last.startLoad).not.toHaveBeenCalled()
+    })
+
+    it('does not fetch when the main player is not ready', () => {
+      main.current.readyState = 2
+      const { result } = setup()
+      hoverAt(result, 30)
+      expect(FakeHls.last.startLoad).not.toHaveBeenCalled()
     })
 
     it('allows 12 fetches per 60 s', () => {
@@ -212,6 +285,15 @@ describe('useFramePreview', () => {
     expect(v.currentTime).toBe(30)
     seeked()
     expect(result.current.frame.src).toBe('data:image/jpeg;base64,F30')
+  })
+
+  it('a media error on the file preview turns it off', () => {
+    const { result } = setup({ open: { kind: 'file', src: 'file:///a.mp4', playbackId: 3 } })
+    hoverAt(result, 30)
+    const v = previewVideo()
+    act(() => { v.dispatchEvent(new Event('error')) })
+    expect(previewVideo()).toBeNull()
+    expect(result.current.frame.allowed).toBe(false)
   })
 
   it('leave stops loading and clears the frame', () => {

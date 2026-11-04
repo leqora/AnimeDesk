@@ -46,6 +46,7 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
     clearTimeout(inst.timeout)
     clearTimeout(inst.tick)
     inst.video.removeEventListener('seeked', inst.onSeeked)
+    inst.video.removeEventListener('error', inst.onError)
     try { inst.hls?.destroy() } catch { /* silent */ }
     inst.video.removeAttribute('src')
     try { inst.video.load() } catch { /* detached / not implemented */ }
@@ -67,14 +68,12 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
     clearTimeout(inst.tick)
     if (src) inst.cache.set(bucketOf(f.at), src)
     refresh()
-    const next = inst.pending
-    inst.pending = null
-    if (next != null && s.hovering) request(next)
   }
 
   const finishSeek = (inst, f) => {
     if (!inst.alive || inst.flight !== f) return
     let src = null
+    if (Math.abs(inst.video.currentTime - f.at) > 1) { settle(inst, f, null); return }
     try { src = live.current.capture(inst.video) } catch { fail(); return }
     settle(inst, f, src)
   }
@@ -89,16 +88,21 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
     video.defaultMuted = true
     video.playsInline = true
     video.setAttribute('aria-hidden', 'true')
-    const inst = { alive: true, video, hls: null, cache: createFrameCache(), flight: null, pending: null, timeout: null, tick: null, onSeeked: null }
+    const inst = { alive: true, video, hls: null, cache: createFrameCache(), flight: null, timeout: null, tick: null, onSeeked: null, onError: null }
     inst.onSeeked = () => {
       const f = inst.flight
       if (!inst.alive || !f || f.seeked) return
       f.seeked = true
       const done = () => finishSeek(inst, f)
-      if (typeof video.requestVideoFrameCallback === 'function') video.requestVideoFrameCallback(() => { if (inst.alive) done() })
-      else inst.tick = setTimeout(done, 0)
+      // requestVideoFrameCallback may never fire (no new frame presented), so a timer always backs it up
+      if (typeof video.requestVideoFrameCallback === 'function') {
+        video.requestVideoFrameCallback(() => { if (inst.alive) done() })
+        inst.tick = setTimeout(done, 200)
+      } else inst.tick = setTimeout(done, 0)
     }
+    inst.onError = () => { if (inst.alive) fail() }
     video.addEventListener('seeked', inst.onSeeked)
+    video.addEventListener('error', inst.onError)
     if (o.kind === 'file') {
       video.preload = 'metadata'
       video.crossOrigin = 'anonymous'
@@ -111,7 +115,7 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
         if (!inst.alive) return
         if (hls.levels?.length > 1) hls.currentLevel = 0
         // a seek requested before the manifest was parsed could not start loading yet
-        if (inst.flight && inst.flight.needsLoad) { inst.flight.needsLoad = false; hls.startLoad(inst.flight.at) }
+        if (s.hovering && inst.flight && inst.flight.needsLoad) { inst.flight.needsLoad = false; hls.startLoad(inst.flight.at) }
       })
       hls.on(Hls.Events.ERROR, (_e, d) => { if (inst.alive && d?.fatal) fail() })
       hls.loadSource(o.src)
@@ -157,9 +161,10 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
     if (!inst) return
     if (inst.cache.get(bucketOf(at)) !== undefined) return
     if (inst.flight) {
-      inst.hls?.stopLoad()
-      inst.pending = at
-      return
+      // replace the outstanding seek: stopLoad() aborts the fragment it needs, so its `seeked` would never come
+      clearTimeout(inst.timeout)
+      clearTimeout(inst.tick)
+      inst.flight = null
     }
     start(inst, at)
   }
@@ -182,7 +187,9 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
     clearTimeout(s.idle)
     const inst = s.inst
     if (inst) {
-      inst.pending = null
+      clearTimeout(inst.timeout)
+      clearTimeout(inst.tick)
+      inst.flight = null
       inst.hls?.stopLoad()
       s.idle = setTimeout(destroyInst, PREVIEW_IDLE_MS)
     }

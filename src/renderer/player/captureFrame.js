@@ -4,7 +4,7 @@ const H = 90
 // One frame of the (hidden) preview <video> as a small JPEG data URL; null when there is nothing to draw.
 // A tainted canvas throws SecurityError from toDataURL on purpose: the caller turns the preview off.
 export function captureFrame(video) {
-  if (!video || !video.videoWidth) return null
+  if (!video || !video.videoWidth || video.readyState < 2) return null
   const canvas = document.createElement('canvas')
   canvas.width = W
   canvas.height = H
