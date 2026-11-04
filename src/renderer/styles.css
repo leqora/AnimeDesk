@@ -161,7 +161,7 @@ textarea { width: 100%; min-height: 80px; resize: vertical; }
 .context-menu__group { display: flex; flex-direction: column; gap: 2px; }
 .context-menu__title { padding: 6px 10px 2px; color: var(--text-muted); font-size: 12px; letter-spacing: .04em; }
 /* a disabled main button would swallow the contextmenu event; let it fall through to the card root */
-.media-card__open:disabled, .continue-card__open:disabled { pointer-events: none; }
+.media-card__open:disabled, .media-card__play:disabled, .continue-card__open:disabled { pointer-events: none; }
 
 /* semaphore */
 .semaphore { display: flex; align-items: center; gap: 8px; font-family: var(--font-hud); font-size: 12px; text-align: left; }

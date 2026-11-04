@@ -9,13 +9,13 @@ export function DiscoveryCardMenu({ item, kind, ready, onSearch, onOpen, onHide,
   return (
     <ContextMenu {...menuProps}>
       {!upcoming && (onOpen
-        ? <MenuItem icon={<Icon name="info" />} navigates disabled={!ready} onSelect={() => onOpen()}>{t('cardMenu.open')}</MenuItem>
-        : <MenuItem icon={<Icon name="search" />} navigates disabled={!ready} onSelect={() => onSearch(item.romaji ?? item.title)}>{t('cardMenu.search')}</MenuItem>)}
-      {showAdd && adder && <MenuItem icon={<Icon name="watchlist" />} onSelect={() => adder.add()}>{t('cardMenu.add')}</MenuItem>}
+        ? <MenuItem icon={<Icon name="info" size={16} />} navigates disabled={!ready} onSelect={() => onOpen()}>{t('cardMenu.open')}</MenuItem>
+        : <MenuItem icon={<Icon name="search" size={16} />} navigates disabled={!ready} onSelect={() => onSearch(item.romaji ?? item.title)}>{t('cardMenu.search')}</MenuItem>)}
+      {showAdd && adder && <MenuItem icon={<Icon name="watchlist" size={16} />} onSelect={() => adder.add()}>{t('cardMenu.add')}</MenuItem>}
       {onHide && (
         <>
           <MenuSeparator />
-          <MenuItem icon={<Icon name="close" />} releasesFocus onSelect={() => onHide(item, true)}>{t(kind === 'rec' ? 'cardMenu.notRecommend' : 'cardMenu.hide')}</MenuItem>
+          <MenuItem icon={<Icon name="close" size={16} />} releasesFocus onSelect={() => onHide(item, true)}>{t(kind === 'rec' ? 'cardMenu.notRecommend' : 'cardMenu.hide')}</MenuItem>
         </>
       )}
     </ContextMenu>

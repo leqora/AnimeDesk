@@ -14,6 +14,10 @@ describe('placeMenu', () => {
   it('never goes left of the margin after flipping', () => {
     expect(placeMenu({ x: 150, y: 200, altY: 200 }, { w: 1200, h: 300 }, view).left).toBe(8)
   })
+  it('altX aligns the right edge of the menu with the anchor element when it flips', () => {
+    expect(placeMenu({ x: 1100, y: 200, altY: 200, altX: 1240 }, size, view).left).toBe(1020)
+    expect(placeMenu({ x: 400, y: 200, altY: 200, altX: 600 }, size, view).left).toBe(400)
+  })
   it('flips up at the bottom edge', () => {
     expect(placeMenu({ x: 400, y: 700, altY: 700 }, size, view).top).toBe(400)
   })

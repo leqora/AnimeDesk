@@ -14,7 +14,7 @@ function topLimit() {
 }
 
 // Context menu for a card (right click / Shift+F10). Rendered into document.body like Modal; items are MenuItem/MenuSeparator/MenuGroup.
-// position: { kind: 'pointer'|'anchor', anchor: { x, y, altY } } - placeMenu keeps it inside the window and below the top bar.
+// position: { kind: 'pointer'|'anchor', anchor: { x, y, altY, altX? } } - placeMenu keeps it inside the window and below the top bar.
 // onClose(reason): 'escape' | 'tab' | 'outside' | 'select' | 'navigate' | 'scroll' | 'resize' | 'blur' | 'focusout'.
 // The owner decides about focus: this component only focuses the first item when it opens.
 export function ContextMenu({ label, position, onClose, children }) {

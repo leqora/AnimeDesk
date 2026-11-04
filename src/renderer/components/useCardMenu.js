@@ -43,7 +43,17 @@ export function useCardMenu({ label, enabled = true }) {
     const inMenu = !!document.activeElement?.closest?.('.context-menu')
     setPosition(null)
     if (closeCurrent === myClose.current) closeCurrent = null
-    if (REFOCUS.has(reason)) restoreFocus()
+    if (reason === 'outside') {
+      // The mousedown default action (a click on a non-focusable part of the page) clears focus right after this: once it has run,
+      // put focus back, unless the click landed on something focusable.
+      const back = returnTo.current
+      restoreFocus()
+      setTimeout(() => {
+        if (document.activeElement && document.activeElement !== document.body) return
+        returnTo.current = back
+        restoreFocus({ preventScroll: true })
+      }, 0)
+    } else if (REFOCUS.has(reason)) restoreFocus()
     else if (REFOCUS_IF_IN_MENU.has(reason) && inMenu) restoreFocus({ preventScroll: true })
     else if (reason === 'release') {
       // Focus is left to fall so the action's toast can take it; if nothing did once the action settled, do not leave it on body.
@@ -88,7 +98,7 @@ export function useCardMenu({ label, enabled = true }) {
     openedByKeyAt.current = Date.now()
     returnTo.current = e.target
     const rect = e.currentTarget.getBoundingClientRect()
-    show({ kind: 'anchor', anchor: { x: rect.left, y: rect.bottom + 4, altY: rect.top - 4 } })
+    show({ kind: 'anchor', anchor: { x: rect.left, y: rect.bottom + 4, altX: rect.right, altY: rect.top - 4 } })
   }
 
   const onFocus = () => { focusInside.current = true }

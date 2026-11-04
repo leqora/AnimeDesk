@@ -145,6 +145,18 @@ describe('HomePage sections', () => {
     home(makeFakeApi())
     expect(await screen.findByRole('heading', { name: 'Šta gledamo danas?' })).toBeInTheDocument()
   })
+  it('card menu: "Ne preporučuj" hides the recommendation and the toast "Poništi" takes focus', async () => {
+    const items = [11, 12, 13].map((id) => ({ id, title: `Rec ${id}`, format: 'TV', genres: [], poster: null }))
+    const api = makeFakeApi({ recommendations: { list: vi.fn(async () => ({ mode: 'trending', hint: false, items })) } })
+    home(api)
+    const card = (await screen.findAllByRole('button', { name: /Rec 12/ })).map((b) => b.closest('.media-card')).find(Boolean)
+    expect(card).toBeTruthy()
+    fireEvent.contextMenu(card, { clientX: 10, clientY: 10 })
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Ne preporučuj' }))
+    await waitFor(() => expect(api.recommendations.hide).toHaveBeenCalled())
+    const undo = await screen.findByRole('button', { name: 'Poništi' })
+    await waitFor(() => expect(undo).toHaveFocus())
+  })
   it('freezes the popular list while Home is mounted', async () => {
     let libraryListener = () => {}
     const items = [{ id: 11, title: 'Fresh One', format: 'TV', genres: [], poster: null, entryId: null }]

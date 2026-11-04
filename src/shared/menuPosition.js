@@ -5,7 +5,7 @@ export function placeMenu(anchor, size, view) {
   const { vw, vh, top: viewTop } = view
   const margin = view.margin ?? 8
 
-  let left = anchor.x + w > vw - margin ? anchor.x - w : anchor.x
+  let left = anchor.x + w > vw - margin ? (anchor.altX ?? anchor.x) - w : anchor.x
   left = Math.max(margin, Math.min(left, vw - margin - w))
 
   const lo = Math.max(viewTop, margin)

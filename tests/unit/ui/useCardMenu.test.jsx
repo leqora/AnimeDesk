@@ -84,6 +84,50 @@ describe('useCardMenu', () => {
     expect(other).toHaveFocus()
   })
 
+  it('a keyboard-opened menu near the right edge flips to the right edge of the card, not its left', () => {
+    const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      const r = this.classList.contains('context-menu') ? { left: 0, top: 0, width: 200, height: 100 } : this.dataset.testid === 'card-A' ? { left: 700, right: 790, top: 100, bottom: 300, width: 90, height: 200 } : { left: 0, top: 0, width: 0, height: 0 }
+      return { right: r.left + r.width, bottom: r.top + r.height, x: r.left, y: r.top, ...r }
+    })
+    const iw = window.innerWidth
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 800 })
+    try {
+      page(<Card name="A" />)
+      const btn = screen.getByText('main-A')
+      btn.focus()
+      fireEvent.keyDown(btn, { key: 'F10', shiftKey: true })
+      expect(screen.getByRole('menu').style.left).toBe('590px') // card.right (790) - w (200), not card.left (700) - w = 500
+    } finally {
+      spy.mockRestore()
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: iw })
+    }
+  })
+
+  it('a left click on empty page while the menu is open puts focus back on the card main button (real Chromium clears it after mousedown)', async () => {
+    page(<Card name="A" />)
+    const btn = screen.getByText('main-A')
+    btn.focus()
+    fireEvent.keyDown(btn, { key: 'F10', shiftKey: true })
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    fireEvent.mouseDown(screen.getByTestId('outside'))
+    document.activeElement.blur() // the mousedown default action on a non-focusable target
+    expect(document.body).toHaveFocus()
+    await new Promise((r) => setTimeout(r, 10))
+    expect(btn).toHaveFocus()
+  })
+
+  it('a click that lands on another focusable element keeps focus there', async () => {
+    page(<><Card name="A" /><Card name="B" /></>)
+    const btn = screen.getByText('main-A')
+    btn.focus()
+    fireEvent.keyDown(btn, { key: 'F10', shiftKey: true })
+    const target = screen.getByText('other-B')
+    fireEvent.mouseDown(target)
+    target.focus() // the mousedown default action focuses the clicked button
+    await new Promise((r) => setTimeout(r, 10))
+    expect(target).toHaveFocus()
+  })
+
   it('the ContextMenu key opens, and a contextmenu right after does not reopen or fall through', () => {
     page(<Card name="A" />)
     const btn = screen.getByText('main-A')
