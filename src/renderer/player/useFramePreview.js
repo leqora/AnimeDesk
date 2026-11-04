@@ -61,13 +61,16 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
     if (s.hovering && !s.dead) show(OFF)
   }
 
+  // hls.js 1.7 stopLoad() also aborts the in-progress manifest request, so never call it before the manifest is parsed
+  const stopPreviewLoad = (inst) => { if (inst.hls && inst.ready) inst.hls.stopLoad() }
+
   const settle = (inst, f, src) => {
     if (!inst.alive || inst.flight !== f) return
     inst.flight = null
     clearTimeout(inst.timeout)
     clearTimeout(inst.tick)
     // keep hls.js from fetching the next fragment outside the fetch guard; the next seek calls startLoad(at)
-    inst.hls?.stopLoad()
+    stopPreviewLoad(inst)
     if (src) inst.cache.set(bucketOf(f.at), src)
     refresh()
   }
@@ -91,7 +94,7 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
     video.defaultMuted = true
     video.playsInline = true
     video.setAttribute('aria-hidden', 'true')
-    const inst = { alive: true, video, hls: null, cache: createFrameCache(), flight: null, timeout: null, tick: null, onSeeked: null, onError: null }
+    const inst = { alive: true, video, hls: null, ready: false, cache: createFrameCache(), flight: null, timeout: null, tick: null, onSeeked: null, onError: null }
     inst.onSeeked = () => {
       const f = inst.flight
       if (!inst.alive || !f || f.seeked) return
@@ -117,6 +120,7 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
       inst.hls = hls
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         if (!inst.alive) return
+        inst.ready = true
         if (hls.levels?.length > 1) hls.loadLevel = 0
         // a seek requested before the manifest was parsed could not start loading yet
         if (s.hovering && inst.flight && inst.flight.needsLoad) { inst.flight.needsLoad = false; hls.startLoad(inst.flight.at) }
@@ -150,10 +154,10 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
     s.recent.push(Date.now())
     const f = { at, seeked: false, needsLoad: false }
     inst.flight = f
-    inst.hls?.stopLoad()
+    stopPreviewLoad(inst)
     try { inst.video.currentTime = at } catch { /* not seekable yet */ }
     if (inst.hls) {
-      if (inst.hls.levels?.length) inst.hls.startLoad(at)
+      if (inst.ready) inst.hls.startLoad(at)
       else f.needsLoad = true
     }
     inst.timeout = setTimeout(() => settle(inst, f, null), PREVIEW_SEEK_TIMEOUT_MS)
@@ -171,7 +175,7 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
       clearTimeout(inst.timeout)
       clearTimeout(inst.tick)
       inst.flight = null
-      inst.hls?.stopLoad()
+      stopPreviewLoad(inst)
     }
     start(inst, at)
   }
@@ -197,7 +201,7 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
       clearTimeout(inst.timeout)
       clearTimeout(inst.tick)
       inst.flight = null
-      inst.hls?.stopLoad()
+      stopPreviewLoad(inst)
       s.idle = setTimeout(destroyInst, PREVIEW_IDLE_MS)
     }
     show(null)

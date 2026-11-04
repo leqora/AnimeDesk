@@ -4,7 +4,7 @@ import { renderHook, act, cleanup } from '@testing-library/react'
 import { useFramePreview } from '../../../src/renderer/player/useFramePreview.js'
 import { captureFrame } from '../../../src/renderer/player/captureFrame.js'
 import { PREVIEW_DEBOUNCE_MS, PREVIEW_IDLE_MS, PREVIEW_SEEK_TIMEOUT_MS } from '../../../src/shared/framePreview.js'
-import { FakeHls } from './fakeHls.js'
+import { FakeHls, LazyHls } from './fakeHls.js'
 
 const ranges = (...pairs) => ({ length: pairs.length / 2, start: (i) => pairs[i * 2], end: (i) => pairs[i * 2 + 1] })
 const capture = (v) => 'data:image/jpeg;base64,F' + v.currentTime
@@ -179,13 +179,51 @@ describe('useFramePreview', () => {
   })
 
   it('a manifest parsed after leave does not start loading', () => {
-    class Lazy extends FakeHls { constructor(c) { super(c); this.levels = [] } }
-    const { result } = setup({ HlsImpl: Lazy })
+    const { result } = setup({ HlsImpl: LazyHls })
     hoverAt(result, 30)
     act(() => result.current.leave())
-    FakeHls.last.levels = [{}]
     act(() => FakeHls.last.emit(FakeHls.Events.MANIFEST_PARSED))
     expect(FakeHls.last.startLoad).not.toHaveBeenCalled()
+  })
+
+  describe('before the manifest is parsed (real hls.js aborts the manifest on stopLoad)', () => {
+    const parsed = (h) => act(() => h.emit(FakeHls.Events.MANIFEST_PARSED))
+    it('first hover does not stopLoad; startLoad at the hovered position once parsed', () => {
+      const { result } = setup({ HlsImpl: LazyHls })
+      hoverAt(result, 30)
+      const h = FakeHls.last
+      expect(h.stopLoad).not.toHaveBeenCalled()
+      expect(h.manifestAborted).toBe(false)
+      parsed(h)
+      expect(h.startLoad).toHaveBeenCalledTimes(1)
+      expect(h.startLoad).toHaveBeenCalledWith(30)
+      seeked()
+      expect(result.current.frame.src).toBe('data:image/jpeg;base64,F30')
+      expect(h.manifestAborted).toBe(false)
+    })
+    it('leave before parsed does not abort, and parsed starts nothing; hovering again loads', () => {
+      const { result } = setup({ HlsImpl: LazyHls })
+      hoverAt(result, 30)
+      const h = FakeHls.last
+      act(() => result.current.leave())
+      expect(h.stopLoad).not.toHaveBeenCalled()
+      expect(h.manifestAborted).toBe(false)
+      parsed(h)
+      expect(h.startLoad).not.toHaveBeenCalled()
+      hoverAt(result, 40)
+      expect(h.startLoad).toHaveBeenCalledWith(40)
+    })
+    it('two hovers before parsed result in exactly one startLoad at the newest target', () => {
+      const { result } = setup({ HlsImpl: LazyHls })
+      hoverAt(result, 30)
+      hoverAt(result, 60)
+      const h = FakeHls.last
+      expect(h.stopLoad).not.toHaveBeenCalled()
+      expect(h.manifestAborted).toBe(false)
+      parsed(h)
+      expect(h.startLoad).toHaveBeenCalledTimes(1)
+      expect(h.startLoad).toHaveBeenCalledWith(60)
+    })
   })
 
   describe('requestVideoFrameCallback', () => {
@@ -477,8 +515,7 @@ describe('useFramePreview', () => {
   })
 
   it('defers startLoad until the manifest is parsed', () => {
-    class Lazy extends FakeHls { constructor(c) { super(c); this.levels = [] } }
-    const { result } = setup({ HlsImpl: Lazy })
+    const { result } = setup({ HlsImpl: LazyHls })
     hoverAt(result, 30)
     const h = FakeHls.last
     expect(h.startLoad).not.toHaveBeenCalled()
