@@ -625,6 +625,13 @@ describe('PlayerView subtitles', () => {
     fireEvent.keyDown(screen.getByLabelText('Veličina titlova'), { key: 'ArrowRight', code: 'ArrowRight' })
     expect(video.currentTime).toBe(100)
   })
+  it('keeps the player shortcuts out of the speed slider (arrows do not seek)', () => {
+    const { video } = view()
+    video.currentTime = 100
+    fireEvent.click(screen.getByRole('button', { name: 'Podešavanja plejera' }))
+    fireEvent.keyDown(screen.getByRole('slider', { name: 'Precizna brzina' }), { key: 'ArrowLeft', code: 'ArrowLeft' })
+    expect(video.currentTime).toBe(100)
+  })
   it('raises the subtitles while the controls are visible', () => {
     const { video } = view()
     loadTrack([{ startTime: 1, endTime: 3, text: 'Hi' }])
