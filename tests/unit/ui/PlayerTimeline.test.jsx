@@ -54,10 +54,15 @@ describe('PlayerTimeline', () => {
   })
   describe('frame preview', () => {
     const preview = (frame, extra = {}) => ({ onHover: vi.fn(), onLeave: vi.fn(), frame, ...extra })
-    it('renders the same markup without a preview prop', () => {
-      const { timeline } = draw()
-      fireEvent.mouseMove(timeline, { clientX: 600 })
+    it('renders the same tooltip markup with and without a preview prop', () => {
+      const plain = draw()
+      fireEvent.mouseMove(plain.timeline, { clientX: 600 })
+      const html = screen.getByRole('tooltip').outerHTML
+      document.body.innerHTML = ''
+      const withPreview = draw({ preview: preview({ allowed: false, src: null, exact: false }) })
+      fireEvent.mouseMove(withPreview.timeline, { clientX: 600 })
       expect(screen.getAllByRole('tooltip')).toHaveLength(1)
+      expect(screen.getByRole('tooltip').outerHTML).toBe(html)
       expect(document.querySelector('.player__preview')).toBeNull()
     })
     it('shows the frame above the tooltip, tooltip text unchanged', () => {

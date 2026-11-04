@@ -102,13 +102,15 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
     wasMini.current = mini
   }, [mini])
   const health = usePlayerHealth({ video, active: resume == null && !end && !failed, onStall: () => fail() })
+  const settingsRef = useRef(settings)
+  settingsRef.current = settings
   modeRef.current = settings.framePreview === false ? 'off' : apiModeRef.current
   statusRef.current = { buffering: health.buffering, failed: Boolean(failed) }
   const preview = useFramePreview({ open, host: root, main: video, modeRef, frontierRef, statusRef, enabled: !mini, HlsImpl })
   useEffect(() => {
     let alive = true
     Promise.resolve().then(() => api.episodes.framePreview({ title: open.title, episode: open.episode }))
-      .then((m) => { if (alive && (m === 'off' || m === 'full' || m === 'reached')) apiModeRef.current = m }, () => {})
+      .then((m) => { if (alive && (m === 'off' || m === 'full' || m === 'reached')) { apiModeRef.current = m; modeRef.current = settingsRef.current.framePreview === false ? 'off' : m } }, () => {})
     return () => { alive = false }
   }, [])
   const segment = segmentAt(time, skips)
@@ -216,7 +218,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
     // a browser `stalled` can fire with enough data buffered; moving time proves playback is fine
     if (!v.paused && v.currentTime > lastTime.current) health.onReady()
     lastTime.current = v.currentTime
-    frontierRef.current = advanceFrontier(frontierRef.current, frontierTime.current, v.currentTime, seekingRef.current)
+    frontierRef.current = advanceFrontier(frontierRef.current, frontierTime.current, v.currentTime, seekingRef.current || v.seeking)
     frontierTime.current = v.currentTime
     maxPercent.current = trackMax(maxPercent.current, v.currentTime, v.duration)
     const seg = segmentAt(v.currentTime, skips)

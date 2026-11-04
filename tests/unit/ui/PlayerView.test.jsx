@@ -534,7 +534,7 @@ it('says once that the asked quality was not available', () => {
 })
 
 describe('PlayerView frame preview', () => {
-  const hoverAt = async (video, frac, meta, clientWidth = 1000) => {
+  const hoverAt = async (frac, clientWidth = 1000) => {
     const input = screen.getByLabelText('Pozicija u epizodi')
     input.getBoundingClientRect = () => ({ left: 0, width: clientWidth, top: 0, height: 10, right: clientWidth, bottom: 10 })
     fireEvent.mouseMove(input.closest('.player__timeline'), { clientX: frac * clientWidth })
@@ -552,24 +552,24 @@ describe('PlayerView frame preview', () => {
   it('shows nothing when the setting is off, even if the api answered full', async () => {
     const { video, meta } = view(open(), { settings: { ...DEFAULT_SETTINGS, framePreview: false } }, { episodes: { ...makeFakeApi().episodes, framePreview: vi.fn(async () => 'full') } })
     meta(); await settle()
-    await hoverAt(video, 0.5)
+    await hoverAt(0.5)
     expect(previewBox()).toBeNull()
   })
   it('treats a rejecting api as reached with the resume point as frontier', async () => {
     const { video, meta } = view(open({ resumeAt: 300, autoResume: true }), {}, { episodes: { ...makeFakeApi().episodes, framePreview: vi.fn(async () => { throw new Error('x') }) } })
     meta(); await settle()
-    await hoverAt(video, 0.1) // 140s
+    await hoverAt(0.1) // 140s
     expect(previewBox()).not.toBeNull()
-    await hoverAt(video, 0.5) // 700s
+    await hoverAt(0.5) // 700s
     expect(previewBox()).toBeNull()
   })
   it('moves the frontier with small timeupdate steps but not across a seek', async () => {
     const { video, meta } = view()
     meta(); await settle()
-    await hoverAt(video, 0.05) // 70s, frontier still 0
+    await hoverAt(0.05) // 70s, frontier still 0
     expect(previewBox()).toBeNull()
     for (let t = 0.25; t <= 100; t += 0.25) tick(video, t)
-    await hoverAt(video, 0.05) // 70s <= frontier 100
+    await hoverAt(0.05) // 70s <= frontier 100
     expect(previewBox()).not.toBeNull()
   })
   it('does not move the frontier on a seeking...seeked jump', async () => {
@@ -579,26 +579,52 @@ describe('PlayerView frame preview', () => {
     fireEvent(video, new Event('seeking'))
     tick(video, 700)
     fireEvent(video, new Event('seeked'))
-    await hoverAt(video, 0.4) // 560s, beyond 100
+    await hoverAt(0.4) // 560s, beyond 100
     expect(previewBox()).toBeNull()
-    await hoverAt(video, 0.05) // 70s
+    await hoverAt(0.05) // 70s
     expect(previewBox()).not.toBeNull()
   })
   it('does no preview work in mini', async () => {
-    const { video } = view(open(), { mini: true })
+    view(open(), { mini: true })
     await settle()
     expect(document.querySelector('.player__timeline')).toBeNull()
     expect(FakeHls.instances).toHaveLength(1)
   })
+  const fullApi = () => ({ episodes: { ...makeFakeApi().episodes, framePreview: vi.fn(async () => 'full') } })
+  // a fetch starts with stopLoad() on the preview's own hls instance (created lazily, so instance count alone proves nothing)
+  const previewFetches = (base) => FakeHls.instances.slice(base).filter((h) => h.stopLoad.mock.calls.length > 0).length
+  const hoverAndWait = async () => {
+    await hoverAt(0.001)
+    await act(async () => { await new Promise((r) => setTimeout(r, 250)) })
+  }
+  it('starts a preview fetch for an allowed hover when the player has not failed', async () => {
+    const { meta, video } = view(open(), {}, fullApi())
+    Object.defineProperty(video, 'readyState', { configurable: true, value: 4 })
+    meta(); video.pause(); fireEvent(video, new Event('canplay')); await settle()
+    const base = FakeHls.instances.length
+    await hoverAndWait()
+    expect(previewFetches(base)).toBe(1)
+  })
   it('makes no preview fetch while the main player has failed', async () => {
-    const { video, meta } = view(open({ kind: 'hls' }))
-    meta(); await settle()
+    const { meta, video } = view(open(), {}, fullApi())
+    Object.defineProperty(video, 'readyState', { configurable: true, value: 4 })
+    meta(); video.pause(); fireEvent(video, new Event('canplay')); await settle()
     await act(async () => { for (let i = 0; i < 4; i++) FakeHls.last.emitError('networkError') })
-    const before = FakeHls.instances.length
-    tick(video, 10)
-    await hoverAt(video, 0.001)
-    await act(async () => { await new Promise((r) => setTimeout(r, 200)) })
-    expect(FakeHls.instances.length).toBe(before)
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+    const base = FakeHls.instances.length
+    await hoverAndWait()
+    expect(previewFetches(base)).toBe(0)
+  })
+  it('applies a late api answer without another PlayerView render', async () => {
+    let resolve
+    const framePreview = vi.fn(() => new Promise((r) => { resolve = r }))
+    const { meta } = view(open(), {}, { episodes: { ...makeFakeApi().episodes, framePreview } })
+    meta()
+    await hoverAt(0.5) // frontier 0, mode still 'reached'
+    expect(previewBox()).toBeNull()
+    await act(async () => { resolve('full') })
+    await hoverAt(0.5)
+    expect(previewBox()).not.toBeNull()
   })
 })
 
