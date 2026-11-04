@@ -6,8 +6,8 @@ import { renderUi } from './helpers.jsx'
 import { ContextMenu, MenuItem } from '../../../src/renderer/components/ContextMenu.jsx'
 import { useCardMenu } from '../../../src/renderer/components/useCardMenu.js'
 
-function Card({ name, spy = () => {}, mainDisabled = false, onSelect = () => {}, release = false }) {
-  const { rootProps, open, menuProps } = useCardMenu({ label: name })
+function Card({ enabled = true, name, spy = () => {}, mainDisabled = false, onSelect = () => {}, release = false }) {
+  const { rootProps, open, menuProps } = useCardMenu({ label: name, enabled })
   return (
     <div data-testid={`card-${name}`} {...rootProps}>
       <button type="button" data-card-main disabled={mainDisabled}>{`main-${name}`}</button>
@@ -41,6 +41,14 @@ afterEach(() => {
 const main = () => document.querySelector('main.content')
 
 describe('useCardMenu', () => {
+  it('enabled: false opens nothing and does not prevent the browser menu', () => {
+    page(<Card name="A" enabled={false} />)
+    const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
+    act(() => { screen.getByText('main-A').dispatchEvent(ev) })
+    expect(ev.defaultPrevented).toBe(false)
+    fireEvent.keyDown(screen.getByText('main-A'), { key: 'F10', shiftKey: true })
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
   it('right click opens the menu and prevents the browser one', () => {
     page(<Card name="A" />)
     const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 300, clientY: 200 })
