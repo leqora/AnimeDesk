@@ -2,11 +2,10 @@ import { createContext, useContext, useEffect, useLayoutEffect, useRef } from 'r
 import { createPortal } from 'react-dom'
 import { placeMenu } from '../../shared/menuPosition.js'
 import { useMenuKeys } from './useMenuKeys.js'
+import { KEY_OPEN_GUARD_MS } from './menuTiming.js'
 
 const ITEM = '[role^="menuitem"]'
 const DEFAULT_TOPBAR = 56
-// A keyboard-opened menu is followed by the browser's own contextmenu for that key press for this long: not a click elsewhere.
-export const KEY_OPEN_GUARD_MS = 500
 const MenuCtx = createContext(null)
 
 function topLimit() {
@@ -65,7 +64,7 @@ export function ContextMenu({ label, position, onClose, children }) {
     let settle
     const settled = new Promise((resolve) => { settle = resolve })
     close('release', settled)
-    try { Promise.resolve(run()).then(() => settle(), () => settle()) } catch { settle() }
+    try { Promise.resolve(run()).then(() => settle(), (err) => { console.error(err); settle() }) } catch (err) { console.error(err); settle() }
   }
   const onKeyDown = useMenuKeys(menuRef, { onClose: close })
   const onClick = (e) => {

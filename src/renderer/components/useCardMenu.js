@@ -1,9 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { KEY_OPEN_GUARD_MS } from './ContextMenu.jsx'
+import { KEY_OPEN_GUARD_MS, RELEASE_GRACE_MS } from './menuTiming.js'
 
 const EDITABLE = 'input, textarea, select, [contenteditable="true"]'
-// After a released action settles, give React time to render and run the effects of what it showed (a toast takes focus in a passive effect).
-const RELEASE_GRACE_MS = 50
 const REFOCUS = new Set(['escape', 'outside', 'select', 'tab'])
 // The menu goes away with these, taking focus with it if it is inside: focus must not fall to body.
 const REFOCUS_IF_IN_MENU = new Set(['scroll', 'resize', 'blur'])
@@ -25,6 +23,7 @@ export function useCardMenu({ label }) {
   const returnTo = useRef(null)
   const openedByKeyAt = useRef(-Infinity)
   const focusInside = useRef(false)
+  const releasePending = useRef(false)
   const myClose = useRef(null)
 
   const setRoot = useCallback((node) => { if (node) rootEl.current = node }, [])
@@ -48,7 +47,12 @@ export function useCardMenu({ label }) {
     else if (REFOCUS_IF_IN_MENU.has(reason) && inMenu) restoreFocus({ preventScroll: true })
     else if (reason === 'release') {
       // Focus is left to fall so the action's toast can take it; if nothing did once the action settled, do not leave it on body.
+      // The card may be removed by the action: its unmount handoff stands down (releasePending), this timer is the only safety net
+      // and does not depend on the card still being mounted.
+      releasePending.current = true
+      focusInside.current = false
       Promise.resolve(settled).then(() => setTimeout(() => {
+        releasePending.current = false
         const a = document.activeElement
         if (!a || a === document.body) restoreFocus()
       }, RELEASE_GRACE_MS))
@@ -103,6 +107,7 @@ export function useCardMenu({ label }) {
   // The card goes away while focus is in it (or in its menu): focus would fall to body, so hand it to the page.
   useLayoutEffect(() => () => {
     if (closeCurrent === myClose.current) closeCurrent = null
+    if (releasePending.current) return
     const active = document.activeElement
     const inside = focusInside.current || rootEl.current?.contains(active) || document.querySelector('.context-menu')?.contains(active)
     if (!inside) return

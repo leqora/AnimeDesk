@@ -34,6 +34,7 @@ function page(ui) {
 }
 
 afterEach(() => {
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true
   document.querySelectorAll('[aria-modal]').forEach((n) => n.remove())
 })
 
@@ -191,5 +192,46 @@ describe('useCardMenu', () => {
     fireEvent.click(screen.getByRole('menuitem'))
     await act(async () => { await new Promise((r) => setTimeout(r, 120)) })
     expect(other).toHaveFocus()
+  })
+
+  describe('release without act (real timing)', () => {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+    function ToastLike() {
+      useEffect(() => { const a = document.activeElement; if (!a || a === document.body) document.getElementById('undo').focus() }, [])
+      return <div className="toast-stack"><button type="button" id="undo">Undo</button></div>
+    }
+    function Host({ delay, toast }) {
+      const [gone, setGone] = useState(false)
+      const run = async () => { await wait(delay); setGone(true) }
+      return (
+        <>
+          {!gone && <Card name="A" release onSelect={run} />}
+          {gone && toast && <ToastLike />}
+        </>
+      )
+    }
+    async function run(props) {
+      page(<Host {...props} />)
+      globalThis.IS_REACT_ACT_ENVIRONMENT = false
+      await wait(20)
+      const btn = screen.getByText('main-A')
+      btn.focus()
+      fireEvent.keyDown(btn, { key: 'F10', shiftKey: true })
+      await wait(20)
+      fireEvent.click(screen.getByRole('menuitem'))
+      await wait(250)
+    }
+
+    it.each([0, 10])('the toast keeps focus when the action removes the card (delay %i)', async (delay) => {
+      await run({ delay, toast: true })
+      expect(screen.queryByTestId('card-A')).toBeNull()
+      expect(screen.getByText('Undo')).toHaveFocus()
+    })
+
+    it('with no toast, a removed card ends on main.content, not body', async () => {
+      await run({ delay: 10, toast: false })
+      expect(screen.queryByTestId('card-A')).toBeNull()
+      expect(main()).toHaveFocus()
+    })
   })
 })
