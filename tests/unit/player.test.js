@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatTime, segmentAt, nextEpisodeNumber, shouldOfferResume, trackMax, isLastEpisode, qualityLabel, qualityName, RATES, stepRate, formatRate, bufferedRanges, sameRanges, remainingMinutes, progressRatio } from '../../src/shared/player.js'
+import { formatTime, segmentAt, nextEpisodeNumber, shouldOfferResume, trackMax, isLastEpisode, qualityLabel, qualityName, RATES, RATE_MIN, RATE_MAX, RATE_STEP, roundRate, stepRate, formatRate, bufferedRanges, sameRanges, remainingMinutes, progressRatio } from '../../src/shared/player.js'
 
 describe('player helpers', () => {
   it('formats time', () => {
@@ -76,6 +76,19 @@ describe('playback rate helpers', () => {
     expect(stepRate(1.1, 1)).toBe(1.25)
     expect(stepRate(1.1, -1)).toBe(1)
     expect(stepRate(3, -1)).toBe(2)
+  })
+  it('does not speed up when stepping slower from below the list', () => {
+    expect(stepRate(0.3, -1)).toBe(0.3)
+    expect(stepRate(0.25, -1)).toBe(0.25)
+    expect(stepRate(0.3, 1)).toBe(0.5)
+    expect(stepRate(1.15, 1)).toBe(1.25)
+    expect(stepRate(1.15, -1)).toBe(1)
+  })
+  it('rounds and clamps slider rates', () => {
+    expect([RATE_MIN, RATE_MAX, RATE_STEP]).toEqual([0.25, 2, 0.05])
+    expect(roundRate(1.1500000001)).toBe(1.15)
+    expect(roundRate(0.1)).toBe(0.25)
+    expect(roundRate(3)).toBe(2)
   })
   it('formats rates with the language decimal mark', () => {
     expect(RATES).toEqual([0.5, 0.75, 1, 1.25, 1.5, 2])

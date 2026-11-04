@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
 import { Icon } from './Icon.jsx'
-import { RATES, formatRate } from '../../shared/player.js'
+import { RATES, RATE_MIN, RATE_MAX, RATE_STEP, roundRate, formatRate } from '../../shared/player.js'
 import { BOOST_LEVELS, formatBoost } from '../../shared/volumeBoost.js'
 
 // The gear menu: always available; sections that do not apply to this episode are disabled with the reason.
@@ -30,6 +30,10 @@ export function PlayerMenu({ rate, language, onRate, boost = 1, onBoost, open, o
                 <button key={r} type="button" aria-pressed={r === rate} onClick={() => onRate(r)}>{formatRate(r, language)}×</button>
               ))}
             </div>
+            <label className="field player__rate-slider">
+              <span>{t('player.speedSlider')} <span className="hud" aria-hidden="true">{formatRate(rate, language)}×</span></span>
+              <input type="range" min={RATE_MIN} max={RATE_MAX} step={RATE_STEP} aria-label={t('player.speedSlider')} aria-valuetext={`${formatRate(rate, language)}×`} value={rate} onChange={(e) => onRate(roundRate(Number(e.target.value)))} />
+            </label>
           </section>
           <section className="player__menu-section">
             <h3 className="player__menu-title">{t('boost.title')}</h3>

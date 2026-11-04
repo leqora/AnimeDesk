@@ -320,6 +320,7 @@
   "player.menu": "Player settings",
   "player.speed": "Speed",
   "player.speedFlash": "Speed: {value}×",
+  "player.speedSlider": "Exact speed",
   "player.subOffsetLabel": "Subtitle delay",
   "player.subOffsetMinus": "Subtitles earlier",
   "player.subOffsetPlus": "Subtitles later",

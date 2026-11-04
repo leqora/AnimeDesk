@@ -640,6 +640,8 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 .player__rates { display: flex; flex-wrap: wrap; gap: 6px; }
 .player__rates button { min-width: 48px; padding: 4px 8px; }
 .player__rates button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.player__rate-slider { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.player__rate-slider input[type="range"] { width: 100%; accent-color: var(--accent); }
 
 .spoiler-row { align-items: center; gap: 10px; margin-top: 8px; }
 
