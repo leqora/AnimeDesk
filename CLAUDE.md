@@ -76,3 +76,11 @@ npm run release    # objava (vidi gore)
 - Paket NIJE `"type": "module"` — skripte i konfiguracije su `.mjs`.
 - Veće funkcionalnosti idu kroz superpowers tok: brainstorming → spec (`docs/superpowers/specs/`) → plan (`docs/superpowers/plans/`) → izvršavanje (korisnik je do sada birao podagente). Male izmene: kratak dizajn u chatu, odobrenje, pa TDD.
 - Rizici koji se prate: `docs/RIZICI.md`.
+
+## Uživo provera i ručna provera build-a (radi Claude)
+
+- Instalirana verzija: `%LOCALAPPDATA%\Programs\AnimeDesk\AnimeDesk.exe`; build grane: `npm run build` pa `electron .`. Oba se pokreću kroz Playwright `_electron` sa izolovanim profilom (`ANIMEDESK_USER_DATA` u scratchpad-u, junction `tools` na pravi `%APPDATA%\AnimeDesk\tools`, `settings.lastSeenVersion` = prethodna verzija da se vidi „Ažurirano na X”). Pomoćne skripte (driver na 127.0.0.1:9555, `q.sh`, `h.js`, `h2.js`, `setupNNN.mjs`) su u scratchpad-u poslednje sesije — putanja u `docs/STATUS.md` → SLEDEĆE.
+- Pravila: prozor van ekrana (`setBounds({ x: -4000 })`), bez pravih OS klikova (samo Playwright `win.mouse`/`win.keyboard`, koji daju prave Chromium događaje), pun ekran samo lažnim `setFullScreen`; pre „Gledaj” čuvar koji utišava svaki `<video>`; ne pokretati `AnimeDesk.exe --version`; ako korisnik ima staru verziju — tiho ažuriranje kroz izolovan profil, ne ručna instalacija; snimke stvarno pogledati (hover/fokus, Tab, 1280/1000/800 px).
+- Pravi profil `%APPDATA%\AnimeDesk` snimiti pre i posle (sha256 fajlova na vrhu); smeju da se promene samo `health.json`, `settings.json`, `airing-notified.json`, `DIPS`/`DIPS-wal` i GPU keševi korisnikove pokrenute aplikacije; porediti 20 s posle izlaska.
+- Brisanje: prvo ukloniti junction (`cmd /c rmdir`), pa profil/worktree (`rm -rf "${S:?}/${p:?}"`); isto važi za `node_modules` junction u worktree-ima pre `git worktree remove`.
+- Zamke skripti: Git Bash briše `\` u heredoc-u kroz `q.sh` (u regexima `[0-9]` i razmak umesto `\d`/`\s`); u telu poslatom driveru `document` postoji samo unutar `win.evaluate`; dugme „Nazad” u plejeru ima tekst „ Nazad” (`^ ?Nazad$`); red epizode ima tekst „Epizoda 13025 min” (broj + trajanje).
