@@ -10,6 +10,27 @@ const item = (over = {}) => ({ id: 7, title: 'Alpha', romaji: 'Alpha R', format:
 const ctx = (el) => { const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 10, clientY: 10 }); act(() => { el.dispatchEvent(ev) }); return ev }
 const names = () => screen.queryAllByRole('menuitem').map((n) => n.textContent)
 
+function Probe({ it: i }) {
+  const { add } = useAddToWatchlist(i)
+  return <button type="button" onClick={add}>go</button>
+}
+
+describe('useAddToWatchlist toasts', () => {
+  it('already in library: shows the toast, no add', async () => {
+    const api = makeFakeApi({ library: { list: vi.fn(async () => [{ aniListId: 21 }]) } })
+    renderUi(<Probe it={{ id: 21, title: 'One Piece' }} />, { api })
+    await act(async () => { fireEvent.click(screen.getByText('go')) })
+    expect(screen.getByText('Već je u Watchlist-i: One Piece')).toBeInTheDocument()
+    expect(api.library.add).not.toHaveBeenCalled()
+  })
+  it('success shows the added toast', async () => {
+    const api = makeFakeApi()
+    renderUi(<Probe it={{ id: 154587, title: 'Frieren' }} />, { api })
+    await act(async () => { fireEvent.click(screen.getByText('go')) })
+    expect(screen.getByText('Dodato u Watchlist: Frieren')).toBeInTheDocument()
+  })
+})
+
 describe('useAddToWatchlist', () => {
   it('ignores a second call while the first is pending', async () => {
     let release
@@ -84,6 +105,11 @@ describe('RecommendationCard menu', () => {
     expect(api.library.add).toHaveBeenCalled()
   })
   it('upcoming without hide and in watchlist: no menu, not prevented', () => {
+    const withHide = rec({ item: item({ status: 'NOT_YET_RELEASED' }), inWatchlist: true, onHide: vi.fn() })
+    const opened = ctx(document.querySelector('.rec-card'))
+    expect(opened.defaultPrevented).toBe(true)
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    withHide.unmount()
     rec({ item: item({ status: 'NOT_YET_RELEASED' }), inWatchlist: true })
     const ev = ctx(document.querySelector('.rec-card'))
     expect(ev.defaultPrevented).toBe(false)
