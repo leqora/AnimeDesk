@@ -4,6 +4,7 @@ import { I18nProvider, useT } from './i18n/I18nContext.jsx'
 import { TopBar } from './components/TopBar.jsx'
 import { ProfilePage } from './pages/ProfilePage.jsx'
 import { EMPTY_STATS } from '../shared/stats.js'
+import { ACHIEVEMENTS } from '../shared/achievements.js'
 import { AskDialog } from './components/AskDialog.jsx'
 import { SetupWizard } from './pages/SetupWizard.jsx'
 import { HomePage } from './pages/HomePage.jsx'
@@ -107,12 +108,12 @@ function BootError({ onRetry }) {
 
 const SILENT = { soundKey: false, soundUi: false, soundVolume: 0 }
 
-function Celebrations({ levelUp, toast, stats, motionOff, onLevelUpDone, onToastDone }) {
+function Celebrations({ levelUp, toast, achievements, stats, motionOff, onLevelUpDone, onToastDone, onAchievementsDone, onOpenProfile }) {
   const t = useT()
   const { show } = useToast()
   // latest values for the effects below, so they re-run only when the celebration state changes
   const latest = useRef({})
-  latest.current = { t, onLevelUpDone, onToastDone }
+  latest.current = { t, onLevelUpDone, onToastDone, onAchievementsDone, onOpenProfile }
   // With animations off the level-up becomes a queued toast; hand it over once and clear the state.
   useEffect(() => {
     if (!levelUp || !motionOff) return
@@ -126,6 +127,22 @@ function Celebrations({ levelUp, toast, stats, motionOff, onLevelUpDone, onToast
     show({ message: t('toast.completed', { title: toast.title, xp: toast.xp }) })
     onToastDone()
   }, [toast, show])
+  // Declared after the series-completed effect: the completed toast is queued first.
+  useEffect(() => {
+    if (achievements.length === 0) return
+    const { t, onAchievementsDone, onOpenProfile } = latest.current
+    const action = { label: t('toast.openProfile'), onAction: onOpenProfile }
+    for (const item of achievements) {
+      if (item.retro) {
+        show({ message: t.n('toast.achievementsRetro', item.retro), icon: 'trophy', action })
+        continue
+      }
+      const known = (item.ids ?? []).map((id) => ACHIEVEMENTS.find((a) => a.id === id)).filter(Boolean)
+      if (known.length === 1) show({ message: t('toast.achievement', { name: t(`achievement.${known[0].id}.name`) }), icon: known[0].icon, action })
+      else if (known.length > 1) show({ message: t.n('toast.achievements', known.length), icon: 'trophy', action })
+    }
+    onAchievementsDone(achievements.length)
+  }, [achievements, show])
   return levelUp && !motionOff
     ? <LevelUpOverlay level={levelUp.level} title={levelUp.title} xpIntoLevel={stats.xpIntoLevel} xpForNext={stats.xpForNext} onDone={onLevelUpDone} />
     : null
@@ -151,6 +168,9 @@ export default function App({ api, sound: injectedSound }) {
   const doneIds = useRef(new Set())
   const [levelUp, setLevelUp] = useState(null)
   const [toast, setToast] = useState(null)
+  const [achievements, setAchievements] = useState([])
+  const retroTaken = useRef(false)
+  const retroCount = useRef(0) // retro count held back while the "updated to" dialog is open
   const [settings, setSettings] = useState(null)
   const [health, setHealth] = useState({ light: 'yellow', reason: 'checking' })
   const mainRef = useRef(null)
@@ -304,7 +324,15 @@ export default function App({ api, sound: injectedSound }) {
 
   useEffect(() => {
     api.update.getState().then(setUpdateState)
-    api.whatsNew.get().then((w) => { if (w) setWhatsNew({ mode: 'after', ...w }) })
+    // The retro count is claimed once per mount; its toast waits for the "updated to" dialog to close.
+    if (!retroTaken.current) {
+      retroTaken.current = true
+      Promise.all([api.whatsNew.get(), api.stats.takeRetro()]).then(([w, r]) => {
+        if (w) setWhatsNew({ mode: 'after', ...w })
+        else if (r?.count > 0) setAchievements((q) => [...q, { retro: r.count }])
+        retroCount.current = w ? (r?.count ?? 0) : 0
+      }).catch((err) => console.warn('startup notices failed', err?.message))
+    }
     return api.update.onState(setUpdateState)
   }, [api])
 
@@ -321,6 +349,7 @@ export default function App({ api, sound: injectedSound }) {
     const offs = [
       api.stats.onLevelUp((p) => { sound.play('levelUp'); setLevelUp(p); refresh() }),
       api.stats.onSeriesCompleted((p) => { sound.play('seriesCompleted'); setToast(p); refresh() }),
+      api.stats.onAchievements((p) => { sound.play('seriesCompleted'); setAchievements((q) => [...q, p]); refresh() }),
       api.downloads.onChange((queue) => {
         const done = queue.filter((i) => i.status === 'done').map((i) => i.id)
         if (done.some((id) => !doneIds.current.has(id))) sound.play('downloadDone')
@@ -518,7 +547,15 @@ export default function App({ api, sound: injectedSound }) {
   // Search from anywhere (sequel/recommendation cards, the detail's "Similar"): fills Home's search box and runs it.
   const searchAnime = (query) => { setPendingSearch({ query }); nav.navigate({ page: 'home', animeId: null }) }
   const openWhatsNew = () => setWhatsNew({ mode: 'before', version: updateState.version, notes: updateState.notes })
-  const closeWhatsNew = () => { if (whatsNew?.mode === 'after') api.whatsNew.seen(); setWhatsNew(null) }
+  const closeWhatsNew = () => {
+    if (whatsNew?.mode === 'after') {
+      api.whatsNew.seen()
+      const retro = retroCount.current
+      retroCount.current = 0
+      if (retro > 0) setAchievements((q) => [...q, { retro }])
+    }
+    setWhatsNew(null)
+  }
 
   // Leave window fullscreen, shrink the episode into the mini player and (unless the action sets focus itself) focus the page.
   const minimize = ({ focus = true } = {}) => {
@@ -652,7 +689,7 @@ export default function App({ api, sound: injectedSound }) {
         {paletteOpen && <CommandPalette fullscreen={fullscreen} onRun={runPalette} onClose={() => setPaletteOpen(false)} />}
         {wizardOpen && <SetupWizard health={health} onClose={() => setWizardOpen(false)} />}
         {asks.length > 0 && <AskDialog ask={asks[0]} onDone={() => setAsks((q) => q.slice(1))} />}
-        <Celebrations levelUp={levelUp} toast={toast} stats={stats} motionOff={motionOff} onLevelUpDone={() => setLevelUp(null)} onToastDone={() => setToast(null)} />
+        <Celebrations levelUp={levelUp} toast={toast} achievements={achievements} stats={stats} motionOff={motionOff} onLevelUpDone={() => setLevelUp(null)} onToastDone={() => setToast(null)} onAchievementsDone={(n) => setAchievements((q) => q.slice(n))} onOpenProfile={() => leavePlayerThen(() => { navigate('profile'); setFocusMain(true) })} />
         <RateLimitNotice api={api} overlay={fullPlayer} />
         {whatsNew && <WhatsNewDialog mode={whatsNew.mode} version={whatsNew.version} notes={whatsNew.notes} status={updateState.status} onClose={closeWhatsNew} />}
         </ToastProvider>
