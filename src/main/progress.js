@@ -55,12 +55,13 @@ export function createProgress({ file, achievementsFile, computeSnapshot, comput
     }
   }
 
-  function unlock() {
+  // `evaluated` lets snapshot() reuse one computeAchievements() result for unlocking and the list.
+  function unlock(evaluated = null) {
     if (!enabled) return
     try {
       initAchievements()
       if (!ready) return
-      const ids = newlyUnlocked(computeAchievements(), unlocked)
+      const ids = newlyUnlocked(evaluated ?? computeAchievements(), unlocked)
       if (!ids.length) return
       const at = now()
       for (const id of ids) unlocked[id] = at
@@ -71,10 +72,9 @@ export function createProgress({ file, achievementsFile, computeSnapshot, comput
     }
   }
 
-  function achievementList() {
-    if (!enabled) return []
+  function achievementList(evaluated) {
     try {
-      return computeAchievements().map(({ id, icon, goal, value }) => ({ id, icon, goal, value, unlockedAt: unlocked[id] ?? null }))
+      return evaluated.map(({ id, icon, goal, value }) => ({ id, icon, goal, value, unlockedAt: unlocked[id] ?? null }))
     } catch (err) {
       console.error('progress: achievements evaluation failed', err)
       return []
@@ -135,8 +135,16 @@ export function createProgress({ file, achievementsFile, computeSnapshot, comput
     const stats = safeSnapshot()
     if (!stats) return EMPTY_STATS
     if (!enabled) return stats
-    unlock()
-    return { ...stats, achievements: achievementList() }
+    let evaluated
+    try {
+      initAchievements()
+      evaluated = computeAchievements()
+    } catch (err) {
+      console.error('progress: achievements evaluation failed', err)
+      return { ...stats, achievements: [] }
+    }
+    unlock(evaluated)
+    return { ...stats, achievements: achievementList(evaluated) }
   }
 
   function takeRetro() {

@@ -1,7 +1,7 @@
 import { useT } from '../i18n/I18nContext.jsx'
 
-// "2026-11-02" -> "2. 11." (day and month of the Monday)
-const label = (start) => { const [, m, d] = start.split('-').map(Number); return `${d}. ${m}.` }
+// "2026-11-02" -> day and month of the Monday, in the UI locale ("2. 11." in sr)
+const label = (start, locale) => new Date(`${start}T00:00:00Z`).toLocaleDateString(locale, { day: 'numeric', month: 'numeric', timeZone: 'UTC' })
 
 export function WeeklyChart({ weeks }) {
   const t = useT()
@@ -11,7 +11,7 @@ export function WeeklyChart({ weeks }) {
       <h3>{t('profile.weekly')}</h3>
       <div className="week-chart">
         {weeks.map((w) => {
-          const date = label(w.start)
+          const date = label(w.start, t.locale)
           const text = t('profile.weekCell', { date, hours: w.hours.toLocaleString(t.locale, { maximumFractionDigits: 1 }) })
           return (
             <div key={w.start} className="week-col" title={text}>

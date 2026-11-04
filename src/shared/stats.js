@@ -42,6 +42,7 @@ export function computeStats({ entries, log, infoById = {}, now, tzOffsetMinutes
   const monthPrefix = today.slice(0, 7)
   const since90 = shiftDay(today, -89)
   const titleById = new Map(entries.map((e) => [e.id, e.title]))
+  const aniListById = new Map(entries.map((e) => [e.id, e.aniListId ?? null]))
   const monthCount = new Map()
   const timeOfDay = { morning: 0, afternoon: 0, evening: 0, night: 0, total: 0 }
   const autoDays = new Set()
@@ -67,7 +68,7 @@ export function computeStats({ entries, log, infoById = {}, now, tzOffsetMinutes
   }
   const weeklyHours = [...weekMinutes].map(([start, m]) => ({ start, hours: Math.round(m / 6) / 10 }))
   const topThisMonth = [...monthCount]
-    .map(([animeId, n]) => ({ animeId, title: titleById.get(animeId), episodes: n }))
+    .map(([animeId, n]) => ({ animeId, title: titleById.get(animeId), aniListId: aniListById.get(animeId), episodes: n }))
     .sort((a, b) => b.episodes - a.episodes || a.title.localeCompare(b.title))
     .slice(0, 3)
   const activity = Array.from({ length: 28 }, (_, i) => {

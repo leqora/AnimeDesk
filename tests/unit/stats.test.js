@@ -140,13 +140,13 @@ describe('computeStats v0.22 fields', () => {
   })
 
   it('topThisMonth: top 3 by episodes then title, only known series in this month', () => {
-    const entries = [e({ id: 'a', title: 'Zeta' }), e({ id: 'b', title: 'Alpha' }), e({ id: 'c', title: 'C' }), e({ id: 'd', title: 'D' })]
+    const entries = [e({ id: 'a', title: 'Zeta', aniListId: 77 }), e({ id: 'b', title: 'Alpha' }), e({ id: 'c', title: 'C' }), e({ id: 'd', title: 'D' })]
     const mk = (id, n, at = '2026-11-02T10:00:00Z') => Array.from({ length: n }, (_, i) => li(at, { animeId: id, episode: i + 1 }))
     const log = [...mk('a', 5), ...mk('b', 5), ...mk('c', 1), ...mk('d', 1), ...mk('c', 9, '2026-10-30T10:00:00Z'), ...mk('zz', 9)]
     const s = computeStats({ ...base, entries, log })
     expect(s.topThisMonth).toEqual([
-      { animeId: 'b', title: 'Alpha', episodes: 5 },
-      { animeId: 'a', title: 'Zeta', episodes: 5 },
-      { animeId: 'c', title: 'C', episodes: 1 }])
+      { animeId: 'b', title: 'Alpha', aniListId: null, episodes: 5 },
+      { animeId: 'a', title: 'Zeta', aniListId: 77, episodes: 5 },
+      { animeId: 'c', title: 'C', aniListId: null, episodes: 1 }])
   })
 })

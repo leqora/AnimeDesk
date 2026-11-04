@@ -104,7 +104,7 @@ describe('Profile achievements and statistics (v0.22.0)', () => {
   it('shows the longest streak tile', () => {
     renderUi(<ProfilePage stats={{ ...EMPTY_STATS, longestStreak: 9 }} name="N" lang="sr" />)
     expect(screen.getByText('9')).toBeInTheDocument()
-    expect(screen.getByText('Najduži niz')).toBeInTheDocument()
+    expect(screen.getByText('Najduži niz (dana)')).toBeInTheDocument()
   })
   it('renders 12 weekly bars with accessible text', () => {
     const weeklyHours = Array.from({ length: 12 }, (_, i) => ({ start: i === 11 ? '2026-11-02' : `2026-08-${String(10 + i).padStart(2, '0')}`, hours: i === 11 ? 2 : 0 }))
@@ -112,6 +112,12 @@ describe('Profile achievements and statistics (v0.22.0)', () => {
     expect(container.querySelectorAll('.week-bar')).toHaveLength(12)
     expect(screen.getByText('Nedelja od 2. 11.: 2 h')).toBeInTheDocument()
     expect(screen.getByText('2. 11.')).toBeInTheDocument()
+  })
+  it('weekly labels follow the UI locale (en)', () => {
+    const weeklyHours = Array.from({ length: 12 }, (_, i) => ({ start: i === 11 ? '2026-11-02' : `2026-08-${String(10 + i).padStart(2, '0')}`, hours: i === 11 ? 2 : 0 }))
+    renderUi(<ProfilePage stats={{ ...EMPTY_STATS, weeklyHours }} name="N" lang="en" />, { lang: 'en' })
+    expect(screen.getByText('02/11')).toBeInTheDocument()
+    expect(screen.getByText('Week of 02/11: 2 h')).toBeInTheDocument()
   })
   it('time of day: empty below 5, bars otherwise', () => {
     const { unmount } = renderUi(<ProfilePage stats={{ ...EMPTY_STATS, timeOfDay: { morning: 1, afternoon: 1, evening: 1, night: 0, total: 3 } }} name="N" lang="sr" />)
@@ -122,7 +128,7 @@ describe('Profile achievements and statistics (v0.22.0)', () => {
   })
   it('top this month: click opens, plurals, empty state', () => {
     const onOpenAnime = vi.fn()
-    const topThisMonth = [{ animeId: 'id-a', title: 'Alpha', episodes: 5 }, { animeId: 'id-b', title: 'Beta', episodes: 2 }, { animeId: 'id-c', title: 'Gamma', episodes: 1 }]
+    const topThisMonth = [{ animeId: 'id-a', title: 'Alpha', aniListId: 11, episodes: 5 }, { animeId: 'id-b', title: 'Beta', episodes: 2 }, { animeId: 'id-c', title: 'Gamma', episodes: 1 }]
     const { unmount } = renderUi(<ProfilePage stats={{ ...EMPTY_STATS, topThisMonth }} name="N" lang="sr" onOpenAnime={onOpenAnime} />)
     expect(screen.getByText('5 epizoda')).toBeInTheDocument()
     expect(screen.getByText('2 epizode')).toBeInTheDocument()

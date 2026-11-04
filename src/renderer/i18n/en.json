@@ -608,7 +608,7 @@
   "profile.achProgress": "{value} / {goal}",
   "profile.achLockedSr": "locked, {value} of {goal}",
   "profile.achUnlockedSr": "unlocked",
-  "profile.longestStreak": "Longest streak",
+  "profile.longestStreak": "Longest streak (days)",
   "profile.weekly": "Watch time · last 12 weeks",
   "profile.weekCell": "Week of {date}: {hours} h",
   "profile.timeOfDay": "When you watch",

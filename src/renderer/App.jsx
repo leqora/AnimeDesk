@@ -130,8 +130,8 @@ function Celebrations({ levelUp, toast, achievements, stats, motionOff, onLevelU
   // Declared after the series-completed effect: the completed toast is queued first.
   useEffect(() => {
     if (achievements.length === 0) return
-    const { t, onAchievementsDone, onOpenProfile } = latest.current
-    const action = { label: t('toast.openProfile'), onAction: onOpenProfile }
+    const { t, onAchievementsDone } = latest.current
+    const action = { label: t('toast.openProfile'), onAction: () => latest.current.onOpenProfile() }
     for (const item of achievements) {
       if (item.retro) {
         show({ message: t.n('toast.achievementsRetro', item.retro), icon: 'trophy', action })
@@ -351,7 +351,7 @@ export default function App({ api, sound: injectedSound }) {
     const offs = [
       api.stats.onLevelUp((p) => { sound.play('levelUp'); setLevelUp(p); refresh() }),
       api.stats.onSeriesCompleted((p) => { sound.play('seriesCompleted'); setToast(p); refresh() }),
-      api.stats.onAchievements((p) => { sound.play('seriesCompleted'); setAchievements((q) => [...q, p]); refresh() }),
+      api.stats.onAchievements((p) => { if ((p?.ids ?? []).some((id) => ACHIEVEMENTS.some((a) => a.id === id))) sound.play('seriesCompleted'); setAchievements((q) => [...q, p]); refresh() }),
       api.downloads.onChange((queue) => {
         const done = queue.filter((i) => i.status === 'done').map((i) => i.id)
         if (done.some((id) => !doneIds.current.has(id))) sound.play('downloadDone')

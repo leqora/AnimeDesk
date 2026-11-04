@@ -608,7 +608,7 @@
   "profile.achProgress": "{value} / {goal}",
   "profile.achLockedSr": "zaključano, {value} od {goal}",
   "profile.achUnlockedSr": "otključano",
-  "profile.longestStreak": "Najduži niz",
+  "profile.longestStreak": "Najduži niz (dana)",
   "profile.weekly": "Vreme gledanja · poslednjih 12 nedelja",
   "profile.weekCell": "Nedelja od {date}: {hours} h",
   "profile.timeOfDay": "Kada gledaš",

@@ -195,6 +195,15 @@ describe('progress achievements', () => {
     ap.snapshot()
     expect(aEvents).toEqual([[EVENTS.achievementsUnlocked, { ids: ['episodes-50'] }]])
   })
+  it('snapshot() evaluates achievements once', () => {
+    ap.init()
+    const inner = compute
+    const spy = vi.fn((...a) => inner(...a))
+    compute = spy
+    met.add('episodes-50')
+    ap.snapshot()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
   it('snapshot().achievements lists all 21 in order', () => {
     ap.init()
     const list = ap.snapshot().achievements

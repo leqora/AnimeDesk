@@ -32,13 +32,14 @@ async function start({ fullscreen = false, library = [] } = {}) {
   const api = makeFakeApi({
     window: { getFullscreen: vi.fn(async () => fullscreen) },
     library: { list: vi.fn(async () => library) },
+    stats: { onAchievements: vi.fn((f) => { cb.achievements = f; return () => {} }) },
     player: { onOpen: vi.fn((f) => { cb.open = f; return () => {} }), onRetry: vi.fn((f) => { cb.retry = f; return () => {} }), onClose: vi.fn((f) => { cb.close = f; return () => {} }) },
     watch: { onSessionEnd: vi.fn(sub(ends)), onPlaying: vi.fn(sub(playings)), onMenu: vi.fn(sub(menus)), onTitle: vi.fn(sub(titles)) },
   })
   api.onOpenAnime = vi.fn((f) => { cb.anime = f; return () => {} })
   let sessions = 0
   api.watch.start.mockImplementation(async () => ({ sessionId: `s${++sessions}` }))
-  render(<App api={api} />)
+  render(<App api={api} sound={{ play: vi.fn(() => true) }} />)
   await screen.findByLabelText('Naziv animea…')
   await waitFor(() => expect(cb.open).toBeDefined())
   return {
@@ -69,6 +70,21 @@ beforeEach(() => {
 afterEach(() => { gate.crash = false; delete window.requestIdleCallback; delete window.cancelIdleCallback })
 
 describe('App mini player', () => {
+  it('achievement toast Profil action uses the current player state (minimizes a full player)', async () => {
+    const s = await start()
+    await waitFor(() => expect(s.cb.achievements).toBeDefined())
+    act(() => s.cb.achievements({ ids: ['marathon'] }))
+    const profile = await screen.findByRole('button', { name: 'Profil' })
+    await s.open() // e.g. auto-next opened the next episode while the toast was visible
+    expect(mini()).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Profil' }))
+    await waitFor(() => expect(mini()).not.toBeNull())
+    expect(s.api.player.closed).not.toHaveBeenCalled()
+    expect(profile).toBeDefined()
+    expect(document.querySelector('main.content')).not.toHaveAttribute('inert')
+    expect(document.querySelector('.profile-section')).not.toBeNull()
+  })
+
   it('top bar page click minimizes instead of closing', async () => {
     const s = await start()
     await s.open()

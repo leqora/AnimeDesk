@@ -3,7 +3,7 @@ import { PosterFrame, usePosterInfo } from '../components/Poster.jsx'
 
 function Row({ item, onOpen }) {
   const t = useT()
-  const info = usePosterInfo(item.title, null)
+  const info = usePosterInfo(item.title, item.aniListId ?? null)
   return (
     <li>
       <button type="button" className="top-row" onClick={() => onOpen?.(item.animeId)}>

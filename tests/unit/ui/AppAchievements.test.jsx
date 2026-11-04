@@ -63,4 +63,11 @@ describe('App achievement events', () => {
     expect(sound.play).toHaveBeenCalledWith('seriesCompleted')
     expect(api.stats.get.mock.calls.length).toBeGreaterThan(before)
   })
+  it('stays silent when every id is unknown', async () => {
+    const { sound, handlers } = setup()
+    await waitFor(() => expect(handlers.achievements).toBeDefined())
+    act(() => handlers.achievements({ ids: ['nope'] }))
+    expect(sound.play).not.toHaveBeenCalledWith('seriesCompleted')
+    expect(document.querySelector('.toast')).toBeNull()
+  })
 })
