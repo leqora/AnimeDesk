@@ -181,6 +181,11 @@ export function SettingsPage({ settings, onSettings, onImported = () => {}, focu
         </label>
         <p className="check-hint muted">{t('settings.volumeBoostHint')}</p>
         <label className="check">
+          <input type="checkbox" checked={settings.framePreview !== false} onChange={(e) => onSettings({ framePreview: e.target.checked })} />
+          {t('settings.framePreview')}
+        </label>
+        <p className="check-hint muted">{t('settings.framePreviewHint')}</p>
+        <label className="check">
           <input type="checkbox" checked={settings.autoSkip} onChange={(e) => onSettings({ autoSkip: e.target.checked })} />
           {t('settings.autoSkip')}
         </label>

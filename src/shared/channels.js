@@ -31,6 +31,7 @@ export const INVOKE = {
   episodesForSeries: 'episodes:for-series',
   episodesThumb: 'episodes:thumb',
   episodesSpoilers: 'episodes:spoilers',
+  episodesFramePreview: 'episodes:frame-preview',
   positionsForSeries: 'positions:for-series',
   toolsStatus: 'tools:status',
   toolsInstallMissing: 'tools:install-missing',

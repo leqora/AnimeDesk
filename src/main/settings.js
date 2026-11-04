@@ -30,6 +30,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   playerVolume: 1,
   playerMuted: false,
   hideSpoilers: true,
+  framePreview: true,
   episodeMarks: true,
   episodeView: 'numbers',
   closeToTray: true,
@@ -105,6 +106,7 @@ export function sanitizeSettings(input = {}) {
   if (Number.isFinite(input.playerVolume)) s.playerVolume = Math.min(1, Math.max(0, input.playerVolume))
   if (typeof input.playerMuted === 'boolean') s.playerMuted = input.playerMuted
   if (typeof input.hideSpoilers === 'boolean') s.hideSpoilers = input.hideSpoilers
+  if (typeof input.framePreview === 'boolean') s.framePreview = input.framePreview
   if (typeof input.episodeMarks === 'boolean') s.episodeMarks = input.episodeMarks
   if (EPISODE_VIEWS.includes(input.episodeView)) s.episodeView = input.episodeView
   if (typeof input.closeToTray === 'boolean') s.closeToTray = input.closeToTray

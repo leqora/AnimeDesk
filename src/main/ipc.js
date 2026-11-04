@@ -121,6 +121,7 @@ export function createHandlers(s) {
     [INVOKE.episodesForSeries]: (args) => s.seriesEpisodes.forSeries(args),
     [INVOKE.episodesThumb]: (args) => s.seriesEpisodes.thumb(args),
     [INVOKE.episodesSpoilers]: (args, action) => s.seriesEpisodes.spoilers(args, action),
+    [INVOKE.episodesFramePreview]: (args) => s.seriesEpisodes.framePreview(args),
     [INVOKE.positionsForSeries]: (title) => s.positions?.forSeries(String(title ?? '')) ?? {},
     [INVOKE.toolsStatus]: () => s.toolManager.status(),
     [INVOKE.toolsInstallMissing]: async () => {

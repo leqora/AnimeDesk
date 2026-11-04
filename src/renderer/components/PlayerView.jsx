@@ -21,7 +21,9 @@ import { usePlaybackRate } from '../player/usePlaybackRate.js'
 import { useHlsSource } from '../player/useHlsSource.js'
 import { useMiniDrag } from '../player/useMiniDrag.js'
 import { useEpisodeEnd } from '../player/useEpisodeEnd.js'
+import { useFramePreview } from '../player/useFramePreview.js'
 import { usePlayerShortcuts, QUIET } from '../player/usePlayerShortcuts.js'
+import { advanceFrontier } from '../../shared/framePreview.js'
 import { trackMax, bufferedRanges, sameRanges, segmentAt, isLastEpisode, qualityLabel, qualityName } from '../../shared/player.js'
 
 const PROGRESS_MS = 5000
@@ -44,6 +46,13 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   const clickTimer = useRef(null)
   const autoSkipped = useRef(new Set())
   const fallbackShown = useRef(false)
+  // frame preview: stable refs read by the hook's long-lived callbacks
+  const modeRef = useRef('reached')
+  const apiModeRef = useRef('reached')
+  const frontierRef = useRef(open.resumeAt ?? 0)
+  const statusRef = useRef({ buffering: false, failed: false })
+  const seekingRef = useRef(false)
+  const frontierTime = useRef(0)
   const [time, setTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [buffered, setBuffered] = useState([])
@@ -93,6 +102,17 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
     wasMini.current = mini
   }, [mini])
   const health = usePlayerHealth({ video, active: resume == null && !end && !failed, onStall: () => fail() })
+  const settingsRef = useRef(settings)
+  settingsRef.current = settings
+  modeRef.current = settings.framePreview === false ? 'off' : apiModeRef.current
+  statusRef.current = { buffering: health.buffering, failed: Boolean(failed) || resume != null }
+  const preview = useFramePreview({ open, host: root, main: video, modeRef, frontierRef, statusRef, enabled: !mini, HlsImpl })
+  useEffect(() => {
+    let alive = true
+    Promise.resolve().then(() => api.episodes.framePreview({ title: open.title, episode: open.episode }))
+      .then((m) => { if (alive && (m === 'off' || m === 'full' || m === 'reached')) { apiModeRef.current = m; modeRef.current = settingsRef.current.framePreview === false ? 'off' : m } }, () => {})
+    return () => { alive = false }
+  }, [])
   const segment = segmentAt(time, skips)
   const inEnding = !end && !lastEpisode && (segment === 'ed' || (!skips?.ed && duration > 0 && time >= duration - ENDING_FALLBACK_S))
   // latest props for long-lived handlers (keydown, intervals, hls.js callbacks) so they are never stale
@@ -198,6 +218,8 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
     // a browser `stalled` can fire with enough data buffered; moving time proves playback is fine
     if (!v.paused && v.currentTime > lastTime.current) health.onReady()
     lastTime.current = v.currentTime
+    frontierRef.current = advanceFrontier(frontierRef.current, frontierTime.current, v.currentTime, seekingRef.current || v.seeking)
+    frontierTime.current = v.currentTime
     maxPercent.current = trackMax(maxPercent.current, v.currentTime, v.duration)
     const seg = segmentAt(v.currentTime, skips)
     if (settings.autoSkip && seg && !autoSkipped.current.has(seg)) {
@@ -217,7 +239,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
         onLoadedMetadata={onLoadedMetadata} onTimeUpdate={onTimeUpdate} onProgress={readBuffered}
         onPlay={() => { setPlaying(true); setResume(null); poke() }} onPause={() => { health.onReady(); setPlaying(false); showControls(); api.player.progress(snapshot()) }}
         onVolumeChange={volume.onVolumeChange} onResize={readQuality}
-        onWaiting={health.onWaiting} onStalled={health.onWaiting} onPlaying={health.onReady} onCanPlay={health.onReady} onSeeked={health.onReady}
+        onWaiting={health.onWaiting} onStalled={health.onWaiting} onPlaying={health.onReady} onCanPlay={health.onReady} onSeeking={() => { seekingRef.current = true }} onSeeked={() => { seekingRef.current = false; frontierTime.current = video.current?.currentTime ?? 0; health.onReady() }}
         onEnded={finishEpisode} onClick={onVideoClick} onDoubleClick={onVideoDoubleClick}
         // a downloaded file the browser cannot decode; hls streams report through hls.js (with recovery) instead
         onError={() => { if (open.kind === 'file') fail() }}
@@ -266,6 +288,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
         {end && <NextEpisodeCard mode={end} seconds={ending.left} onNext={() => close('next')} onCancel={ending.cancel} onBack={() => close('ended')} />}
         <PlayerControls
           segments={['op', 'ed', 'recap'].filter((k) => skips?.[k]).map((k) => ({ kind: k, ...skips[k] }))}
+          preview={{ onHover: preview.hover, onLeave: preview.leave, frame: preview.frame }}
           time={time} duration={duration} buffered={buffered} quality={quality} playing={playing} muted={volume.muted} volume={volume.volume} subsOn={subs.on}
           subsAvailable={subs.available} subsHint={subs.hint}
           menu={{

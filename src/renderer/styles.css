@@ -624,6 +624,12 @@ button[aria-pressed="true"] > svg { color: var(--accent-2); }
 .player__segment--ed { background: color-mix(in srgb, var(--accent) 70%, transparent); }
 .player__segment--recap { background: color-mix(in srgb, var(--warn) 70%, transparent); }
 .player__tooltip { position: absolute; bottom: calc(100% + 6px); transform: translateX(-50%); padding: 3px 8px; border-radius: var(--radius-sm); background: var(--panel-solid); border: 1px solid var(--glass-border); font-size: 12px; white-space: nowrap; pointer-events: none; }
+.player__preview { position: absolute; bottom: calc(100% + 36px); transform: translateX(-50%); width: 160px; height: 90px; overflow: hidden; border-radius: var(--radius-sm); background: var(--panel-solid); border: 1px solid var(--glass-border); box-shadow: 0 8px 24px var(--scrim); pointer-events: none; transition: opacity .12s; }
+.player__preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.player__preview--empty { background: var(--glass-strong); }
+.player__preview--stale { opacity: .7; }
+.player__preview-src { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .player__preview { transition: none; } }
 .player__buttons { display: flex; gap: 8px; align-items: center; }
 .player__spacer { flex: 1; }
 .player__time { font-size: 13px; }
