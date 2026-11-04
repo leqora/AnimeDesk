@@ -37,9 +37,15 @@ export function qualityLabel(height) {
 export const qualityName = (q) => (/^\d+$/.test(String(q)) ? `${q}p` : String(q))
 
 export const RATES = [0.5, 0.75, 1, 1.25, 1.5, 2]
+// Range of the exact-speed slider in the player menu.
+export const RATE_MIN = 0.25
+export const RATE_MAX = 2
+export const RATE_STEP = 0.05
+export const roundRate = (v) => Math.min(RATE_MAX, Math.max(RATE_MIN, Math.round(v * 100) / 100))
 
 // Next/previous rate in RATES, clamped at the ends; a rate off the list goes to the nearest one in that direction.
 export function stepRate(rate, dir) {
+  if (dir < 0 && rate < RATES[0] - 1e-9) return rate
   if (dir > 0) return RATES.find((r) => r > rate + 1e-9) ?? RATES[RATES.length - 1]
   return [...RATES].reverse().find((r) => r < rate - 1e-9) ?? RATES[0]
 }

@@ -3,6 +3,7 @@ import { useApi } from '../api.js'
 import { useAniListInfo } from '../anilist/useAniListInfo.js'
 import { useT } from '../i18n/I18nContext.jsx'
 import { useToast } from '../toast/ToastProvider.jsx'
+import { useRemoveWithUndo } from '../library/useRemoveWithUndo.js'
 import { Tabs } from '../components/Tabs.jsx'
 import { useRouteState } from '../nav/useNavigation.js'
 import { DetailHero } from '../detail/DetailHero.jsx'
@@ -180,26 +181,9 @@ export function AnimeDetail({ entry, ready, onBack, onRemoved, onChanged, onCont
       },
     })
   }
-  const remove = async () => {
-    // Capture id/title: the detail unmounts after removal, the toast outlives it.
-    const { id, title } = entry
-    try { await api.library.remove(id) } catch (err) { console.error(err); return false }
-    ;(onRemoved ?? onBack)()
-    onChanged()
-    toast.show({
-      focusAction: true,
-      message: t('toast.removed', { title }),
-      action: {
-        label: t('toast.undo'),
-        onAction: async () => {
-          let ok = false
-          try { ok = Boolean((await api.library.restore(id))?.ok) } catch (err) { console.error(err) }
-          if (ok) onChanged()
-          else toast.show({ message: t('toast.restoreFailed'), icon: 'alert' })
-        },
-      },
-    })
-  }
+  const removeWithUndo = useRemoveWithUndo()
+  // Captures id/title inside: the detail unmounts after removal, the toast outlives it.
+  const remove = () => removeWithUndo(entry, { after: () => { (onRemoved ?? onBack)(); onChanged() }, onRestored: onChanged })
   const togglePin = async () => {
     const r = await api.library.setPinned(entry.id, !entry.pinnedAt)
     if (!r.ok) { toast.show({ message: t('pin.limit'), icon: 'alert' }); return }

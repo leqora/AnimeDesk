@@ -2,6 +2,9 @@ import { useId } from 'react'
 import { useT } from '../i18n/I18nContext.jsx'
 import { PosterFrame } from './Poster.jsx'
 import { sequelMeta } from './SequelCard.jsx'
+import { useCardMenu } from './useCardMenu.js'
+import { DiscoveryCardMenu } from './DiscoveryCardMenu.jsx'
+import { useAddToWatchlist } from '../library/useAddToWatchlist.js'
 
 // "Oct 2026" / "2026" / "soon" for a series that has not started yet.
 function startLabel(start, t) {
@@ -25,6 +28,12 @@ export function RecommendationCard({ item, ready, onSearch, onHide, inWatchlist 
   const genres = Array.isArray(item.genres) ? item.genres.slice(0, 3).join(' · ') : ''
   const releasing = item.status === 'RELEASING'
   const upcoming = item.status === 'NOT_YET_RELEASED' && !onOpen
+  const adder = useAddToWatchlist(item)
+  const hasItems = !upcoming || (!inWatchlist && !adder.added) || !!onHide
+  const { rootProps, open, menuProps } = useCardMenu({ label: item.title, enabled: hasItems })
+  const menu = open && (
+    <DiscoveryCardMenu item={item} kind="rec" ready={ready} onSearch={onSearch} onOpen={onOpen} onHide={onHide} inWatchlist={inWatchlist} upcoming={upcoming} adder={adder} menuProps={menuProps} />
+  )
   const when = upcoming ? startLabel(item.start, t) : ''
   const meta = upcoming ? t('discover.starts', { date: when }) : sequelMeta(item, t)
   const poster = (
@@ -46,19 +55,20 @@ export function RecommendationCard({ item, ready, onSearch, onHide, inWatchlist 
   )
   if (upcoming) {
     return (
-      <div className="card media-card rec-card">
+      <div className="card media-card rec-card" {...rootProps}>
         <div className="media-card__open rec-card__static" role="group" aria-label={t('discover.startsLabel', { title: item.title, date: when })} aria-describedby={lineId}>
           {poster}
           {text}
         </div>
+        {menu}
       </div>
     )
   }
   const label = (onOpen ? t('discover.openLabel', { title: item.title }) : t('recommendations.open', { title: item.title })) + (inWatchlist ? `, ${t('discover.inWatchlist')}` : '')
   return (
-    <div className="card media-card rec-card">
+    <div className="card media-card rec-card" {...rootProps}>
       <button
-        type="button" className="media-card__open" disabled={!ready} onClick={() => (onOpen ? onOpen() : onSearch(item.romaji ?? item.title))}
+        type="button" className="media-card__open" data-card-main aria-keyshortcuts="Shift+F10" disabled={!ready} onClick={() => (onOpen ? onOpen() : onSearch(item.romaji ?? item.title))}
         aria-label={label} aria-describedby={releasing ? `${badgeId} ${lineId}` : lineId}
       >
         {poster}
@@ -69,6 +79,7 @@ export function RecommendationCard({ item, ready, onSearch, onHide, inWatchlist 
           <button type="button" className="rec-card__hide" aria-label={t('recommendations.hide', { title: item.title })} onClick={(e) => onHide(item, e.detail === 0)}>×</button>
         </div>
       )}
+      {menu}
     </div>
   )
 }
