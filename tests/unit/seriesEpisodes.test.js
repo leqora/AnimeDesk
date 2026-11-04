@@ -321,3 +321,42 @@ describe('seriesEpisodes fuzzy title matches', () => {
     expect(d.episodeMeta.get).toHaveBeenCalledWith(77, expect.anything())
   })
 })
+
+describe('seriesEpisodes.framePreview', () => {
+  const run = (d, episode, title = 'Show') => createSeriesEpisodes(d).framePreview({ title, episode })
+  const W = { watched: [1, 2, 3, 6] }
+  it('is full only for really watched episodes (numeric compare), reached otherwise', async () => {
+    expect(await run(deps(W), 3)).toBe('full')
+    expect(await run(deps(W), '3')).toBe('full')
+    expect(await run(deps(W), 5)).toBe('reached')
+    expect(await run(deps(W), 7)).toBe('reached')
+    expect(await run(deps(W), 20)).toBe('reached')
+  })
+  it('honours reveal and hideSpoilers=false', async () => {
+    expect(await run(deps({ ...W, spoilers: { reveal: { all: false, episodes: ['7'] }, metaOff: false } }), 7)).toBe('full')
+    expect(await run(deps({ ...W, spoilers: { reveal: { all: true, episodes: [] }, metaOff: false } }), 20)).toBe('full')
+    expect(await run(deps({ ...W, settings: { hideSpoilers: false } }), 20)).toBe('full')
+  })
+  it('is off when the setting is off, even for watched episodes', async () => {
+    expect(await run(deps({ ...W, settings: { framePreview: false } }), 3)).toBe('off')
+  })
+  it('falls back to reached for unknown title, empty episode; ignores metaOff', async () => {
+    expect(await run(deps({ inLibrary: false }), 3)).toBe('reached')
+    expect(await run(deps(W), '')).toBe('reached')
+    expect(await run(deps(W), null)).toBe('reached')
+    expect(await run(deps(W), 3, '')).toBe('reached')
+    expect(await run(deps({ ...W, spoilers: { reveal: { all: false, episodes: [] }, metaOff: true } }), 3)).toBe('full')
+  })
+  it('never touches AniList, ani.zip or the network', async () => {
+    const d = deps(W)
+    await run(d, 3)
+    expect(d.anilist.getForTitle).not.toHaveBeenCalled()
+    expect(d.anilist.getCached).not.toHaveBeenCalled()
+    expect(d.episodeMeta.get).not.toHaveBeenCalled()
+  })
+  it('any error gives reached', async () => {
+    const d = deps(W)
+    d.library.findByAniCliTitle = vi.fn(() => { throw new Error('x') })
+    expect(await run(d, 3)).toBe('reached')
+  })
+})

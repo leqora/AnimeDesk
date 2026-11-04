@@ -570,6 +570,8 @@
   "boost.shortcutHint": "Shift + ↑ / ↓",
   "settings.volumeBoost": "Volume boost",
   "settings.volumeBoostHint": "For quiet episodes. In external mpv it applies from the next launch.",
+  "settings.framePreview": "Frame preview on the seek bar",
+  "settings.framePreviewHint": "Shows a frame above the seek bar while you hover it. For an episode you are watching for the first time, only up to where you have got.",
   "externalPlayer.label": "External player",
   "externalPlayer.playing": "Playing in mpv: {title} · EP {episode}",
   "externalPlayer.playingNoEpisode": "Playing in mpv: {title}",

@@ -8,7 +8,7 @@ function services() {
     library: { list: vi.fn(() => []), add: vi.fn(), update: vi.fn(), remove: vi.fn(), setEpisodeNote: vi.fn(), recordWatched: vi.fn(() => ({ id: 'a' })), setPinned: vi.fn(), wasCorrupt: true },
     seriesPrefs: { get: vi.fn(() => ({ quality: null, mode: null })), set: vi.fn((t, p) => p) },
     anilist: { getForTitle: vi.fn(), search: vi.fn() },
-    seriesEpisodes: { forSeries: vi.fn(async () => ({ episodes: [], source: 'menu', meta: 'none' })), thumb: vi.fn(async () => null), spoilers: vi.fn(async () => ({ episodes: [] })) },
+    seriesEpisodes: { forSeries: vi.fn(async () => ({ episodes: [], source: 'menu', meta: 'none' })), thumb: vi.fn(async () => null), spoilers: vi.fn(async () => ({ episodes: [] })), framePreview: vi.fn(async () => 'reached') },
     toolManager: { status: vi.fn(), installMissing: vi.fn(async (cb) => { cb({ id: 'mpv', phase: 'done' }); return {} }), updateAll: vi.fn(async () => []), installOptional: vi.fn(async () => {}) },
     health: { get: vi.fn(), run: vi.fn(), updateTools: vi.fn(async () => ['ani-cli']) },
     internalPlayer: { progress: vi.fn(), closed: vi.fn() },

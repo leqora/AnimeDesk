@@ -15,7 +15,7 @@ describe('settings', () => {
       profileName: null, soundKey: true, soundUi: false, soundVolume: 60, animations: true,
       autoDownloadUpdates: true, lastSeenVersion: null, fullscreen: false,
       playerMode: 'internal', autoSkip: false, autoNext: true, subtitles: { enabled: { sub: true, dub: false }, size: 25, lineSpacing: 0, font: 'default', color: 'white', box: true, boxOpacity: 60 }, mpvModernUi: true,
-      playerVolume: 1, playerMuted: false, hideSpoilers: true, episodeMarks: true, episodeView: 'numbers',
+      playerVolume: 1, playerMuted: false, hideSpoilers: true, framePreview: true, episodeMarks: true, episodeView: 'numbers',
       closeToTray: true, launchAtLogin: false, notifyNewEpisodes: true, notifyDownloads: true, trayHintShown: false,
       hiddenSequels: [], hiddenRecommendations: [], volumeBoost: 1, returnAfterEpisode: 'origin',
     })
@@ -124,6 +124,9 @@ describe('settings', () => {
     expect(sanitizeSettings({}).hideSpoilers).toBe(true)
     expect(sanitizeSettings({ hideSpoilers: false }).hideSpoilers).toBe(false)
     expect(sanitizeSettings({ hideSpoilers: 'no' }).hideSpoilers).toBe(true)
+    expect(sanitizeSettings({}).framePreview).toBe(true)
+    expect(sanitizeSettings({ framePreview: false }).framePreview).toBe(false)
+    expect(sanitizeSettings({ framePreview: 'no' }).framePreview).toBe(true)
     expect(sanitizeSettings({ episodeView: 'list' }).episodeView).toBe('list')
     expect(sanitizeSettings({ episodeView: 'grid' }).episodeView).toBe('numbers')
   })

@@ -97,5 +97,24 @@ export function createSeriesEpisodes({ library, seriesPrefs, settings, anilist, 
     return forSeries(args)
   }
 
-  return { forSeries, thumb, spoilers }
+  // How far the seek-bar frame preview may show an episode: 'full' only when it is really watched (or revealed /
+  // spoilers off), otherwise 'reached' (only up to the playback position). Reads local state only: no resolve(),
+  // no AniList / ani.zip / network. Any doubt means 'reached'.
+  function framePreview({ title, episode } = {}) {
+    try {
+      const s = settings.get()
+      if (s.framePreview === false) return 'off'
+      const t = String(title ?? '').trim()
+      const e = String(episode ?? '').trim()
+      if (!t || !e || !Number.isFinite(Number(e))) return 'reached'
+      if (s.hideSpoilers === false) return 'full'
+      const n = Number(e)
+      const has = (list) => (list ?? []).some((x) => Number(x) === n)
+      const sp = seriesPrefs.getSpoilers(t)
+      if (sp?.reveal?.all || has(sp?.reveal?.episodes)) return 'full'
+      return has(library.findByAniCliTitle(t)?.watchedEpisodes) ? 'full' : 'reached'
+    } catch { return 'reached' }
+  }
+
+  return { forSeries, thumb, spoilers, framePreview }
 }
