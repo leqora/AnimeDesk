@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { xpNeeded, titleFor, levelForXp, xpFor, computeStats } from '../../src/shared/stats.js'
+import { xpNeeded, titleFor, levelForXp, xpFor, computeStats, EMPTY_STATS } from '../../src/shared/stats.js'
 
 const e = (over) => ({ id: 'a', title: 'A', status: 'watching', rating: null, watchedEpisodes: [], ...over })
 const NOW = '2026-10-02T08:00:00Z'
@@ -84,5 +84,69 @@ describe('computeStats', () => {
     const s = computeStats({ entries: [], log, now: '2026-10-30T12:00:00Z', tzOffsetAt })
     expect(s.activity.find((d) => d.date === '2026-10-05').count).toBe(1)
     expect(s.activity.find((d) => d.date === '2026-10-04').count).toBe(0)
+  })
+})
+
+describe('computeStats v0.22 fields', () => {
+  const N = '2026-11-04T12:00:00Z'
+  const base = { now: N, tzOffsetMinutes: -60 }
+  const li = (at, over = {}) => ({ animeId: 'a', episode: 1, at, source: 'auto', ...over })
+  const infoById = { a: { duration: 24 } }
+
+  it('EMPTY_STATS has the new fields', () => {
+    expect(EMPTY_STATS.weeklyHours).toHaveLength(12)
+    expect(EMPTY_STATS.weeklyHours.every((w) => w.hours === 0)).toBe(true)
+    EMPTY_STATS.weeklyHours.forEach((w, i, arr) => {
+      expect(new Date(`${w.start}T00:00:00Z`).getUTCDay()).toBe(1)
+      if (i) expect(Date.parse(`${w.start}T00:00:00Z`) - Date.parse(`${arr[i - 1].start}T00:00:00Z`)).toBe(7 * 86400000)
+    })
+    expect(EMPTY_STATS.achievements).toEqual([])
+    expect(EMPTY_STATS.timeOfDay.total).toBe(0)
+    expect(EMPTY_STATS.topThisMonth).toEqual([])
+    expect(EMPTY_STATS.longestStreak).toBe(0)
+  })
+
+  it('weekly hours bucket by Monday week, ignore older than 12 weeks', () => {
+    const log = [1, 2, 3, 4, 5].map((n) => li('2026-11-03T10:00:00Z', { episode: n }))
+    log.push(li('2026-10-26T10:00:00Z'), li('2026-08-01T10:00:00Z'))
+    const s = computeStats({ ...base, entries: [e({ id: 'a' })], log, infoById })
+    expect(s.weeklyHours[11]).toEqual({ start: '2026-11-02', hours: 2 })
+    expect(s.weeklyHours[10].start).toBe('2026-10-26')
+    expect(s.weeklyHours[10].hours).toBe(0.4)
+    expect(s.weeklyHours.reduce((t, w) => t + w.hours, 0)).toBeCloseTo(2.4)
+  })
+
+  it('weekly hours respect DST via tzOffsetAt', () => {
+    const tzOffsetAt = (iso) => (Date.parse(iso) < Date.parse('2026-10-25T01:00:00Z') ? -120 : -60)
+    const s = computeStats({ entries: [], log: [li('2026-10-25T23:30:00Z')], now: N, tzOffsetAt, infoById })
+    expect(s.weeklyHours.find((w) => w.start === '2026-10-26').hours).toBe(0.4)
+    expect(s.weeklyHours.find((w) => w.start === '2026-10-19').hours).toBe(0)
+  })
+
+  it('time of day buckets auto items in last 90 days only', () => {
+    // tz -60 => local = UTC + 1h
+    const at = (h, m = 0) => `2026-11-01T${String((h + 23) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}:00Z`
+    const log = [at(5), at(11, 59), at(12), at(21, 59), at(22), at(4, 59),
+      li(at(8), { source: 'manual' }), li('2026-08-01T08:00:00Z')].map((x) => (typeof x === 'string' ? li(x) : x))
+    const s = computeStats({ ...base, entries: [], log })
+    expect(s.timeOfDay).toEqual({ morning: 2, afternoon: 1, evening: 1, night: 2, total: 6 })
+  })
+
+  it('longestStreak counts auto only; streakDays unchanged', () => {
+    const log = ['2026-09-10', '2026-09-11', '2026-09-12', '2026-11-04'].map((d) => li(`${d}T10:00:00Z`))
+    const s = computeStats({ ...base, entries: [], log })
+    expect(s.longestStreak).toBe(3)
+    expect(s.streakDays).toBe(1)
+  })
+
+  it('topThisMonth: top 3 by episodes then title, only known series in this month', () => {
+    const entries = [e({ id: 'a', title: 'Zeta' }), e({ id: 'b', title: 'Alpha' }), e({ id: 'c', title: 'C' }), e({ id: 'd', title: 'D' })]
+    const mk = (id, n, at = '2026-11-02T10:00:00Z') => Array.from({ length: n }, (_, i) => li(at, { animeId: id, episode: i + 1 }))
+    const log = [...mk('a', 5), ...mk('b', 5), ...mk('c', 1), ...mk('d', 1), ...mk('c', 9, '2026-10-30T10:00:00Z'), ...mk('zz', 9)]
+    const s = computeStats({ ...base, entries, log })
+    expect(s.topThisMonth).toEqual([
+      { animeId: 'b', title: 'Alpha', episodes: 5 },
+      { animeId: 'a', title: 'Zeta', episodes: 5 },
+      { animeId: 'c', title: 'C', episodes: 1 }])
   })
 })
