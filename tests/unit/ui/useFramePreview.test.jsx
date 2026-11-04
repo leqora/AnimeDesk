@@ -53,12 +53,19 @@ describe('captureFrame', () => {
     const ctx = { drawImage: vi.fn() }
     const canvas = { getContext: () => ctx, toDataURL: vi.fn(() => 'data:x'), width: 0, height: 0 }
     vi.spyOn(document, 'createElement').mockReturnValue(canvas)
-    const v = { videoWidth: 1920, readyState: 4 }
+    const v = { videoWidth: 1920, videoHeight: 1080, readyState: 4 }
     expect(captureFrame(v)).toBe('data:x')
     expect(canvas.width).toBe(160)
     expect(canvas.height).toBe(90)
-    expect(ctx.drawImage).toHaveBeenCalledWith(v, 0, 0, 160, 90)
+    expect(ctx.drawImage).toHaveBeenCalledWith(v, 0, 0, 1920, 1080, 0, 0, 160, 90)
     expect(canvas.toDataURL).toHaveBeenCalledWith('image/jpeg', 0.7)
+  })
+  it('crops a 4:3 source to a centered 16:9 rect instead of stretching it', () => {
+    const ctx = { drawImage: vi.fn() }
+    vi.spyOn(document, 'createElement').mockReturnValue({ getContext: () => ctx, toDataURL: () => 'data:x' })
+    const v = { videoWidth: 640, videoHeight: 480, readyState: 4 }
+    captureFrame(v)
+    expect(ctx.drawImage).toHaveBeenCalledWith(v, 0, 60, 640, 360, 0, 0, 160, 90)
   })
   it('lets a SecurityError through', () => {
     const canvas = { getContext: () => ({ drawImage() {} }), toDataURL: () => { throw new DOMException('x', 'SecurityError') } }
@@ -116,6 +123,41 @@ describe('useFramePreview', () => {
     expect(result.current.frame).toEqual({ allowed: true, src: 'data:image/jpeg;base64,F60', exact: true })
     act(() => result.current.hover(30))
     expect(result.current.frame.src).toBeNull() // the 30 frame was never captured
+  })
+
+  it('stops loading once a frame is captured', () => {
+    const { result } = setup()
+    hoverAt(result, 30)
+    FakeHls.last.stopLoad.mockClear()
+    seeked()
+    expect(result.current.frame.src).toBe('data:image/jpeg;base64,F30')
+    expect(FakeHls.last.stopLoad).toHaveBeenCalled()
+  })
+
+  it('ignores a stale seeked while the video is still seeking', () => {
+    const cap = vi.fn(capture)
+    const { result } = setup({ capture: cap })
+    hoverAt(result, 30)
+    let seeking = true
+    Object.defineProperty(previewVideo(), 'seeking', { configurable: true, get: () => seeking })
+    seeked()
+    expect(cap).not.toHaveBeenCalled()
+    seeking = false
+    seeked()
+    expect(cap).toHaveBeenCalledTimes(1)
+    expect(result.current.frame.src).toBe('data:image/jpeg;base64,F30')
+  })
+
+  it('does not capture in the deferred step if a seek started meanwhile', () => {
+    const cap = vi.fn(capture)
+    const { result } = setup({ capture: cap })
+    hoverAt(result, 30)
+    let seeking = false
+    Object.defineProperty(previewVideo(), 'seeking', { configurable: true, get: () => seeking })
+    act(() => { previewVideo().dispatchEvent(new Event('seeked')) })
+    seeking = true
+    act(() => { vi.advanceTimersByTime(1) })
+    expect(cap).not.toHaveBeenCalled()
   })
 
   it('ignores a seeked whose position does not match the target', () => {
@@ -231,7 +273,7 @@ describe('useFramePreview', () => {
       main.current.buffered = ranges(0, 20)
       const { result } = setup()
       hoverAt(result, 30)
-      expect(FakeHls.last.startLoad).not.toHaveBeenCalled()
+      expect(FakeHls.instances.length).toBe(0)
       expect(result.current.frame).toEqual({ allowed: true, src: null, exact: false })
       main.current.paused = true
       hoverAt(result, 30)
@@ -242,22 +284,37 @@ describe('useFramePreview', () => {
       statusRef.current.buffering = true
       const { result } = setup()
       hoverAt(result, 30)
+      expect(FakeHls.instances.length).toBe(0)
+      statusRef.current.buffering = false
+      hoverAt(result, 30)
       expect(FakeHls.instances.length).toBe(1)
-      expect(FakeHls.last.startLoad).not.toHaveBeenCalled()
+      expect(FakeHls.last.startLoad).toHaveBeenCalledWith(30)
     })
 
     it('does not fetch when the main player failed', () => {
       statusRef.current.failed = true
       const { result } = setup()
       hoverAt(result, 30)
-      expect(FakeHls.last.startLoad).not.toHaveBeenCalled()
+      expect(FakeHls.instances.length).toBe(0)
     })
 
     it('does not fetch when the main player is not ready', () => {
       main.current.readyState = 2
       const { result } = setup()
       hoverAt(result, 30)
-      expect(FakeHls.last.startLoad).not.toHaveBeenCalled()
+      expect(FakeHls.instances.length).toBe(0)
+    })
+
+    it('a replacement seek still stops the abandoned load when the guard refuses the new one', () => {
+      const { result } = setup()
+      hoverAt(result, 30)
+      const h = FakeHls.last
+      h.stopLoad.mockClear()
+      statusRef.current.buffering = true
+      hoverAt(result, 60)
+      expect(h.stopLoad).toHaveBeenCalled()
+      expect(h.startLoad).toHaveBeenCalledTimes(1)
+      expect(h.startLoad).not.toHaveBeenCalledWith(60)
     })
 
     it('allows 12 fetches per 60 s', () => {
@@ -375,6 +432,16 @@ describe('useFramePreview', () => {
     expect(FakeHls.instances.length).toBe(1)
   })
 
+  it('does not retry a failed preview after disabling and re-enabling', () => {
+    const { result, rerender } = setup()
+    hoverAt(result, 30)
+    act(() => FakeHls.last.emitError(FakeHls.ErrorTypes.NETWORK_ERROR, true))
+    rerender({ enabled: false })
+    rerender({ enabled: true })
+    hoverAt(result, 50)
+    expect(FakeHls.instances.length).toBe(1)
+  })
+
   it('ignores non-fatal preview errors', () => {
     const { result } = setup()
     hoverAt(result, 30)
@@ -417,7 +484,8 @@ describe('useFramePreview', () => {
     expect(h.startLoad).not.toHaveBeenCalled()
     h.levels = [{}, {}]
     act(() => h.emit(FakeHls.Events.MANIFEST_PARSED))
-    expect(h.currentLevel).toBe(0)
+    expect(h.loadLevel).toBe(0)
+    expect(h.currentLevel).toBeUndefined()
     expect(h.startLoad).toHaveBeenCalledWith(30)
   })
 })

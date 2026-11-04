@@ -10,6 +10,12 @@ export function captureFrame(video) {
   canvas.height = H
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
-  ctx.drawImage(video, 0, 0, W, H)
+  // centered "cover" crop so a non-16:9 source is not stretched
+  const vw = video.videoWidth
+  const vh = video.videoHeight || vw * H / W
+  let sw = vw
+  let sh = vw * H / W
+  if (sh > vh) { sh = vh; sw = vh * W / H }
+  ctx.drawImage(video, (vw - sw) / 2, (vh - sh) / 2, sw, sh, 0, 0, W, H)
   return canvas.toDataURL('image/jpeg', 0.7)
 }

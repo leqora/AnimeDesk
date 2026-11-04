@@ -615,6 +615,19 @@ describe('PlayerView frame preview', () => {
     await hoverAndWait()
     expect(previewFetches(base)).toBe(0)
   })
+  it('makes no preview fetch under the resume prompt, and allows it after choosing', async () => {
+    const { meta, video } = view(open({ resumeAt: 754 }), {}, fullApi())
+    Object.defineProperty(video, 'readyState', { configurable: true, value: 4 })
+    meta(1400); video.pause(); fireEvent(video, new Event('canplay')); await settle()
+    expect(screen.getByRole('button', { name: 'Nastavi od 12:34' })).toBeInTheDocument()
+    const base = FakeHls.instances.length
+    await hoverAndWait()
+    expect(previewFetches(base)).toBe(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Nastavi od 12:34' }))
+    video.pause(); await settle()
+    await hoverAndWait()
+    expect(previewFetches(base)).toBe(1)
+  })
   it('applies a late api answer without another PlayerView render', async () => {
     let resolve
     const framePreview = vi.fn(() => new Promise((r) => { resolve = r }))

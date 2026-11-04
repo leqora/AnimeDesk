@@ -105,7 +105,7 @@ export function PlayerView({ open, settings, fullscreen, onSettings, onClose, in
   const settingsRef = useRef(settings)
   settingsRef.current = settings
   modeRef.current = settings.framePreview === false ? 'off' : apiModeRef.current
-  statusRef.current = { buffering: health.buffering, failed: Boolean(failed) }
+  statusRef.current = { buffering: health.buffering, failed: Boolean(failed) || resume != null }
   const preview = useFramePreview({ open, host: root, main: video, modeRef, frontierRef, statusRef, enabled: !mini, HlsImpl })
   useEffect(() => {
     let alive = true

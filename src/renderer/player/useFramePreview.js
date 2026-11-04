@@ -15,7 +15,7 @@ const OFF = { allowed: false, src: null, exact: false }
 
 // Frame preview for the seek bar: a lazily created hidden <video> (+ its own hls.js instance) that is sought to the
 // hovered time and drawn to a small canvas. Never touches the main player; every error is silent and turns the
-// preview off for this episode. At most one seek is outstanding, with at most one newer target waiting behind it.
+// preview off for this episode. At most one seek is outstanding; a new target replaces it.
 export function useFramePreview({ open, host, main, modeRef, frontierRef, statusRef, enabled, HlsImpl, capture = captureFrame }) {
   const [frame, setFrame] = useState(null)
   const live = useLatest({ open, enabled, HlsImpl, capture })
@@ -66,12 +66,15 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
     inst.flight = null
     clearTimeout(inst.timeout)
     clearTimeout(inst.tick)
+    // keep hls.js from fetching the next fragment outside the fetch guard; the next seek calls startLoad(at)
+    inst.hls?.stopLoad()
     if (src) inst.cache.set(bucketOf(f.at), src)
     refresh()
   }
 
   const finishSeek = (inst, f) => {
     if (!inst.alive || inst.flight !== f) return
+    if (inst.video.seeking) return // a newer seek is still running: wait for its own `seeked`
     let src = null
     if (Math.abs(inst.video.currentTime - f.at) > 1) { settle(inst, f, null); return }
     try { src = live.current.capture(inst.video) } catch { fail(); return }
@@ -92,6 +95,7 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
     inst.onSeeked = () => {
       const f = inst.flight
       if (!inst.alive || !f || f.seeked) return
+      if (video.seeking) return // stale `seeked` queued before the new currentTime: wait for the real one
       f.seeked = true
       const done = () => finishSeek(inst, f)
       // requestVideoFrameCallback may never fire (no new frame presented), so a timer always backs it up
@@ -113,7 +117,7 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
       inst.hls = hls
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         if (!inst.alive) return
-        if (hls.levels?.length > 1) hls.currentLevel = 0
+        if (hls.levels?.length > 1) hls.loadLevel = 0
         // a seek requested before the manifest was parsed could not start loading yet
         if (s.hovering && inst.flight && inst.flight.needsLoad) { inst.flight.needsLoad = false; hls.startLoad(inst.flight.at) }
       })
@@ -126,7 +130,7 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
     return inst
   }
 
-  const guardOk = (inst) => {
+  const guardOk = (inFlight) => {
     const kind = live.current.open.kind === 'file' ? 'file' : 'hls'
     const m = main.current
     if (kind === 'hls' && !m) return false
@@ -136,13 +140,13 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
     if (kind === 'hls') ahead = bufferedAhead(bufferedRanges(m.buffered), m.currentTime)
     const st = statusRef.current || {}
     return canFetch({
-      kind, inFlight: !!inst.flight, mainPaused: !!m?.paused, ahead,
+      kind, inFlight, mainPaused: !!m?.paused, ahead,
       buffering: !!st.buffering, failed: !!st.failed, readyState: m?.readyState ?? 0, recent: s.recent, now,
     })
   }
 
   const start = (inst, at) => {
-    if (!guardOk(inst)) return
+    if (!guardOk(!!inst.flight)) return
     s.recent.push(Date.now())
     const f = { at, seeked: false, needsLoad: false }
     inst.flight = f
@@ -157,6 +161,8 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
 
   function request(at) {
     if (s.failed || s.dead || !allowedAt(at)) return
+    // do not create the preview player (which loads the playlist) when the guard would refuse anyway
+    if (!s.inst && !guardOk(false)) return
     const inst = s.inst || createInst()
     if (!inst) return
     if (inst.cache.get(bucketOf(at)) !== undefined) return
@@ -165,6 +171,7 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
       clearTimeout(inst.timeout)
       clearTimeout(inst.tick)
       inst.flight = null
+      inst.hls?.stopLoad()
     }
     start(inst, at)
   }
@@ -197,7 +204,6 @@ export function useFramePreview({ open, host, main, modeRef, frontierRef, status
   }, [])
 
   useEffect(() => {
-    s.failed = false
     s.hovering = false
     s.recent = []
     s.dead = !enabled
