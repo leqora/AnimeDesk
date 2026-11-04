@@ -4,11 +4,11 @@ import { PlayerMenu } from './PlayerMenu.jsx'
 import { PlayerTimeline } from './PlayerTimeline.jsx'
 import { formatTime } from '../../shared/player.js'
 
-export function PlayerControls({ time, duration, quality = null, playing, muted, volume, subsOn, subsAvailable = true, subsHint = null, menu, fullscreen, canPrev, canNext = true, segments = [], buffered = [], onTogglePlay, onSeek, onStep, onPrev, onNext, onToggleMute, onVolume, onToggleSubs, onToggleFullscreen }) {
+export function PlayerControls({ time, duration, quality = null, playing, muted, volume, subsOn, subsAvailable = true, subsHint = null, menu, fullscreen, canPrev, canNext = true, segments = [], buffered = [], preview, onTogglePlay, onSeek, onStep, onPrev, onNext, onToggleMute, onVolume, onToggleSubs, onToggleFullscreen }) {
   const t = useT()
   return (
     <div className="player__bar">
-      <PlayerTimeline time={time} duration={duration} buffered={buffered} segments={segments} onSeek={onSeek} />
+      <PlayerTimeline time={time} duration={duration} buffered={buffered} segments={segments} preview={preview} onSeek={onSeek} />
       <div className="player__buttons">
         <button type="button" aria-label={t('player.prev')} disabled={!canPrev} onClick={onPrev}><Icon name="skipBack" /></button>
         <button type="button" aria-label={t('player.back10')} onClick={() => onStep(-10)}><Icon name="rewind" /></button>

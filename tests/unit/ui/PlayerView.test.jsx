@@ -533,6 +533,75 @@ it('says once that the asked quality was not available', () => {
   } finally { vi.useRealTimers() }
 })
 
+describe('PlayerView frame preview', () => {
+  const hoverAt = async (video, frac, meta, clientWidth = 1000) => {
+    const input = screen.getByLabelText('Pozicija u epizodi')
+    input.getBoundingClientRect = () => ({ left: 0, width: clientWidth, top: 0, height: 10, right: clientWidth, bottom: 10 })
+    fireEvent.mouseMove(input.closest('.player__timeline'), { clientX: frac * clientWidth })
+  }
+  const tick = (video, t) => { video.currentTime = t; fireEvent(video, new Event('timeupdate')) }
+  const settle = () => act(async () => { await Promise.resolve() })
+  const previewBox = () => document.querySelector('.player__preview')
+
+  it('asks the api once on mount', async () => {
+    const { api } = view()
+    await settle()
+    expect(api.episodes.framePreview).toHaveBeenCalledTimes(1)
+    expect(api.episodes.framePreview).toHaveBeenCalledWith({ title: 'Show', episode: '3' })
+  })
+  it('shows nothing when the setting is off, even if the api answered full', async () => {
+    const { video, meta } = view(open(), { settings: { ...DEFAULT_SETTINGS, framePreview: false } }, { episodes: { ...makeFakeApi().episodes, framePreview: vi.fn(async () => 'full') } })
+    meta(); await settle()
+    await hoverAt(video, 0.5)
+    expect(previewBox()).toBeNull()
+  })
+  it('treats a rejecting api as reached with the resume point as frontier', async () => {
+    const { video, meta } = view(open({ resumeAt: 300, autoResume: true }), {}, { episodes: { ...makeFakeApi().episodes, framePreview: vi.fn(async () => { throw new Error('x') }) } })
+    meta(); await settle()
+    await hoverAt(video, 0.1) // 140s
+    expect(previewBox()).not.toBeNull()
+    await hoverAt(video, 0.5) // 700s
+    expect(previewBox()).toBeNull()
+  })
+  it('moves the frontier with small timeupdate steps but not across a seek', async () => {
+    const { video, meta } = view()
+    meta(); await settle()
+    await hoverAt(video, 0.05) // 70s, frontier still 0
+    expect(previewBox()).toBeNull()
+    for (let t = 0.25; t <= 100; t += 0.25) tick(video, t)
+    await hoverAt(video, 0.05) // 70s <= frontier 100
+    expect(previewBox()).not.toBeNull()
+  })
+  it('does not move the frontier on a seeking...seeked jump', async () => {
+    const { video, meta } = view()
+    meta(); await settle()
+    for (let t = 0.25; t <= 100; t += 0.25) tick(video, t)
+    fireEvent(video, new Event('seeking'))
+    tick(video, 700)
+    fireEvent(video, new Event('seeked'))
+    await hoverAt(video, 0.4) // 560s, beyond 100
+    expect(previewBox()).toBeNull()
+    await hoverAt(video, 0.05) // 70s
+    expect(previewBox()).not.toBeNull()
+  })
+  it('does no preview work in mini', async () => {
+    const { video } = view(open(), { mini: true })
+    await settle()
+    expect(document.querySelector('.player__timeline')).toBeNull()
+    expect(FakeHls.instances).toHaveLength(1)
+  })
+  it('makes no preview fetch while the main player has failed', async () => {
+    const { video, meta } = view(open({ kind: 'hls' }))
+    meta(); await settle()
+    await act(async () => { for (let i = 0; i < 4; i++) FakeHls.last.emitError('networkError') })
+    const before = FakeHls.instances.length
+    tick(video, 10)
+    await hoverAt(video, 0.001)
+    await act(async () => { await new Promise((r) => setTimeout(r, 200)) })
+    expect(FakeHls.instances.length).toBe(before)
+  })
+})
+
 describe('PlayerView subtitles', () => {
   const loadTrack = (cues) => {
     const el = document.querySelector('track')
