@@ -1,4 +1,4 @@
-import { ChevronDown, House, ListVideo, Download, UserRound, Settings, Play, Info, Check, Flame, Search, Film, Volume2, ArrowLeft, Star, ChevronLeft, ChevronRight, Maximize, Minimize, Pause, Rewind, FastForward, SkipBack, SkipForward, VolumeX, Subtitles, CircleAlert, Bell, CalendarDays, Compass, PictureInPicture2, Maximize2, X } from 'lucide-react'
+import { ChevronDown, House, ListVideo, Download, UserRound, Settings, Play, Info, Check, Flame, Search, Film, Volume2, ArrowLeft, Star, ChevronLeft, ChevronRight, Maximize, Minimize, Pause, Rewind, FastForward, SkipBack, SkipForward, VolumeX, Subtitles, CircleAlert, Bell, CalendarDays, Compass, PictureInPicture2, Maximize2, X, Clock, Zap, Moon, Sunrise, Mountain, Landmark, Heart, Library, Trophy } from 'lucide-react'
 
 const ICONS = {
   home: House, watchlist: ListVideo, downloads: Download, profile: UserRound, settings: Settings,
@@ -7,6 +7,7 @@ const ICONS = {
   pause: Pause, rewind: Rewind, fastForward: FastForward, skipBack: SkipBack, skipForward: SkipForward,
   volumeX: VolumeX, subtitles: Subtitles, alert: CircleAlert, bell: Bell, schedule: CalendarDays, discover: Compass, chevronDown: ChevronDown,
   mini: PictureInPicture2, expand: Maximize2, close: X,
+  clock: Clock, zap: Zap, moon: Moon, sunrise: Sunrise, compass: Compass, mountain: Mountain, landmark: Landmark, heart: Heart, library: Library, trophy: Trophy,
 }
 
 export function Icon({ name, size = 18 }) {

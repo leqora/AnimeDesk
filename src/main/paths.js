@@ -12,6 +12,7 @@ export function createPaths(baseDir) {
     downloads: path.join(baseDir, 'downloads.json'),
     watchLog: path.join(baseDir, 'watchlog.json'),
     profile: path.join(baseDir, 'profile.json'),
+    achievements: path.join(baseDir, 'achievements.json'),
     seriesPrefs: path.join(baseDir, 'series-prefs.json'),
     positions: path.join(baseDir, 'positions.json'),
     anizipCache: path.join(baseDir, 'cache', 'anizip'),

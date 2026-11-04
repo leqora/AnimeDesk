@@ -31,7 +31,7 @@ export function makeFakeApi(overrides = {}) {
       enqueue: vi.fn(async () => []), pause: vi.fn(), resume: vi.fn(), retryFailed: vi.fn(async () => {}), cancel: vi.fn(), queue: vi.fn(async () => []), list: vi.fn(async () => []),
       remove: vi.fn(async () => true), play: vi.fn(async () => 'none'), openFolder: vi.fn(), onChange: sub(),
     },
-    stats: { get: vi.fn(async () => ({ ...EMPTY_STATS })), onLevelUp: sub(), onSeriesCompleted: sub() },
+    stats: { get: vi.fn(async () => ({ ...EMPTY_STATS })), takeRetro: vi.fn(async () => ({ count: 0 })), onLevelUp: sub(), onSeriesCompleted: sub(), onAchievements: sub() },
     update: {
       getState: vi.fn(async () => ({ status: 'disabled', currentVersion: '0.3.0', version: null, percent: null, notes: null, lastCheckedAt: null, error: null })),
       check: vi.fn(async () => ({ status: 'none' })), download: vi.fn(async () => true), install: vi.fn(async () => true), onState: sub(),

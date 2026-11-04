@@ -32,6 +32,7 @@ import { createAniSkip } from './aniskip.js'
 import { createSkipLookup, createTotalEpisodes } from './skipLookup.js'
 import { createWatchLog } from './watchLog.js'
 import { createProgress } from './progress.js'
+import { evaluate, achievementFacts } from '../shared/achievements.js'
 import { createCelebrations } from './celebrations.js'
 import { createTracker } from './tracker.js'
 import { createDataBackup } from './dataBackup.js'
@@ -155,18 +156,20 @@ async function main() {
   const streams = createStreamServer()
   await streams.start()
   const watchLog = createWatchLog(paths.watchLog)
-  const computeSnapshot = () => {
+  const tzOffsetAt = (iso) => new Date(iso).getTimezoneOffset()
+  const gather = () => {
     const entries = library.list()
     const infoById = {}
     for (const e of entries) {
       const info = anilist.getCached(e.title, { aniListId: e.aniListId })
       if (info) infoById[e.id] = info
     }
-    const now = new Date()
-    return computeStats({ entries, log: watchLog.list(), infoById, now: now.toISOString(), tzOffsetAt: (iso) => new Date(iso).getTimezoneOffset() })
+    return { entries, log: watchLog.list(), infoById }
   }
+  const computeSnapshot = () => computeStats({ ...gather(), now: new Date().toISOString(), tzOffsetAt })
+  const computeAchievements = () => evaluate(achievementFacts({ ...gather(), tzOffsetAt }))
   const celebrations = createCelebrations(send)
-  const progress = createProgress({ file: paths.profile, computeSnapshot, notify: celebrations.notify })
+  const progress = createProgress({ file: paths.profile, achievementsFile: paths.achievements, computeSnapshot, computeAchievements, notify: celebrations.notify })
   progress.init()
   const tracker = createTracker({ library, watchLog, progress })
   const toolManager = createToolManager({

@@ -5,6 +5,7 @@ import path from 'node:path'
 import { createProgress } from '../../src/main/progress.js'
 import { EMPTY_STATS } from '../../src/shared/stats.js'
 import { EVENTS } from '../../src/shared/channels.js'
+import { ACHIEVEMENTS } from '../../src/shared/achievements.js'
 
 let file, level, events, progress
 const snap = () => ({ level, title: level >= 10 ? 'veteran' : 'rookie', xp: level * 100 })
@@ -113,5 +114,168 @@ describe('progress.rebase', () => {
     expect(() => p.rebase()).not.toThrow()
     expect(err).toHaveBeenCalled()
     err.mockRestore()
+  })
+})
+
+describe('progress achievements', () => {
+  let achFile, met, clock, ap, aEvents, compute
+  const read = () => JSON.parse(fs.readFileSync(achFile, 'utf8'))
+  const make = () => createProgress({
+    file, achievementsFile: achFile, computeSnapshot: snap, notify: (ch, p) => aEvents.push([ch, p]),
+    computeAchievements: (...a) => compute(...a), now: () => clock,
+  })
+  beforeEach(() => {
+    const dir = path.dirname(file)
+    achFile = path.join(dir, 'achievements.json')
+    met = new Set()
+    clock = '2026-01-01T00:00:00.000Z'
+    aEvents = []
+    level = 7
+    compute = () => ACHIEVEMENTS.map((a) => ({ ...a, value: met.has(a.id) ? a.goal : 0, met: met.has(a.id) }))
+    ap = make()
+  })
+
+  it('retro: missing file writes met ids with now, no event, takeRetro once', () => {
+    met.add('episodes-50'); met.add('episodes-250')
+    ap.init()
+    expect(read().unlocked).toEqual({ 'episodes-50': clock, 'episodes-250': clock })
+    expect(aEvents).toEqual([])
+    expect(ap.takeRetro()).toEqual({ count: 2 })
+    expect(ap.takeRetro()).toEqual({ count: 0 })
+  })
+  it('retro with nothing met writes empty unlocked', () => {
+    ap.init()
+    expect(ap.takeRetro()).toEqual({ count: 0 })
+    expect(read().unlocked).toEqual({})
+  })
+  it('corrupt file is re-derived silently', () => {
+    fs.writeFileSync(achFile, '{not json')
+    met.add('episodes-50')
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    ap.init()
+    expect(err).toHaveBeenCalled()
+    err.mockRestore()
+    expect(aEvents).toEqual([])
+    expect(ap.takeRetro()).toEqual({ count: 0 })
+    expect(read().unlocked).toEqual({ 'episodes-50': clock })
+  })
+  it('keeps unknown ids after a new unlock', () => {
+    fs.writeFileSync(achFile, JSON.stringify({ version: 1, unlocked: { 'old-thing': 'x' } }))
+    ap.init()
+    met.add('episodes-50')
+    ap.check()
+    expect(read().unlocked).toEqual({ 'old-thing': 'x', 'episodes-50': clock })
+  })
+  it('check() unlocks a new id once', () => {
+    ap.init()
+    met.add('episodes-50')
+    ap.check()
+    ap.check()
+    expect(read().unlocked['episodes-50']).toBe(clock)
+    expect(aEvents).toEqual([[EVENTS.achievementsUnlocked, { ids: ['episodes-50'] }]])
+  })
+  it('orders seriesCompleted, levelUp, achievementsUnlocked', () => {
+    ap.init()
+    level = 10
+    met.add('episodes-50')
+    ap.check({ completedTitle: 'A' })
+    expect(aEvents.map((e) => e[0])).toEqual([EVENTS.seriesCompleted, EVENTS.levelUp, EVENTS.achievementsUnlocked])
+  })
+  it('once unlocked stays unlocked', () => {
+    ap.init()
+    met.add('episodes-50')
+    ap.check()
+    met.clear()
+    expect(ap.snapshot().achievements.find((a) => a.id === 'episodes-50').unlockedAt).toBe(clock)
+  })
+  it('snapshot() unlocks without check() and notifies once', () => {
+    ap.init()
+    met.add('episodes-50')
+    ap.snapshot()
+    ap.snapshot()
+    expect(aEvents).toEqual([[EVENTS.achievementsUnlocked, { ids: ['episodes-50'] }]])
+  })
+  it('snapshot() evaluates achievements once', () => {
+    ap.init()
+    const inner = compute
+    const spy = vi.fn((...a) => inner(...a))
+    compute = spy
+    met.add('episodes-50')
+    ap.snapshot()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+  it('snapshot().achievements lists all 21 in order', () => {
+    ap.init()
+    const list = ap.snapshot().achievements
+    expect(list.map((a) => a.id)).toEqual(ACHIEVEMENTS.map((a) => a.id))
+    expect(list).toHaveLength(21)
+    expect(list[0]).toEqual({ id: ACHIEVEMENTS[0].id, icon: ACHIEVEMENTS[0].icon, goal: ACHIEVEMENTS[0].goal, value: 0, unlockedAt: null })
+  })
+  it('rebase keeps old dates, dates new ones, drops unmet, no event', () => {
+    met.add('episodes-250'); met.add('episodes-50')
+    ap.init()
+    ap.takeRetro()
+    clock = '2026-02-02T00:00:00.000Z'
+    met.delete('episodes-50'); met.add('episodes-1000')
+    ap.rebase()
+    expect(read().unlocked).toEqual({ 'episodes-250': '2026-01-01T00:00:00.000Z', 'episodes-1000': clock })
+    expect(aEvents).toEqual([])
+    expect(ap.takeRetro()).toEqual({ count: 0 })
+  })
+  it('survives computeAchievements throwing', () => {
+    ap.init()
+    compute = () => { throw new Error('boom') }
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    level = 10
+    expect(ap.check().level).toBe(10)
+    expect(JSON.parse(fs.readFileSync(file, 'utf8')).lastLevel).toBe(10)
+    const s = ap.snapshot()
+    expect(s.level).toBe(10)
+    expect(s.achievements).toEqual([])
+    err.mockRestore()
+  })
+
+  it('failed first init is retried without a burst or lost retro', () => {
+    met.add('episodes-50')
+    const good = compute
+    compute = () => { throw new Error('boom') }
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    ap.init()
+    ap.check()
+    compute = good
+    ap.check()
+    err.mockRestore()
+    expect(aEvents).toEqual([])
+    expect(ap.takeRetro()).toEqual({ count: 1 })
+    expect(read().unlocked).toEqual({ 'episodes-50': clock })
+  })
+  it('unreadable existing file is not overwritten or announced until readable', () => {
+    const real = { version: 1, unlocked: { 'old-thing': 'x', 'episodes-50': 'd' } }
+    fs.writeFileSync(achFile, JSON.stringify(real))
+    met.add('episodes-50'); met.add('episodes-250')
+    const spy = vi.spyOn(fs, 'readFileSync').mockImplementation(() => { throw Object.assign(new Error('busy'), { code: 'EBUSY' }) })
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const p = make()
+    p.init()
+    p.check()
+    spy.mockRestore()
+    err.mockRestore()
+    expect(aEvents).toEqual([])
+    expect(read()).toEqual(real)
+    p.check()
+    expect(aEvents).toEqual([[EVENTS.achievementsUnlocked, { ids: ['episodes-250'] }]])
+    expect(read().unlocked).toEqual({ 'old-thing': 'x', 'episodes-50': 'd', 'episodes-250': clock })
+  })
+  it('failed rebase leaves state untouched', () => {
+    met.add('episodes-50')
+    ap.init()
+    const good = compute
+    compute = () => { throw new Error('boom') }
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    ap.rebase()
+    err.mockRestore()
+    compute = good
+    expect(ap.takeRetro()).toEqual({ count: 1 })
+    expect(read().unlocked).toEqual({ 'episodes-50': clock })
   })
 })

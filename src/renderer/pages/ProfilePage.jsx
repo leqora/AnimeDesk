@@ -1,11 +1,15 @@
 import { useT } from '../i18n/I18nContext.jsx'
 import { XpBar } from '../components/XpBar.jsx'
 import { Icon } from '../components/Icon.jsx'
+import { Achievements } from '../profile/Achievements.jsx'
+import { WeeklyChart } from '../profile/WeeklyChart.jsx'
+import { TimeOfDay } from '../profile/TimeOfDay.jsx'
+import { TopThisMonth } from '../profile/TopThisMonth.jsx'
 import { initials } from '../initials.js'
 
 const activityLevel = (count) => (count === 0 ? 0 : count === 1 ? 1 : count <= 3 ? 2 : 3)
 
-export function ProfilePage({ stats, name, lang }) {
+export function ProfilePage({ stats, name, lang, onOpenAnime }) {
   const t = useT()
   const locale = lang === 'en' ? 'en-US' : 'sr-RS'
   const fmt = (n) => n.toLocaleString(locale)
@@ -15,6 +19,7 @@ export function ProfilePage({ stats, name, lang }) {
     ['hours', `~${fmt(stats.hours)}`],
     ['completed', fmt(stats.completed)],
     ['avgRating', stats.avgRating == null ? '—' : stats.avgRating.toLocaleString(locale)],
+    ['longestStreak', fmt(stats.longestStreak)],
   ]
   return (
     <section className="page">
@@ -41,6 +46,7 @@ export function ProfilePage({ stats, name, lang }) {
           </div>
         ))}
       </div>
+      {stats.achievements.length > 0 && <Achievements items={stats.achievements} />}
       <div className="profile-section">
       <h3>{t('profile.genres')}</h3>
       {stats.topGenres.length === 0 ? <p className="muted">{t('profile.noGenres')}</p> : (
@@ -55,6 +61,9 @@ export function ProfilePage({ stats, name, lang }) {
         </div>
       )}
       </div>
+      <WeeklyChart weeks={stats.weeklyHours} />
+      <TimeOfDay data={stats.timeOfDay} />
+      <TopThisMonth items={stats.topThisMonth} onOpenAnime={onOpenAnime} />
       <div className="profile-section">
       <div className="streak"><Icon name="flame" size={20} /><span className="hud">{t('profile.streak', { days: stats.streakDays })}</span></div>
       <h3>{t('profile.activity')}</h3>

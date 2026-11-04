@@ -71,7 +71,7 @@ contextBridge.exposeInMainWorld('animedesk', {
     onChange: on(EVENTS.downloads),
   },
   autoDownload: { set: invoke(INVOKE.autoDownloadSet) },
-  stats: { get: invoke(INVOKE.statsGet), onLevelUp: on(EVENTS.levelUp), onSeriesCompleted: on(EVENTS.seriesCompleted) },
+  stats: { get: invoke(INVOKE.statsGet), takeRetro: invoke(INVOKE.statsTakeRetro), onAchievements: on(EVENTS.achievementsUnlocked), onLevelUp: on(EVENTS.levelUp), onSeriesCompleted: on(EVENTS.seriesCompleted) },
   update: {
     getState: invoke(INVOKE.updateGetState),
     check: invoke(INVOKE.updateCheck),

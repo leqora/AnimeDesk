@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor, within } from '@testing-library/react'
 import App from '../../../src/renderer/App.jsx'
 import { LevelUpOverlay } from '../../../src/renderer/components/LevelUpOverlay.jsx'
 import { renderUi, makeFakeApi } from './helpers.jsx'
@@ -10,7 +10,7 @@ function setup(settings = {}) {
   const handlers = {}
   const capture = (name) => vi.fn((cb) => { handlers[name] = cb; return () => {} })
   const api = makeFakeApi({
-    stats: { onLevelUp: capture('levelUp'), onSeriesCompleted: capture('completed') },
+    stats: { onLevelUp: capture('levelUp'), onSeriesCompleted: capture('completed'), onAchievements: capture('achievements') },
     downloads: { onChange: capture('downloads') },
   })
   api.settings.get.mockResolvedValue({ ...DEFAULT_SETTINGS, ...settings })
@@ -116,5 +116,37 @@ describe('App celebrations', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Preuzeto' }))
     expect(sound.play).toHaveBeenCalledWith('navigate')
     expect(sound.play).toHaveBeenCalledWith('click')
+  })
+})
+
+describe('App achievement toasts', () => {
+  it('one id: named toast with a Profil action that opens the profile', async () => {
+    const { handlers } = setup()
+    await waitFor(() => expect(handlers.achievements).toBeDefined())
+    act(() => handlers.achievements({ ids: ['marathon'] }))
+    const toast = document.querySelector('.toast')
+    expect(toast).toHaveTextContent('DOSTIGNUĆE · Maraton')
+    fireEvent.click(within(toast).getByRole('button', { name: 'Profil' }))
+    await waitFor(() => expect(document.querySelector('.profile-head')).toBeInTheDocument())
+  })
+  it('several ids: a count toast', async () => {
+    const { handlers } = setup()
+    await waitFor(() => expect(handlers.achievements).toBeDefined())
+    act(() => handlers.achievements({ ids: ['marathon', 'first-episode'] }))
+    expect(screen.getByText('Otključano 2 dostignuća')).toBeInTheDocument()
+  })
+  it('unknown ids are skipped and give no toast', async () => {
+    const { handlers } = setup()
+    await waitFor(() => expect(handlers.achievements).toBeDefined())
+    act(() => handlers.achievements({ ids: ['nope'] }))
+    expect(document.querySelector('.toast')).toBeNull()
+  })
+  it('the completed toast comes before the achievement toast', async () => {
+    const { handlers } = setup()
+    await waitFor(() => expect(handlers.achievements).toBeDefined())
+    act(() => { handlers.achievements({ ids: ['marathon'] }); handlers.completed({ title: 'Show', xp: 50 }) })
+    const texts = [...document.querySelectorAll('.toast')].map((n) => n.textContent)
+    expect(texts[0]).toContain('ZAVRŠENO · Show')
+    expect(texts[1]).toContain('DOSTIGNUĆE · Maraton')
   })
 })

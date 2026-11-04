@@ -1,6 +1,6 @@
 import { EVENTS } from '../shared/channels.js'
 
-const HELD = new Set([EVENTS.levelUp, EVENTS.seriesCompleted])
+const HELD = new Set([EVENTS.levelUp, EVENTS.seriesCompleted, EVENTS.achievementsUnlocked])
 
 // While an episode plays, an episode recorded at the threshold must not pop a level-up over the ending.
 export function createCelebrations(send) {
